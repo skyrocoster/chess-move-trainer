@@ -1,0 +1,49 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+test-results/
+.playwright-mcp/
+.venv/
+venv/
+env/
+
+# Node and package managers
+node_modules/
+dist/
+build/
+
+# IDE and operating system files
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Local runtime state
+.env
+*.log
+*.log.err
+*.pid
+.coverage
+.stage-check/
+/artifacts/
+
+# Local databases and backups
+*.db
+*.db-shm
+*.db-wal
+*.db.backup.*
+
+# Tool-local configuration and dependencies
+.claude/
+.cursor/skills/
+.agents/skills/*
+.opencode/*
+!.opencode/plugin/
+!.opencode/skills/
+!.opencode/tools/
+!.opencode/agents/
+!.opencode/agents/**
+opencode.json
