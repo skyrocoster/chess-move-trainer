@@ -17,5 +17,11 @@ export default defineConfig({
       cwd: process.cwd(),
       reuseExistingServer: true,
     },
+    {
+      command: "npm run storybook --prefix frontend",
+      url: "http://localhost:6006",
+      cwd: process.cwd(),
+      reuseExistingServer: true,
+    },
   ],
 });

@@ -12,6 +12,7 @@ env/
 node_modules/
 dist/
 build/
+storybook-static/
 
 # IDE and operating system files
 .vscode/
