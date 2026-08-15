@@ -1,0 +1,17 @@
+{
+  "url": "https://www.chess.com/member/hikaru",
+  "username": "hikaru",
+  "player_id": 12345678,
+  "title": "GM",
+  "status": "premium",
+  "name": "Hikaru Nakamura",
+  "avatar": "https://images.chesscomfiles.com/uploads/v/user/12345678.abc123.300x300o.jpg",
+  "location": "New York, NY",
+  "country": "https://api.chess.com/pub/country/US",
+  "joined": 1293840000,
+  "last_online": 1721145600,
+  "followers": 1500000,
+  "is_streamer": true,
+  "twitch_url": "https://www.twitch.tv/gmhikaru",
+  "fide": 2736
+}

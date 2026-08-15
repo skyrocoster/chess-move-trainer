@@ -81,17 +81,22 @@ def normalise_packet(packet: dict[str, Any]) -> dict[str, Any]:
     return normalized
 
 
-def build(packet: dict[str, Any], completed: bool = False, prior_text: str = "") -> tuple[Path, str]:
+def build(
+    packet: dict[str, Any], completed: bool = False, prior_text: str = ""
+) -> tuple[Path, str]:
     normalized = normalise_packet(packet)
     findings = co.validate_packet(
-        normalized, source="<compile packet>", check_files=True, status="DONE" if completed else "COMPILE"
+        normalized,
+        source="<compile packet>",
+        check_files=True,
+        status="DONE" if completed else "COMPILE",
     )
     if findings:
         raise ValueError("\n".join(str(finding) for finding in findings))
     target = REPO_ROOT / normalized["output_path"]
     text = co.render_order(normalized)
     if completed and "\nSTATUS:" in prior_text:
-        text = text.split("\nSTATUS:", 1)[0] + prior_text[prior_text.index("\nSTATUS:"):]
+        text = text.split("\nSTATUS:", 1)[0] + prior_text[prior_text.index("\nSTATUS:") :]
     return target, text
 
 
@@ -101,7 +106,11 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--packet", required=True, help="JSON file path, or - for stdin")
     parser.add_argument("--force", action="store_true", help="overwrite the exact output_path")
-    parser.add_argument("--completed", action="store_true", help="rematerialize a completed order while preserving its executor result")
+    parser.add_argument(
+        "--completed",
+        action="store_true",
+        help="rematerialize a completed order while preserving its executor result",
+    )
     args = parser.parse_args(argv)
     try:
         packet = load_packet(args.packet)

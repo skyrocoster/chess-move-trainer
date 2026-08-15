@@ -1,0 +1,48 @@
+[Event "Live Chess"]
+[Site "Chess.com"]
+[Date "2026.07.15"]
+[White "hikaru"]
+[Black "MagnusCarlsen"]
+[Result "1-0"]
+[CurrentPosition "r1bqkbnr/pppp1ppp/2n5/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - 2 3"]
+[Timezone "UTC"]
+[ECO "C30"]
+[ECOUrl "https://www.chess.com/openings/Kings-Gambit-Declined-Petrov-Defense"]
+[UTCDate "2026.07.15"]
+[UTCTime "14:30:00"]
+[WhiteElo "2750"]
+[BlackElo "2850"]
+[TimeControl "180+2"]
+[Termination "hikaru won by checkmate"]
+
+1. e4 {[%clk 0:03:00]} 1... e5 {[%clk 0:03:00]} 2. f4 {[%clk 0:02:58]} 2... Nc6 {[%clk 0:02:55]} 3. Nf3 {[%clk 0:02:56]} 1-0
+
+[Event "Live Chess"]
+[Site "Chess.com"]
+[Date "2026.07.15"]
+[White "Player1"]
+[Black "hikaru"]
+[Result "0-1"]
+[UTCDate "2026.07.15"]
+[UTCTime "15:00:00"]
+[WhiteElo "2600"]
+[BlackElo "2750"]
+[TimeControl "180+2"]
+[Termination "hikaru won by resignation"]
+
+1. d4 {[%clk 0:03:00]} 1... Nf6 {[%clk 0:03:00]} 2. c4 {[%clk 0:02:58]} 2... e6 {[%clk 0:02:55]} 0-1
+
+[Event "Live Chess"]
+[Site "Chess.com"]
+[Date "2026.07.15"]
+[White "hikaru"]
+[Black "Opponent2"]
+[Result "1/2-1/2"]
+[UTCDate "2026.07.15"]
+[UTCTime "16:00:00"]
+[WhiteElo "2750"]
+[BlackElo "2700"]
+[TimeControl "180+2"]
+[Termination "Game drawn by mutual agreement"]
+
+1. e4 {[%clk 0:03:00]} 1... e5 {[%clk 0:03:00]} 2. Nf3 {[%clk 0:02:58]} 2... Nc6 {[%clk 0:02:55]} 1/2-1/2

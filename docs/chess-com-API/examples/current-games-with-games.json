@@ -1,0 +1,28 @@
+{
+  "games": [
+    {
+      "white": {
+        "username": "hikaru",
+        "rating": 2750,
+        "result": "win",
+        "@id": "https://api.chess.com/pub/player/hikaru"
+      },
+      "black": {
+        "username": "opponent123",
+        "rating": 2680,
+        "result": "checkmated",
+        "@id": "https://api.chess.com/pub/player/opponent123"
+      },
+      "url": "https://www.chess.com/game/daily/123456789",
+      "fen": "r1bqkbnr/pppp1ppp/2n5/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - 2 3",
+      "pgn": "[Event \"Live Chess\"]\n[Site \"Chess.com\"]\n[Date \"2026.07.15\"]\n[White \"hikaru\"]\n[Black \"opponent123\"]\n[Result \"1-0\"]\n[CurrentPosition \"r1bqkbnr/pppp1ppp/2n5/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - 2 3\"]\n[Timezone \"UTC\"]\n[ECO \"C30\"]\n[ECOUrl \"https://www.chess.com/openings/Kings-Gambit-Declined-Petrov-Defense\"]\n[UTCDate \"2026.07.15\"]\n[UTCTime \"14:30:00\"]\n[WhiteElo \"2750\"]\n[BlackElo \"2680\"]\n[TimeControl \"1/2592000\"]\n[Termination \"hikaru won by checkmate\"]\n\n1. e4 {[%clk 0:01:00]} 1... e5 {[%clk 0:01:00]} 2. f4 {[%clk 0:00:58]} 2... Nc6 {[%clk 0:00:55]} 3. Nf3 {[%clk 0:00:56]} 1-0",
+      "turn": 3,
+      "move_by": 1721318400,
+      "last_activity": 1721059200,
+      "start_time": 1721055600,
+      "time_control": "1/2592000",
+      "time_class": "daily",
+      "rules": "chess"
+    }
+  ]
+}

@@ -1,0 +1,88 @@
+{
+  "chess_blitz": {
+    "last": {
+      "rating": 2750,
+      "date": 1721145600,
+      "rd": 45
+    },
+    "best": {
+      "rating": 2850,
+      "date": 1700000000,
+      "rd": 50
+    },
+    "record": {
+      "win": 1250,
+      "loss": 380,
+      "draw": 170
+    }
+  },
+  "chess_rapid": {
+    "last": {
+      "rating": 2680,
+      "date": 1721059200,
+      "rd": 55
+    },
+    "best": {
+      "rating": 2720,
+      "date": 1695000000,
+      "rd": 60
+    },
+    "record": {
+      "win": 420,
+      "loss": 150,
+      "draw": 80
+    }
+  },
+  "chess_daily": {
+    "last": {
+      "rating": 2800,
+      "date": 1720972800,
+      "rd": 40
+    },
+    "best": {
+      "rating": 2850,
+      "date": 1690000000,
+      "rd": 45
+    },
+    "record": {
+      "win": 850,
+      "loss": 120,
+      "draw": 230
+    }
+  },
+  "chess_bullet": {
+    "last": {
+      "rating": 2900,
+      "date": 1721142000,
+      "rd": 35
+    },
+    "best": {
+      "rating": 3050,
+      "date": 1685000000,
+      "rd": 40
+    },
+    "record": {
+      "win": 3200,
+      "loss": 800,
+      "draw": 400
+    }
+  },
+  "tactics": {
+    "highest": {
+      "rating": 2850,
+      "date": 1720000000
+    }
+  },
+  "lessons": {
+    "best": {
+      "score": 95,
+      "date": 1719000000
+    }
+  },
+  "puzzle_rush": {
+    "best": {
+      "score": 42,
+      "date": 1718000000
+    }
+  }
+}

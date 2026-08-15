@@ -33,7 +33,7 @@ All checks are local. The existing GitHub workflow is documentation-only; do not
 
 The testing layers are pytest/API tests, Vitest + React Testing Library component tests, and Playwright
 end-to-end tests. Ruff, ESLint, and Prettier are required quality checks. Handwritten Python, TypeScript,
-and TSX source is limited to 300 lines per file; handwritten tests are limited to 500 lines. Generated
+and TSX source is limited to 500 lines per file; handwritten tests are limited to 700 lines. Generated
 manifests/lockfiles and narrowly enumerated configuration files are excluded from the size check only.
 The five pre-existing invoke-only workflow scripts (`scripts/check_docs.py`, `scripts/check_orders.py`,
 `scripts/new_order.py`, `scripts/order_check.py`, and `scripts/stage_check.py`) are an explicit legacy

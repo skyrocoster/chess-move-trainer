@@ -1,0 +1,15 @@
+{
+  "games": [
+    {
+      "url": "https://www.chess.com/game/daily/987654321",
+      "move_by": 1721404800,
+      "last_activity": 1721145600
+    },
+    {
+      "url": "https://www.chess.com/game/daily/987654322",
+      "move_by": 0,
+      "draw_offer": "white",
+      "last_activity": 1721142000
+    }
+  ]
+}

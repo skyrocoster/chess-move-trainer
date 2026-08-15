@@ -3,7 +3,9 @@
 
 Examples:
     python scripts/stage_check.py
-    python scripts/stage_check.py --command "tests=your-test-command" --command "lint=your-lint-command"
+    python scripts/stage_check.py \
+        --command "tests=your-test-command" \
+        --command "lint=your-lint-command"
 """
 
 from __future__ import annotations
@@ -25,7 +27,15 @@ def parse_command(value: str) -> tuple[str, str]:
 
 
 def run(label: str, command: str) -> bool:
-    result = subprocess.run(command, cwd=REPO_ROOT, shell=True, capture_output=True, text=True, encoding="utf-8", errors="replace")
+    result = subprocess.run(
+        command,
+        cwd=REPO_ROOT,
+        shell=True,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+    )
     if result.returncode == 0:
         print(f"PASS  {label}")
         return True
@@ -37,10 +47,18 @@ def run(label: str, command: str) -> bool:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--command", action="append", type=parse_command, default=[], metavar="LABEL=COMMAND")
-    parser.add_argument("--skip-docs", action="store_true", help="do not run scripts/check_docs.py --check")
+    parser.add_argument(
+        "--command", action="append", type=parse_command, default=[], metavar="LABEL=COMMAND"
+    )
+    parser.add_argument(
+        "--skip-docs", action="store_true", help="do not run scripts/check_docs.py --check"
+    )
     args = parser.parse_args()
-    commands = [] if args.skip_docs else [("documentation contract", f'"{sys.executable}" scripts/check_docs.py --check')]
+    commands = (
+        []
+        if args.skip_docs
+        else [("documentation contract", f'"{sys.executable}" scripts/check_docs.py --check')]
+    )
     commands.extend(args.command)
     if not commands:
         parser.error("supply a project check or omit --skip-docs")

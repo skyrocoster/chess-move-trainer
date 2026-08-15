@@ -1,0 +1,33 @@
+{
+  "games": [
+    {
+      "url": "https://www.chess.com/game/live/9876543210",
+      "pgn": "[Event \"Live Chess\"]\n[Site \"Chess.com\"]\n[Date \"2026.07.10\"]\n[White \"hikaru\"]\n[Black \"Opponent1\"]\n[Result \"1-0\"]\n[UTCDate \"2026.07.10\"]\n[UTCTime \"10:00:00\"]\n[WhiteElo \"2750\"]\n[BlackElo \"2500\"]\n[TimeControl \"180+2\"]\n[Termination \"hikaru won by timeout\"]\n\n1. e4 e5 2. Nf3 Nc6 3. Bb5 a6 1-0",
+      "time_control": "180+2",
+      "end_time": 1720605600,
+      "rated": true,
+      "accuracies": {
+        "white": 91.2,
+        "black": 78.5
+      },
+      "fen": "r1bqkbnr/1ppp1ppp/p1n5/4p3/1B2P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 0 4",
+      "time_class": "blitz",
+      "rules": "chess",
+      "eco": "C60",
+      "white": {
+        "rating": 2750,
+        "result": "win",
+        "@id": "https://api.chess.com/pub/player/hikaru",
+        "username": "hikaru",
+        "uuid": "user-uuid-hikaru"
+      },
+      "black": {
+        "rating": 2500,
+        "result": "timeout",
+        "@id": "https://api.chess.com/pub/player/Opponent1",
+        "username": "Opponent1",
+        "uuid": "user-uuid-opponent1"
+      }
+    }
+  ]
+}

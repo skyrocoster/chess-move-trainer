@@ -1,0 +1,68 @@
+{
+  "games": [
+    {
+      "url": "https://www.chess.com/game/live/1234567890",
+      "pgn": "[Event \"Live Chess\"]\n[Site \"Chess.com\"]\n[Date \"2026.07.15\"]\n[White \"hikaru\"]\n[Black \"MagnusCarlsen\"]\n[Result \"1-0\"]\n[CurrentPosition \"r1bqkbnr/pppp1ppp/2n5/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - 2 3\"]\n[Timezone \"UTC\"]\n[ECO \"C30\"]\n[ECOUrl \"https://www.chess.com/openings/Kings-Gambit-Declined-Petrov-Defense\"]\n[UTCDate \"2026.07.15\"]\n[UTCTime \"14:30:00\"]\n[WhiteElo \"2750\"]\n[BlackElo \"2850\"]\n[TimeControl \"180+2\"]\n[Termination \"hikaru won by checkmate\"]\n\n1. e4 {[%clk 0:03:00]} 1... e5 {[%clk 0:03:00]} 2. f4 {[%clk 0:02:58]} 2... Nc6 {[%clk 0:02:55]} 3. Nf3 {[%clk 0:02:56]} 1-0",
+      "time_control": "180+2",
+      "end_time": 1721062800,
+      "rated": true,
+      "accuracies": {
+        "white": 95.5,
+        "black": 88.2
+      },
+      "tcn": "e4e5f4nc6nf3",
+      "uuid": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "initial_setup": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+      "fen": "r1bqkbnr/pppp1ppp/2n5/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - 2 3",
+      "time_class": "blitz",
+      "rules": "chess",
+      "eco": "C30",
+      "white": {
+        "rating": 2750,
+        "result": "win",
+        "@id": "https://api.chess.com/pub/player/hikaru",
+        "username": "hikaru",
+        "uuid": "user-uuid-hikaru"
+      },
+      "black": {
+        "rating": 2850,
+        "result": "checkmated",
+        "@id": "https://api.chess.com/pub/player/MagnusCarlsen",
+        "username": "MagnusCarlsen",
+        "uuid": "user-uuid-magnus"
+      }
+    },
+    {
+      "url": "https://www.chess.com/game/live/1234567891",
+      "pgn": "[Event \"Live Chess\"]\n[Site \"Chess.com\"]\n[Date \"2026.07.15\"]\n[White \"Player1\"]\n[Black \"hikaru\"]\n[Result \"0-1\"]\n[UTCDate \"2026.07.15\"]\n[UTCTime \"15:00:00\"]\n[WhiteElo \"2600\"]\n[BlackElo \"2750\"]\n[TimeControl \"180+2\"]\n[Termination \"hikaru won by resignation\"]\n\n1. d4 {[%clk 0:03:00]} 1... Nf6 {[%clk 0:03:00]} 2. c4 {[%clk 0:02:58]} 2... e6 {[%clk 0:02:55]} 0-1",
+      "time_control": "180+2",
+      "end_time": 1721064600,
+      "rated": true,
+      "accuracies": {
+        "white": 82.3,
+        "black": 94.1
+      },
+      "tcn": "d4nf6c4e6",
+      "uuid": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+      "initial_setup": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+      "fen": "rnbqkb1r/pppp1ppp/4pn2/8/2PP4/8/PP2PPPP/RNBQKBNR w KQkq - 2 3",
+      "time_class": "blitz",
+      "rules": "chess",
+      "eco": "E00",
+      "white": {
+        "rating": 2600,
+        "result": "resigned",
+        "@id": "https://api.chess.com/pub/player/Player1",
+        "username": "Player1",
+        "uuid": "user-uuid-player1"
+      },
+      "black": {
+        "rating": 2750,
+        "result": "win",
+        "@id": "https://api.chess.com/pub/player/hikaru",
+        "username": "hikaru",
+        "uuid": "user-uuid-hikaru"
+      }
+    }
+  ]
+}

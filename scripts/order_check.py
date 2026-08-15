@@ -25,7 +25,15 @@ def parse_command(value: str) -> tuple[str, str]:
 
 
 def run(label: str, command: str, cwd: Path) -> bool:
-    result = subprocess.run(command, cwd=cwd, shell=True, capture_output=True, text=True, encoding="utf-8", errors="replace")
+    result = subprocess.run(
+        command,
+        cwd=cwd,
+        shell=True,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+    )
     if result.returncode == 0:
         print(f"PASS  {label}")
         return True
@@ -39,7 +47,9 @@ def run(label: str, command: str, cwd: Path) -> bool:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--cwd", default=".", help="repo-relative working directory for commands")
-    parser.add_argument("--command", action="append", type=parse_command, default=[], metavar="LABEL=COMMAND")
+    parser.add_argument(
+        "--command", action="append", type=parse_command, default=[], metavar="LABEL=COMMAND"
+    )
     parser.add_argument("--docs", action="store_true", help="also run the documentation contract")
     args = parser.parse_args()
     cwd = (REPO_ROOT / args.cwd).resolve()
@@ -47,7 +57,9 @@ def main() -> int:
         parser.error("--cwd must be an existing directory inside the repository")
     commands = args.command
     if args.docs:
-        commands.append(("documentation contract", f'"{sys.executable}" scripts/check_docs.py --check'))
+        commands.append(
+            ("documentation contract", f'"{sys.executable}" scripts/check_docs.py --check')
+        )
     if not commands:
         parser.error("supply --command LABEL=COMMAND and/or --docs")
     for label, command in commands:

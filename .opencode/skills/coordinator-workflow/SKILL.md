@@ -7,6 +7,15 @@ description: Use ONLY as the coordinator's single-entry workflow for coordinator
 
 Keep frontier context for decisions. Do not spend it on routine repository retrieval.
 
+## Know the skills you dispatch
+
+Every subagent handoff names a skill to invoke: `grilling`, `scout-case`, `assess-case`,
+`write-focused-plan`, `deliver-direct`, `implement-quick`, `implement-order`, `master-plan`, or
+`coordinator-order-author`. Before spawning the subagent, read that skill's `SKILL.md` so you know what
+the subagent is meant to do: its phases, fixed protocol, expected outcomes, proof contract, and stop
+boundaries. Treat each skill as the authoritative contract for what you may expect back and what the
+subagent may never do on its own.
+
 ## Entry and grilling
 
 Answer a purely informational/meta request directly only when no repository investigation is needed. For vague
@@ -51,7 +60,7 @@ present the complete record for user review and receive explicit confirmation be
 historical design-review evidence only: they do not create or update Plans, master plans, implementation routes, or
 product behavior.
 
-For other requests, spawn `coordinator-caseworker` with this handoff:
+For other requests, spawn either `coordinator-caseworker` (Luna) or `coordinator-caseworker-flash` (DeepSeek Flash) with this handoff:
 
 ```text
 PHASE: ASSESS
@@ -60,7 +69,7 @@ SIMULATION PATH: <explicit scratch path, or none>
 Invoke `assess-case`. Do not edit.
 ```
 
-Retain the returned task/session ID. All later case-worker work for this case resumes that same ID.
+Use `coordinator-caseworker` by default. Use `coordinator-caseworker-flash` when the request is bounded, cost-sensitive, or the user has asked for the faster/cheaper model. Retain the returned task/session ID. All later case-worker work for this case resumes that same ID.
 
 ## Review the assessment
 

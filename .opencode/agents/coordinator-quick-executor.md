@@ -2,7 +2,7 @@
 description: Luna executor for one fully settled planned quick stage or bounded brief.
 mode: subagent
 model: openai/gpt-5.6-luna
-variant: medium
+variant: xhigh
 permission:
   edit: allow
   bash: allow
@@ -17,6 +17,7 @@ permission:
   webfetch: deny
   websearch: deny
   external_directory: deny
+  "playwright_*": deny
 ---
 
 You execute exactly one fully settled quick brief. Invoke `implement-quick` and follow it.

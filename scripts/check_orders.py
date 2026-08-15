@@ -150,7 +150,10 @@ def validate_packet(
     if missing:
         fail(f"Packet is missing fields: {', '.join(missing)}", "Add every canonical packet field")
     if extra:
-        fail(f"Packet has unknown fields: {', '.join(extra)}", "Remove fields outside the canonical schema")
+        fail(
+            f"Packet has unknown fields: {', '.join(extra)}",
+            "Remove fields outside the canonical schema",
+        )
     if missing:
         return findings
 
@@ -164,7 +167,10 @@ def validate_packet(
 
     identity = packet.get("identity")
     if not isinstance(identity, dict) or set(identity) != {"number", "slug", "title", "goal"}:
-        fail("identity must contain exactly number, slug, title, and goal", "Use the canonical identity object")
+        fail(
+            "identity must contain exactly number, slug, title, and goal",
+            "Use the canonical identity object",
+        )
     else:
         number, slug = identity.get("number"), identity.get("slug")
         if not isinstance(number, str) or not re.fullmatch(r"\d{2}", number):
@@ -174,48 +180,80 @@ def validate_packet(
         for field in ("title", "goal"):
             if not _is_nonempty_string(identity.get(field)):
                 fail(f"identity.{field} must be non-empty", f"State the order {field}")
-        if output_match and (number != output_match.group("number") or slug != output_match.group("slug")):
-            fail("identity number/slug contradict output_path", "Make identity and the exact output filename agree")
+        if output_match and (
+            number != output_match.group("number") or slug != output_match.group("slug")
+        ):
+            fail(
+                "identity number/slug contradict output_path",
+                "Make identity and the exact output filename agree",
+            )
 
     depends = packet.get("depends_on")
     if not _string_list(depends, allow_empty=True):
-        fail("depends_on must be an array of canonical order paths", "Use [] or exact nested order paths")
+        fail(
+            "depends_on must be an array of canonical order paths",
+            "Use [] or exact nested order paths",
+        )
         depends = []
     else:
         for dependency in depends:
             if not _canonical_order_path(dependency):
-                fail(f"Dependency is not a canonical order path: {dependency}", "Use a nested active order path")
+                fail(
+                    f"Dependency is not a canonical order path: {dependency}",
+                    "Use a nested active order path",
+                )
             elif normalise_path(dependency) == normalise_path(str(output)):
                 fail("Order depends on itself", "Remove the self-dependency")
             elif check_files and not (REPO_ROOT / normalise_path(dependency)).is_file():
-                fail(f"Dependency does not exist: {dependency}", "Compile the dependency first or remove it")
+                fail(
+                    f"Dependency does not exist: {dependency}",
+                    "Compile the dependency first or remove it",
+                )
 
     strength = packet.get("required_strength")
     if not isinstance(strength, dict) or set(strength) != {"level", "reason"}:
-        fail("required_strength must contain exactly level and reason", "Use the canonical strength object")
+        fail(
+            "required_strength must contain exactly level and reason",
+            "Use the canonical strength object",
+        )
     else:
         level, reason = strength.get("level"), strength.get("reason")
         if level not in VALID_STRENGTHS:
-            fail("required_strength.level must be Light, Standard, or High", "Choose one supported level")
+            fail(
+                "required_strength.level must be Light, Standard, or High",
+                "Choose one supported level",
+            )
         if level != "Light" and not _is_nonempty_string(reason):
             fail("Standard/High strength requires a reason", "Explain why Light is insufficient")
         if level == "Light" and reason is not None and not _is_nonempty_string(reason):
-            fail("Light strength reason must be null or non-empty", "Use null when no reason is needed")
+            fail(
+                "Light strength reason must be null or non-empty",
+                "Use null when no reason is needed",
+            )
 
     authorization = packet.get("authorization")
     auth_sets: dict[str, set[str]] = {"creates": set(), "edits": set(), "removes": set()}
     if not isinstance(authorization, dict) or set(authorization) != set(auth_sets):
-        fail("authorization must contain exactly creates, edits, and removes", "Use the canonical authorization object")
+        fail(
+            "authorization must contain exactly creates, edits, and removes",
+            "Use the canonical authorization object",
+        )
     else:
         for kind in auth_sets:
             values = authorization.get(kind)
             if not _string_list(values, allow_empty=True):
-                fail(f"authorization.{kind} must be an array of paths", "Use [] or exact repo-relative paths")
+                fail(
+                    f"authorization.{kind} must be an array of paths",
+                    "Use [] or exact repo-relative paths",
+                )
                 continue
             for path in values:
                 normalized = normalise_path(path)
                 if not _valid_repo_path(path):
-                    fail(f"Invalid authorization path: {path}", "Use an unambiguous repo-relative path")
+                    fail(
+                        f"Invalid authorization path: {path}",
+                        "Use an unambiguous repo-relative path",
+                    )
                     continue
                 if normalized in auth_sets[kind]:
                     fail(f"Duplicate authorization path in {kind}: {path}", "List each path once")
@@ -228,18 +266,30 @@ def validate_packet(
                     "Authorize each path for exactly one lifecycle operation",
                 )
         if not any(auth_sets.values()):
-            fail("authorization names no paths", "Authorize at least one create, edit, or remove path")
+            fail(
+                "authorization names no paths",
+                "Authorize at least one create, edit, or remove path",
+            )
         if check_files:
             compile_time = status == "COMPILE"
             for path in sorted(auth_sets["edits"]):
                 if not (REPO_ROOT / path).is_file():
-                    fail(f"Authorized edit path does not exist: {path}", "Correct the path or authorize it as a create")
+                    fail(
+                        f"Authorized edit path does not exist: {path}",
+                        "Correct the path or authorize it as a create",
+                    )
             for path in sorted(auth_sets["removes"]):
                 if compile_time and not (REPO_ROOT / path).exists():
-                    fail(f"Authorized remove path does not exist: {path}", "Correct the path or remove the authorization")
+                    fail(
+                        f"Authorized remove path does not exist: {path}",
+                        "Correct the path or remove the authorization",
+                    )
             for path in sorted(auth_sets["creates"]):
                 if compile_time and (REPO_ROOT / path).exists():
-                    fail(f"Authorized create path already exists: {path}", "Authorize it as an edit or choose a new path")
+                    fail(
+                        f"Authorized create path already exists: {path}",
+                        "Authorize it as an edit or choose a new path",
+                    )
 
     context = packet.get("context")
     if not isinstance(context, list):
@@ -248,48 +298,103 @@ def validate_packet(
         for index, entry in enumerate(context, 1):
             prefix = f"context[{index}]"
             if not isinstance(entry, dict) or set(entry) != {"path", "scope", "purpose"}:
-                fail(f"{prefix} must contain exactly path, scope, and purpose", "Use the canonical context object")
+                fail(
+                    f"{prefix} must contain exactly path, scope, and purpose",
+                    "Use the canonical context object",
+                )
                 continue
-            path = normalise_path(entry.get("path", "")) if isinstance(entry.get("path"), str) else ""
+            path = (
+                normalise_path(entry.get("path", "")) if isinstance(entry.get("path"), str) else ""
+            )
             if not _valid_repo_path(entry.get("path")):
                 fail(f"{prefix}.path is invalid", "Use an exact repo-relative context path")
                 continue
             resolved = REPO_ROOT / path
             may_be_removed = path in auth_sets["removes"] and status != "PENDING"
             if check_files and not resolved.is_file() and not may_be_removed:
-                fail(f"Context path does not exist: {path}", "Correct the path or remove the context entry")
+                fail(
+                    f"Context path does not exist: {path}",
+                    "Correct the path or remove the context entry",
+                )
             if not _is_nonempty_string(entry.get("purpose")):
                 fail(f"{prefix}.purpose must be non-empty", "Explain why this context is needed")
             scope = entry.get("scope")
-            if not isinstance(scope, dict) or scope.get("kind") not in {"anchor", "lines", "whole_file"}:
-                fail(f"{prefix}.scope.kind must be anchor, lines, or whole_file", "Use a canonical context scope")
+            if not isinstance(scope, dict) or scope.get("kind") not in {
+                "anchor",
+                "lines",
+                "whole_file",
+            }:
+                fail(
+                    f"{prefix}.scope.kind must be anchor, lines, or whole_file",
+                    "Use a canonical context scope",
+                )
                 continue
             kind = scope["kind"]
             if kind == "whole_file":
                 if set(scope) != {"kind"}:
-                    fail(f"{prefix} whole_file scope has extra fields", "Use only {'kind': 'whole_file'}")
+                    fail(
+                        f"{prefix} whole_file scope has extra fields",
+                        "Use only {'kind': 'whole_file'}",
+                    )
             elif kind == "anchor":
                 if set(scope) != {"kind", "value"} or not _is_nonempty_string(scope.get("value")):
-                    fail(f"{prefix} anchor scope requires one value", "Supply the exact anchor string")
-                elif check_files and resolved.is_file() and scope["value"] not in resolved.read_text(encoding="utf-8", errors="replace"):
-                    fail(f"Context anchor is absent from {path}: {scope['value']}", "Refresh the exact anchor")
+                    fail(
+                        f"{prefix} anchor scope requires one value",
+                        "Supply the exact anchor string",
+                    )
+                elif (
+                    check_files
+                    and resolved.is_file()
+                    and scope["value"] not in resolved.read_text(encoding="utf-8", errors="replace")
+                ):
+                    fail(
+                        f"Context anchor is absent from {path}: {scope['value']}",
+                        "Refresh the exact anchor",
+                    )
             else:
                 if set(scope) != {"kind", "start", "end", "anchor"}:
-                    fail(f"{prefix} lines scope requires start, end, and anchor", "Use the canonical line scope")
+                    fail(
+                        f"{prefix} lines scope requires start, end, and anchor",
+                        "Use the canonical line scope",
+                    )
                     continue
                 start, end, anchor = scope.get("start"), scope.get("end"), scope.get("anchor")
-                if not isinstance(start, int) or not isinstance(end, int) or start < 1 or end < start:
-                    fail(f"{prefix} has an invalid line range", "Use positive inclusive start/end lines")
+                if (
+                    not isinstance(start, int)
+                    or not isinstance(end, int)
+                    or start < 1
+                    or end < start
+                ):
+                    fail(
+                        f"{prefix} has an invalid line range",
+                        "Use positive inclusive start/end lines",
+                    )
                 if not _is_nonempty_string(anchor):
-                    fail(f"{prefix} line scope requires an anchor", "Supply exact text inside the range")
-                elif check_files and resolved.is_file() and isinstance(start, int) and isinstance(end, int):
+                    fail(
+                        f"{prefix} line scope requires an anchor",
+                        "Supply exact text inside the range",
+                    )
+                elif (
+                    check_files
+                    and resolved.is_file()
+                    and isinstance(start, int)
+                    and isinstance(end, int)
+                ):
                     lines = resolved.read_text(encoding="utf-8", errors="replace").splitlines()
-                    if end > len(lines) or not any(anchor in line for line in lines[start - 1 : end]):
-                        fail(f"Context line anchor is not inside {path}:{start}-{end}", "Refresh the range and anchor")
+                    if end > len(lines) or not any(
+                        anchor in line for line in lines[start - 1 : end]
+                    ):
+                        fail(
+                            f"Context line anchor is not inside {path}:{start}-{end}",
+                            "Refresh the range and anchor",
+                        )
 
     known_facts = packet.get("known_facts")
     if not _string_list(known_facts):
-        fail("known_facts must be a non-empty string array", "State the settled facts the executor trusts")
+        fail(
+            "known_facts must be a non-empty string array",
+            "State the settled facts the executor trusts",
+        )
 
     actions = packet.get("actions")
     referenced: set[str] = set()
@@ -307,23 +412,43 @@ def validate_packet(
             paths = action.get("paths")
             if action["kind"] == "file":
                 if set(action) != {"kind", "paths", "instruction"} or not _string_list(paths):
-                    fail(f"{prefix} file action requires paths and instruction", "Name one or more authorized paths")
+                    fail(
+                        f"{prefix} file action requires paths and instruction",
+                        "Name one or more authorized paths",
+                    )
                     continue
                 for path in paths:
                     normalized = normalise_path(path)
                     referenced.add(normalized)
                     if normalized not in authorized:
-                        fail(f"Action path is not authorized: {path}", "Add exact authorization or remove it from the action")
+                        fail(
+                            f"Action path is not authorized: {path}",
+                            "Add exact authorization or remove it from the action",
+                        )
             else:
                 if set(action) != {"kind", "operation", "paths", "instruction"}:
-                    fail(f"{prefix} non_file action has invalid fields", "Use kind, operation, paths, and instruction")
+                    fail(
+                        f"{prefix} non_file action has invalid fields",
+                        "Use kind, operation, paths, and instruction",
+                    )
                 if paths != []:
-                    fail(f"{prefix} non_file action must have paths: []", "Move file work to a file action")
-                if not isinstance(action.get("operation"), str) or not re.fullmatch(r"[a-z][a-z0-9_]*", action["operation"]):
-                    fail(f"{prefix}.operation must be machine-readable snake_case", "Name the exact non-file operation")
+                    fail(
+                        f"{prefix} non_file action must have paths: []",
+                        "Move file work to a file action",
+                    )
+                if not isinstance(action.get("operation"), str) or not re.fullmatch(
+                    r"[a-z][a-z0-9_]*", action["operation"]
+                ):
+                    fail(
+                        f"{prefix}.operation must be machine-readable snake_case",
+                        "Name the exact non-file operation",
+                    )
         unused = sorted(set().union(*auth_sets.values()) - referenced)
         if unused:
-            fail(f"Authorized paths have no file action: {', '.join(unused)}", "Reference every authorization in an action")
+            fail(
+                f"Authorized paths have no file action: {', '.join(unused)}",
+                "Reference every authorization in an action",
+            )
 
     proof = packet.get("proof")
     if not isinstance(proof, list) or not proof:
@@ -331,37 +456,65 @@ def validate_packet(
     else:
         for index, entry in enumerate(proof, 1):
             if not isinstance(entry, dict) or set(entry) != {"cwd", "command", "purpose"}:
-                fail(f"proof[{index}] must contain exactly cwd, command, and purpose", "Use a canonical proof entry")
+                fail(
+                    f"proof[{index}] must contain exactly cwd, command, and purpose",
+                    "Use a canonical proof entry",
+                )
                 continue
             if not _valid_repo_path(entry.get("cwd")) and entry.get("cwd") != ".":
                 fail(f"proof[{index}].cwd is invalid", "Use . or an exact repo-relative directory")
             elif check_files and not (REPO_ROOT / normalise_path(entry["cwd"])).is_dir():
-                fail(f"Proof cwd does not exist: {entry['cwd']}", "Use an existing repo-relative directory")
+                fail(
+                    f"Proof cwd does not exist: {entry['cwd']}",
+                    "Use an existing repo-relative directory",
+                )
             for field in ("command", "purpose"):
                 if not _is_nonempty_string(entry.get(field)):
-                    fail(f"proof[{index}].{field} must be non-empty", f"Supply the exact proof {field}")
+                    fail(
+                        f"proof[{index}].{field} must be non-empty",
+                        f"Supply the exact proof {field}",
+                    )
 
     handoff = packet.get("acceptance_handoff")
     if not isinstance(handoff, dict) or set(handoff) != {"coordinator", "validator"}:
-        fail("acceptance_handoff must contain coordinator and validator", "Use the canonical handoff object")
+        fail(
+            "acceptance_handoff must contain coordinator and validator",
+            "Use the canonical handoff object",
+        )
     else:
         coordinator = handoff.get("coordinator")
-        if not isinstance(coordinator, dict) or set(coordinator) != {"requirements"} or not _string_list(coordinator.get("requirements")):
-            fail("Coordinator acceptance requirements are required", "Provide a non-empty requirements array")
+        if (
+            not isinstance(coordinator, dict)
+            or set(coordinator) != {"requirements"}
+            or not _string_list(coordinator.get("requirements"))
+        ):
+            fail(
+                "Coordinator acceptance requirements are required",
+                "Provide a non-empty requirements array",
+            )
         validator = handoff.get("validator")
         if validator is not None and (
             not isinstance(validator, dict)
             or set(validator) != {"requirements"}
             or not _string_list(validator.get("requirements"))
         ):
-            fail("validator must be null or contain non-empty requirements", "Do not use a fake validator placeholder")
+            fail(
+                "validator must be null or contain non-empty requirements",
+                "Do not use a fake validator placeholder",
+            )
 
     for field in ("exclusions", "escalate_if"):
         if not _string_list(packet.get(field)):
-            fail(f"{field} must be a non-empty string array", f"State explicit {field.replace('_', ' ')}")
+            fail(
+                f"{field} must be a non-empty string array",
+                f"State explicit {field.replace('_', ' ')}",
+            )
 
     if _contains_placeholder(packet):
-        fail("Packet contains an unresolved placeholder", "Replace TODO/TBD/ellipsis/template markers with settled values")
+        fail(
+            "Packet contains an unresolved placeholder",
+            "Replace TODO/TBD/ellipsis/template markers with settled values",
+        )
     return findings
 
 
@@ -398,7 +551,10 @@ def render_compiled(packet: dict[str, Any]) -> str:
                 scope_text = f"anchor `{scope['value']}`"
             else:
                 scope_text = f"lines {scope['start']}-{scope['end']}, anchor `{scope['anchor']}`"
-            lines += [f"{index}. `{entry['path']}` — {scope_text}", f"   - Purpose: {entry['purpose']}"]
+            lines += [
+                f"{index}. `{entry['path']}` — {scope_text}",
+                f"   - Purpose: {entry['purpose']}",
+            ]
     else:
         lines.append("- none")
     lines += ["", "## Known facts", *(f"- {fact}" for fact in packet["known_facts"])]
@@ -462,16 +618,34 @@ def _validate_executor_result(text: str, source: str) -> list[OrderError]:
         return [OrderError(source, "Missing STATUS", "Append the canonical executor result block")]
     status = status_match.group(1).strip()
     if status not in {"PENDING", "DONE"} and not re.fullmatch(r"(?:FAILED|BLOCKED) - .+", status):
-        findings.append(OrderError(source, f"Invalid STATUS: {status}", "Use PENDING, DONE, FAILED - reason, or BLOCKED - reason"))
+        findings.append(
+            OrderError(
+                source,
+                f"Invalid STATUS: {status}",
+                "Use PENDING, DONE, FAILED - reason, or BLOCKED - reason",
+            )
+        )
     tail = text[status_match.end() :]
     if not tail.startswith("\n\nEXECUTOR RESULT:\n"):
-        findings.append(OrderError(source, "Missing EXECUTOR RESULT block", "Use the deterministic executor result shape"))
+        findings.append(
+            OrderError(
+                source,
+                "Missing EXECUTOR RESULT block",
+                "Use the deterministic executor result shape",
+            )
+        )
         return findings
     values: dict[str, str] = {}
     for key in RESULT_KEYS:
         match = re.search(rf"^- {re.escape(key)}:\s*(.*)$", tail, re.MULTILINE)
         if not match:
-            findings.append(OrderError(source, f"Missing executor result field: {key}", "Restore every canonical result field"))
+            findings.append(
+                OrderError(
+                    source,
+                    f"Missing executor result field: {key}",
+                    "Restore every canonical result field",
+                )
+            )
         else:
             values[key] = match.group(1).strip()
     if status == "PENDING":
@@ -485,13 +659,29 @@ def _validate_executor_result(text: str, source: str) -> list[OrderError]:
         }
         for key, value in expected.items():
             if values.get(key) != value:
-                findings.append(OrderError(source, f"PENDING result field {key} must be {value}", "Restore the compiled placeholder"))
+                findings.append(
+                    OrderError(
+                        source,
+                        f"PENDING result field {key} must be {value}",
+                        "Restore the compiled placeholder",
+                    )
+                )
     else:
         for key in RESULT_KEYS:
             if not values.get(key) or values.get(key) == "pending":
-                findings.append(OrderError(source, f"Completed result field is not filled: {key}", "Record truthful executor evidence"))
+                findings.append(
+                    OrderError(
+                        source,
+                        f"Completed result field is not filled: {key}",
+                        "Record truthful executor evidence",
+                    )
+                )
         if values.get("ATTEMPTS") and not values["ATTEMPTS"].isdigit():
-            findings.append(OrderError(source, "ATTEMPTS must be an integer", "Record the number of repair attempts"))
+            findings.append(
+                OrderError(
+                    source, "ATTEMPTS must be an integer", "Record the number of repair attempts"
+                )
+            )
     return findings
 
 
@@ -505,17 +695,35 @@ def lint_order(order_path: Path, strict: bool = True) -> list[OrderError]:
         return [OrderError(source, f"Cannot read order: {error}", "Restore the order file")]
     packet, packet_error = extract_packet(text)
     if packet_error or packet is None:
-        return [OrderError(source, packet_error or "Missing packet", "Regenerate with new_order.py")]
+        return [
+            OrderError(source, packet_error or "Missing packet", "Regenerate with new_order.py")
+        ]
     status_match = STATUS_RE.search(text)
-    status = (status_match.group(1).strip().split(" - ", 1)[0] if status_match else "PENDING")
+    status = status_match.group(1).strip().split(" - ", 1)[0] if status_match else "PENDING"
     findings = validate_packet(packet, source=source, check_files=True, status=status)
     output = packet.get("output_path") if isinstance(packet, dict) else None
     if isinstance(output, str) and normalise_path(output) != source:
-        findings.append(OrderError(source, "Artifact path contradicts packet output_path", "Move or regenerate the order at its authoritative path"))
-    compiled = render_compiled(packet) if not validate_packet(packet, source=source, check_files=False) else None
+        findings.append(
+            OrderError(
+                source,
+                "Artifact path contradicts packet output_path",
+                "Move or regenerate the order at its authoritative path",
+            )
+        )
+    compiled = (
+        render_compiled(packet)
+        if not validate_packet(packet, source=source, check_files=False)
+        else None
+    )
     envelope = compiled.split("\nSTATUS:", 1)[0] if compiled is not None else None
     if envelope is not None and not text.startswith(envelope):
-        findings.append(OrderError(source, "Rendered compile-envelope sections do not match the canonical packet", "Regenerate; do not hand-edit compiled sections"))
+        findings.append(
+            OrderError(
+                source,
+                "Rendered compile-envelope sections do not match the canonical packet",
+                "Regenerate; do not hand-edit compiled sections",
+            )
+        )
     findings.extend(_validate_executor_result(text, source))
     return findings
 
@@ -543,7 +751,13 @@ def lint_orders(
         for dependency in packet.get("depends_on", []):
             normalized = normalise_path(dependency)
             if normalized not in packets and not (REPO_ROOT / normalized).is_file():
-                findings.append(OrderError(path, f"Dependency is not present: {dependency}", "Compile or include the dependency"))
+                findings.append(
+                    OrderError(
+                        path,
+                        f"Dependency is not present: {dependency}",
+                        "Compile or include the dependency",
+                    )
+                )
     return findings
 
 
