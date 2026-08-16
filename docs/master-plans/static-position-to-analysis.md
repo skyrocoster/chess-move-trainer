@@ -2,9 +2,11 @@
 
 > **Status:** Destination agreed; this document authorizes no implementation. MP-01 (verified technology
 > foundation) is accepted 2026-08-15 and archived to `docs/plans/done/verified-technology-foundation/`;
-> MP-02 through MP-05 remain unselected, but their destination boundaries are settled by the grilling
-> record; MP-06 onward remain unselected and ungrilled. Selecting a milestone still requires `to-plan`,
-> which independently decides whether direct delivery or a focused Plan is appropriate.
+> MP-02 (Material design tokens and reusable UI primitives) is accepted 2026-08-16 and archived to
+> `docs/plans/done/material-design-foundation/`; MP-03 through MP-05 remain unselected, but their
+> destination boundaries are settled by the grilling record; MP-06 onward remain unselected and ungrilled.
+> Selecting a milestone still requires `to-plan`, which independently decides whether direct delivery or a
+> focused Plan is appropriate.
 
 ## What This Document Is
 
@@ -82,7 +84,8 @@ production UI and prevents speculative controls or unfinished analysis behavior 
 
 ## Current State
 
-The following are verified repository facts after MP-01 acceptance on 2026-08-15:
+The following are verified repository facts after MP-01 acceptance on 2026-08-15 and MP-02 acceptance
+on 2026-08-16:
 
 - The archived Plan at `docs/plans/done/verified-technology-foundation/verified-technology-foundation.md:3,49-65`
   records all 13 ordered stages shipped and MP-01 accepted. Its receipt remains the durable completion
@@ -108,10 +111,25 @@ The following are verified repository facts after MP-01 acceptance on 2026-08-15
 - The full local check passed during the assessment, including documentation, frontend tests, lint,
   build, source-size, and end-to-end checks.
 - `frontend/src/app.css:1-28` remains the existing global stylesheet for the unchanged production status
-  page; final Material tokens, shell, board adapter, and viewer remain later milestones.
+  page; the shell, board adapter, and viewer remain later milestones.
 - `backend/app/main.py:7-17` creates the FastAPI app and includes only the health router.
 - The worktree contains captured-game data paths, including `data/database/chess_games.db`, but their
   contracts and ownership are not assumed by this destination; MP-06 must verify them.
+- The archived Plan at `docs/plans/done/material-design-foundation/material-design-foundation.md` records
+  MP-02 stages 1-9 shipped and independently validated; its Shipped table records each stage's outcome.
+- `frontend/src/styles/material/material-theme-provenance.json` records the fixed dark Material 3 scheme,
+  seed `#3F51B5`, Tonal Spot, and standard contrast, with hash-verified archive and runtime members; only
+  the extracted `css/dark.css` member is imported into Storybook.
+- `frontend/src/styles/cmt-tokens.css` and `frontend/src/styles/cmt-typescale.css` carry the
+  application-owned `--cmt-*` feedback/foundation tokens and the complete `--md-sys-typescale-*` system-ui
+  roles.
+- `frontend/src/features/design-system/feedback/` ships the shared `FeedbackCore` plus the
+  `InlineFeedback`, `PanelFeedback`, and `PageFeedback` wrappers and `feedbackTypes.ts`.
+- `frontend/src/features/design-system/` ships the `TokenOverview`, `TypescaleSpecimen`,
+  `FoundationSpecimen`, `CombinedComposition`, and `AccessibilityReview` Storybook stories with focused
+  tests; `tests/e2e/design-system-accessibility.spec.ts` provides the verification-only browser axe proof.
+- Production `/` remains visually and structurally unchanged because MP-02 is Storybook-only; the
+  temporary MP-01 Foundation Check remains in place until MP-05.
 - This file is the master-plan artifact being revised. The detailed grilling record's older statements
   about the pre-MP-01 repository are historical metadata and are not current-state evidence.
 
@@ -251,7 +269,10 @@ Desktop shows a top bar and visible left sidebar. On narrow screens the left nav
 menu drawer. Navigation contains only destinations that exist; it does not show disabled future links.
 
 MP-03 adopts the shell on `/` and preserves the current status page's purpose, loading, healthy, and
-unavailable behavior. It does not create `/viewer`, a board, or a viewer-owned contextual panel.
+unavailable behavior. It does not create `/viewer`, a board, or a viewer-owned contextual panel. The shell
+consumes the already-shipped MP-02 visual language — `--md-sys-*` roles, `--cmt-*` foundation tokens, and
+the `system-ui` typescale in `frontend/src/styles/cmt-tokens.css` and `cmt-typescale.css` — rather than
+reauthoring shell styling; any shell-level feedback reuses the shipped MP-02 feedback primitives.
 
 Desired shell composition:
 
@@ -288,7 +309,8 @@ package-specific state does not escape the adapter.
 `chess.js` validates and inspects positions. Invalid input never silently becomes the standard starting
 position. `react-chessboard` remains a rendering dependency; its movement, highlighting, arrows,
 drag-and-drop, and event capabilities are not exposed. Theme values passed to it originate in MP-02's
-semantic token contract.
+semantic token contract, and the contained **Position unavailable** state reuses the shipped MP-02
+`PanelFeedback`/`PageFeedback` primitives.
 
 Storybook proves the valid starting-position and invalid-position states, orientation and coordinate
 configurations actually supported by the adapter, and relevant accessibility descriptions. MP-04 does
@@ -302,7 +324,8 @@ not create `/viewer`, traverse positions, move pieces, parse PGN, access stored 
 
 MP-05 owns production React Router composition, durable `/viewer`, the viewer workspace, and the
 viewer-owned context region. It integrates the MP-04 adapter with the standard starting position and
-preserves `/`.
+preserves `/`. The viewer workspace adopts the shipped MP-02 tokens, typescale, and feedback primitives
+for its own structural and feedback presentation.
 
 The viewer workspace lives inside the shell's main-content region and owns both the primary board area
 and its contextual panel. On desktop the intentionally empty context panel remains visible for
@@ -488,6 +511,7 @@ human,” not merely merged or green in automation.
 | Slice | State | Evidence |
 |---|---|---|
 | MP-01 | Accepted 2026-08-15 | Archived Plan at `docs/plans/done/verified-technology-foundation/verified-technology-foundation.md` records all 13 shipped stages; implementation evidence is in `frontend/src/features/foundation/`, `frontend/.storybook/`, and `tests/e2e/foundation-accessibility.spec.ts`; the full local check passed and production `/` remains unchanged because MP-01 is development-only. |
+| MP-02 | Accepted 2026-08-16 | Archived Plan at `docs/plans/done/material-design-foundation/material-design-foundation.md` records all 9 shipped stages; implementation evidence is in `frontend/src/styles/`, `frontend/src/features/design-system/`, and `tests/e2e/design-system-accessibility.spec.ts`; production `/` remains visually and structurally unchanged because MP-02 is Storybook-only. |
 
 ## MP-01 - Verified Technology Foundation
 
@@ -1091,8 +1115,9 @@ or live-environment dependencies.
 
 ## Open Decisions and Grilling Gates
 
-MP-01 through MP-05 have confirmed destination and technology boundaries, but exact implementation file
-ownership and route transport remain the responsibility of assessment and `to-plan` at selection time.
+MP-01 through MP-05 have confirmed destination and technology boundaries, but the exact implementation
+file ownership and route transport for MP-03 through MP-05 remain the responsibility of assessment and
+`to-plan` at selection time.
 
 - **MP-06:** Confirm the current source and replay oracle; schema and ownership; normalization and
   duplicate identity; idempotency, partial failures, reruns; and corpus proof.

@@ -50,7 +50,7 @@ Foundation Check remains development-only until MP-05.
   Consumers explicitly own `role`, `aria-live`, and related live-region semantics; severity never selects
   announcement behavior. Loading is consumer state, not a feedback severity.
 - Every implementation stage starts with its intended Storybook story and ends with that story working and
-  reviewable. Each stage is independently visible and `ORDERED`.
+  reviewable. Each stage is independently visible and ordered.
 - Review at `1920×1080` and Pixel 8a portrait `412×915`. Do not add screenshot baselines.
 
 ### Theme Builder provenance schema
@@ -104,14 +104,14 @@ are populated from the obtained artifact, not invented:
 
 ## Stages
 
-1. **ORDERED — Provenance and semantic theme tokens:** Storybook shows the fixed dark export, provenance,
+1. **SHIPPED — Provenance and semantic theme tokens:** Storybook shows the fixed dark export, provenance,
    namespaces, system roles, and application token ownership.
-2. **ORDERED — Complete Material 3 typescale:** Storybook shows all 15 system-ui typescale roles.
-3. **ORDERED — Spacing, shape, depth, and focus foundations:** Storybook shows the exact density, spacing,
+2. **SHIPPED — Complete Material 3 typescale:** Storybook shows all 15 system-ui typescale roles.
+3. **SHIPPED — Spacing, shape, depth, and focus foundations:** Storybook shows the exact density, spacing,
    radius, surface, border, elevation, and focus specimens.
-4. **ORDERED — Feedback semantic core and variants:** Storybook shows all four severity mappings through one
+4. **SHIPPED — Feedback semantic core and variants:** Storybook shows all four severity mappings through one
    shared semantic core with fixed icons and dedicated token sets.
-5. **ORDERED — Inline feedback:** Storybook shows the four inline presentations.
+5. **SHIPPED — Inline feedback:** Storybook shows the four inline presentations.
 6. **SHIPPED — Panel feedback:** Storybook shows the four panel presentations.
 7. **SHIPPED — Page feedback:** Storybook shows the four page presentations.
 8. **SHIPPED — Combined composition:** Storybook shows one restrained composition using the accepted system.

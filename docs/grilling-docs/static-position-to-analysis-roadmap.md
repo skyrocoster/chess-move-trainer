@@ -19,7 +19,7 @@ The intended documentation relationship is:
 The accepted MP-02 visual and feedback decisions now live in the advisory
 [Static Position to Analysis design guide](../design-guides/static-position-to-analysis.md), with an accepted
 [static visual reference](../design-guides/mp02-visual-reference.html). Those artifacts are non-canonical and
-authorize no implementation. The future MP-02 focused Plan must link to them; later milestones use or update them
+authorize no implementation. The shipped MP-02 focused Plan links to them; later milestones use or update them
 only when the user deliberately chooses to do so.
 
 The lightweight master plan now exists at [`docs/master-plans/static-position-to-analysis.md`](../master-plans/static-position-to-analysis.md). This record remains the detailed decision authority; the master plan owns milestone direction, strict dependencies, and human gates without replacing this rationale.
@@ -49,12 +49,13 @@ MP-01 — verified technology foundation
                                         └── MP-12 — an unknown FEN can be persisted and analyzed
 ```
 
-This tree expresses strict dependency and direction. MP-01 through MP-05 collectively replace the original broad “Slice 1” envelope. Their shared product and technology direction is settled in this record. MP-01 is implemented and accepted; MP-02 through MP-05 still require route assessment and an appropriately bounded Plan or direct brief before implementation. MP-06 onward remains deliberately ungrilled.
+This tree expresses strict dependency and direction. MP-01 through MP-05 collectively replace the original broad “Slice 1” envelope. Their shared product and technology direction is settled in this record. MP-01 and MP-02 are implemented and accepted; MP-03 through MP-05 still require route assessment and an appropriately bounded Plan or direct brief before implementation. MP-06 onward remains deliberately ungrilled.
 
 ## Grilling gate
 
 - **MP-01:** implemented and accepted on 2026-08-15; its completion is recorded in the archived focused Plan and the master-plan receipt.
-- **MP-02 through MP-05:** their destination boundaries are settled by this record and remain eligible for route assessment and focused planning one milestone at a time.
+- **MP-02:** implemented and accepted on 2026-08-16; its completion is recorded in the archived focused Plan at `docs/plans/done/material-design-foundation/material-design-foundation.md`.
+- **MP-03 through MP-05:** their destination boundaries are settled by this record and remain eligible for route assessment and focused planning one milestone at a time.
 - **MP-06 onward:** each requires its own fresh grilling before focused planning or implementation.
 - The milestone names below are destination envelopes only. They do not settle schemas, APIs, workflows, storage policy, engine settings, interaction behavior, or acceptance details.
 - No later milestone may infer authorization from the older records that this document supersedes.
@@ -116,7 +117,7 @@ records all 13 ordered stages shipped and the acceptance state. The current repo
   the browser axe proof and its Storybook server; and
 - `frontend/src/App.tsx:1-4` remains `StatusPage`-only, with no production router or `/viewer`.
 
-The full local check passed during the assessment. MP-02 is the next implementation frontier. The
+The full local check passed during the assessment. MP-03 is the next implementation frontier. The
 temporary Foundation Check remains in place because MP-05 has not yet replaced its compatibility proofs.
 
 ### MP-02 — Material tokens and reusable UI primitives
@@ -144,13 +145,35 @@ record. In summary:
 - reusable information, success, warning, and error feedback uses dedicated contrast-verified token pairs, fixed
   Lucide icons, required messages, optional headings, explicit inline/panel/page wrappers, and consumer-owned
   live-region semantics; and
-- each future MP-02 implementation stage must start from a Storybook story and end with that story working and
+- each MP-02 implementation stage must start from a Storybook story and end with that story working and
   reviewable at the accepted `1920×1080` desktop and `412×915` Pixel 8a portrait targets.
 
 MP-02 does not restyle production `/`, create actions or recovery workflows, add a monospace role, add a
 structural signature motif, or introduce any shell, routing, board, chess-data, engine, persistence, light-theme,
 or theme-switching behavior. The accepted HTML reference remains advisory and its conceptual colors are not an
 official export or production tokens.
+
+#### Implementation status and current evidence
+
+MP-02 was implemented and accepted on 2026-08-16. The archived focused Plan at
+`docs/plans/done/material-design-foundation/material-design-foundation.md` records all nine ordered stages
+shipped and independently validated. The current repository evidence is:
+
+- `frontend/src/styles/material/material-theme-provenance.json` records the fixed dark Material 3 scheme,
+  seed `#3F51B5`, Tonal Spot, and standard contrast, with the archive and runtime-member SHA-256 values;
+  only the extracted `css/dark.css` member is imported into Storybook;
+- `frontend/src/styles/cmt-tokens.css` and `frontend/src/styles/cmt-typescale.css` carry the
+  application-owned `--cmt-*` feedback/foundation tokens and the complete `--md-sys-typescale-*` system-ui
+  roles;
+- `frontend/src/features/design-system/feedback/` ships the shared `FeedbackCore` plus the thin
+  `InlineFeedback`, `PanelFeedback`, and `PageFeedback` wrappers and `feedbackTypes.ts`; and
+- `frontend/src/features/design-system/` ships the `TokenOverview`, `TypescaleSpecimen`,
+  `FoundationSpecimen`, `CombinedComposition`, and `AccessibilityReview` Storybook stories with focused
+  tests, while `tests/e2e/design-system-accessibility.spec.ts` provides the verification-only browser axe
+  proof.
+
+Production `/` remains visually and structurally unchanged, and the temporary MP-01 Foundation Check
+remains in place until MP-05.
 
 ### MP-03 — responsive site shell
 
@@ -160,7 +183,7 @@ official export or production tokens.
 
 MP-03 owns the text identity, real-destination navigation, desktop top/left regions, narrow-screen Base UI drawer behavior, main-content boundary, responsive shell media queries, and adoption by the existing `/` status page. It must preserve the status behavior while changing its structural presentation.
 
-MP-03 does not create a viewer route, board, or viewer-owned contextual panel.
+MP-03 does not create a viewer route, board, or viewer-owned contextual panel. It consumes the already-shipped MP-02 visual language — `--md-sys-*` roles, `--cmt-*` foundation tokens, and the `system-ui` typescale in `frontend/src/styles/cmt-tokens.css` and `cmt-typescale.css` — rather than reauthoring shell styling; any shell-level feedback reuses the shipped MP-02 feedback primitives.
 
 ### MP-04 — safe read-only board adapter
 
@@ -170,7 +193,7 @@ MP-03 does not create a viewer route, board, or viewer-owned contextual panel.
 
 MP-04 owns the chess.js validation boundary, react-chessboard isolation, standard-FEN application contract, read-only configuration, orientation and coordinate options, bounded fluid sizing, accessible description, shared unavailable-state integration, and Storybook proof for valid and invalid positions.
 
-MP-04 does not create `/viewer`, traverse positions, move pieces, parse PGN, access stored data, or run Stockfish.
+MP-04 does not create `/viewer`, traverse positions, move pieces, parse PGN, access stored data, or run Stockfish. The contained **Position unavailable** state reuses the shipped MP-02 `PanelFeedback`/`PageFeedback` primitives, and any theme values passed to `react-chessboard` originate in the shipped MP-02 `--md-sys-*` token contract rather than new page-local literals.
 
 ### MP-05 — integrated static viewer
 
@@ -180,7 +203,7 @@ MP-04 does not create `/viewer`, traverse positions, move pieces, parse PGN, acc
 
 MP-05 owns production React Router composition, durable `/viewer`, the viewer workspace and viewer-owned desktop context region, constrained-layout omission of empty context, integration of the MP-04 adapter with the standard starting position, and preservation of `/`.
 
-MP-05 removes the temporary MP-01 Foundation Check after real shell, primitive, board, error, router, and viewer stories or consumers replace every compatibility proof. It does not connect stored data or add chess interaction.
+MP-05 removes the temporary MP-01 Foundation Check after real shell, primitive, board, error, router, and viewer stories or consumers replace every compatibility proof. It does not connect stored data or add chess interaction. The viewer workspace adopts the shipped MP-02 tokens, typescale, and feedback primitives for its own structural and feedback presentation.
 
 ### Renumbering map
 
@@ -399,7 +422,7 @@ No design can guarantee that change will never be required. The concrete goal is
 
 ## MP-01 through MP-05 — confirmed technology foundation
 
-These choices were grilled after the original broad static-foundation boundary was settled. They are part of the detailed MP-01 through MP-05 design authority. MP-01 has installed and compatibility-checked the complete stack; MP-02 through MP-05 remain pending implementation selection and introduce its real product consumers. The selections use established packages where those packages fit the existing React application and the agreed styling, accessibility, and ownership boundaries.
+These choices were grilled after the original broad static-foundation boundary was settled. They are part of the detailed MP-01 through MP-05 design authority. MP-01 has installed and compatibility-checked the complete stack; MP-02 has authored the reusable visual and feedback language; MP-03 through MP-05 remain pending implementation selection and introduce its real product consumers. The selections use established packages where those packages fit the existing React application and the agreed styling, accessibility, and ownership boundaries.
 
 Versions below are the researched stable versions on 2026-08-15. The repository convention is to pin exact dependency versions. Focused planning must verify the package metadata and lockfile operation immediately before installation, but it must not silently substitute a different technology.
 
@@ -936,9 +959,9 @@ This record does not:
 
 ## Completion rationale
 
-The MP-01 through MP-05 foundation design frontier is settled. MP-01 is implemented and accepted;
-MP-02 is the next implementation frontier, and MP-02 through MP-05 remain pending route selection while
-their destinations, sequence, exclusions, technology stack, temporary compatibility-proof lifecycle, page
+The MP-01 through MP-05 foundation design frontier is settled. MP-01 and MP-02 are implemented and
+accepted; MP-03 is the next implementation frontier, and MP-03 through MP-05 remain pending route selection
+while their destinations, sequence, exclusions, technology stack, temporary compatibility-proof lifecycle, page
 structure, shell ownership, responsive behavior, visual-system basis, styling ownership, board safety
 contract, accessibility target, shared-error foundation, and reuse boundaries remain settled.
 
