@@ -5,6 +5,8 @@ Start here after reading [the repository instructions](../AGENTS.md).
 ## Workflow Documents
 
 - [PLAN_TEMPLATE.md](PLAN_TEMPLATE.md) defines focused Plans and nested work orders.
+- [templates/order-packet.template.json](templates/order-packet.template.json) is the copy-and-edit source for every
+  canonical order compile packet.
 - [MASTER_PLAN_TEMPLATE.md](MASTER_PLAN_TEMPLATE.md) defines broad destinations and independently
   selectable slices.
 - Active and completed Plans are discovered directly from `plans/active/` and `plans/done/`. Local Plan

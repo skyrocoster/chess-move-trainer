@@ -10,7 +10,8 @@ Keep frontier context for decisions. Do not spend it on routine repository retri
 ## Know the skills you dispatch
 
 Every subagent handoff names a skill to invoke: `grilling`, `scout-case`, `assess-case`,
-`write-focused-plan`, `deliver-direct`, `implement-quick`, `implement-order`, `master-plan`, or
+`write-focused-plan`, `deliver-direct`, `implement-quick`, `implement-order`, `master-plan`,
+`coordinator-validator`, `validate-order`, `validate-stage`, `validate-plan`, or
 `coordinator-order-author`. Before spawning the subagent, read that skill's `SKILL.md` so you know what
 the subagent is meant to do: its phases, fixed protocol, expected outcomes, proof contract, and stop
 boundaries. Treat each skill as the authoritative contract for what you may expect back and what the
@@ -141,10 +142,10 @@ repair is already authorized and deterministic, resume the same case-worker with
 verification attempt. Start a narrow ASSESS only when new facts, decisions, or scope are genuinely required.
 
 After `FIXED-PENDING-VALIDATION`, a fresh `coordinator-validator` may receive only the observable proof packet
-and diff/baseline facts, never implementation narrative. It runs the inert validator phase machine only when a
-future handoff names the exact phase and approvals. Validation cannot repair product implementation. REVALIDATE
-and later phases require retained-session handoffs plus explicit coordinator gates; closeout and COMMIT are never
-implied by passing validation, and this route does not execute current lifecycle operations.
+and diff/baseline facts, never implementation narrative. Use the existing response-only `coordinator-validator`
+skill for direct and planned-quick validation; it does not record order, stage, or Plan lifecycle state. Validation
+cannot repair product implementation. This direct/quick route does not use the ordered Plan lifecycle below, and its
+behavior remains unchanged.
 
 No direct route auto-commits. Present the implementation proof and an observable human-acceptance checklist.
 
@@ -152,7 +153,7 @@ No direct route auto-commits. Present the implementation proof and an observable
 
 The frontier may resume the retained case-worker for exactly one explicitly approved canonical work order. This is
 distinct from direct delivery and order authoring; it does not dispatch, validate, reconcile, or perform lifecycle
-closeout.
+closeout itself. A successful order is an implementation result, not a shipped Plan stage.
 
 ```text
 PHASE: EXECUTE ORDER
@@ -166,6 +167,55 @@ The case-worker uses the order's packet as its immutable envelope, touches only 
 exact packet proof commands in order, permits one deterministic in-scope repair, and returns `DONE`, `FAILED`,
 `BLOCKED`, or `ESCALATED` with proof, scope, guard, attempt, and deviation telemetry. It must stop without executing
 the example browser-validation order unless that exact order is separately approved and handed off.
+
+### Ordered stage validation and shipment
+
+After `EXECUTE ORDER` returns `DONE`, the coordinator must not treat that result as independent validation, stage
+shipment, or Plan completion. First inspect the Plan narrative, order names, numbering, and dependencies to determine
+whether the order appears to complete its stage. Do not add a machine-readable stage-to-order mapping or final-order
+marker.
+
+For a stage containing multiple orders, the coordinator sends each exact order and immutable evidence to a fresh
+`coordinator-validator` with an explicit `Invoke validate-order` selection. The handoff uses
+`validator: coordinator-validator`, `skill: validate-order`,
+`coordinator_approved: true`, and a non-empty `approved_paths` manifest containing the exact canonical order path.
+It includes the order packet and `EXECUTOR RESULT`, proof output, authorization audit, dirty paths, attempts,
+deviations, escalation, baseline/diff facts, required checks, and exclusions. Implementation narrative is never
+supplied. `validate-order` independently repeats the checks and, only on success, atomically records canonical
+`STATUS: DONE` plus executor and independent validator evidence in the order. Failure or ambiguity returns evidence
+without editing the order; prior unrecorded validation is not durable evidence.
+
+When the validated order appears to complete its multi-order stage, the coordinator immediately asks the human for
+explicit acceptance of that exact Plan stage. The prompt identifies the Plan, stage, and triggering order and includes the
+independent order-validation evidence. A missing, declined, or otherwise non-explicit response stops the lifecycle;
+the coordinator must not invoke `validate-stage`, write shipment state, or advance to Plan validation.
+
+For a single-order stage, do not invoke `validate-order`. After executor `DONE`, ask the human for explicit acceptance
+of the exact Plan stage using the executor proof, then send one fresh exact handoff with `Invoke validate-stage`.
+The handoff includes the sole order's complete immutable executor evidence so `validate-stage` can independently
+validate it and atomically record both order completion and stage shipment. Missing or declined acceptance stops the
+lifecycle without recording either state.
+
+After explicit human stage acceptance, the coordinator sends the exact handoff with `Invoke validate-stage`.
+It names one Plan, the exact stage, the triggering order, every order in the stage, immutable order-validation and
+scope evidence, the acceptance, required checks, and an approved manifest limited to those `docs/` paths. The skill
+independently checks canonical narrative membership and numbering, order proof and evidence, scope, exclusions, and
+the exact human gate. Ambiguous or incomplete evidence is rejected without writing. On success it atomically updates
+the Plan stage status and `Shipped` record; for a single-order stage, the same operation also records that order
+`DONE` with executor and validator evidence. It does not authorize the next stage or close the Plan.
+
+After a stage ships, the coordinator uses the Plan narrative to determine whether that stage appears to be the final
+stage. If it is not final, report the shipped stage and stop; direct and planned-quick validation behavior remains
+unchanged. If it appears final, invoke `validate-plan` with a fresh exact handoff. No additional whole-Plan human
+acceptance is requested because every stage was separately accepted. The handoff names the active Plan, matching done
+path, every completed order path, all stage-shipment evidence, required checks, and an approved `docs/` manifest.
+`validate-plan` independently verifies that every Plan stage is shipped, then on success moves the Plan from
+`docs/plans/active/` to `docs/plans/done/`, deletes the completed order files, and removes folders made empty by those
+deletions. It does not update indexes, manifests, dependency records, narrative references, or broader closeout
+artifacts.
+
+Any validation failure, missing acceptance, path drift, unexpected diff, incomplete stage, ambiguous final-stage
+inference, or incomplete Plan evidence stops the lifecycle without advancing state.
 
 ## Plan candidate
 
@@ -273,7 +323,8 @@ fresh. Stronger-model order-author agents, model-specific compiler skills, stron
 strong-model comparisons are deferred and are not active routes.
 
 The handoff contains the exact Plan path, named stage, frontier-reviewed compile envelope, canonical nested output
-paths, invoke-only order tool, and checker command, then explicitly says `Invoke coordinator-order-author`. In `PROPOSE`, the Luna
+paths, matching approved temporary `.packet.json` paths, `docs/templates/order-packet.template.json`, the invoke-only
+order tool, and checker command, then explicitly says `Invoke coordinator-order-author`. In `PROPOSE`, the Luna
 case-worker reads the Plan exactly once and returns the skill's fixed compact proposal with `ZERO | ONE | MULTIPLE |
 UNDER-CAPTURED`, exact boundaries, dependencies, strength, paths, context sufficiency, acceptance/proof coverage,
 lookup classifications, expected tool interaction, telemetry, and issue. `ZERO` is already complete,
@@ -284,8 +335,10 @@ boundaries and settled sequencing; never split artificially. `UNDER-CAPTURED` re
 The frontier owns envelope/proposal/telemetry review and may issue one correction. Then there is one approved `WRITE`
 and one deterministic generator/checker repair. No phase performs production discovery, execution, dispatch,
 validation, reconcile, commit, or Plan-status work. Outcomes are `PROPOSAL PASS / MATERIALIZATION DEFERRED` and
-`PROPOSAL+WRITE PASS`. `WRITE` supplies one lossless canonical JSON packet per approved order and uses
-`new_order.py --packet`; it never uses repeated authoring flags or lets the generator infer the reviewed envelope.
+`PROPOSAL+WRITE PASS`. `WRITE` copies the canonical JSON template for each approved order, replaces its placeholders
+without dropping schema fields, and uses `new_order.py --packet <temporary-packet-path>`. It never constructs a packet
+from blank output or stdin, uses repeated authoring flags, or lets the generator infer the reviewed envelope. The
+temporary packet is deleted after the generated order passes `check_orders.py`.
 Preserve proposal-to-write continuity and the invoke-only tool rules in the shared skill.
 This ordered implementation route is bounded to the retained case-worker and one approved order;
 production dispatch and later lifecycle parts remain outside this workflow.

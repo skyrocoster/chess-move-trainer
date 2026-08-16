@@ -27,6 +27,8 @@ services while using the launcher.
 - Python dependencies are pinned in `requirements.txt` and configured in `pyproject.toml`; npm uses
   `frontend/package-lock.json`.
 
+Local Node may exceed the `>=22 <23` engines pin (both `package.json` files); this is an accepted mismatch. Ignore engines warnings and the non-fatal Storybook `build-storybook` teardown libuv assertion.
+
 All checks are local. The existing GitHub workflow is documentation-only; do not add application CI.
 
 ## Testing and module-size rules

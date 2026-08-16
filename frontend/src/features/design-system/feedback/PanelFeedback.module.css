@@ -1,0 +1,43 @@
+.panel {
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  max-width: 48rem;
+  padding: 16px;
+  border: 1px solid transparent;
+  border-inline-start-width: 4px;
+  border-radius: 8px;
+}
+
+.information {
+  color: var(--cmt-info-on-container);
+  background: var(--cmt-info-container);
+  border-inline-start-color: var(--cmt-info-accent);
+}
+
+.success {
+  color: var(--cmt-success-on-container);
+  background: var(--cmt-success-container);
+  border-inline-start-color: var(--cmt-success-accent);
+}
+
+.warning {
+  color: var(--cmt-warning-on-container);
+  background: var(--cmt-warning-container);
+  border-inline-start-color: var(--cmt-warning-accent);
+}
+
+.error {
+  color: var(--cmt-error-on-container);
+  background: var(--cmt-error-container);
+  border-inline-start-color: var(--cmt-error-accent);
+}
+
+.storyGrid {
+  display: grid;
+  gap: 16px;
+  align-content: start;
+  min-height: 100vh;
+  padding: 32px;
+  background: var(--md-sys-color-background, #121318);
+}

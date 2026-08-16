@@ -1,0 +1,69 @@
+/*
+ * Chess Move Trainer application tokens (repository-owned).
+ *
+ * Namespaced with --cmt-* per the Material Design Foundation decisions while
+ * the Material system roles keep their --md-sys-* naming. These feedback
+ * token values are dedicated to severity mapping: they are fixed hex values
+ * and are intentionally NOT aliases of --md-sys-color-primary/secondary/
+ * tertiary/error, so severity mapping never follows a Material role change.
+ *
+ * The foundation groups below carry the settled geometry (spacing scale
+ * 4/8/12/16/24/32/48 with no intermediate values; radii 4/8/12 with 8px
+ * default), depth (e0 none; e1-e3 reserved for major/floating emphasis
+ * only), and focus treatment. Tonal surfaces and borders consume existing
+ * --md-sys color roles from the generated dark theme; no generated colors
+ * are duplicated here.
+ *
+ * Static CSS only: no runtime theme generation, theme switch, or theme state.
+ */
+:root {
+  /* Information feedback */
+  --cmt-info-accent: #9ccbff;
+  --cmt-info-on-accent: #00335c;
+  --cmt-info-container: #00497a;
+  --cmt-info-on-container: #d0e4ff;
+
+  /* Success feedback */
+  --cmt-success-accent: #8fd49b;
+  --cmt-success-on-accent: #00391b;
+  --cmt-success-container: #005229;
+  --cmt-success-on-container: #9bf0b4;
+
+  /* Warning feedback */
+  --cmt-warning-accent: #ffd588;
+  --cmt-warning-on-accent: #452a00;
+  --cmt-warning-container: #603f00;
+  --cmt-warning-on-container: #ffdea4;
+
+  /* Error feedback */
+  --cmt-error-accent: #f2b8b5;
+  --cmt-error-on-accent: #6e120e;
+  --cmt-error-container: #8f1f18;
+  --cmt-error-on-container: #ffccc7;
+
+  /* Foundation spacing scale (exact 4/8/12/16/24/32/48; no intermediate values) */
+  --cmt-spacing-4: 4px;
+  --cmt-spacing-8: 8px;
+  --cmt-spacing-12: 12px;
+  --cmt-spacing-16: 16px;
+  --cmt-spacing-24: 24px;
+  --cmt-spacing-32: 32px;
+  --cmt-spacing-48: 48px;
+
+  /* Foundation radius scale (4/8/12 with 8px default) */
+  --cmt-radius-4: 4px;
+  --cmt-radius-8: 8px;
+  --cmt-radius-12: 12px;
+  --cmt-radius-default: var(--cmt-radius-8);
+
+  /* Foundation elevation (e0 none; e1-e3 reserved for major/floating emphasis) */
+  --cmt-elevation-e0: none;
+  --cmt-elevation-e1: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px 1px rgba(0, 0, 0, 0.15);
+  --cmt-elevation-e2: 0 1px 2px rgba(0, 0, 0, 0.3), 0 2px 6px 2px rgba(0, 0, 0, 0.15);
+  --cmt-elevation-e3: 0 1px 3px rgba(0, 0, 0, 0.3), 0 4px 8px 3px rgba(0, 0, 0, 0.15);
+
+  /* Foundation focus ring (2px primary ring with 2px surface separation) */
+  --cmt-focus-ring-color: var(--md-sys-color-primary);
+  --cmt-focus-ring-width: 2px;
+  --cmt-focus-ring-separation: 2px;
+}

@@ -1,7 +1,10 @@
 import type { StorybookConfig } from "@storybook/react-vite";
 
 const config: StorybookConfig = {
-  stories: ["../src/features/foundation/**/*.stories.@(ts|tsx)"],
+  stories: [
+    "../src/features/foundation/**/*.stories.@(ts|tsx)",
+    "../src/features/design-system/**/*.stories.@(ts|tsx)",
+  ],
   addons: ["@storybook/addon-a11y"],
   framework: {
     name: "@storybook/react-vite",

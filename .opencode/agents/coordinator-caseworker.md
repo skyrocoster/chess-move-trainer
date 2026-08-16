@@ -21,7 +21,7 @@ permission:
   task: deny
   webfetch: allow
   websearch: allow
-  external_directory: deny
+  external_directory: allow
   "playwright_*": deny
 ---
 
@@ -43,3 +43,5 @@ Never reconcile, commit, push, or start adjacent work. The original session owns
 implementation and deterministic in-scope closeout repairs; fresh validators provide independent observable
 proof, while postmortem/review requests are not implementation authorization. If a resumed authorization
 contradicts repository evidence or needs wider scope, stop with cited evidence rather than improvising.
+
+Note: ASCII-only punctuation to avoid the prior Windows stdin mojibake. 

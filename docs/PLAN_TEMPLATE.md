@@ -13,7 +13,10 @@ The workflow is driven by retained coordinator skills in `.opencode/skills/`, op
 | `implement-order` | executor | Execute one explicitly approved work order, then stop. |
 | `implement-quick` | quick executor | Execute one fully settled atomic change from an approved brief. |
 | `deliver-direct` | case-worker | Deliver one approved direct change, verify it, and stop without committing. |
-| `coordinator-validator` | validator | Independently validate an approved observable proof packet. |
+| `coordinator-validator` | validator | Response-only validation for direct and planned-quick proof packets. |
+| `validate-order` | validator | Independently validate one canonical order and record its completion evidence. |
+| `validate-stage` | validator | Independently validate an accepted Plan stage and record its shipment. |
+| `validate-plan` | validator | Verify all stages shipped and perform bounded Plan closeout. |
 | `master-plan` | planner | Define a broad destination and independently selectable slices. |
 | `write-focused-plan` | planner | Write an approved focused Plan from retained assessment evidence. |
 
@@ -39,6 +42,19 @@ After settling a Plan stage, choose the smallest safe route:
   normal `to-orders` stage; do not expand the brief.
 - **Work-ordered stage:** use `to-orders` when the executor needs bounded exploration, the stage has
   dependencies, more than one logical change, or normal order evidence and sequencing.
+- In a multi-order stage, after each ordered executor returns `DONE`, the coordinator selects `validate-order` and
+  sends the exact order packet through the documentation-only validator. On success, it records canonical order
+  `DONE` plus executor and independent validator evidence; failure records nothing.
+- In a single-order stage, the coordinator does not run `validate-order`. It asks for explicit human acceptance after
+  executor `DONE`, then selects `validate-stage` once. That operation independently validates the order and atomically
+  records both canonical order `DONE` evidence and the Plan stage's `Status` and `Shipped` row.
+- When the final order of a multi-order stage is validated, the coordinator asks for explicit human acceptance of that
+  exact stage. After acceptance, `validate-stage` verifies every completed order and updates the Plan's stage
+  `Status` and `Shipped` row. Ambiguous or incomplete evidence is rejected without writing.
+- After a shipped stage appears to be the final stage, the coordinator selects `validate-plan`. No additional whole-Plan
+  human acceptance is required. The skill verifies every stage is shipped, moves the Plan from `plans/active/` to
+  `plans/done/`, deletes completed order files, and removes resulting empty folders. Index, manifest, dependency,
+  narrative-reference, and broader closeout behavior remain outside this lifecycle.
 - **Human stage:** stop and surface the decision when the stage needs a table session, unresolved
   product/design judgment, or High-strength synthesis.
 
@@ -129,8 +145,11 @@ Lives only at `docs/plans/active/<feature>/orders/<NN>-<slug>.md`. A Plan stage 
 human-visible shipment; work orders are internal executor boundaries. A one-order Plan is valid when
 one executor can safely own the reviewed outcome. No arbitrary path, context, action, or proof caps apply.
 
-**Emit orders with `scripts/new_order.py` from one reviewed JSON compile packet.** `output_path` in the
-packet is mandatory and authoritative. Use `--packet -` for stdin or `--packet <path>` for a JSON file.
+**Emit orders with `scripts/new_order.py` from one reviewed JSON compile packet.** Start by copying
+[`templates/order-packet.template.json`](templates/order-packet.template.json) to an approved temporary
+`docs/plans/active/<feature>/orders/<NN>-<slug>.packet.json` file. Replace every placeholder while preserving all
+required keys; do not regenerate the packet from blank output or stdin. `output_path` is mandatory and authoritative.
+Run `--packet <temporary-packet-path>`, check the generated order, then delete the temporary packet.
 The generator renders only: it does not infer paths, derive anchors, compress actions, synthesize lifecycle
 checks, choose wrappers, or rewrite proof commands.
 
@@ -214,12 +233,15 @@ Each tier runs in the context that can afford its output:
      Plan dependencies and folder-local metadata determine readiness. Several Plans can be ready at once
     and nothing ranks them: which ready Plan to pick up is the user's call, made per session rather than
     recorded in a file.
-2. **Shipped** — as each stage's orders finish, `reconcile` collapses them into the Plan's **Shipped**
-   table (one ≤2-sentence row per stage) and deletes the spent order files. The commit history is the
-   record of *how* each thing was built — never duplicate that prose into the Plan.
-3. **Complete** — when the whole feature ships, move the Plan to `docs/plans/done/<feature>/` and
-    update `docs/README.md` in the same change set. Archiving it also unblocks every Plan that declared
-    a dependency on it. Leave a redirect stub only if a known inbound link must survive.
+2. **Shipped** — after the required multi-order validations, or directly after execution for a single-order stage, the
+     coordinator obtains explicit human stage acceptance. `validate-stage` independently confirms the exact
+     Plan/stage/order evidence and atomically records the Plan's **Shipped** row (one ≤2-sentence row per stage); for a
+     single-order stage it also records the order `DONE`. A shipped stage does not authorize the next stage. The commit
+     history is the record of *how* each thing was built — never duplicate that prose into the Plan.
+3. **Complete** — after the coordinator determines that the shipped stage appears final, `validate-plan` independently
+     verifies every stage is shipped, moves the Plan to `docs/plans/done/<feature>/`, deletes completed order files, and
+     removes resulting empty folders. No additional whole-Plan human gate is required. Index, manifest, dependency,
+     narrative-reference, and broader closeout behavior remain outside this validator lifecycle.
 
 ## Required model strength (per work order)
 
