@@ -52,6 +52,7 @@ The DeepSeek Flash `scout-case` agent owns bounded factual repository retrieval.
 direct implementation. A fully settled planned quick stage may use `coordinator-quick-executor` after
  frontier stage review. Independent validation and later closeout capabilities belong to `coordinator-validator`;
  its eight phases are inert unless a future phase-specific handoff supplies immutable paths and coordinator approvals.
+Design mock-up requests are handled by the `mock-up` (DeepSeek Flash) agent, which writes one standalone, non-canonical HTML/CSS page with three labeled review options under `scratch/mock-ups/`.
 
 Do not invoke retired substitutes or lifecycle agents as substitutes.
 Work-order authoring is allowed only through the bounded shared

@@ -1,0 +1,596 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MP-02 Tournament Analysis Desk — Advisory Visual Reference</title>
+<style>
+  /* ============================================================
+     MP-02 · Tournament analysis desk — decision reference.
+     Advisory visual reference: static HTML/CSS only.
+     No JavaScript. No external assets. No motion (reduced-motion
+     safe by construction). No gradients. No interactive controls.
+     ============================================================ */
+
+  :root {
+    /* System fonts — settled: complete Material 3 system-ui typescale
+       only. No monospace utility role. */
+    --font-ui: system-ui, -apple-system, "Segoe UI Variable Text", "Segoe UI", Roboto,
+               "Helvetica Neue", Arial, sans-serif;
+
+    /* Spacing scale — settled: 4 / 8 / 12 / 16 / 24 / 32 / 48 */
+    --space-1: 4px;  --space-2: 8px;  --space-3: 12px; --space-4: 16px;
+    --space-6: 24px; --space-8: 32px; --space-12: 48px;
+
+    /* Page chrome (neutral review chrome, not part of the design tokens) */
+    --chrome-bg: #07080F;
+    --chrome-surface: #10121B;
+    --chrome-surface-2: #171A26;
+    --chrome-outline: #3A3E4E;
+    --chrome-text: #E4E5EE;
+    --chrome-muted: #A2A5B4;
+
+    /* Conceptual tonal ramp for seed #3F51B5 (Tonal-Spot-style tone
+       mapping, hue ~231deg, seed chroma). CONCEPTUAL ONLY — not an
+       official Theme Builder export; must be replaced/validated. */
+    --tone-0:  #000000;
+    --tone-10: #081238;
+    --tone-20: #192950;
+    --tone-30: #303F74;
+    --tone-40: #49568D;
+    --tone-50: #626EA6;
+    --tone-60: #7C88C1;
+    --tone-70: #97A2DD;
+    --tone-80: #B3BEF9;
+    --tone-90: #DDE0FF;
+    --tone-95: #EFF0FF;
+    --tone-100: #FFFFFF;
+
+    /* ---- Selected direction: Tournament analysis desk ----
+       Dark Material 3, conceptual palette from seed #3F51B5, Tonal Spot,
+       standard contrast (pending official export + explicit WCAG check).
+       Tonal surfaces and fine borders first; subtle elevation reserved
+       for major/floating emphasis. Restrained radii 4/8/12. */
+    --d-primary: #B3BEF9; --d-on-primary: #192950; --d-primary-container: #303F74; --d-on-primary-container: #DDE0FF;
+    --d-secondary: #C3C7E9; --d-on-secondary: #2C3052; --d-secondary-container: #434769; --d-on-secondary-container: #E2E3FF;
+    --d-tertiary: #96D9DC; --d-on-tertiary: #00363B; --d-tertiary-container: #004F55; --d-on-tertiary-container: #B9F4F7;
+    --d-surface: #11131C; --d-surface-dim: #10121A; --d-surface-bright: #363946;
+    --d-surface-container-lowest: #0C0E15; --d-surface-container-low: #191C26;
+    --d-surface-container: #1D202B; --d-surface-container-high: #282B37; --d-surface-container-highest: #333644;
+    --d-on-surface: #E1E2F0; --d-on-surface-variant: #C4C5D4; --d-surface-variant: #434654;
+    --d-outline: #8F93A4; --d-outline-variant: #434654;
+    --d-inverse-surface: #E1E2F0; --d-inverse-on-surface: #2A2C38; --d-inverse-primary: #49568D;
+
+    /* Dedicated, contrast-verified semantic token pairs (accent / container /
+       text-on-container). Re-verify against the official export. */
+    --d-info: #A6C8FF; --d-info-container: #1B4780; --d-on-info-container: #D6E4FF;
+    --d-success: #9CD9B0; --d-success-container: #00532F; --d-on-success-container: #BEF5D0;
+    --d-warning: #F3D174; --d-warning-container: #6B5200; --d-on-warning-container: #FFEBA0;
+    --d-error: #FFB4AB; --d-error-container: #93000A; --d-on-error-container: #FFDAD6;
+
+    /* Restrained radii — settled: 4 / 8 / 12 */
+    --r-none: 0; --r-xs: 4px; --r-s: 8px; --r-m: 12px; --r-default: 8px;
+
+    /* Elevation — subtle, reserved for major/floating emphasis */
+    --d-elev-0: none;
+    --d-elev-1: 0 1px 2px rgba(0,0,0,.30), 0 1px 3px 1px rgba(0,0,0,.15);
+    --d-elev-2: 0 1px 2px rgba(0,0,0,.30), 0 2px 6px 2px rgba(0,0,0,.15);
+    --d-elev-3: 0 1px 3px rgba(0,0,0,.30), 0 4px 8px 3px rgba(0,0,0,.15);
+
+    /* Focus ring — settled: 2px indigo (primary), 2px surface separation */
+    --d-focus: 2px solid var(--d-primary);
+    --d-focus-offset: 2px;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--chrome-bg);
+    color: var(--chrome-text);
+    font-family: var(--font-ui);
+    font-size: 15px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  .page { max-width: 1080px; margin: 0 auto; padding: var(--space-8) var(--space-6) var(--space-12); }
+
+  h1 { font-size: 30px; line-height: 1.2; letter-spacing: -0.25px; margin: 0 0 var(--space-2); }
+  h2 { font-size: 22px; line-height: 1.3; letter-spacing: -0.1px; margin: var(--space-12) 0 var(--space-3); }
+  h3 { font-size: 16px; line-height: 1.4; margin: 0 0 var(--space-2); letter-spacing: 0.1px; }
+  h4 { font-size: 13px; line-height: 1.4; margin: 0 0 var(--space-2); letter-spacing: 0.2px; text-transform: uppercase; color: var(--d-primary); }
+
+  .lede { color: var(--chrome-muted); max-width: 90ch; margin: 0 0 var(--space-4); }
+  .meta-box {
+    border: 1px solid var(--chrome-outline);
+    border-radius: var(--r-m);
+    background: var(--chrome-surface);
+    padding: var(--space-4);
+    font-size: 13.5px;
+  }
+  .meta-box ul { margin: var(--space-2) 0 0; padding-left: var(--space-6); }
+  .meta-box li { margin: 2px 0; }
+  .meta-box b { color: var(--chrome-text); }
+  .note {
+    font-size: 12.5px; color: var(--chrome-muted);
+    border-left: 3px solid var(--chrome-outline);
+    padding-left: var(--space-3); margin: var(--space-3) 0;
+  }
+  .status-pill {
+    display: inline-block; font-size: 11px; letter-spacing: 0.5px; text-transform: uppercase;
+    border: 1px solid var(--chrome-outline); border-radius: 999px;
+    padding: 2px 10px; color: var(--chrome-muted); margin-right: 6px;
+  }
+  code {
+    font-family: var(--font-ui); font-size: 0.92em;
+    background: var(--chrome-surface-2); border: 1px solid var(--chrome-outline);
+    border-radius: var(--r-xs); padding: 0 4px;
+  }
+
+  /* ---- Direction surface (the review canvas) ---- */
+  .canvas {
+    border: 1px solid var(--d-outline-variant);
+    border-radius: var(--r-m);
+    background: var(--d-surface);
+    color: var(--d-on-surface);
+    padding: var(--space-6);
+    margin-top: var(--space-6);
+  }
+  .canvas-tag { font-size: 12px; letter-spacing: 0.4px; text-transform: uppercase; color: var(--d-on-surface-variant); margin: 0 0 var(--space-3); }
+  .anno {
+    font-size: 12.5px; color: var(--d-on-surface-variant);
+    border-left: 3px solid var(--d-outline);
+    padding-left: var(--space-3); margin: var(--space-4) 0 0;
+    max-width: 100ch;
+  }
+  .anno b { color: var(--d-on-surface); font-weight: 600; }
+
+  .spec {
+    border: 1px solid var(--d-outline-variant);
+    border-radius: var(--r-default);
+    background: var(--d-surface-container-lowest);
+    padding: var(--space-4);
+    margin: var(--space-6) 0;
+  }
+
+  /* ---- Token overview: tonal ramp + roles ---- */
+  .ramp { display: flex; gap: var(--space-1); flex-wrap: wrap; }
+  .ramp .chip { width: 34px; height: 34px; border-radius: var(--r-xs); border: 1px solid var(--d-outline-variant); }
+  .swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(152px, 1fr)); gap: var(--space-2); margin-top: var(--space-4); }
+  .swatch { border: 1px solid var(--d-outline-variant); border-radius: var(--r-s); overflow: hidden; background: var(--d-surface-container); }
+  .swatch .chip { height: 40px; display: grid; place-items: center; font-size: 13px; font-weight: 600; }
+  .swatch .meta { display: block; padding: 3px 8px; font-size: 11px; color: var(--d-on-surface-variant); background: var(--d-surface-container-low); }
+  .swatch .meta b { color: var(--d-on-surface); }
+
+  /* ---- Semantic feedback token pairs ---- */
+  .fb-tokens { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: var(--space-2); margin-top: var(--space-4); }
+  .fbt { border: 1px solid var(--d-outline-variant); border-radius: var(--r-s); padding: var(--space-2); background: var(--d-surface-container); }
+  .fbt > b { font-size: 12px; letter-spacing: 0.3px; }
+  .fbt .row { display: flex; align-items: center; gap: var(--space-2); font-size: 11.5px; margin: 3px 0; }
+  .fbt .mini { width: 18px; height: 18px; border-radius: var(--r-xs); flex: none; }
+
+  /* ---- Spacing / density ---- */
+  .spacerow { display: flex; align-items: flex-end; gap: var(--space-3); flex-wrap: wrap; }
+  .spbox { background: var(--d-primary); border-radius: 2px; }
+  .splabel { font-size: 11px; color: var(--d-on-surface-variant); }
+  .density-card { border: 1px solid var(--d-outline-variant); border-radius: var(--r-default); background: var(--d-surface-container); max-width: 360px; }
+  .density-card .d-head { font-size: 11px; letter-spacing: 0.4px; text-transform: uppercase; color: var(--d-on-surface-variant); padding: 6px 10px; border-bottom: 1px solid var(--d-outline-variant); }
+  .density-card .d-body { padding: var(--space-4); }
+
+  /* ---- Radii ---- */
+  .shaperow { display: flex; gap: var(--space-3); flex-wrap: wrap; align-items: flex-end; }
+  .shapechip { width: 96px; height: 56px; border: 1px solid var(--d-outline); display: grid; place-items: center; font-size: 11px; color: var(--d-on-surface-variant); background: var(--d-surface-container); }
+  .shapechip.default { border: 2px solid var(--d-primary); color: var(--d-on-surface); }
+  .shapechip .px { display: block; font-size: 11px; color: var(--d-on-surface-variant); }
+
+  /* ---- Borders / elevation ---- */
+  .controw, .elevrow, .borderrow { display: flex; gap: var(--space-3); flex-wrap: wrap; }
+  .ccard, .ecard, .bcard {
+    width: 132px; border-radius: var(--r-default);
+    padding: 10px 12px; font-size: 11.5px; color: var(--d-on-surface-variant);
+  }
+  .ccard b { color: var(--d-on-surface); font-size: 12px; }
+  .bcard { border: 1px solid var(--d-outline); background: var(--d-surface-container); }
+  .bcard.variant { border-color: var(--d-outline-variant); }
+  .bcard.strong { border-color: var(--d-primary); border-width: 2px; }
+
+  /* ---- Focus ring ---- */
+  .focus-demo {
+    display: inline-block; padding: 10px 14px; font-size: 13px;
+    background: var(--d-surface-container);
+    border-radius: var(--r-s);
+    color: var(--d-on-surface);
+    outline: var(--d-focus);
+    outline-offset: var(--d-focus-offset);
+  }
+
+  /* ---- Typescale specimen ---- */
+  .types { display: grid; }
+  .trow {
+    display: flex; flex-wrap: wrap; gap: var(--space-3);
+    align-items: baseline; justify-content: space-between;
+    padding: 7px 0; border-bottom: 1px solid var(--d-outline-variant);
+  }
+  .tlabel { font-size: 11px; color: var(--d-on-surface-variant); min-width: 200px; letter-spacing: 0.2px; }
+  .tsample { color: var(--d-on-surface); }
+  .ts-dl { font-size: 57px; line-height: 1.12; letter-spacing: -0.25px; font-weight: 400; }
+  .ts-dm { font-size: 45px; line-height: 1.15; font-weight: 400; }
+  .ts-ds { font-size: 36px; line-height: 1.2;  font-weight: 400; }
+  .ts-hl { font-size: 32px; line-height: 1.25; font-weight: 400; }
+  .ts-hm { font-size: 28px; line-height: 1.3;  font-weight: 400; }
+  .ts-hs { font-size: 24px; line-height: 1.35; font-weight: 400; }
+  .ts-tl { font-size: 22px; line-height: 1.4;  font-weight: 400; }
+  .ts-tm { font-size: 16px; line-height: 1.5;  font-weight: 500; }
+  .ts-ts { font-size: 14px; line-height: 1.45; font-weight: 500; }
+  .ts-bl { font-size: 16px; line-height: 1.5; }
+  .ts-bm { font-size: 14px; line-height: 1.45; }
+  .ts-bs { font-size: 12px; line-height: 1.4; color: var(--d-on-surface-variant); }
+  .ts-ll { font-size: 14px; line-height: 1.4;  font-weight: 500; }
+  .ts-lm { font-size: 12px; line-height: 1.4;  font-weight: 500; letter-spacing: 0.3px; text-transform: uppercase; }
+  .ts-ls { font-size: 11px; line-height: 1.45; font-weight: 500; letter-spacing: 0.4px; text-transform: uppercase; }
+
+  /* ---- Feedback matrix ----
+     Fixed Lucide-equivalent inline SVG icons only (Info / CircleCheck /
+     TriangleAlert / CircleX). No custom icon API. No action controls. */
+  .fbgrid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: var(--space-2); }
+  @media (max-width: 700px) { .fbgrid { grid-template-columns: 1fr; } }
+  .fb { border-radius: var(--r-s); padding: 8px 10px; }
+  .fb p { margin: 0; }
+  .fb .fb-h { font-weight: 600; font-size: 13px; display: flex; align-items: center; gap: 6px; }
+  .fb .fb-b { font-size: 12.5px; margin-top: 2px; }
+  .fb-inline { font-size: 12.5px; border: 1px solid var(--sev); background: transparent; color: var(--sev); display: flex; align-items: center; gap: 6px; }
+  .fb-panel { background: var(--sev-bg); color: var(--sev-text); }
+  .fb-panel .fb-h { color: var(--sev); }
+  .fb-page { grid-column: 1 / -1; background: var(--d-surface-container); border-left: 4px solid var(--sev); color: var(--sev-text); }
+  .fb-page .fb-h { color: var(--sev); }
+  .sev-info    { --sev: var(--d-info);    --sev-bg: var(--d-info-container);    --sev-text: var(--d-on-info-container); }
+  .sev-success { --sev: var(--d-success); --sev-bg: var(--d-success-container); --sev-text: var(--d-on-success-container); }
+  .sev-warning { --sev: var(--d-warning); --sev-bg: var(--d-warning-container); --sev-text: var(--d-on-warning-container); }
+  .sev-error   { --sev: var(--d-error);   --sev-bg: var(--d-error-container);   --sev-text: var(--d-on-error-container); }
+  .fbgrid .fb-col-label { font-size: 11px; letter-spacing: 0.4px; text-transform: uppercase; color: var(--d-on-surface-variant); padding: 4px 2px; }
+  .ic { width: 18px; height: 18px; flex: none; }
+
+  /* ---- Combined composition ---- */
+  .comp {
+    border: 1px solid var(--d-outline-variant);
+    border-radius: var(--r-m);
+    background: var(--d-surface-container);
+    box-shadow: var(--d-elev-1);
+    padding: var(--space-4);
+    margin-top: var(--space-4);
+  }
+  .comp-label { font-size: 11px; letter-spacing: 0.4px; text-transform: uppercase; color: var(--d-primary); margin-bottom: var(--space-4); }
+  .comp-inner {
+    border: 1px solid var(--d-outline-variant);
+    border-radius: var(--r-default);
+    background: var(--d-surface-container-low);
+    padding: var(--space-4);
+  }
+
+  footer { margin-top: var(--space-12); padding-top: var(--space-6); border-top: 1px solid var(--chrome-outline); color: var(--chrome-muted); font-size: 12.5px; }
+</style>
+</head>
+<body>
+<div class="page">
+
+<header>
+  <p>
+    <span class="status-pill">advisory · non-canonical</span>
+    <span class="status-pill">decision prototype</span>
+    <span class="status-pill">no JS · no motion</span>
+  </p>
+  <h1>MP-02 · Tournament analysis desk — decision reference</h1>
+  <p class="lede">
+    The single selected direction for MP-02, presented as a Storybook-style review concept: a separate token
+    overview, typescale specimen, feedback matrix, and one restrained combined composition. This is a decision
+    aid only — it is not production UI and implies no shipped surface.
+  </p>
+  <div class="meta-box">
+    <b>Settled decisions reflected here:</b>
+    <ul>
+      <li>Dark Material&nbsp;3; conceptual palette from seed <code>#3F51B5</code>; Tonal&nbsp;Spot; <b>standard contrast</b> —
+          pending replacement/validation against the official Theme&nbsp;Builder export and explicit WCAG verification.</li>
+      <li>Balanced density; spacing scale <b>4 / 8 / 12 / 16 / 24 / 32 / 48</b>; restrained radii <b>4 / 8 / 12</b> (default 8).</li>
+      <li>Tonal surfaces and fine borders first; subtle elevation reserved for major/floating emphasis.</li>
+      <li>Focus ring: <b>2px indigo</b> (primary) with <b>2px surface separation</b>.</li>
+      <li>Dedicated contrast-verified semantic token pairs for <b>info / success / warning / error</b>.</li>
+      <li>Complete Material&nbsp;3 <b>system-ui</b> typescale only — no monospace utility role.</li>
+      <li>Feedback = required message + optional heading + fixed semantic Lucide-equivalent inline SVG icons
+          (<b>Info / CircleCheck / TriangleAlert / CircleX</b>); no action controls; no custom icon API.</li>
+      <li>Live-region behavior is explicitly <b>consumer-owned</b> — no live-region code appears here.</li>
+      <li>MP-02 excludes shell, production routing, board adapter, chess behavior, stored data, and engines —
+          none appear here.</li>
+    </ul>
+    <b>Honesty note:</b> all hex values are a <i>conceptual</i> tonal derivation from the indigo seed (hue ≈ 231°,
+    Tonal-Spot-style tone mapping). They must be replaced or validated against the official Theme&nbsp;Builder export
+    before any adoption; contrast claims are pending that verification.
+  </div>
+  <p class="note">
+    <b>Target reviews:</b> 1920×1080 desktop and Pixel&nbsp;8a portrait at 412×915 CSS pixels. The feedback matrix
+    collapses to one column below 700px; swatch grids auto-flow. Static specimens only — nothing is interactive,
+    and no motion is used anywhere (reduced-motion safe by construction).
+  </p>
+</header>
+
+<!-- ================================================================ -->
+<section id="tokens" aria-labelledby="tokens-title">
+  <h2 id="tokens-title">Storybook review concept · 1 — Token overview</h2>
+  <div class="canvas">
+    <p class="canvas-tag">Tournament analysis desk · dark M3 · seed #3F51B5</p>
+
+    <div class="spec">
+      <h4>Tonal ramp</h4>
+      <p class="anno">Choice: the seed-derived ramp is shared and fixed; only role usage is open. Conceptual until the official export replaces it.</p>
+      <div class="ramp">
+        <span class="chip" style="background:var(--tone-0)"  title="tone 0"></span>
+        <span class="chip" style="background:var(--tone-10)" title="tone 10"></span>
+        <span class="chip" style="background:var(--tone-20)" title="tone 20"></span>
+        <span class="chip" style="background:var(--tone-30)" title="tone 30"></span>
+        <span class="chip" style="background:var(--tone-40)" title="tone 40"></span>
+        <span class="chip" style="background:var(--tone-50)" title="tone 50"></span>
+        <span class="chip" style="background:var(--tone-60)" title="tone 60"></span>
+        <span class="chip" style="background:var(--tone-70)" title="tone 70"></span>
+        <span class="chip" style="background:var(--tone-80)" title="tone 80"></span>
+        <span class="chip" style="background:var(--tone-90)" title="tone 90"></span>
+        <span class="chip" style="background:var(--tone-95)" title="tone 95"></span>
+        <span class="chip" style="background:var(--tone-100)" title="tone 100"></span>
+      </div>
+    </div>
+
+    <div class="spec">
+      <h4>Named palette roles</h4>
+      <p class="anno">Choice: standard dark-M3 role mapping; tonal surfaces are the workhorse, fine borders define structure.</p>
+      <div class="swatches">
+        <div class="swatch"><span class="chip" style="background:var(--d-primary);color:var(--d-on-primary)">Aa</span><span class="meta"><b>primary</b> #B3BEF9</span></div>
+        <div class="swatch"><span class="chip" style="background:var(--d-on-primary)">Aa</span><span class="meta"><b>on-primary</b> #192950</span></div>
+        <div class="swatch"><span class="chip" style="background:var(--d-primary-container);color:var(--d-on-primary-container)">Aa</span><span class="meta"><b>primary-container</b> #303F74</span></div>
+        <div class="swatch"><span class="chip" style="background:var(--d-on-primary-container)">Aa</span><span class="meta"><b>on-primary-container</b> #DDE0FF</span></div>
+        <div class="swatch"><span class="chip" style="background:var(--d-secondary);color:var(--d-on-secondary)">Aa</span><span class="meta"><b>secondary</b> #C3C7E9</span></div>
+        <div class="swatch"><span class="chip" style="background:var(--d-secondary-container);color:var(--d-on-secondary-container)">Aa</span><span class="meta"><b>secondary-container</b> #434769</span></div>
+        <div class="swatch"><span class="chip" style="background:var(--d-tertiary);color:var(--d-on-tertiary)">Aa</span><span class="meta"><b>tertiary</b> #96D9DC</span></div>
+        <div class="swatch"><span class="chip" style="background:var(--d-tertiary-container);color:var(--d-on-tertiary-container)">Aa</span><span class="meta"><b>tertiary-container</b> #004F55</span></div>
+        <div class="swatch"><span class="chip" style="background:var(--d-surface-container-lowest)"></span><span class="meta"><b>surface lowest</b> #0C0E15</span></div>
+        <div class="swatch"><span class="chip" style="background:var(--d-surface-container)"></span><span class="meta"><b>surface container</b> #1D202B</span></div>
+        <div class="swatch"><span class="chip" style="background:var(--d-surface-container-highest)"></span><span class="meta"><b>surface highest</b> #333644</span></div>
+        <div class="swatch"><span class="chip" style="background:var(--d-on-surface);color:#000">Aa</span><span class="meta"><b>on-surface</b> #E1E2F0</span></div>
+        <div class="swatch"><span class="chip" style="background:var(--d-on-surface-variant);color:#000">Aa</span><span class="meta"><b>on-surface-variant</b> #C4C5D4</span></div>
+        <div class="swatch"><span class="chip" style="background:var(--d-surface-variant)"></span><span class="meta"><b>surface-variant</b> #434654</span></div>
+        <div class="swatch"><span class="chip" style="background:var(--d-outline)"></span><span class="meta"><b>outline</b> #8F93A4</span></div>
+        <div class="swatch"><span class="chip" style="background:var(--d-outline-variant)"></span><span class="meta"><b>outline-variant</b> #434654</span></div>
+        <div class="swatch"><span class="chip" style="background:var(--d-inverse-surface);color:var(--d-inverse-on-surface)">Aa</span><span class="meta"><b>inverse-surface</b> #E1E2F0</span></div>
+      </div>
+    </div>
+
+    <div class="spec">
+      <h4>Semantic feedback token pairs</h4>
+      <p class="anno">Choice: dedicated, contrast-verified pairs (accent + container + text) per severity; tokens stay constant across presentations.</p>
+      <div class="fb-tokens">
+        <div class="fbt"><b>info</b>
+          <div class="row"><span class="mini" style="background:var(--d-info)"></span><span>accent #A6C8FF</span></div>
+          <div class="row"><span class="mini" style="background:var(--d-info-container)"></span><span>container #1B4780</span></div>
+          <div class="row"><span class="mini" style="background:var(--d-on-info-container)"></span><span>text #D6E4FF</span></div>
+        </div>
+        <div class="fbt"><b>success</b>
+          <div class="row"><span class="mini" style="background:var(--d-success)"></span><span>accent #9CD9B0</span></div>
+          <div class="row"><span class="mini" style="background:var(--d-success-container)"></span><span>container #00532F</span></div>
+          <div class="row"><span class="mini" style="background:var(--d-on-success-container)"></span><span>text #BEF5D0</span></div>
+        </div>
+        <div class="fbt"><b>warning</b>
+          <div class="row"><span class="mini" style="background:var(--d-warning)"></span><span>accent #F3D174</span></div>
+          <div class="row"><span class="mini" style="background:var(--d-warning-container)"></span><span>container #6B5200</span></div>
+          <div class="row"><span class="mini" style="background:var(--d-on-warning-container)"></span><span>text #FFEBA0</span></div>
+        </div>
+        <div class="fbt"><b>error</b>
+          <div class="row"><span class="mini" style="background:var(--d-error)"></span><span>accent #FFB4AB</span></div>
+          <div class="row"><span class="mini" style="background:var(--d-error-container)"></span><span>container #93000A</span></div>
+          <div class="row"><span class="mini" style="background:var(--d-on-error-container)"></span><span>text #FFDAD6</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="spec">
+      <h4>Spacing &amp; density</h4>
+      <p class="anno">Choice: balanced density — 16px default gutters, even rhythm; the 4px grid below is the only scale.</p>
+      <div class="spacerow">
+        <span class="spbox" style="width:4px;height:4px"></span><span class="splabel">4</span>
+        <span class="spbox" style="width:8px;height:8px"></span><span class="splabel">8</span>
+        <span class="spbox" style="width:12px;height:12px"></span><span class="splabel">12</span>
+        <span class="spbox" style="width:16px;height:16px"></span><span class="splabel">16</span>
+        <span class="spbox" style="width:24px;height:24px"></span><span class="splabel">24</span>
+        <span class="spbox" style="width:32px;height:32px"></span><span class="splabel">32</span>
+        <span class="spbox" style="width:48px;height:48px"></span><span class="splabel">48</span>
+      </div>
+      <div style="margin-top:16px">
+        <div class="density-card">
+          <div class="d-head">balanced — 16px gutters (default)</div>
+          <div class="d-body">
+            <p class="ts-tm" style="margin:0 0 4px">Feedback specimen</p>
+            <p class="ts-bm" style="margin:0">Balanced spacing keeps a short message easy to scan.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="spec">
+      <h4>Radii</h4>
+      <p class="anno">Choice: restrained 4 / 8 / 12 — default 8 (marked); no large rounding anywhere.</p>
+      <div class="shaperow">
+        <div class="shapechip" style="border-radius:var(--r-none)">none<span class="px">0</span></div>
+        <div class="shapechip" style="border-radius:var(--r-xs)">extra-small<span class="px">4</span></div>
+        <div class="shapechip default" style="border-radius:var(--r-s)">small · default<span class="px">8</span></div>
+        <div class="shapechip" style="border-radius:var(--r-m)">medium<span class="px">12</span></div>
+      </div>
+    </div>
+
+    <div class="spec">
+      <h4>Tonal surfaces · fine borders · elevation</h4>
+      <p class="anno">Choice: tonal surfaces and fine borders carry structure first; elevation 1–3 is reserved for major/floating emphasis only.</p>
+      <div class="controw">
+        <div class="ccard" style="background:var(--d-surface-container-lowest)"><b>lowest</b><br>#0C0E15</div>
+        <div class="ccard" style="background:var(--d-surface-container-low)"><b>low</b><br>#191C26</div>
+        <div class="ccard" style="background:var(--d-surface-container)"><b>container</b><br>#1D202B</div>
+        <div class="ccard" style="background:var(--d-surface-container-high)"><b>high</b><br>#282B37</div>
+        <div class="ccard" style="background:var(--d-surface-container-highest)"><b>highest</b><br>#333644</div>
+      </div>
+      <p class="note" style="margin-top:16px">Fine borders (1px, or 2px primary for emphasis):</p>
+      <div class="borderrow">
+        <div class="bcard">outline · 1px</div>
+        <div class="bcard variant">outline-variant · 1px</div>
+        <div class="bcard strong">primary · 2px</div>
+      </div>
+      <p class="note" style="margin-top:16px">Elevation — reserved:</p>
+      <div class="elevrow">
+        <div class="ecard" style="background:var(--d-surface-container);box-shadow:var(--d-elev-0)"><b>e0</b> default</div>
+        <div class="ecard" style="background:var(--d-surface-container);box-shadow:var(--d-elev-1)"><b>e1</b> major surface</div>
+        <div class="ecard" style="background:var(--d-surface-container);box-shadow:var(--d-elev-2)"><b>e2</b> floating</div>
+        <div class="ecard" style="background:var(--d-surface-container);box-shadow:var(--d-elev-3)"><b>e3</b> overlay/dialog</div>
+      </div>
+    </div>
+
+    <div class="spec">
+      <h4>Focus ring</h4>
+      <p class="anno">Choice: 2px indigo (primary) ring with 2px surface separation — visible on tonal surfaces without relying on shadows.</p>
+      <p><span class="focus-demo">Focus ring specimen <b>outline: 2px primary / offset 2px</b></span></p>
+      <p class="note">Static specimen — shown with the focus treatment applied; not an interactive control.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================ -->
+<section id="typescale" aria-labelledby="typescale-title">
+  <h2 id="typescale-title">Storybook review concept · 2 — Typescale specimen</h2>
+  <div class="canvas">
+    <p class="canvas-tag">Complete Material 3 system-ui typescale — no monospace utility role</p>
+    <div class="spec">
+      <p class="anno">Choice: all 15 M3 roles in the system-ui stack only; notation-like emphasis stays within the system scale (no mono utility, no score-sheet rail).</p>
+      <div class="types">
+        <div class="trow"><span class="tlabel">Display large · 57/64 · −0.25</span><span class="tsample ts-dl">Tournament analysis desk</span></div>
+        <div class="trow"><span class="tlabel">Display medium · 45/52</span><span class="tsample ts-dm">Position assessment</span></div>
+        <div class="trow"><span class="tlabel">Display small · 36/44</span><span class="tsample ts-ds">Review visual hierarchy</span></div>
+        <div class="trow"><span class="tlabel">Headline large · 32/40</span><span class="tsample ts-hl">Design tokens ready</span></div>
+        <div class="trow"><span class="tlabel">Headline medium · 28/36</span><span class="tsample ts-hm">Assessment summary</span></div>
+        <div class="trow"><span class="tlabel">Headline small · 24/32</span><span class="tsample ts-hs">Feedback states ready</span></div>
+        <div class="trow"><span class="tlabel">Title large · 22/28</span><span class="tsample ts-tl">Reusable visual language</span></div>
+        <div class="trow"><span class="tlabel">Title medium · 16/24 · 500</span><span class="tsample ts-tm">Position assessment</span></div>
+        <div class="trow"><span class="tlabel">Title small · 14/20 · 500</span><span class="tsample ts-ts">Assessment panel</span></div>
+        <div class="trow"><span class="tlabel">Body large · 16/24</span><span class="tsample ts-bl">A quiet reading surface with clear hierarchy and measured spacing.</span></div>
+        <div class="trow"><span class="tlabel">Body medium · 14/20</span><span class="tsample ts-bm">Annotations stay secondary but legible at arm's length.</span></div>
+        <div class="trow"><span class="tlabel">Body small · 12/16</span><span class="tsample ts-bs">Captions, timestamps, and secondary metadata.</span></div>
+        <div class="trow"><span class="tlabel">Label large · 14/20 · 500</span><span class="tsample ts-ll">Review specimen</span></div>
+        <div class="trow"><span class="tlabel">Label medium · 12/16 · caps · 500</span><span class="tsample ts-lm">Assessment</span></div>
+        <div class="trow"><span class="tlabel">Label small · 11/16 · caps · 500</span><span class="tsample ts-ls">Move list</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================ -->
+<section id="feedback" aria-labelledby="feedback-title">
+  <h2 id="feedback-title">Storybook review concept · 3 — Feedback matrix</h2>
+  <div class="canvas">
+    <p class="canvas-tag">info / success / warning / error × inline / panel / page-level</p>
+    <div class="spec">
+      <p class="anno">
+        Choice: required message + optional heading + fixed semantic icon (inline SVG, Lucide-equivalent:
+        Info / CircleCheck / TriangleAlert / CircleX). No action controls, no custom icon API. The shared
+        conceptual core is demonstrated through these three presentation levels. Live-region semantics are
+        consumer-owned, so no live-region code is rendered here.
+      </p>
+      <div class="fbgrid">
+        <div class="fb-col-label">inline</div><div class="fb-col-label">panel</div><div class="fb-col-label">page-level</div>
+
+        <div class="fb fb-inline sev-info">
+          <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+          <span>Message — the token preview is up to date.</span>
+        </div>
+        <div class="fb fb-panel sev-info">
+          <p class="fb-h"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>Information available</p>
+          <p class="fb-b">Message — supporting details are ready for review.</p>
+        </div>
+        <div class="fb fb-page sev-info">
+          <p class="fb-h"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>Information available</p>
+          <p class="fb-b">Message — page-level banner for a persistent notice.</p>
+        </div>
+
+        <div class="fb fb-inline sev-success">
+          <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+          <span>Message — changes saved.</span>
+        </div>
+        <div class="fb fb-panel sev-success">
+          <p class="fb-h"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>Changes saved</p>
+          <p class="fb-b">Message — the latest settings are available.</p>
+        </div>
+        <div class="fb fb-page sev-success">
+          <p class="fb-h"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>Changes saved</p>
+          <p class="fb-b">Message — page-level banner for a persistent notice.</p>
+        </div>
+
+        <div class="fb fb-inline sev-warning">
+          <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+          <span>Message — some details need review.</span>
+        </div>
+        <div class="fb fb-panel sev-warning">
+          <p class="fb-h"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>Review needed</p>
+          <p class="fb-b">Message — one setting still needs confirmation.</p>
+        </div>
+        <div class="fb fb-page sev-warning">
+          <p class="fb-h"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>Review needed</p>
+          <p class="fb-b">Message — page-level banner for a persistent notice.</p>
+        </div>
+
+        <div class="fb fb-inline sev-error">
+          <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>
+          <span>Message — could not load the requested content.</span>
+        </div>
+        <div class="fb fb-panel sev-error">
+          <p class="fb-h"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>Load failed</p>
+          <p class="fb-b">Message — the requested source is unavailable.</p>
+        </div>
+        <div class="fb fb-page sev-error">
+          <p class="fb-h"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>Load failed</p>
+          <p class="fb-b">Message — page-level banner for a persistent notice.</p>
+        </div>
+      </div>
+      <p class="anno"><b>Composition (settled):</b> required message + optional heading + fixed semantic icon; no actions. Live-region announcements remain consumer-owned, not severity-owned.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================ -->
+<section id="composition" aria-labelledby="composition-title">
+  <h2 id="composition-title">Storybook review concept · 4 — Combined composition</h2>
+  <div class="canvas">
+    <p class="canvas-tag">One restrained composition — review specimen, not production UI</p>
+    <div class="spec">
+      <p class="anno">Choice: the composition uses only settled tokens — balanced 16px density, radii 8–12, tonal surfaces with fine borders, one reserved elevation step on the major surface, and one inline feedback specimen. No score-sheet annotation rail, no eval strip, no speculative components.</p>
+      <div class="comp">
+        <p class="comp-label">Feedback review · tournament analysis desk</p>
+        <p class="ts-lm" style="margin:0 0 6px">Design system</p>
+        <p class="ts-tl" style="margin:0 0 4px">Reusable visual language</p>
+        <p class="ts-bm" style="margin:0 0 16px">Tonal surfaces, measured spacing, and clear feedback work together.</p>
+        <div class="comp-inner">
+          <p class="ts-tm" style="margin:0 0 4px">Panel-level specimen</p>
+          <p class="ts-bs" style="margin:0">Panel with fine border on a tonal surface; no elevation needed at this level.</p>
+        </div>
+        <div class="fb fb-inline sev-info" style="margin-top:16px">
+          <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+          <span>Message — the visual reference is up to date.</span>
+        </div>
+      </div>
+      <p class="anno"><b>Note:</b> the outer card uses the one reserved elevation step (e1) to show "major surface" emphasis; inner panels rely on tonal + fine borders.</p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <p>
+    <b>Advisory reference:</b> <code>docs/design-guides/mp02-visual-reference.html</code> — non-canonical decision aid for the
+    selected MP-02 Tournament analysis desk direction. Static HTML/CSS only: no JavaScript, no external assets, no gradients,
+    no motion (reduced-motion safe by construction), no interactive controls, no board/shell/router/chess/engine/data behavior.
+    All palette hexes are a conceptual derivation from seed <code>#3F51B5</code> (Tonal-Spot-style) and must be replaced or
+    validated against the official Theme&nbsp;Builder export before adoption. Nothing here is production code or implementation authority.
+  </p>
+</footer>
+
+</div>
+</body>
+</html>

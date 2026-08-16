@@ -1,7 +1,7 @@
 ---
 description: DeepSeek Flash case-worker for retained or fresh bounded assessment, delivery, Plan and master-plan writing, and frontier-approved order authoring.
 mode: subagent
-model: deepseek-v4-flash
+model: opencode-go/deepseek-v4-flash
 variant: high
 permission:
   edit: allow

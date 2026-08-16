@@ -2,8 +2,9 @@
 
 > **Status:** Destination agreed; this document authorizes no implementation. MP-01 (verified technology
 > foundation) is accepted 2026-08-15 and archived to `docs/plans/done/verified-technology-foundation/`;
-> MP-02 onward remain unselected and ungrilled. Selecting a milestone still requires `to-plan`, which
-> independently decides whether direct delivery or a focused Plan is appropriate.
+> MP-02 through MP-05 remain unselected, but their destination boundaries are settled by the grilling
+> record; MP-06 onward remain unselected and ungrilled. Selecting a milestone still requires `to-plan`,
+> which independently decides whether direct delivery or a focused Plan is appropriate.
 
 ## What This Document Is
 
@@ -24,11 +25,10 @@ fresh-grilling gates recorded here.
 
 ## Why This Change Exists
 
-The current frontend is a backend-health status page rather than a chess workspace. It has no
-production viewer route, board, routing foundation, selected chess dependencies, Storybook surface, or
-layered accessibility proof. The repository therefore needs a verifiable technology foundation before
-the product foundation is built, while the eventual human destination still needs to remain visible as
-small, independently acceptable milestones.
+Before MP-01, the frontend was a backend-health status page rather than a chess workspace, with no
+selected chess dependencies, Storybook surface, or layered accessibility proof. MP-01 now supplies the
+verified component-development foundation while production remains status-only; the product foundation
+still needs to be built through small, independently acceptable milestones.
 
 The destination progresses from verified component-development technology, through Material primitives,
 the responsive shell, a safe board adapter, and their integrated static viewer. Only after that
@@ -82,31 +82,38 @@ production UI and prevents speculative controls or unfinished analysis behavior 
 
 ## Current State
 
-The following are verified repository facts from the revision assessment:
+The following are verified repository facts after MP-01 acceptance on 2026-08-15:
 
-- `frontend/src/App.tsx:1-5` renders only `StatusPage`; no production router, shell, viewer, or board
-  exists.
-- `frontend/src/features/status/StatusPage.tsx:7-39` owns the current health loading, success, and
+- The archived Plan at `docs/plans/done/verified-technology-foundation/verified-technology-foundation.md:3,49-65`
+  records all 13 ordered stages shipped and MP-01 accepted. Its receipt remains the durable completion
+  record; this master plan records the current implementation evidence and milestone relationship.
+- `frontend/package.json:9-54` contains the selected exact runtime packages, Storybook configuration,
+  accessibility tooling, and `storybook`, `build-storybook`, and `test-storybook` scripts.
+- `frontend/src/features/foundation/FoundationCheck.tsx:1-135` exercises global CSS, CSS Modules, router
+  context, Base UI, Lucide, chess.js valid/invalid FEN handling, safe static react-chessboard rendering,
+  and react-error-boundary containment.
+- `frontend/src/features/foundation/FoundationCheck.test.tsx:16-35` provides the component-level axe proof;
+  `FoundationCheck.stories.tsx:17-59` provides Storybook states and interaction proofs.
+- `frontend/.storybook/main.ts:3-10` and `preview.tsx:1-4` configure the Storybook Vite surface and shared
+  application CSS.
+- `tests/e2e/foundation-accessibility.spec.ts:8-34` provides the browser axe proof, and
+  `tests/e2e/playwright.config.ts:7-25` starts the Storybook server alongside the existing application
+  servers for that proof.
+- `frontend/src/App.tsx:1-4` still renders only `StatusPage`; production has no router, shell, viewer, or
+  board. `frontend/src/features/status/StatusPage.tsx:7-39` still owns the health loading, success, and
   accessible failure states.
-- `frontend/package.json:9-39` contains the existing Vite, Vitest, lint, build, and React baseline but
-  none of the selected routing, board, chess-validation, structural, icon, error-boundary, Storybook,
-  or accessibility dependencies.
-- `frontend/vite.config.ts:1-7` has only the React Vite plugin and the frontend development server.
-- `frontend/vitest.config.ts:1-11` has only the React plugin, JSDOM, the existing setup file, and
-  source-test inclusion.
-- `tests/e2e/playwright.config.ts:1-21` starts the existing backend and frontend servers but has no
-  browser axe integration.
-- No `frontend/.storybook/` directory or Storybook story files currently exist.
-- `frontend/src/app.css:1-28` is a small global light stylesheet with literal colors and status-card
-  styling.
-- `backend/app/main.py:7-17` creates the FastAPI app and includes only the health router.
-- Existing automated coverage is status/health focused in
+- Existing automated coverage still includes the status/health tests in
   `frontend/src/features/status/StatusPage.test.tsx`, `tests/e2e/status.spec.ts`, and
   `backend/tests/features/health/test_health.py`.
+- The full local check passed during the assessment, including documentation, frontend tests, lint,
+  build, source-size, and end-to-end checks.
+- `frontend/src/app.css:1-28` remains the existing global stylesheet for the unchanged production status
+  page; final Material tokens, shell, board adapter, and viewer remain later milestones.
+- `backend/app/main.py:7-17` creates the FastAPI app and includes only the health router.
 - The worktree contains captured-game data paths, including `data/database/chess_games.db`, but their
   contracts and ownership are not assumed by this destination; MP-06 must verify them.
-- This file is the existing master-plan artifact being revised. The detailed grilling record's older
-  statement that no master plan exists is historical metadata and is not repeated here.
+- This file is the master-plan artifact being revised. The detailed grilling record's older statements
+  about the pre-MP-01 repository are historical metadata and are not current-state evidence.
 
 The current production composition is intentionally small:
 
@@ -480,7 +487,7 @@ human,” not merely merged or green in automation.
 
 | Slice | State | Evidence |
 |---|---|---|
-| MP-01 | Accepted 2026-08-15 | Archived Plan at `docs/plans/done/verified-technology-foundation/verified-technology-foundation.md`; production `/` remains unchanged because MP-01 is development-only. |
+| MP-01 | Accepted 2026-08-15 | Archived Plan at `docs/plans/done/verified-technology-foundation/verified-technology-foundation.md` records all 13 shipped stages; implementation evidence is in `frontend/src/features/foundation/`, `frontend/.storybook/`, and `tests/e2e/foundation-accessibility.spec.ts`; the full local check passed and production `/` remains unchanged because MP-01 is development-only. |
 
 ## MP-01 - Verified Technology Foundation
 
@@ -547,8 +554,9 @@ production /         unchanged health status page
 
 **Prerequisite**
 
-None. MP-01 is the first independently valuable milestone. Its execution transport is determined by
-`to-plan` when selected; this master plan does not author that focused Plan.
+None. MP-01 was accepted on 2026-08-15 as the first independently valuable milestone. Its completed
+implementation and stage evidence are recorded in the archived Plan named above; this master plan does
+not authorize implementation or replace that receipt.
 
 **Human acceptance script**
 

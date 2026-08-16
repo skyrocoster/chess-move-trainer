@@ -16,6 +16,12 @@ The intended documentation relationship is:
 3. The master plan will own milestone direction and dependencies, but it will not settle the later milestones recorded here as requiring fresh grilling.
 4. Focused Plans may be created only after the applicable milestone has completed its required grilling.
 
+The accepted MP-02 visual and feedback decisions now live in the advisory
+[Static Position to Analysis design guide](../design-guides/static-position-to-analysis.md), with an accepted
+[static visual reference](../design-guides/mp02-visual-reference.html). Those artifacts are non-canonical and
+authorize no implementation. The future MP-02 focused Plan must link to them; later milestones use or update them
+only when the user deliberately chooses to do so.
+
 The lightweight master plan now exists at [`docs/master-plans/static-position-to-analysis.md`](../master-plans/static-position-to-analysis.md). This record remains the detailed decision authority; the master plan owns milestone direction, strict dependencies, and human gates without replacing this rationale.
 
 ## Original intent
@@ -43,11 +49,12 @@ MP-01 — verified technology foundation
                                         └── MP-12 — an unknown FEN can be persisted and analyzed
 ```
 
-This tree expresses strict dependency and direction. MP-01 through MP-05 collectively replace the original broad “Slice 1” envelope. Their shared product and technology direction is settled in this record; each still requires route assessment and an appropriately bounded Plan or direct brief before implementation. MP-06 onward remains deliberately ungrilled.
+This tree expresses strict dependency and direction. MP-01 through MP-05 collectively replace the original broad “Slice 1” envelope. Their shared product and technology direction is settled in this record. MP-01 is implemented and accepted; MP-02 through MP-05 still require route assessment and an appropriately bounded Plan or direct brief before implementation. MP-06 onward remains deliberately ungrilled.
 
 ## Grilling gate
 
-- **MP-01 through MP-05:** their destination boundaries are settled by this record and eligible for route assessment and focused planning one milestone at a time.
+- **MP-01:** implemented and accepted on 2026-08-15; its completion is recorded in the archived focused Plan and the master-plan receipt.
+- **MP-02 through MP-05:** their destination boundaries are settled by this record and remain eligible for route assessment and focused planning one milestone at a time.
 - **MP-06 onward:** each requires its own fresh grilling before focused planning or implementation.
 - The milestone names below are destination envelopes only. They do not settle schemas, APIs, workflows, storage policy, engine settings, interaction behavior, or acceptance details.
 - No later milestone may infer authorization from the older records that this document supersedes.
@@ -92,6 +99,26 @@ MP-01 must not:
 
 The temporary Foundation Check remains only until real stories and consumers prove all integrations. MP-05 acceptance must remove it rather than retain a duplicate diagnostics page that can drift from production components.
 
+#### Implementation status and current evidence
+
+MP-01 was implemented and accepted on 2026-08-15. The archived focused Plan at
+`docs/plans/done/verified-technology-foundation/verified-technology-foundation.md:3,49-65`
+records all 13 ordered stages shipped and the acceptance state. The current repository evidence is:
+
+- `frontend/package.json:9-54` contains the selected exact runtime, Storybook, and layered accessibility
+  proof tooling and scripts;
+- `frontend/src/features/foundation/FoundationCheck.tsx:1-135` exercises the selected integration
+  boundaries;
+- `frontend/src/features/foundation/FoundationCheck.test.tsx:16-35` provides component-level axe proof,
+  while `FoundationCheck.stories.tsx:17-59` provides Storybook states and interactions;
+- `frontend/.storybook/main.ts:3-10` and `preview.tsx:1-4` configure the Storybook surface;
+- `tests/e2e/foundation-accessibility.spec.ts:8-34` and `tests/e2e/playwright.config.ts:7-25` provide
+  the browser axe proof and its Storybook server; and
+- `frontend/src/App.tsx:1-4` remains `StatusPage`-only, with no production router or `/viewer`.
+
+The full local check passed during the assessment. MP-02 is the next implementation frontier. The
+temporary Foundation Check remains in place because MP-05 has not yet replaced its compatibility proofs.
+
 ### MP-02 — Material tokens and reusable UI primitives
 
 **Tangible claim:**
@@ -101,6 +128,29 @@ The temporary Foundation Check remains only until real stories and consumers pro
 MP-02 owns the official Material Theme Builder export, recorded source seed/settings, semantic dark color variables, system-font typescale variables, common spacing/shape/elevation/focus decisions needed by real consumers, and the reusable inline, panel, and page-level feedback presentations. Storybook provides the human-reviewable surface for these primitives.
 
 MP-02 does not apply a site shell, create a board adapter, or change production routing.
+
+#### Accepted MP-02 design decisions
+
+The detailed accepted decisions are preserved in the advisory
+[design guide](../design-guides/static-position-to-analysis.md) rather than duplicated throughout this roadmap
+record. In summary:
+
+- the visual thesis is **Tournament analysis desk**;
+- the fixed dark Material 3 scheme uses seed `#3F51B5`, Tonal Spot, and standard contrast, with the official
+  Theme Builder export preserved separately from application-owned semantic tokens;
+- the complete Material 3 `system-ui` typescale, balanced density, spacing `4/8/12/16/24/32/48px`, restrained
+  `4/8/12px` radii, border-first depth, selective elevation, and a separated `2px` indigo focus ring form the
+  visual foundation;
+- reusable information, success, warning, and error feedback uses dedicated contrast-verified token pairs, fixed
+  Lucide icons, required messages, optional headings, explicit inline/panel/page wrappers, and consumer-owned
+  live-region semantics; and
+- each future MP-02 implementation stage must start from a Storybook story and end with that story working and
+  reviewable at the accepted `1920×1080` desktop and `412×915` Pixel 8a portrait targets.
+
+MP-02 does not restyle production `/`, create actions or recovery workflows, add a monospace role, add a
+structural signature motif, or introduce any shell, routing, board, chess-data, engine, persistence, light-theme,
+or theme-switching behavior. The accepted HTML reference remains advisory and its conceptual colors are not an
+official export or production tokens.
 
 ### MP-03 — responsive site shell
 
@@ -240,6 +290,11 @@ Exact component names and file ownership remain implementation-planning details,
 
 ## Slice 1 — visual system
 
+The broad direction below is retained as historical foundation context. The accepted MP-02-specific values,
+component boundaries, proof targets, and exclusions are owned by the advisory
+[design guide](../design-guides/static-position-to-analysis.md). Where this older broad-slice language is less
+specific, the accepted MP-02 record governs MP-02 planning without changing later milestone boundaries.
+
 ### Direction
 
 - The baseline aesthetic is a dark, high-contrast application and analysis workspace.
@@ -309,18 +364,22 @@ The selected approach is:
 
 This balances reuse with the static-first rule. Later capabilities should extend or adapt the board deliberately after their own grilling, not appear as unfinished controls now.
 
-## Slice 1 — shared error foundation
+## Slice 1 — shared feedback foundation
 
-Error handling is shared from the beginning so feature-local error designs do not fracture later.
+Feedback presentation is shared from the beginning so feature-local status and error designs do not fracture
+later. The accepted MP-02 contract is detailed in the advisory
+[design guide](../design-guides/static-position-to-analysis.md).
 
-Slice 1 establishes:
+MP-02 establishes:
 
-- a shared typed UI error model;
-- reusable inline error presentation;
-- reusable panel-level error presentation; and
-- reusable page-level error presentation.
+- a shared semantic feedback core for information, success, warning, and error;
+- reusable `InlineFeedback` presentation;
+- reusable `PanelFeedback` presentation; and
+- reusable `PageFeedback` presentation.
 
-These presentations share semantic structure, accessibility treatment, and Material-theme styling. The position-unavailable state uses this foundation.
+These presentations share semantic structure, accessibility treatment, fixed severity icons, and Material-theme
+styling. Consumers explicitly own live-region behavior. The later position-unavailable state uses this foundation
+without expanding MP-02 into board behavior.
 
 Slice 1 does not invent application logging, notification delivery, backend recovery, or persistence workflows merely to complete an imagined error platform. Those require real consumers and separate decisions.
 
@@ -340,7 +399,7 @@ No design can guarantee that change will never be required. The concrete goal is
 
 ## MP-01 through MP-05 — confirmed technology foundation
 
-These choices were grilled after the original broad static-foundation boundary was settled. They are part of the detailed MP-01 through MP-05 design authority and must be carried into assessment and focused planning. MP-01 installs and compatibility-checks the complete stack; MP-02 through MP-05 introduce its real product consumers. The selections use established packages where those packages fit the existing React application and the agreed styling, accessibility, and ownership boundaries.
+These choices were grilled after the original broad static-foundation boundary was settled. They are part of the detailed MP-01 through MP-05 design authority. MP-01 has installed and compatibility-checked the complete stack; MP-02 through MP-05 remain pending implementation selection and introduce its real product consumers. The selections use established packages where those packages fit the existing React application and the agreed styling, accessibility, and ownership boundaries.
 
 Versions below are the researched stable versions on 2026-08-15. The repository convention is to pin exact dependency versions. Focused planning must verify the package metadata and lockfile operation immediately before installation, but it must not silently substitute a different technology.
 
@@ -877,7 +936,11 @@ This record does not:
 
 ## Completion rationale
 
-The MP-01 through MP-05 foundation decision frontier is empty. Their destinations, sequence, exclusions, technology stack, temporary compatibility-proof lifecycle, page structure, shell ownership, responsive behavior, visual-system basis, styling ownership, board safety contract, accessibility target, shared-error foundation, and reuse boundaries are settled.
+The MP-01 through MP-05 foundation design frontier is settled. MP-01 is implemented and accepted;
+MP-02 is the next implementation frontier, and MP-02 through MP-05 remain pending route selection while
+their destinations, sequence, exclusions, technology stack, temporary compatibility-proof lifecycle, page
+structure, shell ownership, responsive behavior, visual-system basis, styling ownership, board safety
+contract, accessibility target, shared-error foundation, and reuse boundaries remain settled.
 
 The later milestone frontier is intentionally not opened here. Each later milestone carries an explicit grilling prerequisite and an unanswered-decision branch. This preserves a coherent master-plan direction without pretending that later product behavior has already been designed.
 
