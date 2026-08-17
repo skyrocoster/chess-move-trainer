@@ -50,8 +50,19 @@ def anchor(value: str) -> str:
     return re.sub(r"[ _]+", "-", value).strip("-")
 
 
+EXCLUDED_DOC_PREFIXES = ("grilling-docs", "plans/done")
+
+
 def markdown_files() -> list[Path]:
-    return sorted(DOCS_ROOT.rglob("*.md")) if DOCS_ROOT.exists() else []
+    if not DOCS_ROOT.exists():
+        return []
+    files: list[Path] = []
+    for path in DOCS_ROOT.rglob("*.md"):
+        rel_parts = path.relative_to(DOCS_ROOT).parts
+        if any(rel_parts[: len(prefix.split("/"))] == tuple(prefix.split("/")) for prefix in EXCLUDED_DOC_PREFIXES):
+            continue
+        files.append(path)
+    return sorted(files)
 
 
 def generate_flash_agent(canonical_text: str) -> str:

@@ -11,13 +11,20 @@ const STORY_IDS = {
   healthy: "app-shell-appshell--healthy",
   unavailable: "app-shell-appshell--unavailable",
   unexpectedFailure: "app-shell-appshell--unexpected-failure-try-again",
+  unexpectedFailureBrowserProof:
+    "app-shell-appshell--unexpected-failure-browser-proof",
 } as const;
 
-function storyUrl(storyId: string, play = true) {
-  return `${STORYBOOK_ORIGIN}/iframe.html?id=${storyId}&viewMode=story${play ? "" : "&play=false"}`;
+function storyUrl(storyId: string) {
+  return `${STORYBOOK_ORIGIN}/iframe.html?id=${storyId}&viewMode=story`;
 }
 
-async function openStory(page: Page, storyId: string, width: number, height: number) {
+async function openStory(
+  page: Page,
+  storyId: string,
+  width: number,
+  height: number,
+) {
   await page.setViewportSize({ width, height });
   await page.goto(storyUrl(storyId));
   await expect(page.locator(STORYBOOK_ROOT_SELECTOR)).toBeVisible();
@@ -39,8 +46,13 @@ async function openDrawer(page: Page) {
   return { close, dialog, trigger };
 }
 
-async function focusIsInside(page: Page, container: ReturnType<Page["getByRole"]>) {
-  return container.evaluate((element) => element.contains(document.activeElement));
+async function focusIsInside(
+  page: Page,
+  container: ReturnType<Page["getByRole"]>,
+) {
+  return container.evaluate((element) =>
+    element.contains(document.activeElement),
+  );
 }
 
 async function modalState(page: Page) {
@@ -54,7 +66,9 @@ async function modalState(page: Page) {
 }
 
 async function expectApplicationAxeClean(page: Page) {
-  const results = await new AxeBuilder({ page }).include(STORYBOOK_ROOT_SELECTOR).analyze();
+  const results = await new AxeBuilder({ page })
+    .include(STORYBOOK_ROOT_SELECTOR)
+    .analyze();
   expect(results.violations).toEqual([]);
 }
 
@@ -74,15 +88,39 @@ async function hasResponsiveBreakpointRule(page: Page) {
 }
 
 for (const layoutCase of [
-  { height: 1080, mode: "desktop", storyId: STORY_IDS.wideHealthy, width: 1920 },
-  { height: 915, mode: "constrained", storyId: STORY_IDS.constrainedClosed, width: 412 },
-  { height: 915, mode: "constrained", storyId: STORY_IDS.constrainedClosed, width: 679 },
+  {
+    height: 1080,
+    mode: "desktop",
+    storyId: STORY_IDS.wideHealthy,
+    width: 1920,
+  },
+  {
+    height: 915,
+    mode: "constrained",
+    storyId: STORY_IDS.constrainedClosed,
+    width: 412,
+  },
+  {
+    height: 915,
+    mode: "constrained",
+    storyId: STORY_IDS.constrainedClosed,
+    width: 679,
+  },
   { height: 915, mode: "desktop", storyId: STORY_IDS.wideHealthy, width: 680 },
 ]) {
-  test(`uses ${layoutCase.mode} shell mode at ${layoutCase.width}px`, async ({ page }) => {
-    await openStory(page, layoutCase.storyId, layoutCase.width, layoutCase.height);
+  test(`uses ${layoutCase.mode} shell mode at ${layoutCase.width}px`, async ({
+    page,
+  }) => {
+    await openStory(
+      page,
+      layoutCase.storyId,
+      layoutCase.width,
+      layoutCase.height,
+    );
 
-    const sidebar = page.getByRole("complementary", { name: "Primary navigation" });
+    const sidebar = page.getByRole("complementary", {
+      name: "Primary navigation",
+    });
     const trigger = page.getByRole("button", { name: "Open navigation menu" });
 
     if (layoutCase.mode === "desktop") {
@@ -94,7 +132,9 @@ for (const layoutCase of [
     }
 
     await expect
-      .poll(() => page.evaluate(() => window.matchMedia("(max-width: 679px)").matches))
+      .poll(() =>
+        page.evaluate(() => window.matchMedia("(max-width: 679px)").matches),
+      )
       .toBe(layoutCase.width <= 679);
     await expect.poll(() => hasResponsiveBreakpointRule(page)).toBe(true);
   });
@@ -122,15 +162,15 @@ test("contains drawer focus and restores it after Close", async ({ page }) => {
   await close.click();
   await expect(dialog).toBeHidden();
   await expect(trigger).toBeFocused();
-  await expect
-    .poll(async () => (await modalState(page)).inertCount)
-    .toBe(0);
+  await expect.poll(async () => (await modalState(page)).inertCount).toBe(0);
   const after = await modalState(page);
   expect(after.bodyInlineOverflow).toBe(before.bodyInlineOverflow);
   expect(after.documentInlineOverflow).toBe(before.documentInlineOverflow);
 });
 
-test("dismisses the drawer with Escape and restores trigger focus", async ({ page }) => {
+test("dismisses the drawer with Escape and restores trigger focus", async ({
+  page,
+}) => {
   await openStory(page, STORY_IDS.constrainedClosed, 412, 915);
   const { dialog, trigger } = await openDrawer(page);
 
@@ -159,7 +199,9 @@ test("dismisses the drawer when Status is selected", async ({ page }) => {
   await openStory(page, STORY_IDS.constrainedClosed, 412, 915);
   const { dialog } = await openDrawer(page);
 
-  await dialog.getByRole("link", { name: "Status" }).click({ noWaitAfter: true });
+  await dialog
+    .getByRole("link", { name: "Status" })
+    .click({ noWaitAfter: true });
   await expect(dialog).toBeHidden();
 });
 
@@ -170,15 +212,21 @@ test("suppresses drawer transitions for reduced motion", async ({ page }) => {
 
   const transitionDurations = await Promise.all(
     [page.getByTestId("drawer-backdrop"), dialog].map((locator) =>
-      locator.evaluate((element) => getComputedStyle(element).transitionDuration),
+      locator.evaluate(
+        (element) => getComputedStyle(element).transitionDuration,
+      ),
     ),
   );
   for (const duration of transitionDurations) {
-    expect(duration.split(",").every((value) => value.trim() === "0s")).toBe(true);
+    expect(duration.split(",").every((value) => value.trim() === "0s")).toBe(
+      true,
+    );
   }
 });
 
-test("renders exact loading, healthy, and unavailable live-region states", async ({ page }) => {
+test("renders exact loading, healthy, and unavailable live-region states", async ({
+  page,
+}) => {
   const states = [
     {
       copy: "Checking backend health…",
@@ -203,32 +251,50 @@ test("renders exact loading, healthy, and unavailable live-region states", async
   }
 });
 
-test("shows and locally recovers the exact unexpected-failure fallback", async ({ page }) => {
-  await openStory(page, STORY_IDS.unexpectedFailure, 412, 915);
+test("shows and locally recovers the exact unexpected-failure fallback", async ({
+  page,
+}) => {
+  await openStory(page, STORY_IDS.unexpectedFailureBrowserProof, 412, 915);
 
-  await expect(page.getByRole("heading", { name: "Page unavailable" })).toBeVisible();
-  await expect(page.getByText("Something went wrong while displaying this page.")).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Page unavailable" }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("Something went wrong while displaying this page."),
+  ).toBeVisible();
   const retry = page.getByRole("button", { name: "Try again" });
   const recovered = page.getByText("Content recovered after reset.");
 
-  await Promise.race([
-    retry.click(),
-    recovered.waitFor({ state: "visible" }),
-  ]);
+  await Promise.race([retry.click(), recovered.waitFor({ state: "visible" })]);
   await expect(recovered).toBeVisible();
 });
 
 for (const axeCase of [
   { storyId: STORY_IDS.wideHealthy, title: "wide healthy", width: 1920 },
-  { storyId: STORY_IDS.constrainedClosed, title: "constrained closed", width: 412 },
+  {
+    storyId: STORY_IDS.constrainedClosed,
+    title: "constrained closed",
+    width: 412,
+  },
   { storyId: STORY_IDS.constrainedOpen, title: "constrained open", width: 412 },
   { storyId: STORY_IDS.loading, title: "loading", width: 1920 },
   { storyId: STORY_IDS.healthy, title: "healthy", width: 1920 },
   { storyId: STORY_IDS.unavailable, title: "unavailable", width: 1920 },
-  { storyId: STORY_IDS.unexpectedFailure, title: "unexpected failure", width: 412 },
+  {
+    storyId: STORY_IDS.unexpectedFailure,
+    title: "unexpected failure",
+    width: 412,
+  },
 ]) {
-  test(`has no application-owned axe violations in ${axeCase.title}`, async ({ page }) => {
-    await openStory(page, axeCase.storyId, axeCase.width, axeCase.width === 1920 ? 1080 : 915);
+  test(`has no application-owned axe violations in ${axeCase.title}`, async ({
+    page,
+  }) => {
+    await openStory(
+      page,
+      axeCase.storyId,
+      axeCase.width,
+      axeCase.width === 1920 ? 1080 : 915,
+    );
     await expectApplicationAxeClean(page);
   });
 }

@@ -18,14 +18,29 @@ The launcher intentionally kills **any process occupying ports 5666 and 8444** b
 requested service. This is destructive local development behavior: do not use these ports for unrelated
 services while using the launcher.
 
+## Windows shell
+
+The agent's preferred, unrestricted shell is **Bash (Git Bash)**; use PowerShell only for commands that genuinely need it (the `.ps1` launchers a user runs natively). If any shell command fails, report the failure and the exact command for review instead of silently working around it.
+
+For Windows/PowerShell-targeted commands (documented run commands, `.ps1` scripts, anything a user runs natively):
+- Use backslash path separators for Windows paths (`.\setup.ps1`, `.venv\Scripts\python.exe`); don't normalize them to forward slashes.
+- Don't use backticks for command substitution — in PowerShell the backtick is the escape/line-continuation character. Use `$(...)` only as a PowerShell subexpression, or call the supplied `.ps1`/`.py` launchers.
+- Keep command text ASCII; smart quotes, emoji, and accented letters can be mangled by Windows console encoding.
+- Avoid `&&`/`||` chain operators (Windows PowerShell 5.1 doesn't support them); use `;` or separate statements, or call the supplied launchers. Unix utilities (`grep`, `sed`, `awk`, `ls`, `rg`) come from Git Bash and are unaffected — only the PowerShell syntax above is restricted.
+
+For Bash/Git Bash (the agent's own tooling and ad-hoc steps): unrestricted. Project commands should still target PowerShell so a Windows user can run them unchanged, but the agent's own execution is free to use bash.
+
+Non-standard Git Bash commands installed via `winget` on the Windows PATH: `jq` (JSON), `yq` (YAML), `fd` (find), `bat` (cat), `fzf` (fuzzy), `tree` (tree). If one is missing, report it for review before assuming it's unavailable.
+
 ## Application commands
 
 - `powershell -ExecutionPolicy Bypass -File .\setup.ps1` creates `.venv`, installs pinned Python/npm
   dependencies, and installs Playwright Chromium.
 - `powershell -ExecutionPolicy Bypass -File .\dev.ps1 backend|frontend|all` starts services.
-- `powershell -ExecutionPolicy Bypass -File .\check.ps1` runs all local checks.
+- `.venv\Scripts\python.exe scripts\check.py` (or `.venv/bin/python scripts/check.py` on POSIX) runs all
+  local checks.
 - Python dependencies are pinned in `requirements.txt` and configured in `pyproject.toml`; npm uses
-  `frontend/package-lock.json`.
+  `frontend\package-lock.json`.
 
 Local Node may exceed the `>=22 <23` engines pin (both `package.json` files); this is an accepted mismatch. Ignore engines warnings and the non-fatal Storybook `build-storybook` teardown libuv assertion.
 
@@ -47,7 +62,7 @@ tooling exclusion; new `scripts/dev.py` and `scripts/check_size.py` remain subje
 2. Read the relevant active Plan under `docs/plans/active/` when work is Plan-backed.
 3. Read only the Plan stage's **Read first** files before exploring source.
 4. Run the documentation checker after documentation-impacting work:
-   `.venv\Scripts\python.exe scripts/check_docs.py --check` on Windows, or
+   `.venv\Scripts\python.exe scripts\check_docs.py --check` on Windows, or
    `.venv/bin/python scripts/check_docs.py --check` on POSIX.
 
 `scratch/` is user-owned temporary workspace. Do not explore, index, read, or update it unless the

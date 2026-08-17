@@ -1,28 +1,25 @@
+@import "./styles/material/material-theme-builder-css-export/css/dark.css";
+@import "./styles/cmt-tokens.css";
+@import "./styles/cmt-typescale.css";
+
 :root {
-  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
-  color: #172033;
-  background: #eef3f8;
+  font-family: system-ui, sans-serif;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
 }
 
 body {
-  margin: 0;
   min-width: 320px;
+  margin: 0;
 }
 
-main {
-  max-width: 42rem;
-  margin: 0 auto;
-  padding: 4rem 1.5rem;
-}
-
-.status-card {
-  padding: 2rem;
-  background: white;
-  border: 1px solid #d8e0ea;
-  border-radius: 0.75rem;
-  box-shadow: 0 0.5rem 2rem #17203312;
-}
-
-.status-card[data-state="error"] {
-  border-color: #bd3434;
+button,
+input,
+textarea,
+select {
+  font: inherit;
 }

@@ -84,11 +84,18 @@ export const UnexpectedFailureTryAgain: Story = {
   render: () => <UnexpectedFailureComposition />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await expect(canvas.findByRole("heading", { name: "Page unavailable" })).resolves.toBeInTheDocument();
+    await expect(
+      canvas.findByRole("heading", { name: "Page unavailable" }),
+    ).resolves.toBeInTheDocument();
     await expect(
       canvas.findByText("Something went wrong while displaying this page."),
     ).resolves.toBeInTheDocument();
     await userEvent.click(await canvas.findByRole("button", { name: "Try again" }));
     await expect(canvas.findByText("Content recovered after reset.")).resolves.toBeInTheDocument();
   },
+};
+
+// Browser proof owns the recovery click; reusing the play story would race its automated click.
+export const UnexpectedFailureBrowserProof: Story = {
+  render: () => <UnexpectedFailureComposition />,
 };

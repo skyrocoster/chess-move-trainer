@@ -1,3 +1,15 @@
+.statusCard {
+  padding: 2rem;
+  background: white;
+  border: 1px solid #d8e0ea;
+  border-radius: 0.75rem;
+  box-shadow: 0 0.5rem 2rem #17203312;
+}
+
+.statusCard[data-state="error"] {
+  border-color: #bd3434;
+}
+
 .developmentLabel {
   color: #5b21b6;
   font-size: 0.75rem;

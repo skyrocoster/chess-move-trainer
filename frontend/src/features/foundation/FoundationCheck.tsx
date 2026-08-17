@@ -89,7 +89,7 @@ function FoundationContent() {
 
   return (
     <main>
-      <section className="status-card">
+      <section className={styles.statusCard}>
         <p className={styles.developmentLabel}>Development-only Foundation Check</p>
         <h1>Shared CSS surface</h1>
         <p className={styles.globalProbe}>

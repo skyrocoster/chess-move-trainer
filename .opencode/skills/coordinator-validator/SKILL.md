@@ -38,7 +38,7 @@ edit a lifecycle artifact. A direct or planned-quick result never authorizes ord
 
 1. Confirm the supplied proof packet and changed-path facts without exploring outside the handoff.
 2. Repeat every supplied independent check from fresh context. Run
-   `powershell -ExecutionPolicy Bypass -File .\check.ps1` when required by the packet and include its output.
+   `.venv\Scripts\python.exe scripts\check.py` when required by the packet and include its output.
 3. Check the observable acceptance, exclusions, and scope facts. Do not infer a missing product or human decision.
 4. Return evidence only. Do not record `DONE`, shipment, Plan status, or archival state.
 

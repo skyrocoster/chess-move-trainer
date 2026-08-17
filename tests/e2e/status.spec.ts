@@ -2,7 +2,8 @@ import { expect, test } from "@playwright/test";
 
 test("shows the live backend health status", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByRole("heading", { name: "Chess Move Trainer" })).toBeVisible();
+  await expect(page.getByText("Chess Move Trainer", { exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "System status" })).toBeVisible();
   await expect(page.getByRole("status")).toHaveText(/healthy/);
 });
 

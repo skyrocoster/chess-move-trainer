@@ -9,7 +9,9 @@ const config: TestRunnerConfig = {
         context.id === "app-shell-appshell--constrained-open" ||
         context.id === "app-shell-appshell--constrained-closed");
 
-    await page.setViewportSize(isConstrained ? { width: 412, height: 915 } : { width: 1280, height: 720 });
+    await page.setViewportSize(
+      isConstrained ? { width: 412, height: 915 } : { width: 1280, height: 720 },
+    );
   },
 };
 

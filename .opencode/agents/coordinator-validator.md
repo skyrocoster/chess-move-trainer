@@ -54,7 +54,7 @@ other location. Do not read or edit anything outside `docs/`, and never edit pro
 configuration.
 
 `bash: allow` is retained solely to run the required local check suite
-(`powershell -ExecutionPolicy Bypass -File .\check.ps1`) and read-only inspection (`git status`, `git diff`,
+(`.venv\Scripts\python.exe scripts\check.py`) and read-only inspection (`git status`, `git diff`,
 `git log`). Bash is not a license to write files outside `docs/`. The check script regenerates derived artifacts
 such as `.opencode/agents/coordinator-caseworker-flash.md` before checking; that write is an expected script side
 effect, not a validator edit. `external_directory: deny` blocks access outside the workspace.
@@ -66,7 +66,7 @@ edit product implementation, tests, or configuration outside `docs/`, and cannot
 failure.
 
 For independent proof, run the exact supplied checks and the full local check suite via
-`powershell -ExecutionPolicy Bypass -File .\check.ps1` and include its output as evidence. The script regenerates
+`.venv\Scripts\python.exe scripts\check.py` and include its output as evidence. The script regenerates
 derived artifacts such as `.opencode/agents/coordinator-caseworker-flash.md` before checking; this write is expected
 and limited to generated configuration derived from canonical source files.
 

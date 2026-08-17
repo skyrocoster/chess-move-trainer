@@ -76,7 +76,7 @@ The HTML reference is visual guidance only; the shipped MP-02 Material roles, `-
    and axe proof plus browser proof at every required width, then stop for explicit human approval of the
    complete composition. This gate is review only, not implementation work, and no production composition
    change may precede it.
-3. **ORDERED - Adopt the approved shell on `/`:** compose the unchanged health page inside `AppShell`, wire
+3. **SHIPPED - Adopt the approved shell on `/`:** compose the unchanged health page inside `AppShell`, wire
    production token/reset imports and CSS ownership, preserve the temporary Foundation Check as a regression
    surface, and prove the production page at wide, constrained, and breakpoint-edge widths.
 
@@ -86,6 +86,7 @@ The HTML reference is visual guidance only; the shipped MP-02 Material roles, `-
 |-------|------------------------------|
 | 1 | Stage 1 shipped the complete real-component Storybook composition: the controlled `StatusView` (System status heading, exact existing loading/healthy/unavailable copy, explicit status/alert roles), the feature-owned `AppShell` (skip link, text-only identity, sticky 64px top bar, 240px sidebar, constrained Base UI drawer with initial Close focus and owned dismissal/restoration, native Status link with `aria-current`), and the `PageContentBoundary` (Page unavailable exact copy plus local Try again reset), proven by focused component/axe tests and a compiling Storybook; production `App.tsx` and `/` remain unchanged pending the Stage 2 pre-adoption gate. |
 | 2 | Stage 2 shipped the independent layered Storybook proof and the explicit pre-adoption review gate: build-storybook PASS, test-storybook 20/20, and the real-iframe responsive browser spec 18/18 across 1920x1080, 412x915, 679px, and 680px (desktop/constrained modes, drawer modality and every dismissal/focus path, reduced motion, exact live-region states, unexpected-failure recovery, clean application-owned axe), completed by one deterministic in-scope synchronization repair in the authorized spec. The complete Storybook composition received explicit human pre-adoption approval, so Stage 3 may adopt it on `/`. |
+| 3 | Stage 3 shipped production adoption on `/`: `App.tsx` composes the unchanged `StatusPage` inside the approved `AppShell`, global CSS is reduced to reset and accepted shared-theme/token imports with shell and status presentation in their CSS Modules, and the Foundation Check's status-card presentation migrated into its CSS Module while remaining a temporary harness. The production page was proven at 1920x1080, 412x915, 679px, and 680px with drawer modality and every dismissal/focus path, reduced motion, live healthy and aborted-unavailable health behavior with unchanged messages and status/alert roles, and no `/viewer`, via 13/13 focused Vitest, 6/6 production Playwright, lint, build, Prettier, and the full `scripts/check.py` regression gate with only the documented deleted-design-guide baseline. |
 
 ## Touches
 
@@ -214,7 +215,7 @@ npm run test --prefix frontend -- --run src/features/status/StatusView.test.tsx 
 npm run lint --prefix frontend
 npm run build --prefix frontend
 .\frontend\node_modules\.bin\prettier.cmd --check frontend
-powershell -ExecutionPolicy Bypass -File .\check.ps1
+.\.venv\Scripts\python.exe scripts\check.py
 ```
 
 Production browser proof must use the live backend for healthy behavior and the existing Playwright route
@@ -387,7 +388,7 @@ of those files. Documentation proof must report that baseline separately from an
   `npm run lint --prefix frontend`;
   `npm run build --prefix frontend`;
   `.\frontend\node_modules\.bin\prettier.cmd --check frontend`;
-  `powershell -ExecutionPolicy Bypass -File .\check.ps1`.
+  `.\.venv\Scripts\python.exe scripts\check.py`.
 - **Human acceptance:** production review at `1920x1080`, `412x915`, `679px`, and `680px`; healthy and
   unavailable backend states; complete drawer keyboard/pointer/focus paths; reduced motion; exact identity,
   heading, link, feedback, and error copy; and explicit confirmation that no `/viewer` or future behavior was
@@ -396,5 +397,5 @@ of those files. Documentation proof must report that baseline separately from an
   Stage 2 approval. Do not modify backend, package manifests, router behavior, Foundation Check retirement,
   or unrelated worktree files. Stop after MP-03 acceptance before MP-04.
 - **Open questions:** none. The documentation-check baseline failure from the unrelated deleted design-guide
-  files must be reported verbatim if `check.ps1` or `check_docs.py` includes it; those files are outside this
+  files must be reported verbatim if `scripts\check.py` or `check_docs.py` includes it; those files are outside this
   Plan and must not be restored.
