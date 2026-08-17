@@ -66,7 +66,7 @@ tooling exclusion; new `scripts/dev.py` and `scripts/check_size.py` remain subje
    `.venv/bin/python scripts/check_docs.py --check` on POSIX.
 
 `scratch/` is user-owned temporary workspace. Do not explore, index, read, or update it unless the
-user explicitly names a path there.
+user explicitly names a path there. It should be committed. 
 
 ## Working Modes
 
