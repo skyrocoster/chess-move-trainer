@@ -68,3 +68,5 @@ original case-worker owns implementation and bounded repair; a fresh validator o
  product implementation or infers coordinator or human approval. A postmortem request is review only and is not implementation authorization. The shared order-
 authoring skill is not a production compiler or dispatch/reconcile substitute; a frontier-authorized case-worker session may
 author only the approved bounded order artifact through the workflow protocol.
+
+Current Preference: `coordinator-caseworker-flash` - inform the user Luna is preferred.

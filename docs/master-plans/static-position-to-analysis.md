@@ -274,6 +274,8 @@ consumes the already-shipped MP-02 visual language — `--md-sys-*` roles, `--cm
 the `system-ui` typescale in `frontend/src/styles/cmt-tokens.css` and `cmt-typescale.css` — rather than
 reauthoring shell styling; any shell-level feedback reuses the shipped MP-02 feedback primitives.
 
+The accepted detailed interaction and technology decisions remain in the [grilling record](../grilling-docs/static-position-to-analysis-roadmap.md), with the selected composition shown in the advisory [MP-03 responsive shell visual reference](../design-guides/mp03-responsive-shell-reference.html). MP-03 uses a native Status link to `/`; MP-05 replaces it with router-aware navigation when production React Router composition and `/viewer` are introduced.
+
 Desired shell composition:
 
 ```text
@@ -326,6 +328,9 @@ MP-05 owns production React Router composition, durable `/viewer`, the viewer wo
 viewer-owned context region. It integrates the MP-04 adapter with the standard starting position and
 preserves `/`. The viewer workspace adopts the shipped MP-02 tokens, typescale, and feedback primitives
 for its own structural and feedback presentation.
+
+Its router adoption also replaces MP-03's native Status link with router-aware navigation and adds Viewer
+as the second real destination; MP-03 does not expose that destination early.
 
 The viewer workspace lives inside the shell's main-content region and owns both the primary board area
 and its contextual panel. On desktop the intentionally empty context panel remains visible for

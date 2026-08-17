@@ -181,9 +181,70 @@ remains in place until MP-05.
 
 > We created a reusable responsive application shell shared by real pages.
 
-MP-03 owns the text identity, real-destination navigation, desktop top/left regions, narrow-screen Base UI drawer behavior, main-content boundary, responsive shell media queries, and adoption by the existing `/` status page. It must preserve the status behavior while changing its structural presentation.
+MP-03 owns the text identity, real-destination navigation, desktop top/left regions, narrow-screen Base UI drawer behavior, main-content boundary, responsive shell media queries, and adoption by the existing `/` status page. It must preserve the status behavior while changing its structural presentation. The accepted advisory composition is recorded in the [MP-03 responsive shell visual reference](../design-guides/mp03-responsive-shell-reference.html).
 
 MP-03 does not create a viewer route, board, or viewer-owned contextual panel. It consumes the already-shipped MP-02 visual language — `--md-sys-*` roles, `--cmt-*` foundation tokens, and the `system-ui` typescale in `frontend/src/styles/cmt-tokens.css` and `cmt-typescale.css` — rather than reauthoring shell styling; any shell-level feedback reuses the shipped MP-02 feedback primitives.
+
+#### Accepted product composition
+
+- A reusable `AppShell` accepts page content through `children`, owns the current site navigation, and provides the main-content boundary.
+- The persistent identity is **Chess Move Trainer**. Once the shell owns that identity, the status page heading becomes **System status**.
+- MP-03 has one real destination: **Status** at `/`. It is a native `<a href="/">` with the Lucide `Activity` icon, visible text, and `aria-current="page"`.
+- The desktop top bar contains the identity only; navigation lives in the left sidebar. No fake, disabled, or future destination appears.
+- The shell provides a focus-revealed **Skip to main content** link before its repeated header and navigation.
+- The shell's `<main>` remains fluid so each page can own its width. Status content is top-aligned, has a `48rem` maximum width, and uses `24px` wide-layout padding and `16px` constrained-layout padding.
+- MP-03 deliberately does not introduce production React Router composition. MP-05 replaces the native Status link with router-aware navigation when it creates `/viewer`; historical broad-slice language saying Viewer navigation may appear applies to MP-05, not MP-03.
+
+#### Accepted wide and constrained layout
+
+- The wide shell has a sticky `64px` top bar and a persistent, independently scrollable `240px` sidebar below it.
+- The shell changes modes at a content-derived `680px` viewport breakpoint: `679px` uses constrained navigation and `680px` uses the desktop sidebar.
+- Viewport CSS media queries own that transition. JavaScript resize state and `ResizeObserver`-driven layout switching remain excluded.
+- In constrained mode, the identity remains on the left of the sticky top bar and an icon-only **Open navigation menu** control appears on the right.
+- The left-edge Base UI drawer is a full-height modal surface with width `min(320px, 85vw)`, a scrim, inert background, body-scroll locking, a **Navigation** heading, and an icon-only **Close navigation menu** control.
+- Opening moves focus to the close control. Required dismissal paths are the close control, `Escape`, scrim activation, and selecting Status. Dismissal restores focus to the menu trigger. Swipe-to-close is not a required product behavior.
+- Application CSS provides a short slide-and-scrim transition and removes that motion under `prefers-reduced-motion: reduce`.
+- Base UI owns established focus containment, dismissal, restoration, inertness, and modal behavior. MP-03 does not create custom focus-trap or modal mechanics.
+
+#### Status and failure-state reuse
+
+- `StatusPage` continues to own the health request, abort behavior, and loading/success/error lifecycle. A controlled presentational status view is extracted so production and Storybook render the same state component without adding request-mocking dependencies.
+- The shipped `InlineFeedback` presents all three states. Loading and success retain explicit consumer-owned `role="status"`; unavailable retains `role="alert"`. Existing messages and backend error detail remain unchanged, and no new feedback severity or shared API is added.
+- A selective `react-error-boundary` around main content preserves the shell if page rendering fails. Expected backend-health failures remain ordinary typed status state and are never thrown into this boundary.
+- The unexpected fallback uses the shipped `PageFeedback` with heading **Page unavailable**, message **Something went wrong while displaying this page.**, and a local **Try again** action that resets the boundary. The action does not expand the shared feedback API.
+
+#### CSS and component ownership
+
+- Shell and status presentation use separate CSS Modules. Global CSS is limited to resets and shared theme imports rather than accumulating component styles.
+- Existing Material roles, `--cmt-*` tokens, the complete system typescale, spacing scale, focus treatment, and feedback components are reused directly.
+- The `64px` top bar, `240px` sidebar, and related structural measurements are shell-local CSS custom properties. Shared color, typography, and spacing values remain in the existing global semantic-token contract.
+- Lucide supplies only icons with accepted uses. Icon-only menu controls receive accessible names from their controls rather than from the SVG.
+
+#### Storybook-first approval contract
+
+The real reusable production components are created and reviewed in Storybook before the shell is adopted on `/`. Storybook is not a parallel implementation or disposable mock-up. Production integration cannot begin until the complete Storybook composition receives explicit human approval.
+
+The approval surface includes:
+
+- wide shell and active Status navigation;
+- constrained shell with the drawer closed and open;
+- loading, healthy, and unavailable status states;
+- keyboard focus, initial focus, dismissal, and restoration behavior;
+- reduced-motion behavior;
+- contained unexpected failure and **Try again** recovery; and
+- explicit review at `1920×1080`, `412×915`, `679px`, and `680px`.
+
+#### Proof and acceptance method
+
+- Vitest and React Testing Library cover component states, semantics, and interactions, with focused `@chialab/vitest-axe` checks.
+- Storybook interaction tests and its axe integration cover the isolated review states.
+- Playwright verifies the production composition with rendered CSS, breakpoint edges, drawer modality, dismissal paths, focus restoration, preserved status behavior, and error containment.
+- Automated checks supplement manual keyboard, visual, responsive, and accessibility review; they do not replace it.
+- Human acceptance confirms the Storybook composition before production adoption, then confirms `/` at wide, constrained, and breakpoint-edge widths with backend healthy and unavailable behavior.
+
+#### Explicit exclusions
+
+MP-03 adds no `/viewer`, board, viewer context panel, stored data, traversal, analysis, editing, persistence, production router, global state library, new request-mocking dependency, custom drawer mechanics, JavaScript responsive state, new feedback API, speculative navigation, or inactive control.
 
 ### MP-04 — safe read-only board adapter
 

@@ -22,7 +22,7 @@ permission:
   webfetch: allow
   websearch: allow
   external_directory: allow
-  "playwright_*": deny
+  "playwright_*": allow
 ---
 
 You are the resumable Luna case-worker. One OpenCode task/session represents one user case.

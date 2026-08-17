@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 
 import { fetchHealth } from "./statusApi";
+import { StatusView } from "./StatusView";
 
 type ViewState = { kind: "loading" } | { kind: "success" } | { kind: "error"; message: string };
 
@@ -20,21 +21,5 @@ export function StatusPage() {
     return () => controller.abort();
   }, []);
 
-  const content =
-    state.kind === "loading" ? (
-      <p role="status">Checking backend health…</p>
-    ) : state.kind === "success" ? (
-      <p role="status">Backend connected and healthy.</p>
-    ) : (
-      <p role="alert">Backend unavailable: {state.message}</p>
-    );
-
-  return (
-    <main>
-      <section className="status-card" data-state={state.kind} aria-labelledby="page-title">
-        <h1 id="page-title">Chess Move Trainer</h1>
-        {content}
-      </section>
-    </main>
-  );
+  return <StatusView state={state} />;
 }
