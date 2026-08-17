@@ -4,10 +4,7 @@ mode: subagent
 model: opencode-go/deepseek-v4-flash
 permission:
   edit: deny
-  bash:
-    "*": deny
-    ".venv/Scripts/python.exe scripts/scout_db_query.py *": allow
-    ".venv\\Scripts\\python.exe scripts\\scout_db_query.py *": allow
+  bash: allow
   read: allow
   glob: allow
   grep: allow
