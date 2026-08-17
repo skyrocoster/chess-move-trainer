@@ -49,13 +49,14 @@ MP-01 — verified technology foundation
                                         └── MP-12 — an unknown FEN can be persisted and analyzed
 ```
 
-This tree expresses strict dependency and direction. MP-01 through MP-05 collectively replace the original broad “Slice 1” envelope. Their shared product and technology direction is settled in this record. MP-01 and MP-02 are implemented and accepted; MP-03 through MP-05 still require route assessment and an appropriately bounded Plan or direct brief before implementation. MP-06 onward remains deliberately ungrilled.
+This tree expresses strict dependency and direction. MP-01 through MP-05 collectively replace the original broad “Slice 1” envelope. Their shared product and technology direction is settled in this record. MP-01, MP-02, and MP-03 are implemented and accepted; MP-04 through MP-05 still require route assessment and an appropriately bounded Plan or direct brief before implementation. MP-06 onward remains deliberately ungrilled.
 
 ## Grilling gate
 
 - **MP-01:** implemented and accepted on 2026-08-15; its completion is recorded in the archived focused Plan and the master-plan receipt.
 - **MP-02:** implemented and accepted on 2026-08-16; its completion is recorded in the archived focused Plan at `docs/plans/done/material-design-foundation/material-design-foundation.md`.
-- **MP-03 through MP-05:** their destination boundaries are settled by this record and remain eligible for route assessment and focused planning one milestone at a time.
+- **MP-03:** implemented and accepted on 2026-08-17; its completion is recorded in the archived focused Plan at `docs/plans/done/responsive-site-shell/responsive-site-shell.md`.
+- **MP-04 through MP-05:** their destination boundaries are settled by this record and remain eligible for route assessment and focused planning one milestone at a time.
 - **MP-06 onward:** each requires its own fresh grilling before focused planning or implementation.
 - The milestone names below are destination envelopes only. They do not settle schemas, APIs, workflows, storage policy, engine settings, interaction behavior, or acceptance details.
 - No later milestone may infer authorization from the older records that this document supersedes.
@@ -115,9 +116,10 @@ records all 13 ordered stages shipped and the acceptance state. The current repo
 - `frontend/.storybook/main.ts:3-10` and `preview.tsx:1-4` configure the Storybook surface;
 - `tests/e2e/foundation-accessibility.spec.ts:8-34` and `tests/e2e/playwright.config.ts:7-25` provide
   the browser axe proof and its Storybook server; and
-- `frontend/src/App.tsx:1-4` remains `StatusPage`-only, with no production router or `/viewer`.
+- `frontend/src/App.tsx:1-10` now composes `<AppShell><StatusPage /></AppShell>`, adopting the MP-03
+  shell on `/`.
 
-The full local check passed during the assessment. MP-03 is the next implementation frontier. The
+The full local check passed during the assessment. MP-04 is the next implementation frontier. The
 temporary Foundation Check remains in place because MP-05 has not yet replaced its compatibility proofs.
 
 ### MP-02 — Material tokens and reusable UI primitives
@@ -245,6 +247,35 @@ The approval surface includes:
 #### Explicit exclusions
 
 MP-03 adds no `/viewer`, board, viewer context panel, stored data, traversal, analysis, editing, persistence, production router, global state library, new request-mocking dependency, custom drawer mechanics, JavaScript responsive state, new feedback API, speculative navigation, or inactive control.
+
+#### Implementation status and current evidence
+
+MP-03 was implemented and accepted on 2026-08-17. The archived focused Plan at
+`docs/plans/done/responsive-site-shell/responsive-site-shell.md` records all three ordered stages shipped
+and independently validated. The current repository evidence is:
+
+- `frontend/src/App.tsx:1-10` composes `<AppShell><StatusPage /></AppShell>`, adopting the shell on `/`;
+- `frontend/src/app.css:1-25` has been reduced to reset and shared-theme imports (generated dark Material
+  CSS, `cmt-tokens.css`, and `cmt-typescale.css`) with no remaining global component styles;
+- `frontend/src/features/app-shell/AppShell.tsx:1-83` owns the skip link, text-only identity, sticky top
+  bar, sidebar, constrained Base UI drawer with focus management, native Status link with
+  `aria-current="page"`, and the `PageContentBoundary` around main content;
+- `frontend/src/features/app-shell/AppShell.module.css` owns shell structure, measurements, and responsive
+  behavior at the `679px`/`680px` breakpoint;
+- `frontend/src/features/app-shell/PageContentBoundary.tsx` wraps `react-error-boundary` with the exact
+  **Page unavailable** fallback and local **Try again** reset;
+- `frontend/src/features/status/StatusView.tsx:1-41` is the controlled presentational view with
+  discriminated `StatusViewState`, explicit `role="status"` and `role="alert"`, and the **System status**
+  heading;
+- `frontend/src/features/status/StatusView.module.css` owns status presentation including the `48rem`
+  maximum width;
+- `frontend/src/features/app-shell/AppShell.stories.tsx` provides the complete Storybook composition;
+- `tests/e2e/responsive-shell-storybook.spec.ts` provides the layered Storybook browser proof; and
+- `tests/e2e/responsive-shell.spec.ts` provides the production browser proof at `1920×1080`, `412×915`,
+  `679px`, and `680px`.
+
+The full local check passed after MP-03 acceptance. The temporary MP-01 Foundation Check remains in place
+because MP-05 has not yet replaced its compatibility proofs.
 
 ### MP-04 — safe read-only board adapter
 
@@ -402,7 +433,42 @@ specific, the accepted MP-02 record governs MP-02 planning without changing late
 
 The aim is to centralize design decisions while retaining clear component ownership.
 
-## Slice 1 — reusable board contract
+## MP-04 — reusable board contract
+
+### Delivery and human-acceptance lifecycle
+
+MP-04 is one coherent, Storybook-only visual stage. The real application-owned adapter is built once and
+presented in Storybook; Storybook is neither a mock-up nor a parallel implementation. The complete story set and
+focused automated proof must pass before the human review. Explicit human acceptance then ships the stage and is
+required before MP-05 may integrate the adapter into production.
+
+If review requests changes, MP-04 remains one open stage: revise the same component and stories, rerun the complete
+proof, and present them again. A review round is not a separately shipped stage, and the stage must not be marked
+accepted with visual follow-ups. MP-04 does not change `/` or create `/viewer`.
+
+The single `Board Adapter` Storybook group has seven directly addressable stories rather than relying on controls to
+discover required states:
+
+1. default valid starting position;
+2. a verified, realistic, deterministic non-starting FEN that exercises non-default side-to-move, castling,
+   en-passant, halfmove-clock, and fullmove-number state where those values are legally compatible;
+3. Black orientation;
+4. coordinates hidden;
+5. constrained-width sizing;
+6. invalid FEN with **Position unavailable**; and
+7. the visible position description expanded.
+
+The sizing review uses fixed `320px`, `480px`, and `640px` board-container checkpoints. Focused component tests and
+Storybook browser tests cover sizing, disclosure behavior, non-interactivity, invalid and unexpected-failure
+containment, and accessibility before human sign-off. Committed pixel-snapshot regression tests are excluded;
+automated proof does not replace the visual and assistive-technology review.
+
+The selected expanded-description treatment will be retained at
+`docs/design-guides/mp04-board-adapter-reference.html` as a persistent, explicitly non-canonical advisory reference.
+It shows only the accepted treatment, not the rejected alternatives or all seven Storybook states. After that
+reference is verified, the superseded three-option file at
+`scratch/mock-ups/mock-mp04-chessboard-position-description-2026-08-17.html` is removed rather than retained as a
+competing historical design.
 
 ### Displayed position
 
@@ -413,37 +479,72 @@ The aim is to centralize design decisions while retaining clear component owners
 
 ### Reusable configuration
 
-- Board orientation is configurable even though this page uses White.
-- Coordinate visibility is configurable even though this page shows coordinates.
-- The board is a fluid square that uses available space up to a configurable maximum.
+- The adapter's complete public contract is `fen`, `orientation`, `showCoordinates`, and a required non-empty
+  contextual `label`.
+- Board orientation is configurable and defaults to White.
+- Coordinate visibility is configurable and defaults to visible.
+- The board is a container-driven fluid square that uses `width: 100%` up to a fixed `40rem`/`640px` maximum; it
+  does not expose a sizing prop.
 - It must not grow without bound on large screens or force horizontal scrolling on narrow screens.
+- The adapter internally generates the position description; consumers cannot replace it or pass package options
+  through to `react-chessboard`.
 
 ### Safety behavior
 
 - Invalid or unsupported position input must not silently become the standard starting position.
 - A plausible fallback board could misrepresent the requested chess state and is therefore unsafe.
-- Invalid input produces a contained, accessible **Position unavailable** state.
+- FEN handling is strict: `chess.js` `validateFen` acceptance defines validity for MP-04, surrounding whitespace is
+  rejected rather than normalized, and no custom historical-legality layer is added.
+- Invalid input and an unexpected `react-chessboard` render failure both produce the same contained, accessible,
+  compact, width-bounded **Position unavailable** panel rather than reserving an empty square.
+- Package-specific validation and render diagnostics remain development/test evidence and do not enter the stable
+  user-facing contract.
+- The unavailable state has no retry control or callback. It recovers when changed adapter input can render safely.
 - A malformed position must not break the surrounding shell or workspace.
 
 ### Accessibility representation
 
-Assistive technology receives more than an unlabeled visual grid. The reusable board contract includes:
+Assistive technology receives more than an unlabeled visual grid. The visual board is a described, non-focusable
+static graphic; pieces and squares do not expose button, drag, or keyboard semantics. The only interactive element
+is the visible position-description disclosure. The reusable board contract includes:
 
-- an accessible board label;
-- the board orientation; and
-- a concise textual description of the displayed position.
+- the required concise contextual board label as its accessible name;
+- a separate structured description associated with `aria-describedby`, not an oversized accessible name or live
+  region;
+- orientation and side to move;
+- every occupied square in stable FEN order from `a8` through `h1`, independent of visual orientation, using natural
+  phrasing such as **Black rook on a8**;
+- fully expanded castling rights and an explicit en-passant target or statement that none exists; and
+- the halfmove clock and fullmove number, so all six accepted FEN fields are represented.
+
+One internally generated position model supplies two presentations without duplicating parsing or description
+logic: a permanently available assistive description and a separate visible **Position description** disclosure.
+The visual disclosure is collapsed by default and is shown expanded in its dedicated story; collapsing the visual
+presentation does not remove the assistive description.
 
 The board is not treated as decorative because the position is the page's primary information.
 
+### Default appearance and later customization
+
+MP-04 retains the default `react-chessboard` board and piece appearance. The default treatment must still be
+reviewed against the existing WCAG 2.2 AA contract: coordinate text against both square colors, recognizable light
+and dark piece contours on both square colors, board differentiation, and the complete board/disclosure/unavailable
+composition under Windows High Contrast/`forced-colors`. If a default fails, MP-04 applies only the minimum
+centralized semantic-token correction needed to satisfy the accepted accessibility contract.
+
+User-adjustable square colors, color wheels, presets, piece-theme selection, and broader palette design are a known
+later possibility, not MP-04 behavior or implementation authority. A later milestone must grill that capability,
+including persistence, presets, contrast safeguards, and color-vision requirements, before exposing it.
+
 ### Future extension boundary
 
-Known later uses may include movement, highlighting, and analysis arrows, but none is implemented or exposed as an inactive API in Slice 1.
+Known later uses may include movement, highlighting, and analysis arrows, but none is implemented or exposed as an inactive API in MP-04.
 
 The selected approach is:
 
 - establish a documented board adapter boundary;
 - define clear extension points;
-- expose only props and behaviors that work in Slice 1; and
+- expose only props and behaviors that work in MP-04; and
 - avoid speculative handlers, inactive properties, and TODO-driven public contracts.
 
 This balances reuse with the static-first rule. Later capabilities should extend or adapt the board deliberately after their own grilling, not appear as unfinished controls now.
@@ -483,7 +584,7 @@ No design can guarantee that change will never be required. The concrete goal is
 
 ## MP-01 through MP-05 — confirmed technology foundation
 
-These choices were grilled after the original broad static-foundation boundary was settled. They are part of the detailed MP-01 through MP-05 design authority. MP-01 has installed and compatibility-checked the complete stack; MP-02 has authored the reusable visual and feedback language; MP-03 through MP-05 remain pending implementation selection and introduce its real product consumers. The selections use established packages where those packages fit the existing React application and the agreed styling, accessibility, and ownership boundaries.
+These choices were grilled after the original broad static-foundation boundary was settled. They are part of the detailed MP-01 through MP-05 design authority. MP-01 has installed and compatibility-checked the complete stack; MP-02 has authored the reusable visual and feedback language; MP-03 has adopted the responsive shell on `/`; MP-04 and MP-05 remain pending implementation selection and introduce their real product consumers. The selections use established packages where those packages fit the existing React application and the agreed styling, accessibility, and ownership boundaries.
 
 Versions below are the researched stable versions on 2026-08-15. The repository convention is to pin exact dependency versions. Focused planning must verify the package metadata and lockfile operation immediately before installation, but it must not silently substitute a different technology.
 
@@ -547,19 +648,19 @@ The application will consume the package normally. It will not copy, vendor, for
 
 The package is isolated behind an application-owned board adapter. Consumers depend on that adapter rather than importing `react-chessboard` directly. The adapter owns:
 
-- accepted FEN input;
+- strict standard-FEN string input, with no trimming or silent normalization;
 - safe validation before rendering;
 - read-only configuration;
-- board orientation;
-- coordinate visibility;
-- bounded responsive sizing;
-- accessible label and textual position description;
+- White-default board orientation and configurable `white`/`black` orientation;
+- visible-default coordinate configuration;
+- container-driven bounded responsive sizing up to `40rem`/`640px`;
+- a required contextual accessible label and complete generated textual position description;
 - the contained position-unavailable result; and
 - the narrow translation from application semantic tokens to supported package options.
 
 The adapter preserves the option to replace the package later without changing every page that displays a board. Standard FEN remains the application-facing position representation; package-specific state must not escape the adapter.
 
-`react-chessboard` internally uses React style objects and ships hard-coded default square colors that can be overridden. This is a confirmed, narrow exception to the prohibition on inline application CSS. Application components must not adopt that pattern. Theme values passed through the adapter must originate from the centralized theme contract rather than introduce page-local literals.
+`react-chessboard` internally uses React style objects and ships hard-coded default square colors that can be overridden. This is a confirmed, narrow exception to the prohibition on inline application CSS. MP-04 retains those defaults unless a focused accessibility check fails; any minimum corrective values passed through the adapter must originate from the centralized theme contract rather than introduce page-local literals. User-facing color controls and presets remain deferred.
 
 The package's movement, highlighting, arrows, drag-and-drop, and event features are not Slice 1 behavior. The adapter exposes only working read-only properties. It must not publish inactive callbacks or speculative options merely because the dependency supports them.
 
@@ -587,7 +688,16 @@ Relevant package evidence:
 - constructors and loading APIs that reject invalid FEN unless validation is deliberately skipped; and
 - headless position inspection without a UI dependency.
 
-Slice 1 uses `chess.js` only to validate FEN and obtain the position information required by the board adapter and accessible description. It must not enable movement, game replay, PGN parsing, legal-move interaction, or chess-state mutation in this slice.
+MP-04 uses `chess.js` only inside the frontend adapter boundary to validate strict FEN and obtain the position
+information required by the board and complete accessible description. The pinned library's validator defines
+MP-04 acceptance; no custom historical-legality layer is added. It must not enable movement, game replay, PGN
+parsing, legal-move interaction, or chess-state mutation in this milestone.
+
+Future backend FEN validation is an independent backend responsibility. Standard FEN is the interchange contract;
+`chess.js` objects and package-specific state do not cross application boundaries. `python-chess` remains a
+directional candidate for the separately grilled MP-06 corpus/replay work, not an MP-04 dependency or an already
+authorized backend selection. A later backend milestone must independently select its validator and prove shared
+FEN fixtures where cross-runtime consistency matters.
 
 A custom FEN parser was rejected because `chess.js` already owns the established syntax and position validation behavior. Passing unvalidated FEN directly to the board was rejected because the application must distinguish invalid input from the valid standard starting position.
 
@@ -1020,11 +1130,12 @@ This record does not:
 
 ## Completion rationale
 
-The MP-01 through MP-05 foundation design frontier is settled. MP-01 and MP-02 are implemented and
-accepted; MP-03 is the next implementation frontier, and MP-03 through MP-05 remain pending route selection
+The MP-01 through MP-05 foundation design frontier is settled. MP-01, MP-02, and MP-03 are implemented and
+accepted; MP-04 through MP-05 remain pending route selection
 while their destinations, sequence, exclusions, technology stack, temporary compatibility-proof lifecycle, page
 structure, shell ownership, responsive behavior, visual-system basis, styling ownership, board safety
-contract, accessibility target, shared-error foundation, and reuse boundaries remain settled.
+contract, MP-04 single-stage Storybook-to-human-acceptance lifecycle, exact adapter API and story surface, complete
+textual FEN representation, accessibility target, shared-error foundation, and reuse boundaries remain settled.
 
 The later milestone frontier is intentionally not opened here. Each later milestone carries an explicit grilling prerequisite and an unanswered-decision branch. This preserves a coherent master-plan direction without pretending that later product behavior has already been designed.
 

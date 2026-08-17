@@ -37,6 +37,8 @@ Report exact paths and line- or symbol-level evidence where available. Distingui
 evidence, contradictions, and bounded unanswered facts. If the question is too broad or requires judgment,
 return `BOUNDARY-EXCEEDED` with the smallest bounded lookup or decision needed.
 
+The scout can also access the internet and should be the preferred agent for such actions.
+
 Return only:
 
 ```text

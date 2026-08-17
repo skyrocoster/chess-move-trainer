@@ -1,0 +1,104 @@
+.adapter {
+  box-sizing: border-box;
+  display: grid;
+  gap: 1rem;
+  inline-size: 100%;
+  max-inline-size: 40rem;
+  min-inline-size: 0;
+}
+
+.boardGraphic {
+  box-sizing: border-box;
+  aspect-ratio: 1;
+  background: var(--md-sys-color-surface-container);
+  border: 1px solid var(--md-sys-color-outline);
+  border-radius: 0.25rem;
+  inline-size: 100%;
+  max-inline-size: 40rem;
+  min-inline-size: 0;
+  overflow: hidden;
+}
+
+.packageBoard {
+  block-size: 100%;
+  inline-size: 100%;
+  overflow: hidden;
+  pointer-events: none;
+  user-select: none;
+}
+
+.packageBoard :global([aria-roledescription="draggable"]) {
+  pointer-events: none;
+}
+
+.assistiveDescription {
+  block-size: 1px;
+  clip-path: inset(50%);
+  clip: rect(0 0 0 0);
+  inline-size: 1px;
+  margin: -1px;
+  overflow: hidden;
+  position: absolute;
+  white-space: nowrap;
+}
+
+.descriptionDisclosure {
+  border-block-start: 1px solid var(--md-sys-color-outline-variant);
+  color: var(--md-sys-color-on-surface);
+  min-inline-size: 0;
+  padding-block-start: 0.75rem;
+}
+
+.descriptionDisclosure summary {
+  color: var(--md-sys-color-primary);
+  cursor: pointer;
+  font: var(--md-sys-typescale-label-large);
+  padding: 0.25rem;
+}
+
+.descriptionDisclosure summary:focus-visible {
+  outline: 2px solid var(--md-sys-color-primary);
+  outline-offset: 0.125rem;
+}
+
+.descriptionDisclosure p {
+  font: var(--md-sys-typescale-body-medium);
+  margin-block: 0.75rem 0;
+}
+
+.unavailable {
+  inline-size: 100%;
+  max-inline-size: 40rem;
+}
+
+.constrainedStory {
+  inline-size: 20rem;
+  max-inline-size: 100%;
+}
+
+@media (forced-colors: active) {
+  .boardGraphic {
+    background: Canvas;
+    border-color: CanvasText;
+  }
+
+  .descriptionDisclosure summary {
+    color: LinkText;
+  }
+
+  .descriptionDisclosure summary:focus-visible {
+    outline-color: Highlight;
+  }
+
+  .descriptionDisclosure p {
+    color: CanvasText;
+  }
+
+  /* PanelFeedback's error severity has accessible original colors, but in
+     forced-colors the background is overridden while the text color is not,
+     producing a contrast failure. Preserve the original accessible palette
+     for the compact unavailable state without editing PanelFeedback. */
+  .unavailable [data-severity="error"] {
+    forced-color-adjust: none;
+  }
+}

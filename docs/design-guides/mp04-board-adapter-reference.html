@@ -1,0 +1,356 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MP-04 Board Adapter Reference - Expanded Position Description</title>
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:#121212;color:#e7e2e6;
+    font-family:"Roboto","Segoe UI",system-ui,-apple-system,"Helvetica Neue",sans-serif;
+    font-size:14px;line-height:1.55;padding:0 0 64px;
+  }
+  .wrap{max-width:1240px;margin:0 auto;padding:0 22px}
+  .banner{
+    display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+    background:rgba(255,197,49,.11);border:1px solid rgba(255,197,49,.45);color:#ffd97a;
+    border-radius:10px;padding:9px 14px;margin:22px 0 18px;font-size:12.5px;letter-spacing:.3px;
+  }
+  .banner b{font-weight:700}
+  .sep{opacity:.5;margin:0 2px}
+  h1{font-size:25px;font-weight:600;letter-spacing:.2px;margin:0 0 7px}
+  h1 span{color:#ffd166}
+  .lead{color:rgba(231,226,230,.72);font-size:14px;max-width:930px;margin:0}
+  code,.mono{font-family:ui-monospace,"Cascadia Mono","Consolas",monospace}
+  code{font-size:12px;color:#8fe3d8}
+  .meta{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0 0}
+  .chip{background:#1e1e1e;border:1px solid #343434;color:rgba(231,226,230,.75);border-radius:999px;padding:3px 11px;font-size:11.5px;letter-spacing:.3px}
+  .chip.selected{border-color:#ffc531;color:#ffd97a}
+  .chip.teal{border-color:#03dac6;color:#6ff0e4}
+  .section{margin:34px 0 0}
+  .section-title{display:flex;align-items:baseline;gap:10px;margin:0 0 13px;font-size:12px;letter-spacing:1.1px;text-transform:uppercase;color:rgba(231,226,230,.55);font-weight:600}
+  .section-title .number{color:#ffc531;font-weight:700}
+  .section-title .hint{margin-left:auto;text-transform:none;letter-spacing:.2px;font-size:11.5px;color:rgba(231,226,230,.42)}
+  .composition{display:grid;grid-template-columns:minmax(280px,480px) minmax(360px,1fr);gap:22px;align-items:start}
+  .card{background:#1e1e1e;border:1px solid #343434;border-radius:12px;padding:16px 18px}
+  .card h2,.card h3{margin:0}
+  .card h2{font-size:16px;font-weight:600}
+  .card h3{font-size:13px;font-weight:600;color:#cfaaff;letter-spacing:.3px}
+  .card-intro{margin:5px 0 15px;color:rgba(231,226,230,.58);font-size:12px}
+  .board-wrap{background:#0d0d0d;border:1px solid #343434;border-radius:10px;padding:12px}
+  .board{
+    display:grid;grid-template-columns:repeat(8,1fr);aspect-ratio:1;border:2px solid #080808;
+    max-width:440px;margin:0 auto;overflow:hidden;box-shadow:0 8px 22px rgba(0,0,0,.3);
+  }
+  .square{display:grid;place-items:center;position:relative;aspect-ratio:1;font-family:"Segoe UI Symbol","DejaVu Sans","Noto Sans Symbols 2",sans-serif;font-size:clamp(22px,6vw,45px);line-height:1}
+  .light{background:#f0d9b5;color:#f7f7f7;text-shadow:0 1px 1px #5b4d33,1px 0 1px #5b4d33,-1px 0 1px #5b4d33}
+  .dark{background:#b58863;color:#1c1c1c;text-shadow:0 1px 1px #000}
+  .rank,.file{position:absolute;font-family:ui-monospace,"Cascadia Mono","Consolas",monospace;font-size:9px;line-height:1;color:rgba(20,20,20,.7);font-weight:700}
+  .dark .rank,.dark .file{color:rgba(247,247,247,.78)}
+  .rank{top:3px;left:4px}.file{right:4px;bottom:3px}
+  .board-note{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:10px;color:rgba(231,226,230,.5);font-size:11.5px}
+  .board-note strong{color:#8fe3d8;font-weight:600}
+  .contract{display:grid;gap:12px}
+  .contract-row{display:grid;grid-template-columns:145px 1fr;gap:14px;padding-bottom:11px;border-bottom:1px solid #2c2c2c}
+  .contract-row:last-child{padding-bottom:0;border-bottom:0}
+  .contract-label{color:rgba(231,226,230,.5);font-size:11.5px;text-transform:uppercase;letter-spacing:.7px}
+  .contract-value{color:rgba(231,226,230,.86);font-size:12.5px}
+  .contract-value code{word-break:break-word}
+  .note{margin:15px 0 0;padding:10px 12px;background:rgba(3,218,198,.07);border:1px solid rgba(3,218,198,.28);border-radius:8px;color:rgba(231,226,230,.75);font-size:12px}
+  details{background:#1e1e1e;border:1px solid #ffc531;border-radius:12px;overflow:hidden}
+  summary{cursor:pointer;list-style:none;padding:15px 18px;color:#ffd97a;font-size:14px;font-weight:600}
+  summary::-webkit-details-marker{display:none}
+  summary::before{content:"+";display:inline-grid;place-items:center;width:19px;height:19px;margin-right:9px;border:1px solid #ffc531;border-radius:4px;font-family:ui-monospace,monospace;font-size:15px;line-height:1}
+  details[open] summary::before{content:"-"}
+  .summary-state{float:right;color:rgba(231,226,230,.48);font-size:11px;font-weight:400;letter-spacing:.2px}
+  .description{padding:0 18px 18px;border-top:1px solid #3c3320}
+  .description-lead{margin:15px 0 14px;color:rgba(231,226,230,.72);font-size:12.5px}
+  .description-grid{display:grid;grid-template-columns:repeat(2,minmax(220px,1fr));gap:10px 18px}
+  .field{background:#0d0d0d;border:1px solid #2c2c2c;border-radius:8px;padding:10px 12px}
+  .field.wide{grid-column:1 / -1}
+  .field-label{display:block;color:#8fe3d8;font-size:10.5px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;margin-bottom:4px}
+  .field-value{color:#e7e2e6;font-size:12.5px}
+  .occupied{display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:5px 14px;margin:0;padding:0;list-style:none}
+  .occupied li{color:#e7e2e6;font-size:12px}
+  .occupied li::before{content:"";display:inline-block;width:6px;height:6px;margin:0 7px 1px 0;border-radius:2px;background:#ffc531}
+  .output{margin-top:14px;padding:11px 12px;background:#0d0d0d;border:1px dashed #ffc531;border-radius:8px;color:#e7e2e6;font-size:12px;line-height:1.65}
+  .output-label{display:block;color:#ffd97a;font-size:10.5px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;margin-bottom:4px}
+  .principles{display:grid;grid-template-columns:repeat(3,minmax(180px,1fr));gap:12px}
+  .principle{background:#1e1e1e;border:1px solid #343434;border-radius:10px;padding:13px 14px}
+  .principle h3{font-size:12.5px;color:#cfaaff;margin:0 0 5px}
+  .principle p{margin:0;color:rgba(231,226,230,.68);font-size:11.5px}
+  footer{margin-top:38px;padding-top:15px;border-top:1px solid #2c2c2c;color:rgba(231,226,230,.45);font-size:11.5px;line-height:1.6}
+  footer strong{color:#ffd97a}
+  @media (max-width:880px){
+    .composition{grid-template-columns:1fr}
+    .board{max-width:520px}
+  }
+  @media (max-width:560px){
+    .wrap{padding:0 14px}
+    h1{font-size:21px}
+    .contract-row{grid-template-columns:1fr;gap:3px}
+    .description-grid,.principles{grid-template-columns:1fr}
+    .field.wide{grid-column:auto}
+    .summary-state{float:none;display:block;margin:4px 0 0 28px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="banner">
+    <b>PERSISTENT ADVISORY REFERENCE</b><span class="sep">|</span>
+    explicitly non-canonical<span class="sep">|</span>
+    selected expanded-description treatment<span class="sep">|</span>
+    not product code
+  </div>
+
+  <header>
+    <h1>MP-04 - Read-only board adapter: <span>expanded position description</span></h1>
+    <p class="lead">
+      This reference records the accepted presentation for a complete position description. It shows one
+      static board, the permanently available assistive description, and the visible
+      <strong>Position description</strong> disclosure in its expanded review state. The disclosure is
+      collapsed by default and is expanded by the user when the visual text is needed.
+    </p>
+    <div class="meta">
+      <span class="chip selected">MP-04</span>
+      <span class="chip teal">read-only</span>
+      <span class="chip selected">complete FEN-equivalent state</span>
+      <span class="chip">stable a8 to h1 order</span>
+    </div>
+  </header>
+
+  <section class="section">
+    <h2 class="section-title"><span class="number">1</span> Selected composition <span class="hint">one accepted treatment</span></h2>
+    <div class="composition">
+      <div class="card">
+        <h2>Chess board</h2>
+        <p class="card-intro">Static visual rendering with white orientation and visible coordinates.</p>
+        <div class="board-wrap">
+          <div class="board" role="img" aria-label="Chess board. White orientation." aria-describedby="assistive-description">
+            <div class="square dark">&#9820;<span class="rank">8</span></div>
+            <div class="square light"></div>
+            <div class="square dark">&#9821;</div>
+            <div class="square light">&#9819;</div>
+            <div class="square dark">&#9818;</div>
+            <div class="square light">&#9821;</div>
+            <div class="square dark"></div>
+            <div class="square light">&#9820;<span class="rank">8</span><span class="file">h</span></div>
+
+            <div class="square light">&#9823;<span class="rank">7</span></div>
+            <div class="square dark">&#9823;</div>
+            <div class="square light"></div>
+            <div class="square dark"></div>
+            <div class="square light"></div>
+            <div class="square dark">&#9823;</div>
+            <div class="square light">&#9823;</div>
+            <div class="square dark">&#9823;</div>
+
+            <div class="square dark"><span class="rank">6</span></div>
+            <div class="square light"></div>
+            <div class="square dark">&#9822;</div>
+            <div class="square light"></div>
+            <div class="square dark">&#9823;</div>
+            <div class="square light">&#9822;</div>
+            <div class="square dark"></div>
+            <div class="square light"></div>
+
+            <div class="square light"><span class="rank">5</span></div>
+            <div class="square dark"></div>
+            <div class="square light">&#9823;</div>
+            <div class="square dark">&#9823;</div>
+            <div class="square light"></div>
+            <div class="square dark"></div>
+            <div class="square light"></div>
+            <div class="square dark"></div>
+
+            <div class="square dark"><span class="rank">4</span></div>
+            <div class="square light"></div>
+            <div class="square dark">&#9817;</div>
+            <div class="square light"></div>
+            <div class="square dark"></div>
+            <div class="square light"></div>
+            <div class="square dark"></div>
+            <div class="square light"></div>
+
+            <div class="square light"><span class="rank">3</span></div>
+            <div class="square dark"></div>
+            <div class="square light">&#9816;</div>
+            <div class="square dark">&#9817;</div>
+            <div class="square light"></div>
+            <div class="square dark">&#9816;</div>
+            <div class="square light"></div>
+            <div class="square dark"></div>
+
+            <div class="square dark"><span class="rank">2</span></div>
+            <div class="square light">&#9817;</div>
+            <div class="square dark">&#9817;</div>
+            <div class="square light"></div>
+            <div class="square dark">&#9815;</div>
+            <div class="square light">&#9817;</div>
+            <div class="square dark">&#9817;</div>
+            <div class="square light">&#9817;</div>
+
+            <div class="square light">&#9814;<span class="rank">1</span><span class="file">a</span></div>
+            <div class="square dark"><span class="file">b</span></div>
+            <div class="square light">&#9815;<span class="file">c</span></div>
+            <div class="square dark">&#9813;<span class="file">d</span></div>
+            <div class="square light">&#9812;<span class="file">e</span></div>
+            <div class="square dark"><span class="file">f</span></div>
+            <div class="square light"><span class="file">g</span></div>
+            <div class="square dark">&#9814;<span class="file">h</span></div>
+          </div>
+          <div class="board-note"><span><strong>White to move</strong></span><span>visual board is non-focusable</span></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Accessible relationship</h2>
+        <p class="card-intro">The board label identifies the visual object; the generated description supplies its state.</p>
+        <div class="contract">
+          <div class="contract-row">
+            <div class="contract-label">Board role</div>
+            <div class="contract-value"><code>role="img"</code>, with no piece, square, drag, or keyboard semantics.</div>
+          </div>
+          <div class="contract-row">
+            <div class="contract-label">Context label</div>
+            <div class="contract-value"><code>Chess board. White orientation.</code></div>
+          </div>
+          <div class="contract-row">
+            <div class="contract-label">Description link</div>
+            <div class="contract-value"><code>aria-describedby="assistive-description"</code></div>
+          </div>
+          <div class="contract-row">
+            <div class="contract-label">Visible control</div>
+            <div class="contract-value"><strong>Position description</strong>, collapsed by default and expandable with native disclosure behavior.</div>
+          </div>
+          <div class="contract-row">
+            <div class="contract-label">Ownership</div>
+            <div class="contract-value">The adapter generates the description from the validated position. Consumers do not replace it.</div>
+          </div>
+        </div>
+        <p class="note">The expanded view below is shown for review. Its content is the same generated position model used by assistive technology.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2 class="section-title"><span class="number">2</span> Position description <span class="hint">expanded review state</span></h2>
+    <details open>
+      <summary>Position description <span class="summary-state">shown expanded for this reference; default is collapsed</span></summary>
+      <div class="description">
+        <p class="description-lead">The description is complete, state-only, and read in a stable order regardless of visual orientation.</p>
+        <div class="description-grid">
+          <div class="field">
+            <span class="field-label">Orientation</span>
+            <span class="field-value">White orientation.</span>
+          </div>
+          <div class="field">
+            <span class="field-label">Side to move</span>
+            <span class="field-value">White to move.</span>
+          </div>
+          <div class="field wide">
+            <span class="field-label">Occupied squares - a8 to h1</span>
+            <ul class="occupied">
+              <li>a8 black rook</li>
+              <li>c8 black bishop</li>
+              <li>d8 black queen</li>
+              <li>e8 black king</li>
+              <li>f8 black bishop</li>
+              <li>h8 black rook</li>
+              <li>a7 black pawn</li>
+              <li>b7 black pawn</li>
+              <li>f7 black pawn</li>
+              <li>g7 black pawn</li>
+              <li>h7 black pawn</li>
+              <li>c6 black knight</li>
+              <li>e6 black pawn</li>
+              <li>f6 black knight</li>
+              <li>c5 black pawn</li>
+              <li>d5 black pawn</li>
+              <li>c4 white pawn</li>
+              <li>c3 white knight</li>
+              <li>d3 white pawn</li>
+              <li>f3 white knight</li>
+              <li>a2 white pawn</li>
+              <li>b2 white pawn</li>
+              <li>e2 white bishop</li>
+              <li>f2 white pawn</li>
+              <li>g2 white pawn</li>
+              <li>h2 white pawn</li>
+              <li>a1 white rook</li>
+              <li>c1 white bishop</li>
+              <li>d1 white queen</li>
+              <li>e1 white king</li>
+              <li>h1 white rook</li>
+            </ul>
+          </div>
+          <div class="field">
+            <span class="field-label">Castling available</span>
+            <span class="field-value">White kingside, White queenside, Black kingside, Black queenside.</span>
+          </div>
+          <div class="field">
+            <span class="field-label">En-passant state</span>
+            <span class="field-value">En-passant target: d6.</span>
+          </div>
+          <div class="field">
+            <span class="field-label">Halfmove clock</span>
+            <span class="field-value">0.</span>
+          </div>
+          <div class="field">
+            <span class="field-label">Fullmove number</span>
+            <span class="field-value">9.</span>
+          </div>
+        </div>
+        <div class="output">
+          <span class="output-label">Generated announcement content</span>
+          Chess board. White orientation. White to move. a8 black rook, c8 black bishop, d8 black queen,
+          e8 black king, f8 black bishop, h8 black rook, a7 black pawn, b7 black pawn, f7 black pawn,
+          g7 black pawn, h7 black pawn, c6 black knight, e6 black pawn, f6 black knight, c5 black pawn,
+          d5 black pawn, c4 white pawn, c3 white knight, d3 white pawn, f3 white knight, a2 white pawn,
+          b2 white pawn, e2 white bishop, f2 white pawn, g2 white pawn, h2 white pawn, a1 white rook,
+          c1 white bishop, d1 white queen, e1 white king, h1 white rook. Castling available: White kingside,
+          White queenside, Black kingside, Black queenside. En-passant target: d6. Halfmove clock: 0.
+          Fullmove number: 9.
+        </div>
+      </div>
+    </details>
+    <p id="assistive-description" class="mono" style="position:absolute;left:-10000px;width:1px;height:1px;overflow:hidden">
+      Chess board. White orientation. White to move. a8 black rook, c8 black bishop, d8 black queen, e8 black king,
+      f8 black bishop, h8 black rook, a7 black pawn, b7 black pawn, f7 black pawn, g7 black pawn, h7 black pawn,
+      c6 black knight, e6 black pawn, f6 black knight, c5 black pawn, d5 black pawn, c4 white pawn, c3 white knight,
+      d3 white pawn, f3 white knight, a2 white pawn, b2 white pawn, e2 white bishop, f2 white pawn, g2 white pawn,
+      h2 white pawn, a1 white rook, c1 white bishop, d1 white queen, e1 white king, h1 white rook. Castling available:
+      White kingside, White queenside, Black kingside, Black queenside. En-passant target: d6. Halfmove clock: 0.
+      Fullmove number: 9.
+    </p>
+  </section>
+
+  <section class="section">
+    <h2 class="section-title"><span class="number">3</span> Treatment principles</h2>
+    <div class="principles">
+      <div class="principle">
+        <h3>Complete state</h3>
+        <p>Material, turn, castling, en-passant, halfmove, and fullmove state are all stated explicitly.</p>
+      </div>
+      <div class="principle">
+        <h3>Stable reading order</h3>
+        <p>Occupied squares are announced from a8 through h1 even when the visual board is flipped.</p>
+      </div>
+      <div class="principle">
+        <h3>Read-only boundary</h3>
+        <p>The description reports the position and never implies moves, analysis, or other interaction.</p>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <strong>Persistent, non-canonical, advisory reference.</strong>
+    This HTML records the accepted MP-04 expanded position-description treatment only. It is a design reference,
+    not implementation authority, a product surface, or a substitute for component and accessibility acceptance.
+  </footer>
+</div>
+</body>
+</html>

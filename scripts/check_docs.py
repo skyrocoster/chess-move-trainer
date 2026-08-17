@@ -59,7 +59,10 @@ def markdown_files() -> list[Path]:
     files: list[Path] = []
     for path in DOCS_ROOT.rglob("*.md"):
         rel_parts = path.relative_to(DOCS_ROOT).parts
-        if any(rel_parts[: len(prefix.split("/"))] == tuple(prefix.split("/")) for prefix in EXCLUDED_DOC_PREFIXES):
+        if any(
+            rel_parts[: len(prefix.split("/"))] == tuple(prefix.split("/"))
+            for prefix in EXCLUDED_DOC_PREFIXES
+        ):
             continue
         files.append(path)
     return sorted(files)

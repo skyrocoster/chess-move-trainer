@@ -3,7 +3,8 @@
 > **Status:** Destination agreed; this document authorizes no implementation. MP-01 (verified technology
 > foundation) is accepted 2026-08-15 and archived to `docs/plans/done/verified-technology-foundation/`;
 > MP-02 (Material design tokens and reusable UI primitives) is accepted 2026-08-16 and archived to
-> `docs/plans/done/material-design-foundation/`; MP-03 through MP-05 remain unselected, but their
+> `docs/plans/done/material-design-foundation/`; MP-03 (responsive site shell) is accepted 2026-08-17 and
+> archived to `docs/plans/done/responsive-site-shell/`; MP-04 and MP-05 remain unselected, but their
 > destination boundaries are settled by the grilling record; MP-06 onward remain unselected and ungrilled.
 > Selecting a milestone still requires `to-plan`, which independently decides whether direct delivery or a
 > focused Plan is appropriate.
@@ -84,8 +85,8 @@ production UI and prevents speculative controls or unfinished analysis behavior 
 
 ## Current State
 
-The following are verified repository facts after MP-01 acceptance on 2026-08-15 and MP-02 acceptance
-on 2026-08-16:
+The following are verified repository facts after MP-01 acceptance on 2026-08-15, MP-02 acceptance
+on 2026-08-16, and MP-03 acceptance on 2026-08-17:
 
 - The archived Plan at `docs/plans/done/verified-technology-foundation/verified-technology-foundation.md:3,49-65`
   records all 13 ordered stages shipped and MP-01 accepted. Its receipt remains the durable completion
@@ -102,16 +103,16 @@ on 2026-08-16:
 - `tests/e2e/foundation-accessibility.spec.ts:8-34` provides the browser axe proof, and
   `tests/e2e/playwright.config.ts:7-25` starts the Storybook server alongside the existing application
   servers for that proof.
-- `frontend/src/App.tsx:1-4` still renders only `StatusPage`; production has no router, shell, viewer, or
-  board. `frontend/src/features/status/StatusPage.tsx:7-39` still owns the health loading, success, and
-  accessible failure states.
+- `frontend/src/App.tsx:1-10` now composes `<AppShell><StatusPage /></AppShell>`, adopting the
+  responsive shell on `/`. `frontend/src/features/status/StatusPage.tsx` still owns the health loading,
+  success, and accessible failure states.
 - Existing automated coverage still includes the status/health tests in
   `frontend/src/features/status/StatusPage.test.tsx`, `tests/e2e/status.spec.ts`, and
   `backend/tests/features/health/test_health.py`.
 - The full local check passed during the assessment, including documentation, frontend tests, lint,
   build, source-size, and end-to-end checks.
-- `frontend/src/app.css:1-28` remains the existing global stylesheet for the unchanged production status
-  page; the shell, board adapter, and viewer remain later milestones.
+- `frontend/src/app.css:1-25` has been reduced to reset and shared-theme imports (generated dark Material
+  CSS, `cmt-tokens.css`, and `cmt-typescale.css`) with no remaining global component styles.
 - `backend/app/main.py:7-17` creates the FastAPI app and includes only the health router.
 - The worktree contains captured-game data paths, including `data/database/chess_games.db`, but their
   contracts and ownership are not assumed by this destination; MP-06 must verify them.
@@ -130,17 +131,49 @@ on 2026-08-16:
   tests; `tests/e2e/design-system-accessibility.spec.ts` provides the verification-only browser axe proof.
 - Production `/` remains visually and structurally unchanged because MP-02 is Storybook-only; the
   temporary MP-01 Foundation Check remains in place until MP-05.
+- The archived Plan at `docs/plans/done/responsive-site-shell/responsive-site-shell.md` records
+  MP-03 stages 1-3 shipped and independently validated; its Shipped table records each stage's outcome.
+- `frontend/src/features/app-shell/AppShell.tsx:1-83` owns the skip link, text-only identity, sticky
+  top bar, sidebar, constrained Base UI drawer with focus management, native Status link with
+  `aria-current="page"`, and `PageContentBoundary` around main content.
+- `frontend/src/features/app-shell/AppShell.module.css` owns shell structure, measurements, and responsive
+  behavior at the `679px`/`680px` breakpoint.
+- `frontend/src/features/app-shell/PageContentBoundary.tsx` wraps `react-error-boundary` with the exact
+  **Page unavailable** fallback and local **Try again** reset.
+- `frontend/src/features/status/StatusView.tsx:1-41` is the controlled presentational view with
+  discriminated `StatusViewState`, explicit `role="status"` and `role="alert"`, and the **System status**
+  heading.
+- `frontend/src/features/status/StatusView.module.css` owns status presentation including the `48rem`
+  maximum width.
+- `frontend/src/features/app-shell/AppShell.stories.tsx` provides the complete Storybook composition.
+- `tests/e2e/responsive-shell-storybook.spec.ts` provides the layered Storybook browser proof, and
+  `tests/e2e/responsive-shell.spec.ts` provides the production browser proof at `1920×1080`, `412×915`,
+  `679px`, and `680px`.
+- Production `/` now uses the responsive shell with the status page inside `AppShell`; the temporary MP-01
+  Foundation Check remains in place until MP-05.
 - This file is the master-plan artifact being revised. The detailed grilling record's older statements
   about the pre-MP-01 repository are historical metadata and are not current-state evidence.
 
-The current production composition is intentionally small:
+The current production composition includes the responsive shell:
 
 ```text
-+---------------- current / ----------------+
-| Chess Move Trainer                         |
-| Backend connected and healthy              |
-| or Backend unavailable: <message>          |
+Wide:
++----------------------------------------------------------------+
+| Chess Move Trainer                         [Status]            |
++------------------+---------------------------------------------+
+| navigation        | System status                               |
+| Status (active)   | Backend connected and healthy               |
++------------------+ or Backend unavailable: <message>           |
 +--------------------------------------------+
+
+Constrained:
++--------------------------------+
+| Chess Move Trainer        [≡] |
++--------------------------------+
+| System status                  |
+| Backend connected and healthy  |
+| or Backend unavailable: ...    |
++--------------------------------+
 ```
 
 The current frontend toolchain baseline that MP-01 must preserve is React `19.0.0`, React DOM
@@ -274,9 +307,12 @@ consumes the already-shipped MP-02 visual language — `--md-sys-*` roles, `--cm
 the `system-ui` typescale in `frontend/src/styles/cmt-tokens.css` and `cmt-typescale.css` — rather than
 reauthoring shell styling; any shell-level feedback reuses the shipped MP-02 feedback primitives.
 
-The accepted detailed interaction and technology decisions remain in the [grilling record](../grilling-docs/static-position-to-analysis-roadmap.md), with the selected composition shown in the advisory [MP-03 responsive shell visual reference](../design-guides/mp03-responsive-shell-reference.html). MP-03 uses a native Status link to `/`; MP-05 replaces it with router-aware navigation when production React Router composition and `/viewer` are introduced.
+The accepted detailed interaction and technology decisions remain in the [grilling record](../grilling-docs/static-position-to-analysis-roadmap.md). MP-05 replaces it with router-aware navigation when production React Router composition and `/viewer` are introduced.
 
-Desired shell composition:
+MP-03 was implemented and accepted on 2026-08-17. The archived Plan at
+`docs/plans/done/responsive-site-shell/responsive-site-shell.md` records all three stages shipped.
+
+Shell composition:
 
 ```text
 Wide:
@@ -303,20 +339,46 @@ Constrained:
 > We created a reusable component that safely displays a chess position.
 
 MP-04 places `react-chessboard` behind an application-owned adapter. The adapter owns the application
-contract for accepted FEN input, validation before rendering, read-only configuration, orientation,
-coordinate visibility, bounded fluid sizing, accessible label and textual position description, and
-contained **Position unavailable** handling. Consumers do not import the package directly and
-package-specific state does not escape the adapter.
+contract for strict standard-FEN input, validation before rendering, read-only configuration, orientation,
+coordinate visibility, container-driven fluid sizing up to `40rem`/`640px`, a required contextual accessible
+label, a complete generated textual position description, and contained **Position unavailable** handling.
+Its only public inputs are `fen`, `orientation`, `showCoordinates`, and the required non-empty `label`;
+consumers do not import the package directly, customize generated descriptions, pass sizing options, or receive
+package-specific state.
 
-`chess.js` validates and inspects positions. Invalid input never silently becomes the standard starting
-position. `react-chessboard` remains a rendering dependency; its movement, highlighting, arrows,
-drag-and-drop, and event capabilities are not exposed. Theme values passed to it originate in MP-02's
-semantic token contract, and the contained **Position unavailable** state reuses the shipped MP-02
-`PanelFeedback`/`PageFeedback` primitives.
+`chess.js` validates and inspects positions inside the frontend adapter only. Its standard validator defines
+MP-04 validity; surrounding whitespace is rejected, and MP-04 adds no custom historical-legality layer. Invalid
+input never silently becomes the standard starting position. Future backend validation remains independently owned
+and selected, with standard FEN as the interchange contract and `python-chess` only a directional MP-06 candidate.
 
-Storybook proves the valid starting-position and invalid-position states, orientation and coordinate
-configurations actually supported by the adapter, and relevant accessibility descriptions. MP-04 does
-not create `/viewer`, traverse positions, move pieces, parse PGN, access stored data, or run Stockfish.
+`react-chessboard` remains a non-focusable static rendering dependency; its movement, highlighting, arrows,
+drag-and-drop, event, and package-option capabilities are not exposed. White orientation and visible coordinates
+are the defaults. Invalid input and unexpected package render failure both produce the same compact, width-bounded
+**Position unavailable** presentation using the shipped MP-02 feedback primitives, with no retry control and no
+user-facing package diagnostics.
+
+The complete textual description is associated separately with `aria-describedby` and includes orientation, side
+to move, all occupied squares in stable `a8` through `h1` FEN order using natural piece names, fully expanded
+castling rights, explicit en-passant state, halfmove clock, and fullmove number. One generated model supplies both a
+permanently available assistive description and a separate visible **Position description** disclosure. The visual
+disclosure is collapsed by default and has a dedicated expanded story.
+
+MP-04 is one Storybook-only visual stage. Its single Board Adapter group has explicit stories for the default
+starting position, a rich verified non-starting FEN, Black orientation, hidden coordinates, constrained sizing,
+invalid FEN, and the expanded position description. Review checks `320px`, `480px`, and `640px` containers. Focused
+component and Storybook browser proof must pass before explicit human acceptance; requested revisions keep the same
+stage open and require complete re-proof. MP-05 production integration cannot begin before that acceptance.
+
+MP-04 retains the package's default board and piece appearance. It verifies coordinate and piece/square contrast,
+board differentiation, and Windows High Contrast/`forced-colors`; only a failing accepted accessibility requirement
+permits the minimum centralized semantic-token correction. Adjustable square colors, color wheels, presets, and
+piece themes are deferred to a separately grilled later milestone. MP-04 does not create `/viewer`, traverse
+positions, move pieces, parse PGN, access stored data, run Stockfish, or add pixel-snapshot tests.
+
+The selected expanded-description treatment is retained at
+`docs/design-guides/mp04-board-adapter-reference.html` as a persistent, non-canonical advisory reference showing
+only the accepted treatment. Creating that reference retires the superseded three-option comparison under
+`scratch/mock-ups/`; neither artifact is implementation authority or a substitute for Storybook acceptance.
 
 ### MP-05 - Integrated Static Viewer
 
@@ -473,8 +535,8 @@ Persistence of user-created positions is not authorized before MP-12.
 - The selected React, TypeScript, Vite, and Node baseline remains unchanged by MP-01. A package pin
   must be checked immediately before installation but may not be silently replaced with a different
   technology or a toolchain upgrade.
-- MP-01 has no production `/` change, no `/viewer`, and no final product components. MP-03 is the first
-  milestone that changes the production status page's structural presentation, and it must preserve its
+- MP-01 has no production `/` change, no `/viewer`, and no final product components. MP-03 was the first
+  milestone that changed the production status page's structural presentation, and it preserved its
   behavior.
 - Storybook stories reuse committed Material tokens and CSS Modules. Storybook is not a second
   implementation of product components and the Foundation Check is removed by MP-05.
@@ -501,7 +563,7 @@ human,” not merely merged or green in automation.
 | MP-01 | - | A temporary Storybook Foundation Check visibly proves the selected stack and layered toolchain. | Open/run the check and inspect each valid, invalid, structural, and failure state. | No production `/` change, product UI, viewer, final primitives, shell, adapter, data, movement, or engine. | Confirm the harness, Storybook build, accessibility layers, baseline checks, and unchanged `/`. |
 | MP-02 | MP-01 | Material tokens and reusable feedback primitives appear in reviewable Storybook states. | Inspect token/state variants and keyboard/focus feedback behavior. | No shell, route, board adapter, or production routing change. | Review dark semantic roles, typography, states, focus, and contrast at the primitive layer. |
 | MP-03 | MP-02 | `/` has the reusable desktop shell and narrow-screen navigation transformation. | Navigate the existing status page and open, dismiss, and restore focus from the drawer. | No `/viewer`, board, or viewer context panel. | Confirm status behavior, wide/constrained shell, keyboard, pointer, and accessibility behavior. |
-| MP-04 | MP-03 | Valid and invalid FEN states render through one safe read-only board adapter. | Inspect supported orientation/coordinate configurations and the unavailable state. | No `/viewer`, stored data, traversal, movement, or Stockfish. | Verify validation, containment, accessibility, sizing, and package isolation. |
+| MP-04 | MP-03 | Seven explicit Storybook states render through one safe read-only board adapter. | Inspect the two valid positions, supported orientation/coordinate settings, three sizing checkpoints, complete position description, and unavailable state. | No `/viewer`, production integration, stored data, traversal, movement, Stockfish, or user-adjustable board colors. | After focused component and Storybook browser proof passes, explicitly accept validation, containment, complete FEN accessibility, forced-colors behavior, sizing, and package isolation. |
 | MP-05 | MP-04 | `/viewer` shows one safe starting position inside the reusable workspace. | Open `/viewer`, use the shell, and inspect the read-only board at wide and constrained sizes. | No stored data, traversal, movement, analysis, persistence, or retained Foundation Check. | Confirm viewer composition, `/` preservation, safety, accessibility, and Foundation Check retirement. |
 | MP-06 | MP-05 | A complete validated corpus and replay/completeness evidence are available. | Run or review the accepted corpus workflow and verify rerun/failure proof. | No viewer integration or ungrilled schema/storage policy. | Confirm source, replay, completeness, idempotency, and failure evidence. |
 | MP-07 | MP-06 | Any accepted stored FEN appears in the safe read-only viewer. | Select or address a stored position and observe loading, success, missing, and malformed states. | No game traversal or editing. | Display representative positions and verify safe missing/malformed handling. |
@@ -517,6 +579,7 @@ human,” not merely merged or green in automation.
 |---|---|---|
 | MP-01 | Accepted 2026-08-15 | Archived Plan at `docs/plans/done/verified-technology-foundation/verified-technology-foundation.md` records all 13 shipped stages; implementation evidence is in `frontend/src/features/foundation/`, `frontend/.storybook/`, and `tests/e2e/foundation-accessibility.spec.ts`; the full local check passed and production `/` remains unchanged because MP-01 is development-only. |
 | MP-02 | Accepted 2026-08-16 | Archived Plan at `docs/plans/done/material-design-foundation/material-design-foundation.md` records all 9 shipped stages; implementation evidence is in `frontend/src/styles/`, `frontend/src/features/design-system/`, and `tests/e2e/design-system-accessibility.spec.ts`; production `/` remains visually and structurally unchanged because MP-02 is Storybook-only. |
+| MP-03 | Accepted 2026-08-17 | Archived Plan at `docs/plans/done/responsive-site-shell/responsive-site-shell.md` records all 3 shipped stages; implementation evidence is in `frontend/src/features/app-shell/`, `frontend/src/features/status/StatusView.tsx`, `frontend/src/App.tsx`, `frontend/src/app.css`, and `tests/e2e/responsive-shell.spec.ts`; production `/` now uses the responsive shell with the status page inside `AppShell`. |
 
 ## MP-01 - Verified Technology Foundation
 
@@ -704,6 +767,32 @@ disabled future destinations.
 
 Accepted MP-02.
 
+**Implementation status**
+
+MP-03 was implemented and accepted on 2026-08-17. The archived Plan at
+`docs/plans/done/responsive-site-shell/responsive-site-shell.md` records all three ordered stages shipped
+and independently validated. The current repository evidence is:
+
+- `frontend/src/App.tsx:1-10` composes `<AppShell><StatusPage /></AppShell>`, adopting the shell on `/`;
+- `frontend/src/app.css:1-25` has been reduced to reset and shared-theme imports with no remaining global
+  component styles;
+- `frontend/src/features/app-shell/AppShell.tsx:1-83` owns the skip link, text-only identity, sticky top
+  bar, sidebar, constrained Base UI drawer with focus management, native Status link with
+  `aria-current="page"`, and `PageContentBoundary` around main content;
+- `frontend/src/features/app-shell/AppShell.module.css` owns shell structure, measurements, and responsive
+  behavior at the `679px`/`680px` breakpoint;
+- `frontend/src/features/app-shell/PageContentBoundary.tsx` wraps `react-error-boundary` with the exact
+  **Page unavailable** fallback and local **Try again** reset;
+- `frontend/src/features/status/StatusView.tsx:1-41` is the controlled presentational view with
+  discriminated `StatusViewState`, explicit `role="status"` and `role="alert"`, and the **System status**
+  heading;
+- `frontend/src/features/status/StatusView.module.css` owns status presentation including the `48rem`
+  maximum width;
+- `frontend/src/features/app-shell/AppShell.stories.tsx` provides the complete Storybook composition;
+- `tests/e2e/responsive-shell-storybook.spec.ts` provides the layered Storybook browser proof; and
+- `tests/e2e/responsive-shell.spec.ts` provides the production browser proof at `1920×1080`, `412×915`,
+  `679px`, and `680px`.
+
 **Human acceptance script**
 
 1. Open `/` at a wide viewport and confirm the shell and unchanged health purpose.
@@ -733,17 +822,32 @@ Accepted MP-02.
 
 **Included**
 
-- `chess.js` validation and position inspection boundary.
+- Frontend-only `chess.js` validation and position inspection boundary using strict, untrimmed standard FEN and
+  the pinned validator's acceptance semantics.
 - `react-chessboard` isolation behind the adapter.
-- Standard-FEN application contract, read-only configuration, orientation, coordinate visibility, and
-  bounded fluid sizing.
-- Accessible label, orientation, textual position description, and shared unavailable-state integration.
-- Valid, invalid, and relevant configuration stories.
+- Minimal public contract: `fen`, `orientation`, `showCoordinates`, and required non-empty contextual `label`.
+- Read-only, non-focusable configuration; White-default orientation; visible-default coordinates; and fluid
+  container sizing at `320px`, `480px`, and up to `40rem`/`640px`.
+- A complete generated description associated with `aria-describedby`: orientation, side to move, occupied squares
+  in stable `a8` through `h1` order with natural piece names, expanded castling rights, en-passant state, halfmove
+  clock, and fullmove number.
+- Permanently available assistive description plus a separate visible disclosure that is collapsed by default.
+- Compact shared unavailable-state integration for invalid input and unexpected board-render failures, with
+  prop-driven recovery, no retry control, and development-only diagnostics.
+- One Board Adapter Storybook group with explicit starting-position, rich non-starting-position, Black-orientation,
+  hidden-coordinate, constrained-sizing, invalid-FEN, and expanded-description stories.
+- Focused component and Storybook browser proof, including Windows High Contrast/`forced-colors`; no pixel snapshots.
+- Package-default board and piece appearance, with only minimum centralized token corrections if an accepted
+  accessibility check fails.
+- Persistent, explicitly non-canonical `docs/design-guides/mp04-board-adapter-reference.html` showing only the
+  accepted expanded-description treatment, with the superseded three-option scratch comparison removed after the
+  reference is verified.
 
 **Explicitly excluded**
 
-`/viewer`, stored data, traversal, PGN parsing, movement, highlighting, arrows, Stockfish, persistence,
-and package-specific state escaping the adapter.
+`/viewer`, production integration, stored data, traversal, PGN parsing, movement, highlighting, arrows, Stockfish,
+persistence, custom legality rules, silent normalization, exposed package options/state, description customization,
+sizing props, user-adjustable square colors, color wheels, presets, piece themes, and pixel-snapshot tests.
 
 **Prerequisite**
 
@@ -751,12 +855,26 @@ Accepted MP-03.
 
 **Human acceptance script**
 
-1. Open the valid starting-position story and confirm the board is static, bounded, and readable.
-2. Inspect orientation and coordinate configurations that the adapter actually supports.
-3. Exercise invalid or unsupported FEN input and confirm an accessible Position unavailable state.
-4. Confirm the surrounding shell/story surface survives the invalid state.
-5. Inspect the accessibility label, orientation, and textual position description.
-6. Confirm no movement handlers, analysis arrows, or inactive future props are exposed.
+1. Confirm the focused component and Storybook browser proof passed before beginning visual acceptance; automated
+   proof supplements rather than replaces this review.
+2. Open the valid starting-position and rich non-starting-position stories and confirm strict FEN rendering, static
+   behavior, package-default appearance, White-default orientation, and visible-default coordinates.
+3. Inspect the Black-orientation and hidden-coordinate stories, confirming that the textual inventory remains in
+   stable `a8` through `h1` order.
+4. Review the board in fixed `320px`, `480px`, and `640px` containers and confirm it remains a bounded square without
+   horizontal overflow.
+5. Inspect the required contextual label and the complete description: orientation, side to move, naturally named
+   occupied squares, expanded castling rights, explicit en-passant state, halfmove clock, and fullmove number.
+6. Confirm the assistive description remains available while the visual disclosure is collapsed, then inspect the
+   dedicated expanded-description story and its keyboard behavior.
+7. Exercise invalid FEN and unexpected render failure and confirm the same compact **Position unavailable** state,
+   no misleading board, no retry control, no package diagnostic, and survival of the surrounding story surface.
+8. Verify coordinate and piece/square contrast and review the complete composition under Windows High
+   Contrast/`forced-colors`; if a default fails, confirm only the minimum centralized token correction was made.
+9. Confirm the visual board, pieces, and squares add no keyboard stops or interactive semantics and that no movement
+   handlers, analysis arrows, inactive future props, sizing/description customization, or color controls are exposed.
+10. Explicitly accept the complete Storybook surface. If changes are requested, keep this single stage open, rerun
+    all proof after revision, and repeat the human review before MP-05 begins.
 
 **Stop condition**
 
@@ -1120,9 +1238,9 @@ or live-environment dependencies.
 
 ## Open Decisions and Grilling Gates
 
-MP-01 through MP-05 have confirmed destination and technology boundaries, but the exact implementation
-file ownership and route transport for MP-03 through MP-05 remain the responsibility of assessment and
-`to-plan` at selection time.
+MP-01 through MP-03 are implemented and accepted; MP-04 and MP-05 have confirmed destination and
+technology boundaries, but their exact implementation file ownership and route transport remain the
+responsibility of assessment and `to-plan` at selection time.
 
 - **MP-06:** Confirm the current source and replay oracle; schema and ownership; normalization and
   duplicate identity; idempotency, partial failures, reruns; and corpus proof.
