@@ -6,15 +6,4 @@
 
 .retry {
   justify-self: start;
-  padding: var(--cmt-spacing-8) var(--cmt-spacing-16);
-  border: 1px solid var(--md-sys-color-outline);
-  border-radius: var(--cmt-radius-default);
-  background: var(--md-sys-color-primary);
-  color: var(--md-sys-color-on-primary);
-  font: inherit;
-}
-
-.retry:focus-visible {
-  outline: var(--cmt-focus-ring-width) solid var(--cmt-focus-ring-color);
-  outline-offset: var(--cmt-focus-ring-separation);
 }

@@ -1,5 +1,6 @@
 import { ErrorBoundary, type FallbackProps } from "react-error-boundary";
 
+import { Button } from "../design-system/Button";
 import { PageFeedback } from "../design-system/feedback/PageFeedback";
 import styles from "./PageContentBoundary.module.css";
 
@@ -19,9 +20,9 @@ function BoundaryFallback({
         heading="Page unavailable"
         message="Something went wrong while displaying this page."
       />
-      <button className={styles.retry} type="button" onClick={handleReset}>
+      <Button variant="primary" size="sm" className={styles.retry} onClick={handleReset}>
         Try again
-      </button>
+      </Button>
     </div>
   );
 }

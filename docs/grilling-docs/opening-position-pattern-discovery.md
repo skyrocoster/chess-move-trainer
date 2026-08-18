@@ -1,9 +1,14 @@
 # Opening Position Pattern Discovery - Grilling Record
 
 **Recorded:** 2026-08-18  
-**Status:** Confirmed discovery and prototype evidence  
+**Status:** Confirmed discovery and prototype evidence; the position-corpus and occurrence-model branches
+are settled by MP-06, while the repertoire, population, and engine branches remain open for MP-07 and
+later grilling  
 **Implementation authority:** None  
-**Relationship:** Detailed input for later repertoire, position-corpus, and engine-analysis grilling
+**Relationship:** Detailed input for later repertoire, position-corpus, and engine-analysis grilling; the
+position-corpus branch fed MP-06 (see the [MP-06 grilling record](../grilling-docs/mp06-validated-fen-corpus.md)
+and the archived [Validated FEN corpus Plan](../plans/done/mp06-validated-fen-corpus/mp06-validated-fen-corpus.md)),
+and the remaining branches feed MP-07 and later milestones
 
 ## Purpose
 
@@ -461,10 +466,14 @@ The question-by-question outcomes were:
 
 ### Position corpus and occurrence model
 
-- Exact schema and ownership for replayed game positions.
-- Whether to store every occurrence, one occurrence per game/position, and a separate unique position index.
-- Idempotency, failure handling, replay-oracle checks, and corpus-completeness proof.
-- How to retain game, ply, move, timestamp, and source provenance for every occurrence.
+These questions are settled by MP-06, implemented and accepted on 2026-08-18: the extraction-owned
+version-1 schema and ownership; game-global `position_occurrence` rows per game and ply with SAN/UCI and
+counters plus a deduplicated first-four-field `position_state` unique index; atomic, idempotent reruns
+with fingerprint change detection, rollback, and publication/completeness proof; and provenance retained
+via the game reference plus ply and move fields. Delivery evidence is in the archived
+[Validated FEN corpus Plan](../plans/done/mp06-validated-fen-corpus/mp06-validated-fen-corpus.md); the
+settled contract is in the [MP-06 grilling record](../grilling-docs/mp06-validated-fen-corpus.md). The
+branches below remain open for MP-07 and later grilling.
 
 ### Repertoire behavior
 
