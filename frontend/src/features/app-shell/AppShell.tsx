@@ -1,5 +1,6 @@
 import { Drawer, type DrawerRoot } from "@base-ui/react/drawer";
 import { Activity, Menu, X } from "lucide-react";
+import { NavLink } from "react-router-dom";
 import { useRef } from "react";
 
 import { PageContentBoundary } from "./PageContentBoundary";
@@ -9,12 +10,18 @@ interface AppShellProps {
   children: React.ReactNode;
 }
 
-function StatusNavigationItem({ onSelect }: { onSelect?: () => void }) {
+function NavigationItems({ onSelect }: { onSelect?: () => void }) {
   return (
-    <a className={styles.navigationLink} href="/" aria-current="page" onClick={onSelect}>
-      <Activity aria-hidden="true" size={20} />
-      <span>Status</span>
-    </a>
+    <>
+      <NavLink className={styles.navigationLink} to="/" end onClick={onSelect}>
+        <Activity aria-hidden="true" size={20} />
+        <span>Status</span>
+      </NavLink>
+      <NavLink className={styles.navigationLink} to="/viewer" onClick={onSelect}>
+        <Activity aria-hidden="true" size={20} />
+        <span>Viewer</span>
+      </NavLink>
+    </>
   );
 }
 
@@ -43,7 +50,7 @@ export function AppShell({ children }: AppShellProps) {
 
         <aside className={styles.sidebar} aria-label="Primary navigation">
           <nav aria-label="Desktop navigation">
-            <StatusNavigationItem />
+            <NavigationItems />
           </nav>
         </aside>
 
@@ -67,7 +74,7 @@ export function AppShell({ children }: AppShellProps) {
                   </Drawer.Close>
                 </div>
                 <nav aria-label="Drawer navigation">
-                  <StatusNavigationItem onSelect={() => drawerActionsRef.current?.close()} />
+                  <NavigationItems onSelect={() => drawerActionsRef.current?.close()} />
                 </nav>
               </Drawer.Content>
             </Drawer.Popup>

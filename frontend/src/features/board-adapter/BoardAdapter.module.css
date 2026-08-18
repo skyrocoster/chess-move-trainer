@@ -43,27 +43,37 @@
 }
 
 .descriptionDisclosure {
-  border-block-start: 1px solid var(--md-sys-color-outline-variant);
+  max-block-size: min(16rem, 25vh);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: 1px solid var(--md-sys-color-outline);
+  border-radius: var(--cmt-radius-default);
+  background: var(--md-sys-color-surface-container);
   color: var(--md-sys-color-on-surface);
   min-inline-size: 0;
-  padding-block-start: 0.75rem;
 }
 
 .descriptionDisclosure summary {
   color: var(--md-sys-color-primary);
   cursor: pointer;
-  font: var(--md-sys-typescale-label-large);
-  padding: 0.25rem;
+  font-family: var(--md-sys-typescale-title-medium-font);
+  font-size: var(--md-sys-typescale-title-medium-size);
+  font-weight: var(--md-sys-typescale-title-medium-weight);
+  letter-spacing: var(--md-sys-typescale-title-medium-letter-spacing);
+  line-height: var(--md-sys-typescale-title-medium-line-height);
+  padding: var(--cmt-spacing-8) var(--cmt-spacing-16);
 }
 
 .descriptionDisclosure summary:focus-visible {
   outline: 2px solid var(--md-sys-color-primary);
-  outline-offset: 0.125rem;
+  outline-offset: calc(-1 * var(--cmt-focus-ring-separation));
 }
 
 .descriptionDisclosure p {
   font: var(--md-sys-typescale-body-medium);
-  margin-block: 0.75rem 0;
+  margin: 0;
+  padding: 0 var(--cmt-spacing-16) var(--cmt-spacing-16);
 }
 
 .unavailable {

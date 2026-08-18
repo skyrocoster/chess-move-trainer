@@ -49,14 +49,15 @@ MP-01 — verified technology foundation
                                         └── MP-12 — an unknown FEN can be persisted and analyzed
 ```
 
-This tree expresses strict dependency and direction. MP-01 through MP-05 collectively replace the original broad “Slice 1” envelope. Their shared product and technology direction is settled in this record. MP-01, MP-02, and MP-03 are implemented and accepted; MP-04 through MP-05 still require route assessment and an appropriately bounded Plan or direct brief before implementation. MP-06 onward remains deliberately ungrilled.
+This tree expresses strict dependency and direction. MP-01 through MP-05 collectively replace the original broad “Slice 1” envelope. Their shared product and technology direction is settled in this record. MP-01, MP-02, MP-03, MP-04, and MP-05 are implemented and accepted. MP-06 onward remains deliberately ungrilled.
 
 ## Grilling gate
 
 - **MP-01:** implemented and accepted on 2026-08-15; its completion is recorded in the archived focused Plan and the master-plan receipt.
 - **MP-02:** implemented and accepted on 2026-08-16; its completion is recorded in the archived focused Plan at `docs/plans/done/material-design-foundation/material-design-foundation.md`.
 - **MP-03:** implemented and accepted on 2026-08-17; its completion is recorded in the archived focused Plan at `docs/plans/done/responsive-site-shell/responsive-site-shell.md`.
-- **MP-04 through MP-05:** their destination boundaries are settled by this record and remain eligible for route assessment and focused planning one milestone at a time.
+- **MP-04:** implemented and accepted on 2026-08-17; its completion is recorded in the archived focused Plan at `docs/plans/done/safe-read-only-board-adapter/safe-read-only-board-adapter.md`.
+- **MP-05:** implemented and accepted on 2026-08-18; its completion is recorded in the archived focused Plan at `docs/plans/done/integrated-static-viewer/integrated-static-viewer.md`.
 - **MP-06 onward:** each requires its own fresh grilling before focused planning or implementation.
 - The milestone names below are destination envelopes only. They do not settle schemas, APIs, workflows, storage policy, engine settings, interaction behavior, or acceptance details.
 - No later milestone may infer authorization from the older records that this document supersedes.
@@ -116,11 +117,13 @@ records all 13 ordered stages shipped and the acceptance state. The current repo
 - `frontend/.storybook/main.ts:3-10` and `preview.tsx:1-4` configure the Storybook surface;
 - `tests/e2e/foundation-accessibility.spec.ts:8-34` and `tests/e2e/playwright.config.ts:7-25` provide
   the browser axe proof and its Storybook server; and
-- `frontend/src/App.tsx:1-10` now composes `<AppShell><StatusPage /></AppShell>`, adopting the MP-03
-  shell on `/`.
+- `frontend/src/App.tsx` adopted the MP-03 shell on `/` at MP-03 acceptance; MP-05 later introduced
+  production React Router composition (now `<AppShell><Routes>` with `/`, `/viewer`, and a catch-all `*`).
 
-The full local check passed during the assessment. MP-04 is the next implementation frontier. The
-temporary Foundation Check remains in place because MP-05 has not yet replaced its compatibility proofs.
+The full local check passed during the assessment. MP-05 was later implemented and accepted on 2026-08-18;
+it introduced the viewer workspace as the adapter's first production consumer and retired the temporary
+Foundation Check after real shell, primitive, board, error, router, and viewer stories or consumers replaced
+every compatibility proof it provided.
 
 ### MP-02 — Material tokens and reusable UI primitives
 
@@ -174,8 +177,9 @@ shipped and independently validated. The current repository evidence is:
   tests, while `tests/e2e/design-system-accessibility.spec.ts` provides the verification-only browser axe
   proof.
 
-Production `/` remains visually and structurally unchanged, and the temporary MP-01 Foundation Check
-remains in place until MP-05.
+Production `/` remains visually and structurally unchanged. The temporary MP-01 Foundation Check was later
+retired by MP-05, which replaced every compatibility proof with real shell, primitive, board, error, router,
+and viewer stories or consumers.
 
 ### MP-03 — responsive site shell
 
@@ -274,8 +278,8 @@ and independently validated. The current repository evidence is:
 - `tests/e2e/responsive-shell.spec.ts` provides the production browser proof at `1920×1080`, `412×915`,
   `679px`, and `680px`.
 
-The full local check passed after MP-03 acceptance. The temporary MP-01 Foundation Check remains in place
-because MP-05 has not yet replaced its compatibility proofs.
+The full local check passed after MP-03 acceptance. The temporary MP-01 Foundation Check was later retired
+by MP-05, which replaced every compatibility proof with real stories or consumers.
 
 ### MP-04 — safe read-only board adapter
 
@@ -287,6 +291,36 @@ MP-04 owns the chess.js validation boundary, react-chessboard isolation, standar
 
 MP-04 does not create `/viewer`, traverse positions, move pieces, parse PGN, access stored data, or run Stockfish. The contained **Position unavailable** state reuses the shipped MP-02 `PanelFeedback`/`PageFeedback` primitives, and any theme values passed to `react-chessboard` originate in the shipped MP-02 `--md-sys-*` token contract rather than new page-local literals.
 
+#### Implementation status and current evidence
+
+MP-04 was implemented and accepted on 2026-08-17. The archived focused Plan at
+`docs/plans/done/safe-read-only-board-adapter/safe-read-only-board-adapter.md` records the single
+Storybook-only stage shipped and independently validated. The current repository evidence is:
+
+- `frontend/src/features/board-adapter/BoardAdapter.tsx:1-259` owns the strict `chess.js` `validateFen`
+  boundary, the generated position model and complete textual description, the read-only `react-chessboard`
+  rendering with package-generated semantic attributes stripped, the contained **Position unavailable**
+  presentation, and the `ErrorBoundary` around unexpected board-render failures;
+- `frontend/src/features/board-adapter/BoardAdapter.module.css` owns the bounded board, disclosure,
+  unavailable, focus, and `forced-colors` presentation;
+- `frontend/src/features/board-adapter/BoardAdapter.stories.tsx:1-86` provides the seven direct `Board
+  Adapter` stories (default valid starting position, rich non-starting position, Black orientation, hidden
+  coordinates, constrained-width sizing, invalid FEN, and expanded position description);
+- `frontend/src/features/board-adapter/BoardAdapter.test.tsx:1-125` provides the focused component proof
+  for strict valid/invalid FEN, the rich-fixture description, orientation order, coordinate visibility,
+  bounded sizing, collapsed/expanded disclosure, invalid and unexpected-failure containment,
+  non-interactivity, and component-level axe;
+- `tests/e2e/board-adapter-storybook.spec.ts` provides the Storybook browser proof at `320px`, `480px`,
+  and `640px` containers, including a `forced-colors` review context;
+- `frontend/.storybook/main.ts` registers the `board-adapter` story glob alongside the existing feature
+  globs;
+- `docs/design-guides/mp04-board-adapter-reference.html` records the accepted expanded-description
+  treatment; and
+- the temporary MP-01 Foundation Check was retired by MP-05 once real stories or consumers replaced its
+  compatibility proofs.
+
+MP-04 does not change production `/`; it is Storybook-only, and its adapter has no production consumer yet.
+
 ### MP-05 — integrated static viewer
 
 **Tangible claim:**
@@ -295,7 +329,64 @@ MP-04 does not create `/viewer`, traverse positions, move pieces, parse PGN, acc
 
 MP-05 owns production React Router composition, durable `/viewer`, the viewer workspace and viewer-owned desktop context region, constrained-layout omission of empty context, integration of the MP-04 adapter with the standard starting position, and preservation of `/`.
 
-MP-05 removes the temporary MP-01 Foundation Check after real shell, primitive, board, error, router, and viewer stories or consumers replace every compatibility proof. It does not connect stored data or add chess interaction. The viewer workspace adopts the shipped MP-02 tokens, typescale, and feedback primitives for its own structural and feedback presentation.
+MP-05 removed the temporary MP-01 Foundation Check after real shell, primitive, board, error, router, and viewer stories or consumers replaced every compatibility proof. It does not connect stored data or add chess interaction. The viewer workspace adopts the shipped MP-02 tokens, typescale, and feedback primitives for its own structural and feedback presentation.
+
+The selected viewer composition uses a visible **Position viewer** page heading without a subtitle. This
+heading describes the durable workspace rather than characterizing it as permanently static; exact supporting
+copy remains outside the milestone's design contract. The board uses its required specific contextual label.
+At wide sizes, the workspace uses balanced primary and context columns with the board centered in its column.
+The intentionally empty context panel is visibly labeled **Context**, but it is not exposed as an empty
+assistive-technology landmark. Semantic landmark treatment may be added when the panel gains real content.
+
+Viewer reflow is driven by a CSS container query on the workspace's available content width, not by reusing
+the shell's viewport breakpoint. At constrained workspace widths, the empty context panel is omitted. Dedicated
+wide and constrained Viewer stories provide deterministic composition review in addition to production route
+proof. Routes other than `/` and `/viewer` produce an explicit in-shell **Page not found** state rather than
+silently redirecting to `/`.
+
+The selected viewer-workspace composition is retained at
+`docs/design-guides/mp05-viewer-workspace-reference.html` as a persistent, non-canonical advisory reference
+showing only the accepted treatment. Creating that reference retires the superseded three-option comparison
+under `scratch/mock-ups/`; neither artifact is implementation authority or a substitute for Storybook
+acceptance.
+
+#### Implementation status and current evidence
+
+MP-05 was implemented and accepted on 2026-08-18. The archived focused Plan at
+`docs/plans/done/integrated-static-viewer/integrated-static-viewer.md` records all three ordered
+stages shipped and independently validated. The current repository evidence is:
+
+- `frontend/src/main.tsx:1-16` mounts `BrowserRouter` so `App` tests can wrap `MemoryRouter` themselves;
+- `frontend/src/App.tsx:1-18` composes `AppShell` with `Routes` for `/` (`StatusPage`), `/viewer`
+  (`ViewerWorkspace`), and a catch-all `*` (`PageNotFoundView`);
+- `frontend/src/features/app-shell/AppShell.tsx:1-90` replaces the native Status link with `NavLink`-based
+  `NavigationItems` for Status and Viewer, marks the active destination with `aria-current="page"`, and
+  closes the drawer on destination select;
+- `frontend/src/features/app-shell/PageNotFoundView.tsx:1-12` renders the in-shell **Page not found**
+  state inside the shell's main-content boundary, reusing the shipped MP-02 `PageFeedback`;
+- `frontend/src/features/viewer/ViewerWorkspace.tsx:1-45` owns the **Position viewer** H1, the MP-04
+  `BoardAdapter` with `STARTING_FEN` and the settled contextual label, and the visibly labeled non-landmark
+  **Context** panel with a container-query-driven collapsed disclosure;
+- `frontend/src/features/viewer/ViewerWorkspace.module.css:1-141` owns the workspace container query,
+  balanced columns, capped `66rem` maximum width, the `@container (max-width: 40rem)` omission contract,
+  and the `forced-colors` treatment;
+- `frontend/src/features/viewer/ViewerWorkspace.stories.tsx:1-26` provides the dedicated wide and
+  constrained Viewer stories;
+- `frontend/src/features/viewer/ViewerWorkspace.test.tsx:1-78` provides the focused component proof for the
+  single H1 with no subtitle, the starting-position board, the non-landmark Context panel, the
+  container-query omission contract, and component-level axe;
+- `tests/e2e/viewer-storybook.spec.ts` and `tests/e2e/viewer.spec.ts` provide the Storybook and production
+  browser proofs at wide and constrained widths;
+- `frontend/src/features/app-shell/AppShell.test.tsx` and `tests/e2e/responsive-shell.spec.ts` flip their
+  MP-03 no-viewer assertions to expect the router-aware Viewer destination;
+- `frontend/src/features/foundation/` (component, module CSS, stories, test), the `foundation` Storybook
+  glob in `frontend/.storybook/main.ts`, and `tests/e2e/foundation-accessibility.spec.ts` were deleted by
+  MP-05 Stage 3, retiring the temporary MP-01 Foundation Check with zero remaining frontend references; and
+- the non-canonical `docs/design-guides/mp05-viewer-workspace-reference.html` shows only the accepted
+  treatment and is not implementation authority.
+
+MP-05 does not connect stored data, traverse games, permit piece movement, highlight squares, draw arrows,
+run Stockfish, or persist a position. The temporary Foundation Check is now removed.
 
 ### Renumbering map
 
@@ -402,6 +493,14 @@ Exact component names and file ownership remain implementation-planning details,
 - Empty means intentionally unpopulated; it must not be filled with fake functions or explanatory filler.
 - On narrow screens, contextual content stacks below the primary content.
 - When the context region is empty at that narrow layout, the empty region is omitted rather than consuming vertical space.
+- The selected MP-05 composition has a visible **Position viewer** heading and no subtitle.
+- Wide layouts use balanced primary and context columns, with the board centered in its column.
+- The empty desktop panel is visibly labeled **Context** without becoming an empty assistive-technology
+  landmark.
+- Workspace reflow follows available content width through a CSS container query rather than the shell's
+  viewport breakpoint.
+- Wide and constrained Viewer stories are explicit isolated review surfaces.
+- Unmatched routes render an in-shell **Page not found** state and do not redirect silently to `/`.
 
 ## Slice 1 — visual system
 
@@ -584,7 +683,7 @@ No design can guarantee that change will never be required. The concrete goal is
 
 ## MP-01 through MP-05 — confirmed technology foundation
 
-These choices were grilled after the original broad static-foundation boundary was settled. They are part of the detailed MP-01 through MP-05 design authority. MP-01 has installed and compatibility-checked the complete stack; MP-02 has authored the reusable visual and feedback language; MP-03 has adopted the responsive shell on `/`; MP-04 and MP-05 remain pending implementation selection and introduce their real product consumers. The selections use established packages where those packages fit the existing React application and the agreed styling, accessibility, and ownership boundaries.
+These choices were grilled after the original broad static-foundation boundary was settled. They are part of the detailed MP-01 through MP-05 design authority. MP-01 has installed and compatibility-checked the complete stack; MP-02 has authored the reusable visual and feedback language; MP-03 has adopted the responsive shell on `/`; MP-04 has shipped the Storybook-only board adapter; MP-05 has integrated the adapter into the production `/viewer` workspace, introduced production React Router composition, router-aware navigation, and the in-shell **Page not found** state, and retired the temporary Foundation Check. The selections use established packages where those packages fit the existing React application and the agreed styling, accessibility, and ownership boundaries.
 
 Versions below are the researched stable versions on 2026-08-15. The repository convention is to pin exact dependency versions. Focused planning must verify the package metadata and lockfile operation immediately before installation, but it must not silently substitute a different technology.
 
@@ -1130,12 +1229,12 @@ This record does not:
 
 ## Completion rationale
 
-The MP-01 through MP-05 foundation design frontier is settled. MP-01, MP-02, and MP-03 are implemented and
-accepted; MP-04 through MP-05 remain pending route selection
-while their destinations, sequence, exclusions, technology stack, temporary compatibility-proof lifecycle, page
-structure, shell ownership, responsive behavior, visual-system basis, styling ownership, board safety
-contract, MP-04 single-stage Storybook-to-human-acceptance lifecycle, exact adapter API and story surface, complete
-textual FEN representation, accessibility target, shared-error foundation, and reuse boundaries remain settled.
+The MP-01 through MP-05 foundation design frontier is settled. MP-01, MP-02, MP-03, MP-04, and MP-05 are
+implemented and accepted; their destinations, sequence, exclusions, technology stack, temporary
+compatibility-proof lifecycle, page structure, shell ownership, responsive behavior, visual-system basis,
+styling ownership, board safety contract, MP-04 single-stage Storybook-to-human-acceptance lifecycle, exact
+adapter API and story surface, complete textual FEN representation, accessibility target, shared-error
+foundation, and reuse boundaries remain settled.
 
 The later milestone frontier is intentionally not opened here. Each later milestone carries an explicit grilling prerequisite and an unanswered-decision branch. This preserves a coherent master-plan direction without pretending that later product behavior has already been designed.
 

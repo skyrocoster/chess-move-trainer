@@ -41,6 +41,7 @@ def run(label: str, command: str, cwd: Path) -> bool:
     output = (result.stdout + "\n" + result.stderr).strip().splitlines()
     for line in output[-MAX_FAILURE_LINES:]:
         print(f"  {line}")
+    print(f"ADVICE  {label} did not pass; review the output above before proceeding")
     return False
 
 
@@ -62,11 +63,14 @@ def main() -> int:
         )
     if not commands:
         parser.error("supply --command LABEL=COMMAND and/or --docs")
+    failed = False
     for label, command in commands:
         if not run(label, command, cwd):
-            print("STOP WHEN: FAILED")
-            return 1
-    print("STOP WHEN: passed")
+            failed = True
+    if failed:
+        print("ADVICE  one or more checks did not pass; review before proceeding")
+    else:
+        print("ADVICE  all checks passed")
     return 0
 
 

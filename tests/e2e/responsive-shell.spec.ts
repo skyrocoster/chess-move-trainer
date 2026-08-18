@@ -9,9 +9,12 @@ async function openProduction(page: Page, width: number) {
   await expect(page).toHaveURL(/\/$/);
   await expect(page.getByText("Chess Move Trainer", { exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "System status" })).toBeVisible();
-  await expect(page.locator('a[href="/"]').filter({ hasText: "Status" }).first()).toHaveAttribute("href", "/");
-  await expect(page.locator('a[href="/viewer"]')).toHaveCount(0);
-  await expect(page.getByText("Viewer", { exact: true })).toHaveCount(0);
+  const statusLink = page.locator('a[href="/"]').filter({ hasText: "Status" }).first();
+  await expect(statusLink).toHaveAttribute("href", "/");
+  await expect(statusLink).toHaveAttribute("aria-current", "page");
+  const viewerLink = page.locator('a[href="/viewer"]').filter({ hasText: "Viewer" }).first();
+  await expect(viewerLink).toHaveAttribute("href", "/viewer");
+  await expect(viewerLink).not.toHaveAttribute("aria-current", "page");
 }
 
 test("uses the approved shell at desktop and breakpoint widths", async ({ page }) => {
@@ -38,12 +41,16 @@ test("supports drawer focus containment and every required dismissal path", asyn
   const drawer = page.getByRole("dialog");
   const close = drawer.getByRole("button", { name: "Close navigation menu" });
   const status = drawer.getByRole("link", { name: "Status" });
+  const viewer = drawer.getByRole("link", { name: "Viewer" });
   await expect(drawer).toBeVisible();
   await expect(drawer.getByRole("heading", { name: "Navigation" })).toBeVisible();
   await expect(close).toBeFocused();
+  await expect(viewer).toHaveAttribute("href", "/viewer");
 
   await page.keyboard.press("Tab");
   await expect(status).toBeFocused();
+  await page.keyboard.press("Tab");
+  await expect(viewer).toBeFocused();
   await page.keyboard.press("Tab");
   await expect(close).toBeFocused();
 
@@ -85,5 +92,18 @@ test("keeps the shell available for an unavailable backend", async ({ page }) =>
   await expect(page.getByRole("heading", { name: "System status" })).toBeVisible();
   await expect(page.getByRole("alert")).toContainText("Backend unavailable");
   await expect(page.getByRole("link", { name: "Status" }).first()).toHaveAttribute("href", "/");
-  await expect(page.locator('a[href="/viewer"]')).toHaveCount(0);
+  await expect(page.locator('a[href="/viewer"]')).toHaveCount(1);
+});
+
+test("closes the drawer when Viewer is selected", async ({ page }) => {
+  await openProduction(page, 412);
+  const trigger = page.getByRole("button", { name: "Open navigation menu" });
+
+  await trigger.click();
+  const drawer = page.getByRole("dialog");
+  await drawer.getByRole("link", { name: "Viewer" }).click();
+
+  await expect(page).toHaveURL(/\/viewer$/);
+  await expect(drawer).toBeHidden();
+  await expect(page.getByRole("heading", { name: "Position viewer" })).toBeVisible();
 });

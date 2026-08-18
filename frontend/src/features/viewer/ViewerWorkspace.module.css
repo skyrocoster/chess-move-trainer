@@ -1,0 +1,141 @@
+/*
+ * Viewer workspace composition (Stage 1).
+ *
+ * Adopts the shipped MP-02 token surface (cmt-tokens.css and
+ * cmt-typescale.css, loaded globally through app.css): no literal colors and
+ * no inline application CSS. The workspace root is the CSS container and
+ * reflows on its own available content width via a container query; it must
+ * not couple to the app-shell viewport breakpoint.
+ */
+.workspace {
+  box-sizing: border-box;
+  background: var(--md-sys-color-background);
+  color: var(--md-sys-color-on-background);
+  column-gap: var(--cmt-spacing-24);
+  container-type: inline-size;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  margin-inline: auto;
+  max-inline-size: 66rem;
+  min-inline-size: 0;
+  padding: var(--cmt-spacing-24);
+}
+
+.heading {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding-block-end: var(--cmt-spacing-24);
+  color: var(--md-sys-color-on-surface);
+  font-family: var(--md-sys-typescale-headline-medium-font);
+  font-size: var(--md-sys-typescale-headline-medium-size);
+  font-weight: var(--md-sys-typescale-headline-medium-weight);
+  letter-spacing: var(--md-sys-typescale-headline-medium-letter-spacing);
+  line-height: var(--md-sys-typescale-headline-medium-line-height);
+  text-align: center;
+}
+
+.boardColumn {
+  min-inline-size: 0;
+}
+
+.contextPanel,
+.contextDisclosure {
+  max-block-size: min(16rem, 25vh);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  min-inline-size: 0;
+  border: 1px solid var(--md-sys-color-outline);
+  border-radius: var(--cmt-radius-default);
+  background: var(--md-sys-color-surface-container);
+  color: var(--md-sys-color-on-surface);
+}
+
+.contextPanel {
+  align-self: start;
+}
+
+.contextHeading,
+.contextDisclosure summary {
+  margin: 0;
+  padding: var(--cmt-spacing-8) var(--cmt-spacing-16);
+  color: var(--md-sys-color-primary);
+  font-family: var(--md-sys-typescale-title-medium-font);
+  font-size: var(--md-sys-typescale-title-medium-size);
+  font-weight: var(--md-sys-typescale-title-medium-weight);
+  letter-spacing: var(--md-sys-typescale-title-medium-letter-spacing);
+  line-height: var(--md-sys-typescale-title-medium-line-height);
+}
+
+.contextDisclosure {
+  display: none;
+}
+
+.contextDisclosure summary {
+  cursor: pointer;
+}
+
+.contextContent {
+  margin: 0;
+  padding: 0 var(--cmt-spacing-16) var(--cmt-spacing-16) var(--cmt-spacing-32);
+  color: var(--md-sys-color-on-surface);
+  font: var(--md-sys-typescale-body-medium);
+}
+
+.contextContent li + li {
+  margin-block-start: var(--cmt-spacing-8);
+}
+
+.contextDisclosure summary:focus-visible {
+  outline: var(--cmt-focus-ring-width) solid var(--cmt-focus-ring-color);
+  outline-offset: calc(-1 * var(--cmt-focus-ring-separation));
+}
+
+@container (max-width: 40rem) {
+  .boardColumn {
+    grid-column: 1 / -1;
+  }
+
+  .contextPanel {
+    display: none;
+  }
+
+  .contextDisclosure {
+    display: block;
+    grid-column: 1 / -1;
+    margin-block-start: var(--cmt-spacing-16);
+  }
+}
+
+.constrainedStory {
+  inline-size: 20rem;
+  max-inline-size: 100%;
+}
+
+@media (forced-colors: active) {
+  .workspace {
+    background: Canvas;
+    color: CanvasText;
+  }
+
+  .heading,
+  .contextHeading,
+  .contextContent {
+    color: CanvasText;
+  }
+
+  .contextPanel,
+  .contextDisclosure {
+    background: Canvas;
+    border-color: CanvasText;
+    color: CanvasText;
+  }
+
+  .contextDisclosure summary {
+    color: LinkText;
+  }
+
+  .contextDisclosure summary:focus-visible {
+    outline-color: Highlight;
+  }
+}

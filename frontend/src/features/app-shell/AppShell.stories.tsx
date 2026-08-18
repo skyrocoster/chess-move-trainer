@@ -2,6 +2,7 @@ import { useState } from "react";
 
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect, userEvent, within } from "storybook/test";
+import { MemoryRouter } from "react-router-dom";
 
 import { AppShell } from "./AppShell";
 import { PageContentBoundary } from "./PageContentBoundary";
@@ -16,6 +17,13 @@ const meta = {
   parameters: {
     layout: "fullscreen",
   },
+  decorators: [
+    (Story) => (
+      <MemoryRouter>
+        <Story />
+      </MemoryRouter>
+    ),
+  ],
 } satisfies Meta<typeof AppShell>;
 
 export default meta;
