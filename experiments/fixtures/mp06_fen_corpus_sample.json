@@ -1,0 +1,810 @@
+{
+  "analysis_keys": [
+    {
+      "count": 3,
+      "key": "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3",
+      "occurrences": [
+        {
+          "game_id": "5f67407e-91bb-11f1-b2f3-fbc79f01000f",
+          "ply": 1
+        },
+        {
+          "game_id": "2d663e00-ed4b-11ef-b2f1-db2e2701000f",
+          "ply": 1
+        },
+        {
+          "game_id": "7216d093-59e0-11f1-aeec-b5154d01000f",
+          "ply": 1
+        }
+      ]
+    },
+    {
+      "count": 3,
+      "key": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -",
+      "occurrences": [
+        {
+          "game_id": "5f67407e-91bb-11f1-b2f3-fbc79f01000f",
+          "ply": 0
+        },
+        {
+          "game_id": "2d663e00-ed4b-11ef-b2f1-db2e2701000f",
+          "ply": 0
+        },
+        {
+          "game_id": "7216d093-59e0-11f1-aeec-b5154d01000f",
+          "ply": 0
+        }
+      ]
+    },
+    {
+      "count": 2,
+      "key": "rnbqkbnr/pppp1ppp/8/4p3/4P3/2N5/PPPP1PPP/R1BQKBNR b KQkq -",
+      "occurrences": [
+        {
+          "game_id": "5f67407e-91bb-11f1-b2f3-fbc79f01000f",
+          "ply": 3
+        },
+        {
+          "game_id": "2d663e00-ed4b-11ef-b2f1-db2e2701000f",
+          "ply": 3
+        }
+      ]
+    },
+    {
+      "count": 2,
+      "key": "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq e6",
+      "occurrences": [
+        {
+          "game_id": "5f67407e-91bb-11f1-b2f3-fbc79f01000f",
+          "ply": 2
+        },
+        {
+          "game_id": "2d663e00-ed4b-11ef-b2f1-db2e2701000f",
+          "ply": 2
+        }
+      ]
+    },
+    {
+      "count": 1,
+      "key": "4kb1r/p2Qpppp/2B5/8/1n4b1/2N2N1P/1PP2PP1/q1B1K2R b Kk -",
+      "occurrences": [
+        {
+          "game_id": "d3be8bbe-e539-11ee-852a-b6c21f01000b",
+          "ply": 27
+        }
+      ]
+    },
+    {
+      "count": 1,
+      "key": "4kb1r/p2npppp/2B5/8/1n4b1/2N2N1P/1PP2PP1/q1BQK2R w Kk -",
+      "occurrences": [
+        {
+          "game_id": "d3be8bbe-e539-11ee-852a-b6c21f01000b",
+          "ply": 26
+        }
+      ]
+    },
+    {
+      "count": 1,
+      "key": "4kb1r/p2npppp/n1B5/8/6b1/2N2N1P/1PP2PP1/q1BQK2R b Kk -",
+      "occurrences": [
+        {
+          "game_id": "d3be8bbe-e539-11ee-852a-b6c21f01000b",
+          "ply": 25
+        }
+      ]
+    },
+    {
+      "count": 1,
+      "key": "4kb1r/p2npppp/n1B5/8/6b1/2N2N2/1PP2PPP/q1BQK2R w Kk -",
+      "occurrences": [
+        {
+          "game_id": "d3be8bbe-e539-11ee-852a-b6c21f01000b",
+          "ply": 24
+        }
+      ]
+    },
+    {
+      "count": 1,
+      "key": "4kb1r/p3pppp/nnB5/8/6b1/2N2N2/1PP2PPP/q1BQK2R b Kk -",
+      "occurrences": [
+        {
+          "game_id": "d3be8bbe-e539-11ee-852a-b6c21f01000b",
+          "ply": 23
+        }
+      ]
+    },
+    {
+      "count": 1,
+      "key": "B3kb1r/p2npppp/n7/8/6b1/2N2N2/1PP2PPP/q1BQK2R b Kk -",
+      "occurrences": [
+        {
+          "game_id": "d3be8bbe-e539-11ee-852a-b6c21f01000b",
+          "ply": 21
+        }
+      ]
+    },
+    {
+      "count": 1,
+      "key": "B3kb1r/p3pppp/nn6/8/6b1/2N2N2/1PP2PPP/q1BQK2R w Kk -",
+      "occurrences": [
+        {
+          "game_id": "d3be8bbe-e539-11ee-852a-b6c21f01000b",
+          "ply": 22
+        }
+      ]
+    },
+    {
+      "count": 1,
+      "key": "r3kb1r/p2npppp/n1B5/8/6b1/2N2N2/1PP2PPP/q1BQK2R w Kkq -",
+      "occurrences": [
+        {
+          "game_id": "d3be8bbe-e539-11ee-852a-b6c21f01000b",
+          "ply": 20
+        }
+      ]
+    },
+    {
+      "count": 1,
+      "key": "r3kb1r/p3pppp/n1B2n2/8/6b1/2N2N2/1PP2PPP/q1BQK2R b Kkq -",
+      "occurrences": [
+        {
+          "game_id": "d3be8bbe-e539-11ee-852a-b6c21f01000b",
+          "ply": 19
+        }
+      ]
+    },
+    {
+      "count": 1,
+      "key": "r3kb1r/p3pppp/n1p2n2/8/B5b1/2N2N2/1PP2PPP/q1BQK2R w Kkq -",
+      "occurrences": [
+        {
+          "game_id": "d3be8bbe-e539-11ee-852a-b6c21f01000b",
+          "ply": 18
+        }
+      ]
+    },
+    {
+      "count": 1,
+      "key": "rn2kb1r/p3pppp/2p2n2/8/B5b1/2N2N2/1PP2PPP/q1BQK2R b Kkq -",
+      "occurrences": [
+        {
+          "game_id": "d3be8bbe-e539-11ee-852a-b6c21f01000b",
+          "ply": 17
+        }
+      ]
+    },
+    {
+      "count": 1,
+      "key": "rn2kb1r/p3pppp/2p2n2/8/B5b1/2N5/1PP2PPP/q1BQK1NR w Kkq -",
+      "occurrences": [
+        {
+          "game_id": "d3be8bbe-e539-11ee-852a-b6c21f01000b",
+          "ply": 16
+        }
+      ]
+    },
+    {
+      "count": 1,
+      "key": "rnb1kb1r/p3pppp/2p2n2/1B6/8/2N5/1PP2PPP/q1BQK1NR w Kkq -",
+      "occurrences": [
+        {
+          "game_id": "d3be8bbe-e539-11ee-852a-b6c21f01000b",
+          "ply": 14
+        }
+      ]
+    },
+    {
+      "count": 1,
+      "key": "rnb1kb1r/p3pppp/2p2n2/8/B7/2N5/1PP2PPP/q1BQK1NR b Kkq -",
+      "occurrences": [
+        {
+          "game_id": "d3be8bbe-e539-11ee-852a-b6c21f01000b",
+          "ply": 15
+        }
+      ]
+    },
+    {
+      "count": 1,
+      "key": "rnb1kb1r/pp2pppp/2P2n2/1B6/8/2N5/1PP2PPP/q1BQK1NR b Kkq -",
+      "occurrences": [
+        {
+          "game_id": "d3be8bbe-e539-11ee-852a-b6c21f01000b",
+          "ply": 13
+        }
+      ]
+    },
+    {
+      "count": 1,
+      "key": "rnb1kb1r/pp2pppp/2p2n2/1B1P4/8/2N5/1PP2PPP/q1BQK1NR w Kkq -",
+      "occurrences": [
+        {
+          "game_id": "d3be8bbe-e539-11ee-852a-b6c21f01000b",
+          "ply": 12
+        }
+      ]
+    },
+    {
+      "count": 1,
+      "key": "rnb1kb1r/ppp1pppp/5n2/1B1P4/8/2N5/1PP2PPP/q1BQK1NR b Kkq -",
+      "occurrences": [
+        {
+          "game_id": "d3be8bbe-e539-11ee-852a-b6c21f01000b",
+          "ply": 11
+        }
+      ]
+    },
+    {
+      "count": 1,
+      "key": "rnb1kb1r/ppp1pppp/5n2/3P4/8/2N5/1PP2PPP/q1BQKBNR w Kkq -",
+      "occurrences": [
+        {
+          "game_id": "d3be8bbe-e539-11ee-852a-b6c21f01000b",
+          "ply": 10
+        }
+      ]
+    },
+    {
+      "count": 1,
+      "key": "rnb1kbnr/ppp1pppp/8/3P4/8/2N5/1PP2PPP/q1BQKBNR b Kkq -",
+      "occurrences": [
+        {
+          "game_id": "d3be8bbe-e539-11ee-852a-b6c21f01000b",
+          "ply": 9
+        }
+      ]
+    },
+    {
+      "count": 1,
+      "key": "rnb1kbnr/ppp1pppp/8/3q4/8/2N5/1PPP1PPP/2BQKBNR b Kkq -",
+      "occurrences": [
+        {
+          "game_id": "d3be8bbe-e539-11ee-852a-b6c21f01000b",
+          "ply": 5
+        }
+      ]
+    },
+    {
+      "count": 1,
+      "key": "rnb1kbnr/ppp1pppp/8/3q4/8/8/1PPP1PPP/1NBQKBNR w Kkq -",
+      "occurrences": [
+        {
+          "game_id": "d3be8bbe-e539-11ee-852a-b6c21f01000b",
+          "ply": 4
+        }
+      ]
+    },
+    {
+      "count": 1,
+      "key": "rnb1kbnr/ppp1pppp/8/8/3P4/2N5/1PP2PPP/q1BQKBNR w Kkq -",
+      "occurrences": [
+        {
+          "game_id": "d3be8bbe-e539-11ee-852a-b6c21f01000b",
+          "ply": 8
+        }
+      ]
+    },
+    {
+      "count": 1,
+      "key": "rnb1kbnr/ppp1pppp/8/q7/3P4/2N5/1PP2PPP/2BQKBNR b Kkq d3",
+      "occurrences": [
+        {
+          "game_id": "d3be8bbe-e539-11ee-852a-b6c21f01000b",
+          "ply": 7
+        }
+      ]
+    },
+    {
+      "count": 1,
+      "key": "rnb1kbnr/ppp1pppp/8/q7/8/2N5/1PPP1PPP/2BQKBNR w Kkq -",
+      "occurrences": [
+        {
+          "game_id": "d3be8bbe-e539-11ee-852a-b6c21f01000b",
+          "ply": 6
+        }
+      ]
+    },
+    {
+      "count": 1,
+      "key": "rnbqkbnr/pp3Qp1/2pp3p/4p3/2B1P3/2N5/PPPP1PPP/R1B1K1NR b KQkq -",
+      "occurrences": [
+        {
+          "game_id": "5f67407e-91bb-11f1-b2f3-fbc79f01000f",
+          "ply": 9
+        }
+      ]
+    },
+    {
+      "count": 1,
+      "key": "rnbqkbnr/pp3pp1/2pp3p/4p3/2B1P3/2N2Q2/PPPP1PPP/R1B1K1NR w KQkq -",
+      "occurrences": [
+        {
+          "game_id": "5f67407e-91bb-11f1-b2f3-fbc79f01000f",
+          "ply": 8
+        }
+      ]
+    },
+    {
+      "count": 1,
+      "key": "rnbqkbnr/pp3ppp/2pp4/4p3/2B1P3/2N2Q2/PPPP1PPP/R1B1K1NR b KQkq -",
+      "occurrences": [
+        {
+          "game_id": "5f67407e-91bb-11f1-b2f3-fbc79f01000f",
+          "ply": 7
+        }
+      ]
+    },
+    {
+      "count": 1,
+      "key": "rnbqkbnr/pp3ppp/2pp4/4p3/2B1P3/2N5/PPPP1PPP/R1BQK1NR w KQkq -",
+      "occurrences": [
+        {
+          "game_id": "5f67407e-91bb-11f1-b2f3-fbc79f01000f",
+          "ply": 6
+        }
+      ]
+    },
+    {
+      "count": 1,
+      "key": "rnbqkbnr/ppp1pppp/8/3P4/8/8/1PPP1PPP/1NBQKBNR b Kkq -",
+      "occurrences": [
+        {
+          "game_id": "d3be8bbe-e539-11ee-852a-b6c21f01000b",
+          "ply": 3
+        }
+      ]
+    },
+    {
+      "count": 1,
+      "key": "rnbqkbnr/ppp1pppp/8/3p4/4P3/8/1PPP1PPP/1NBQKBNR w Kkq d6",
+      "occurrences": [
+        {
+          "game_id": "d3be8bbe-e539-11ee-852a-b6c21f01000b",
+          "ply": 2
+        }
+      ]
+    },
+    {
+      "count": 1,
+      "key": "rnbqkbnr/ppp2ppp/3p4/4p3/2B1P3/2N5/PPPP1PPP/R1BQK1NR b KQkq -",
+      "occurrences": [
+        {
+          "game_id": "5f67407e-91bb-11f1-b2f3-fbc79f01000f",
+          "ply": 5
+        }
+      ]
+    },
+    {
+      "count": 1,
+      "key": "rnbqkbnr/ppp2ppp/3p4/4p3/4P3/2N5/PPPP1PPP/R1BQKBNR w KQkq -",
+      "occurrences": [
+        {
+          "game_id": "5f67407e-91bb-11f1-b2f3-fbc79f01000f",
+          "ply": 4
+        }
+      ]
+    },
+    {
+      "count": 1,
+      "key": "rnbqkbnr/pppppppp/8/8/4P3/8/1PPP1PPP/1NBQKBNR b Kkq e3",
+      "occurrences": [
+        {
+          "game_id": "d3be8bbe-e539-11ee-852a-b6c21f01000b",
+          "ply": 1
+        }
+      ]
+    },
+    {
+      "count": 1,
+      "key": "rnbqkbnr/pppppppp/8/8/8/8/1PPPPPPP/1NBQKBNR w Kkq -",
+      "occurrences": [
+        {
+          "game_id": "d3be8bbe-e539-11ee-852a-b6c21f01000b",
+          "ply": 0
+        }
+      ]
+    }
+  ],
+  "games": [
+    {
+      "game_id": "5f67407e-91bb-11f1-b2f3-fbc79f01000f",
+      "players": {
+        "black": "ArgonLoader",
+        "white": "Skyrocoster"
+      },
+      "reason": "ordinary rules=chess game (standard start, played to mate)",
+      "result": "1-0",
+      "url": "https://www.chess.com/game/live/172620392074"
+    },
+    {
+      "game_id": "d3be8bbe-e539-11ee-852a-b6c21f01000b",
+      "players": {
+        "black": "ColdBolognese",
+        "white": "Skyrocoster"
+      },
+      "reason": "custom starting position via PGN SetUp/FEN headers",
+      "result": "0-1",
+      "url": "https://www.chess.com/game/daily/635678817"
+    },
+    {
+      "game_id": "2d663e00-ed4b-11ef-b2f1-db2e2701000f",
+      "players": {
+        "black": "estuaryman",
+        "white": "Skyrocoster"
+      },
+      "reason": "source final FEN shortened to four fields (no move counters)",
+      "result": "1-0",
+      "url": "https://www.chess.com/game/live/122986751426"
+    },
+    {
+      "game_id": "7216d093-59e0-11f1-aeec-b5154d01000f",
+      "players": {
+        "black": "johnsengel",
+        "white": "Skyrocoster"
+      },
+      "reason": "source preserves a non-capturable en-passant target after a double pawn push",
+      "result": "1-0",
+      "url": "https://www.chess.com/game/live/169318494624"
+    }
+  ],
+  "meta": {
+    "corpus": "mp06-fen-corpus",
+    "database": "data/database/chess_games.db",
+    "fixture_count": 4,
+    "schema_version": 1
+  },
+  "positions": [
+    {
+      "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+      "game_id": "5f67407e-91bb-11f1-b2f3-fbc79f01000f",
+      "key": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -",
+      "ply": 0,
+      "san": null,
+      "uci": null
+    },
+    {
+      "fen": "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1",
+      "game_id": "5f67407e-91bb-11f1-b2f3-fbc79f01000f",
+      "key": "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3",
+      "ply": 1,
+      "san": "e4",
+      "uci": "e2e4"
+    },
+    {
+      "fen": "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq e6 0 2",
+      "game_id": "5f67407e-91bb-11f1-b2f3-fbc79f01000f",
+      "key": "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq e6",
+      "ply": 2,
+      "san": "e5",
+      "uci": "e7e5"
+    },
+    {
+      "fen": "rnbqkbnr/pppp1ppp/8/4p3/4P3/2N5/PPPP1PPP/R1BQKBNR b KQkq - 1 2",
+      "game_id": "5f67407e-91bb-11f1-b2f3-fbc79f01000f",
+      "key": "rnbqkbnr/pppp1ppp/8/4p3/4P3/2N5/PPPP1PPP/R1BQKBNR b KQkq -",
+      "ply": 3,
+      "san": "Nc3",
+      "uci": "b1c3"
+    },
+    {
+      "fen": "rnbqkbnr/ppp2ppp/3p4/4p3/4P3/2N5/PPPP1PPP/R1BQKBNR w KQkq - 0 3",
+      "game_id": "5f67407e-91bb-11f1-b2f3-fbc79f01000f",
+      "key": "rnbqkbnr/ppp2ppp/3p4/4p3/4P3/2N5/PPPP1PPP/R1BQKBNR w KQkq -",
+      "ply": 4,
+      "san": "d6",
+      "uci": "d7d6"
+    },
+    {
+      "fen": "rnbqkbnr/ppp2ppp/3p4/4p3/2B1P3/2N5/PPPP1PPP/R1BQK1NR b KQkq - 1 3",
+      "game_id": "5f67407e-91bb-11f1-b2f3-fbc79f01000f",
+      "key": "rnbqkbnr/ppp2ppp/3p4/4p3/2B1P3/2N5/PPPP1PPP/R1BQK1NR b KQkq -",
+      "ply": 5,
+      "san": "Bc4",
+      "uci": "f1c4"
+    },
+    {
+      "fen": "rnbqkbnr/pp3ppp/2pp4/4p3/2B1P3/2N5/PPPP1PPP/R1BQK1NR w KQkq - 0 4",
+      "game_id": "5f67407e-91bb-11f1-b2f3-fbc79f01000f",
+      "key": "rnbqkbnr/pp3ppp/2pp4/4p3/2B1P3/2N5/PPPP1PPP/R1BQK1NR w KQkq -",
+      "ply": 6,
+      "san": "c6",
+      "uci": "c7c6"
+    },
+    {
+      "fen": "rnbqkbnr/pp3ppp/2pp4/4p3/2B1P3/2N2Q2/PPPP1PPP/R1B1K1NR b KQkq - 1 4",
+      "game_id": "5f67407e-91bb-11f1-b2f3-fbc79f01000f",
+      "key": "rnbqkbnr/pp3ppp/2pp4/4p3/2B1P3/2N2Q2/PPPP1PPP/R1B1K1NR b KQkq -",
+      "ply": 7,
+      "san": "Qf3",
+      "uci": "d1f3"
+    },
+    {
+      "fen": "rnbqkbnr/pp3pp1/2pp3p/4p3/2B1P3/2N2Q2/PPPP1PPP/R1B1K1NR w KQkq - 0 5",
+      "game_id": "5f67407e-91bb-11f1-b2f3-fbc79f01000f",
+      "key": "rnbqkbnr/pp3pp1/2pp3p/4p3/2B1P3/2N2Q2/PPPP1PPP/R1B1K1NR w KQkq -",
+      "ply": 8,
+      "san": "h6",
+      "uci": "h7h6"
+    },
+    {
+      "fen": "rnbqkbnr/pp3Qp1/2pp3p/4p3/2B1P3/2N5/PPPP1PPP/R1B1K1NR b KQkq - 0 5",
+      "game_id": "5f67407e-91bb-11f1-b2f3-fbc79f01000f",
+      "key": "rnbqkbnr/pp3Qp1/2pp3p/4p3/2B1P3/2N5/PPPP1PPP/R1B1K1NR b KQkq -",
+      "ply": 9,
+      "san": "Qxf7#",
+      "uci": "f3f7"
+    },
+    {
+      "fen": "rnbqkbnr/pppppppp/8/8/8/8/1PPPPPPP/1NBQKBNR w Kkq - 0 1",
+      "game_id": "d3be8bbe-e539-11ee-852a-b6c21f01000b",
+      "key": "rnbqkbnr/pppppppp/8/8/8/8/1PPPPPPP/1NBQKBNR w Kkq -",
+      "ply": 0,
+      "san": null,
+      "uci": null
+    },
+    {
+      "fen": "rnbqkbnr/pppppppp/8/8/4P3/8/1PPP1PPP/1NBQKBNR b Kkq e3 0 1",
+      "game_id": "d3be8bbe-e539-11ee-852a-b6c21f01000b",
+      "key": "rnbqkbnr/pppppppp/8/8/4P3/8/1PPP1PPP/1NBQKBNR b Kkq e3",
+      "ply": 1,
+      "san": "e4",
+      "uci": "e2e4"
+    },
+    {
+      "fen": "rnbqkbnr/ppp1pppp/8/3p4/4P3/8/1PPP1PPP/1NBQKBNR w Kkq d6 0 2",
+      "game_id": "d3be8bbe-e539-11ee-852a-b6c21f01000b",
+      "key": "rnbqkbnr/ppp1pppp/8/3p4/4P3/8/1PPP1PPP/1NBQKBNR w Kkq d6",
+      "ply": 2,
+      "san": "d5",
+      "uci": "d7d5"
+    },
+    {
+      "fen": "rnbqkbnr/ppp1pppp/8/3P4/8/8/1PPP1PPP/1NBQKBNR b Kkq - 0 2",
+      "game_id": "d3be8bbe-e539-11ee-852a-b6c21f01000b",
+      "key": "rnbqkbnr/ppp1pppp/8/3P4/8/8/1PPP1PPP/1NBQKBNR b Kkq -",
+      "ply": 3,
+      "san": "exd5",
+      "uci": "e4d5"
+    },
+    {
+      "fen": "rnb1kbnr/ppp1pppp/8/3q4/8/8/1PPP1PPP/1NBQKBNR w Kkq - 0 3",
+      "game_id": "d3be8bbe-e539-11ee-852a-b6c21f01000b",
+      "key": "rnb1kbnr/ppp1pppp/8/3q4/8/8/1PPP1PPP/1NBQKBNR w Kkq -",
+      "ply": 4,
+      "san": "Qxd5",
+      "uci": "d8d5"
+    },
+    {
+      "fen": "rnb1kbnr/ppp1pppp/8/3q4/8/2N5/1PPP1PPP/2BQKBNR b Kkq - 1 3",
+      "game_id": "d3be8bbe-e539-11ee-852a-b6c21f01000b",
+      "key": "rnb1kbnr/ppp1pppp/8/3q4/8/2N5/1PPP1PPP/2BQKBNR b Kkq -",
+      "ply": 5,
+      "san": "Nc3",
+      "uci": "b1c3"
+    },
+    {
+      "fen": "rnb1kbnr/ppp1pppp/8/q7/8/2N5/1PPP1PPP/2BQKBNR w Kkq - 2 4",
+      "game_id": "d3be8bbe-e539-11ee-852a-b6c21f01000b",
+      "key": "rnb1kbnr/ppp1pppp/8/q7/8/2N5/1PPP1PPP/2BQKBNR w Kkq -",
+      "ply": 6,
+      "san": "Qa5",
+      "uci": "d5a5"
+    },
+    {
+      "fen": "rnb1kbnr/ppp1pppp/8/q7/3P4/2N5/1PP2PPP/2BQKBNR b Kkq d3 0 4",
+      "game_id": "d3be8bbe-e539-11ee-852a-b6c21f01000b",
+      "key": "rnb1kbnr/ppp1pppp/8/q7/3P4/2N5/1PP2PPP/2BQKBNR b Kkq d3",
+      "ply": 7,
+      "san": "d4",
+      "uci": "d2d4"
+    },
+    {
+      "fen": "rnb1kbnr/ppp1pppp/8/8/3P4/2N5/1PP2PPP/q1BQKBNR w Kkq - 1 5",
+      "game_id": "d3be8bbe-e539-11ee-852a-b6c21f01000b",
+      "key": "rnb1kbnr/ppp1pppp/8/8/3P4/2N5/1PP2PPP/q1BQKBNR w Kkq -",
+      "ply": 8,
+      "san": "Qa1",
+      "uci": "a5a1"
+    },
+    {
+      "fen": "rnb1kbnr/ppp1pppp/8/3P4/8/2N5/1PP2PPP/q1BQKBNR b Kkq - 0 5",
+      "game_id": "d3be8bbe-e539-11ee-852a-b6c21f01000b",
+      "key": "rnb1kbnr/ppp1pppp/8/3P4/8/2N5/1PP2PPP/q1BQKBNR b Kkq -",
+      "ply": 9,
+      "san": "d5",
+      "uci": "d4d5"
+    },
+    {
+      "fen": "rnb1kb1r/ppp1pppp/5n2/3P4/8/2N5/1PP2PPP/q1BQKBNR w Kkq - 1 6",
+      "game_id": "d3be8bbe-e539-11ee-852a-b6c21f01000b",
+      "key": "rnb1kb1r/ppp1pppp/5n2/3P4/8/2N5/1PP2PPP/q1BQKBNR w Kkq -",
+      "ply": 10,
+      "san": "Nf6",
+      "uci": "g8f6"
+    },
+    {
+      "fen": "rnb1kb1r/ppp1pppp/5n2/1B1P4/8/2N5/1PP2PPP/q1BQK1NR b Kkq - 2 6",
+      "game_id": "d3be8bbe-e539-11ee-852a-b6c21f01000b",
+      "key": "rnb1kb1r/ppp1pppp/5n2/1B1P4/8/2N5/1PP2PPP/q1BQK1NR b Kkq -",
+      "ply": 11,
+      "san": "Bb5+",
+      "uci": "f1b5"
+    },
+    {
+      "fen": "rnb1kb1r/pp2pppp/2p2n2/1B1P4/8/2N5/1PP2PPP/q1BQK1NR w Kkq - 0 7",
+      "game_id": "d3be8bbe-e539-11ee-852a-b6c21f01000b",
+      "key": "rnb1kb1r/pp2pppp/2p2n2/1B1P4/8/2N5/1PP2PPP/q1BQK1NR w Kkq -",
+      "ply": 12,
+      "san": "c6",
+      "uci": "c7c6"
+    },
+    {
+      "fen": "rnb1kb1r/pp2pppp/2P2n2/1B6/8/2N5/1PP2PPP/q1BQK1NR b Kkq - 0 7",
+      "game_id": "d3be8bbe-e539-11ee-852a-b6c21f01000b",
+      "key": "rnb1kb1r/pp2pppp/2P2n2/1B6/8/2N5/1PP2PPP/q1BQK1NR b Kkq -",
+      "ply": 13,
+      "san": "dxc6",
+      "uci": "d5c6"
+    },
+    {
+      "fen": "rnb1kb1r/p3pppp/2p2n2/1B6/8/2N5/1PP2PPP/q1BQK1NR w Kkq - 0 8",
+      "game_id": "d3be8bbe-e539-11ee-852a-b6c21f01000b",
+      "key": "rnb1kb1r/p3pppp/2p2n2/1B6/8/2N5/1PP2PPP/q1BQK1NR w Kkq -",
+      "ply": 14,
+      "san": "bxc6",
+      "uci": "b7c6"
+    },
+    {
+      "fen": "rnb1kb1r/p3pppp/2p2n2/8/B7/2N5/1PP2PPP/q1BQK1NR b Kkq - 1 8",
+      "game_id": "d3be8bbe-e539-11ee-852a-b6c21f01000b",
+      "key": "rnb1kb1r/p3pppp/2p2n2/8/B7/2N5/1PP2PPP/q1BQK1NR b Kkq -",
+      "ply": 15,
+      "san": "Ba4",
+      "uci": "b5a4"
+    },
+    {
+      "fen": "rn2kb1r/p3pppp/2p2n2/8/B5b1/2N5/1PP2PPP/q1BQK1NR w Kkq - 2 9",
+      "game_id": "d3be8bbe-e539-11ee-852a-b6c21f01000b",
+      "key": "rn2kb1r/p3pppp/2p2n2/8/B5b1/2N5/1PP2PPP/q1BQK1NR w Kkq -",
+      "ply": 16,
+      "san": "Bg4",
+      "uci": "c8g4"
+    },
+    {
+      "fen": "rn2kb1r/p3pppp/2p2n2/8/B5b1/2N2N2/1PP2PPP/q1BQK2R b Kkq - 3 9",
+      "game_id": "d3be8bbe-e539-11ee-852a-b6c21f01000b",
+      "key": "rn2kb1r/p3pppp/2p2n2/8/B5b1/2N2N2/1PP2PPP/q1BQK2R b Kkq -",
+      "ply": 17,
+      "san": "Nf3",
+      "uci": "g1f3"
+    },
+    {
+      "fen": "r3kb1r/p3pppp/n1p2n2/8/B5b1/2N2N2/1PP2PPP/q1BQK2R w Kkq - 4 10",
+      "game_id": "d3be8bbe-e539-11ee-852a-b6c21f01000b",
+      "key": "r3kb1r/p3pppp/n1p2n2/8/B5b1/2N2N2/1PP2PPP/q1BQK2R w Kkq -",
+      "ply": 18,
+      "san": "Na6",
+      "uci": "b8a6"
+    },
+    {
+      "fen": "r3kb1r/p3pppp/n1B2n2/8/6b1/2N2N2/1PP2PPP/q1BQK2R b Kkq - 0 10",
+      "game_id": "d3be8bbe-e539-11ee-852a-b6c21f01000b",
+      "key": "r3kb1r/p3pppp/n1B2n2/8/6b1/2N2N2/1PP2PPP/q1BQK2R b Kkq -",
+      "ply": 19,
+      "san": "Bxc6+",
+      "uci": "a4c6"
+    },
+    {
+      "fen": "r3kb1r/p2npppp/n1B5/8/6b1/2N2N2/1PP2PPP/q1BQK2R w Kkq - 1 11",
+      "game_id": "d3be8bbe-e539-11ee-852a-b6c21f01000b",
+      "key": "r3kb1r/p2npppp/n1B5/8/6b1/2N2N2/1PP2PPP/q1BQK2R w Kkq -",
+      "ply": 20,
+      "san": "Nd7",
+      "uci": "f6d7"
+    },
+    {
+      "fen": "B3kb1r/p2npppp/n7/8/6b1/2N2N2/1PP2PPP/q1BQK2R b Kk - 0 11",
+      "game_id": "d3be8bbe-e539-11ee-852a-b6c21f01000b",
+      "key": "B3kb1r/p2npppp/n7/8/6b1/2N2N2/1PP2PPP/q1BQK2R b Kk -",
+      "ply": 21,
+      "san": "Bxa8",
+      "uci": "c6a8"
+    },
+    {
+      "fen": "B3kb1r/p3pppp/nn6/8/6b1/2N2N2/1PP2PPP/q1BQK2R w Kk - 1 12",
+      "game_id": "d3be8bbe-e539-11ee-852a-b6c21f01000b",
+      "key": "B3kb1r/p3pppp/nn6/8/6b1/2N2N2/1PP2PPP/q1BQK2R w Kk -",
+      "ply": 22,
+      "san": "Nb6",
+      "uci": "d7b6"
+    },
+    {
+      "fen": "4kb1r/p3pppp/nnB5/8/6b1/2N2N2/1PP2PPP/q1BQK2R b Kk - 2 12",
+      "game_id": "d3be8bbe-e539-11ee-852a-b6c21f01000b",
+      "key": "4kb1r/p3pppp/nnB5/8/6b1/2N2N2/1PP2PPP/q1BQK2R b Kk -",
+      "ply": 23,
+      "san": "Bc6+",
+      "uci": "a8c6"
+    },
+    {
+      "fen": "4kb1r/p2npppp/n1B5/8/6b1/2N2N2/1PP2PPP/q1BQK2R w Kk - 3 13",
+      "game_id": "d3be8bbe-e539-11ee-852a-b6c21f01000b",
+      "key": "4kb1r/p2npppp/n1B5/8/6b1/2N2N2/1PP2PPP/q1BQK2R w Kk -",
+      "ply": 24,
+      "san": "Nd7",
+      "uci": "b6d7"
+    },
+    {
+      "fen": "4kb1r/p2npppp/n1B5/8/6b1/2N2N1P/1PP2PP1/q1BQK2R b Kk - 0 13",
+      "game_id": "d3be8bbe-e539-11ee-852a-b6c21f01000b",
+      "key": "4kb1r/p2npppp/n1B5/8/6b1/2N2N1P/1PP2PP1/q1BQK2R b Kk -",
+      "ply": 25,
+      "san": "h3",
+      "uci": "h2h3"
+    },
+    {
+      "fen": "4kb1r/p2npppp/2B5/8/1n4b1/2N2N1P/1PP2PP1/q1BQK2R w Kk - 1 14",
+      "game_id": "d3be8bbe-e539-11ee-852a-b6c21f01000b",
+      "key": "4kb1r/p2npppp/2B5/8/1n4b1/2N2N1P/1PP2PP1/q1BQK2R w Kk -",
+      "ply": 26,
+      "san": "Nb4",
+      "uci": "a6b4"
+    },
+    {
+      "fen": "4kb1r/p2Qpppp/2B5/8/1n4b1/2N2N1P/1PP2PP1/q1B1K2R b Kk - 0 14",
+      "game_id": "d3be8bbe-e539-11ee-852a-b6c21f01000b",
+      "key": "4kb1r/p2Qpppp/2B5/8/1n4b1/2N2N1P/1PP2PP1/q1B1K2R b Kk -",
+      "ply": 27,
+      "san": "Qxd7+",
+      "uci": "d1d7"
+    },
+    {
+      "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+      "game_id": "2d663e00-ed4b-11ef-b2f1-db2e2701000f",
+      "key": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -",
+      "ply": 0,
+      "san": null,
+      "uci": null
+    },
+    {
+      "fen": "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1",
+      "game_id": "2d663e00-ed4b-11ef-b2f1-db2e2701000f",
+      "key": "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3",
+      "ply": 1,
+      "san": "e4",
+      "uci": "e2e4"
+    },
+    {
+      "fen": "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq e6 0 2",
+      "game_id": "2d663e00-ed4b-11ef-b2f1-db2e2701000f",
+      "key": "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq e6",
+      "ply": 2,
+      "san": "e5",
+      "uci": "e7e5"
+    },
+    {
+      "fen": "rnbqkbnr/pppp1ppp/8/4p3/4P3/2N5/PPPP1PPP/R1BQKBNR b KQkq - 1 2",
+      "game_id": "2d663e00-ed4b-11ef-b2f1-db2e2701000f",
+      "key": "rnbqkbnr/pppp1ppp/8/4p3/4P3/2N5/PPPP1PPP/R1BQKBNR b KQkq -",
+      "ply": 3,
+      "san": "Nc3",
+      "uci": "b1c3"
+    },
+    {
+      "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+      "game_id": "7216d093-59e0-11f1-aeec-b5154d01000f",
+      "key": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -",
+      "ply": 0,
+      "san": null,
+      "uci": null
+    },
+    {
+      "fen": "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1",
+      "game_id": "7216d093-59e0-11f1-aeec-b5154d01000f",
+      "key": "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3",
+      "ply": 1,
+      "san": "e4",
+      "uci": "e2e4"
+    }
+  ]
+}
