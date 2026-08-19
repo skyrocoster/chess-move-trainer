@@ -1,0 +1,92 @@
+CREATE UNIQUE INDEX one_current_month
+            ON fetch_state (username) WHERE is_current = 1
+
+CREATE INDEX position_occurrence_state_idx ON position_occurrence(state_id)
+
+CREATE TABLE corpus (
+            corpus_id INTEGER PRIMARY KEY,
+            subject_player_uuid TEXT NOT NULL UNIQUE,
+            FOREIGN KEY (subject_player_uuid) REFERENCES players(uuid)
+        )
+
+CREATE TABLE corpus_game (
+            corpus_id INTEGER NOT NULL,
+            game_uuid TEXT NOT NULL,
+            rules TEXT NOT NULL CHECK (rules = 'chess'),
+            fingerprint TEXT NOT NULL,
+            PRIMARY KEY (corpus_id, game_uuid),
+            FOREIGN KEY (corpus_id) REFERENCES corpus(corpus_id),
+            FOREIGN KEY (game_uuid) REFERENCES games(uuid)
+        )
+
+CREATE TABLE corpus_run (
+            run_id INTEGER PRIMARY KEY,
+            corpus_id INTEGER NOT NULL,
+            status TEXT NOT NULL CHECK (status IN ('running', 'success', 'failed', 'interrupted')),
+            started_at TEXT,
+            finished_at TEXT NULL,
+            accepted_games INTEGER NOT NULL DEFAULT 0,
+            excluded_games INTEGER NOT NULL DEFAULT 0,
+            new_games INTEGER NOT NULL DEFAULT 0,
+            changed_games INTEGER NOT NULL DEFAULT 0,
+            removed_games INTEGER NOT NULL DEFAULT 0,
+            unchanged_games INTEGER NOT NULL DEFAULT 0,
+            ordered_positions INTEGER NOT NULL DEFAULT 0,
+            unique_states INTEGER NOT NULL,
+            validation TEXT NOT NULL,
+            details TEXT NULL,
+            FOREIGN KEY (corpus_id) REFERENCES corpus(corpus_id)
+        )
+
+CREATE TABLE corpus_schema (
+            id INTEGER PRIMARY KEY CHECK (id = 1),
+            version INTEGER NOT NULL,
+            applied_at TEXT NOT NULL
+        )
+
+CREATE TABLE fetch_state (
+            username TEXT NOT NULL, year INTEGER NOT NULL, month INTEGER NOT NULL,
+            etag TEXT, last_fetched TEXT, is_current INTEGER NOT NULL,
+            PRIMARY KEY (username, year, month)
+        )
+
+CREATE TABLE games (
+            uuid TEXT PRIMARY KEY, url TEXT NOT NULL, pgn TEXT NOT NULL,
+            time_control TEXT NOT NULL, end_time INTEGER NOT NULL, rated INTEGER,
+            tcn TEXT, initial_setup TEXT, fen TEXT, time_class TEXT, rules TEXT, eco TEXT,
+            white_player_uuid TEXT NOT NULL, black_player_uuid TEXT NOT NULL,
+            white_rating INTEGER, black_rating INTEGER, white_result TEXT, black_result TEXT,
+            white_accuracy REAL, black_accuracy REAL, tournament TEXT, match TEXT,
+            year INTEGER NOT NULL, month INTEGER NOT NULL,
+            FOREIGN KEY (white_player_uuid) REFERENCES players(uuid),
+            FOREIGN KEY (black_player_uuid) REFERENCES players(uuid),
+            UNIQUE (year, month, uuid)
+        )
+
+CREATE TABLE players (
+            uuid TEXT PRIMARY KEY, username TEXT NOT NULL, profile_url TEXT,
+            UNIQUE (username, uuid)
+        )
+
+CREATE TABLE position_occurrence (
+            occurrence_id INTEGER PRIMARY KEY,
+            game_uuid TEXT NOT NULL,
+            ply INTEGER NOT NULL,
+            state_id INTEGER NOT NULL,
+            san TEXT NULL,
+            uci TEXT NULL,
+            halfmove_clock INTEGER NOT NULL,
+            fullmove_number INTEGER NOT NULL,
+            UNIQUE (game_uuid, ply),
+            FOREIGN KEY (game_uuid) REFERENCES games(uuid),
+            FOREIGN KEY (state_id) REFERENCES position_state(state_id)
+        )
+
+CREATE TABLE position_state (
+            state_id INTEGER PRIMARY KEY,
+            placement TEXT,
+            side_to_move TEXT,
+            castling TEXT,
+            en_passant TEXT,
+            UNIQUE (placement, side_to_move, castling, en_passant)
+        )

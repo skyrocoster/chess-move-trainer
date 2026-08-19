@@ -58,27 +58,6 @@ planning or implementation; the envelopes below grant no implementation authorit
 
 The following sections preserve direction only. Every unanswered branch remains open until that milestone's grilling.
 
-### MP-06 — validated FEN corpus
-
-#### Tangible claim
-
-> We created a complete, validated list of chess positions for the captured games and stored it properly.
-
-Relevant decisions preserved from the superseded PGN-to-FEN discussion:
-
-- retain per-game ordered position sequences;
-- also retain a derived deduplicated unique-position index;
-- include ply zero;
-- use `python-chess` rather than a custom PGN parser;
-- build positions through a separate idempotent step after game fetching;
-- backfill the existing captured games on the first run;
-- preserve board state, side to move, castling rights, and en-passant state when normalizing uniqueness;
-- normalize halfmove and fullmove counters for the unique-position identity;
-- verify replay against the PGN `CurrentPosition` value when that source contract remains available; and
-- keep replayable per-game FENs lossless even when the unique index uses normalization.
-
-These preserved decisions are inputs to MP-06 grilling, not implementation authority. MP-06 grilling must confirm them against current repository state and settle all schema, ownership, failure, rerun, and proof behavior.
-
 ### MP-07 — arbitrary stored-FEN display
 
 #### Tangible claim
@@ -101,8 +80,6 @@ Relevant decisions preserved from the superseded single-game-viewer discussion:
 - the initial design had only Previous and Next traversal controls;
 - no custom PGN parser or chessboard renderer should be created; and
 - safe external attribution to the source game was desired.
-
-The earlier selected fixture was a real standard-position game between Skyrocoster and wasabi30, ending after 44 plies with `22...Bd3#`, sourced from Chess.com. Whether that fixture and the earlier minimal-control design remain appropriate must be reconfirmed during MP-08 grilling.
 
 Direct board editing remains excluded. Traversal changes which stored position is displayed; it does not mutate a position.
 
@@ -152,14 +129,6 @@ This milestone is intentionally vague and requires fresh grilling. Persistence o
 Unanswered areas include identity and normalization, provenance, duplicate handling, analysis settings, write API, validation, security boundaries, stale engine results, and whether persistence is automatic or explicitly requested.
 
 ## Unanswered-decision tree
-
-```text
-MP-06: validated FEN corpus
-├── confirm current source and replay oracle
-├── confirm schema and ownership
-├── settle normalization and duplicate identity
-├── settle idempotency, failures, and partial runs
-└── settle observable proof and corpus completeness
 
 MP-07: arbitrary stored-FEN display
 ├── settle selection and navigation model

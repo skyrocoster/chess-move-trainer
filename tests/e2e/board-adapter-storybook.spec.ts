@@ -44,16 +44,16 @@ test.describe("Board Adapter Storybook surface", () => {
 
     const summary = page.getByText("Position description");
     const details = summary.locator("..");
-    await expect(details).not.toHaveAttribute("open");
+    await expect(details).not.toHaveAttribute("data-open");
     await summary.focus();
     await page.keyboard.press("Enter");
-    await expect(details).toHaveAttribute("open");
+    await expect(details).toHaveAttribute("data-open");
     await expect(page.getByRole("img", { name: "Starting position" })).toHaveAttribute(
       "aria-describedby",
       /.+/,
     );
     await page.keyboard.press("Enter");
-    await expect(details).not.toHaveAttribute("open");
+    await expect(details).not.toHaveAttribute("data-open");
 
     await openStory(page, STORY_IDS.rich);
     const richGraphic = page.getByRole("img", { name: "Rich position with complete game state" });
@@ -95,7 +95,7 @@ test.describe("Board Adapter Storybook surface", () => {
     await checkA11y(page);
 
     await openStory(page, STORY_IDS.expanded);
-    await expect(page.getByText("Position description").locator("..")).toHaveAttribute("open");
+    await expect(page.getByText("Position description").locator("..")).toHaveAttribute("data-open");
     await expect(page.getByRole("img")).toHaveAttribute("aria-describedby", /.+/);
     await checkA11y(page);
   });

@@ -1,20 +1,24 @@
 ---
 name: browser-validation-invoke
-description: Invoke-only guidance for isolated browser validation when an approved brief requires live UI evidence.
+description: Use from Quality validation to capture isolated browser evidence for one exact approved UI scenario.
 ---
 
-# Browser Validation Invocation
+# Browser validation invocation
 
-This is an invoke-only validation boundary. Do not edit repository files, reuse servers or profiles, or
-interpret browser results as implementation proof.
+This supporting skill captures evidence; the parent `validate` skill decides the overall Quality result. Do not
+edit repository files or reuse a browser profile from implementation.
 
-The coordinator's brief must provide:
+Require the startup command when needed, target URL, exact user steps, expected observations, setup and cleanup,
+and artifact location. Reject an open-ended request to explore the UI.
 
-- the startup command, if a local service is required;
-- the target URL and exact user scenario;
-- any data setup and cleanup commands;
-- the case identifier and expected observable evidence.
+Run only the supplied scenario with the configured Playwright tools. Capture relevant assertions, console errors,
+failed network requests, and requested screenshots. Clean up started services and temporary data.
 
-Use the configured Playwright tooling to run only that brief. Return the captured result and artifact
-paths, keeping `PASS`, `PRODUCT_FAIL`, and `INFRA_FAIL` distinct. The adopting repository may add a
-browser-validation script later, but this skeleton does not require one.
+```text
+RESULT: PASS | PRODUCT-FAIL | INFRA-FAIL
+SCENARIO: <steps performed>
+EVIDENCE: <observations and assertions>
+CONSOLE/NETWORK: clean | <failures>
+ARTIFACTS: none | <paths>
+ISSUE: none | <product or infrastructure failure>
+```

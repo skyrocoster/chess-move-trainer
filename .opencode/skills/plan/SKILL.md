@@ -1,0 +1,32 @@
+---
+name: plan
+description: "Use during PHASE: WRITE PLAN to create or refine one approved focused implementation Plan without coding."
+---
+
+# Plan
+
+Require an approved target under `docs/plans/active/<feature>/<feature>.md`, outcome, scope, stage shape, proof,
+acceptance, and escalation boundaries. Reuse retained assessment facts; read only `docs/PLAN_TEMPLATE.md`, the
+router, and an existing matching Plan when present. Never implement.
+
+Write the compact template exactly enough to preserve:
+
+- one semantic, human-visible outcome and visible-result line;
+- upstream evidence, expected areas, and explicit exclusions;
+- sequential AI-focused stages with ordered actions, focused proof, and real breakpoints;
+- concise progress and decisions; and
+- escalation boundaries for any decision not already settled.
+
+Expected areas describe ownership; they are not exact executor authorization. Do not add parallel stages,
+transient execution logs, speculative work, or legacy records. Preserve truthful completed progress when refining
+an existing Plan. If outcome, scope, dependency, proof, or acceptance is unresolved, do not guess.
+
+Run the coordinator-supplied documentation check when present; otherwise inspect the final document against the
+template and report that no automated Plan checker exists.
+
+```text
+RESULT: WRITTEN | UNDER-CAPTURED | BLOCKED
+PATH: <approved Plan path or none>
+CHECKS: <command and result, or manual template review>
+ISSUE: none | <missing decision or blocker>
+```

@@ -4,6 +4,7 @@ import { Chessboard } from "react-chessboard";
 import { ErrorBoundary } from "react-error-boundary";
 
 import { PanelFeedback } from "../design-system/feedback/PanelFeedback";
+import { Disclosure } from "../design-system/Disclosure";
 import styles from "./BoardAdapter.module.css";
 
 export type BoardOrientation = "white" | "black";
@@ -212,10 +213,15 @@ function BoardRender({
       <p className={styles.assistiveDescription} id={descriptionId}>
         {model.description}
       </p>
-      <details className={styles.descriptionDisclosure}>
-        <summary>Position description</summary>
-        <p>{model.description}</p>
-      </details>
+      <Disclosure summary="Position description">
+        <div
+          className={styles.descriptionDisclosure}
+          tabIndex={0}
+          aria-label="Position description"
+        >
+          <p>{model.description}</p>
+        </div>
+      </Disclosure>
     </div>
   );
 }

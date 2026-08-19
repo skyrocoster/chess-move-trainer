@@ -88,16 +88,16 @@ describe("BoardAdapter", () => {
     expect(container.querySelector('[class*="adapter"]')).toBeInTheDocument();
   });
 
-  it("keeps the assistive description while the native disclosure is collapsed or expanded", () => {
+  it("keeps the assistive description while the disclosure is collapsed or expanded", () => {
     renderStartingPosition();
     const graphic = screen.getByRole("img", { name: "Starting position" });
     const descriptionId = graphic.getAttribute("aria-describedby");
-    const disclosure = screen.getByText("Position description").closest("details");
+    const trigger = screen.getByRole("button", { name: "Position description" });
 
-    expect(disclosure).not.toHaveAttribute("open");
+    expect(trigger).toHaveAttribute("aria-expanded", "false");
     expect(descriptionId).toBeTruthy();
-    fireEvent.click(screen.getByText("Position description"));
-    expect(disclosure).toHaveAttribute("open");
+    fireEvent.click(trigger);
+    expect(trigger).toHaveAttribute("aria-expanded", "true");
     expect(graphic).toHaveAttribute("aria-describedby", descriptionId);
   });
 

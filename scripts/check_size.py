@@ -1,4 +1,4 @@
-"""Enforce small handwritten modules while excluding generated/config files."""
+"""Enforce small handwritten application and workflow modules."""
 
 from __future__ import annotations
 
@@ -16,13 +16,7 @@ EXCLUDED_NAMES = {
     "playwright.config.ts",
     "eslint.config.js",
 }
-LEGACY_WORKFLOW_PATHS = {
-    Path("scripts/check_docs.py"),
-    Path("scripts/check_orders.py"),
-    Path("scripts/new_order.py"),
-    Path("scripts/order_check.py"),
-    Path("scripts/stage_check.py"),
-}
+SKIP_DIRECTORIES = {".git", ".venv", "node_modules", "__pycache__", "dist", "build"}
 
 
 def is_test(path: Path) -> bool:
@@ -32,7 +26,13 @@ def is_test(path: Path) -> bool:
 
 def source_files() -> list[Path]:
     roots = [Path("backend"), Path("frontend/src"), Path("scripts")]
-    return [path for root in roots for path in root.rglob("*") if path.suffix in SOURCE_SUFFIXES]
+    return [
+        path
+        for root in roots
+        for path in root.rglob("*")
+        if path.suffix in SOURCE_SUFFIXES
+        and not any(part in SKIP_DIRECTORIES for part in path.parts)
+    ]
 
 
 def main() -> int:
@@ -43,7 +43,7 @@ def main() -> int:
     failures: list[str] = []
     paths = source_files()
     for path in paths:
-        if path.name in EXCLUDED_NAMES or path in LEGACY_WORKFLOW_PATHS:
+        if path.name in EXCLUDED_NAMES:
             continue
         limit = args.test_max if is_test(path) else args.source_max
         count = len(path.read_text(encoding="utf-8").splitlines())

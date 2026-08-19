@@ -72,3 +72,18 @@
 .ghost:hover:not(:disabled) {
   background: var(--md-sys-color-surface-container);
 }
+
+/*
+ * Forced-colors: the token-driven background/color are ignored by the UA and
+ * the author values would otherwise override the system palette, producing a
+ * low-contrast button. Pin the surface to system button colors so every
+ * variant stays keyboard- and contrast-accessible. This mirrors the
+ * Canvas/CanvasText treatment used by Disclosure in forced-colors mode.
+ */
+@media (forced-colors: active) {
+  .button {
+    background: ButtonFace;
+    color: ButtonText;
+    border-color: ButtonBorder;
+  }
+}

@@ -34,50 +34,205 @@
   text-align: center;
 }
 
+.lookupForm,
+.resultArea {
+  grid-column: 1 / -1;
+  min-inline-size: 0;
+}
+
+.lookupForm {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(12rem, 1fr)) minmax(17rem, auto);
+  grid-template-areas:
+    "uuid-label ply-label ."
+    "uuid-input ply-input actions"
+    "uuid-error ply-error .";
+  column-gap: var(--cmt-spacing-12);
+  row-gap: var(--cmt-spacing-4);
+  align-items: start;
+  padding: var(--cmt-spacing-16);
+}
+
+.formField {
+  display: contents;
+}
+
+.formFieldUuid > label {
+  grid-area: uuid-label;
+}
+
+.formFieldUuid > input {
+  grid-area: uuid-input;
+}
+
+.formFieldPly > label {
+  grid-area: ply-label;
+}
+
+.formFieldPly > input {
+  grid-area: ply-input;
+}
+
+.formFieldUuid > div {
+  grid-area: uuid-error;
+}
+
+.formFieldPly > div {
+  grid-area: ply-error;
+}
+
+.formActions {
+  grid-area: actions;
+}
+
+.fieldLabel {
+  color: var(--md-sys-color-on-surface);
+  font: var(--md-sys-typescale-body-medium);
+}
+
+.fieldInput {
+  box-sizing: border-box;
+  min-inline-size: 0;
+  min-block-size: calc(
+    var(--cmt-spacing-8) * 2 + var(--md-sys-typescale-body-medium-line-height) + 0.125rem
+  );
+  padding: var(--cmt-spacing-8) var(--cmt-spacing-12);
+  border: 1px solid var(--md-sys-color-outline);
+  border-radius: var(--cmt-radius-default);
+  background: var(--md-sys-color-surface);
+  color: var(--md-sys-color-on-surface);
+  font: var(--md-sys-typescale-body-medium);
+}
+
+.fieldInput:focus-visible {
+  outline: var(--cmt-focus-ring-width) solid var(--cmt-focus-ring-color);
+  outline-offset: var(--cmt-focus-ring-separation);
+}
+
+.fieldInput[data-invalid] {
+  border-color: var(--md-sys-color-error);
+}
+
+.formActions {
+  display: flex;
+  min-inline-size: 17rem;
+  flex-wrap: nowrap;
+  gap: var(--cmt-spacing-12);
+}
+
+.formButton {
+  flex: 1 1 0;
+  min-inline-size: 0;
+  box-sizing: border-box;
+  min-block-size: calc(
+    var(--cmt-spacing-8) * 2 + var(--md-sys-typescale-body-medium-line-height) + 0.125rem
+  );
+  padding: var(--cmt-spacing-8) var(--cmt-spacing-16);
+  font: var(--md-sys-typescale-body-medium);
+  white-space: nowrap;
+}
+
+.formError {
+  margin: 0;
+  color: var(--md-sys-color-error);
+  font: var(--md-sys-typescale-body-medium);
+}
+
+.resultArea {
+  padding-block-start: var(--cmt-spacing-16);
+  padding-block-end: var(--cmt-spacing-16);
+}
+
+.failureWorkspace {
+  grid-template-columns: 1fr;
+}
+
+.workspace.failureWorkspace .boardColumn {
+  display: none;
+}
+
+.workspace.failureWorkspace .resultArea {
+  padding-block-end: 0;
+}
+
+.workspace.failureWorkspace .resultArea > [data-severity] {
+  max-inline-size: none;
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+
+.workspace.failureWorkspace .contextDisclosure {
+  grid-column: 1 / -1;
+  align-self: start;
+  margin-block-start: var(--cmt-spacing-16);
+}
+
+.loadingNote {
+  margin: 0;
+  color: var(--md-sys-color-on-surface-variant);
+  font: var(--md-sys-typescale-body-medium);
+}
+
+.successDetails {
+  margin: 0;
+  padding: var(--cmt-spacing-16);
+  display: grid;
+  gap: var(--cmt-spacing-8);
+}
+
+.successRow {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--cmt-spacing-8);
+}
+
+.successRow dt {
+  color: var(--md-sys-color-on-surface-variant);
+  font: var(--md-sys-typescale-label-large);
+}
+
+.successRow dd {
+  margin: 0;
+  color: var(--md-sys-color-on-surface);
+  font: var(--md-sys-typescale-body-medium);
+}
+
+.fenValue {
+  overflow-wrap: anywhere;
+}
+
 .boardColumn {
   min-inline-size: 0;
 }
 
-.contextPanel,
-.contextDisclosure {
-  max-block-size: min(16rem, 25vh);
-  overflow-x: hidden;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  min-inline-size: 0;
-  border: 1px solid var(--md-sys-color-outline);
-  border-radius: var(--cmt-radius-default);
-  background: var(--md-sys-color-surface-container);
-  color: var(--md-sys-color-on-surface);
+.workspace .contextDisclosure {
+  grid-column: 2;
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  min-block-size: 0;
 }
 
-.contextPanel {
-  align-self: start;
+.workspace .contextDisclosure > :last-child {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-block-size: 0;
 }
 
-.contextHeading,
-.contextDisclosure summary {
-  margin: 0;
-  padding: var(--cmt-spacing-8) var(--cmt-spacing-16);
-  color: var(--md-sys-color-primary);
-  font-family: var(--md-sys-typescale-title-medium-font);
-  font-size: var(--md-sys-typescale-title-medium-size);
-  font-weight: var(--md-sys-typescale-title-medium-weight);
-  letter-spacing: var(--md-sys-typescale-title-medium-letter-spacing);
-  line-height: var(--md-sys-typescale-title-medium-line-height);
-}
-
-.contextDisclosure {
-  display: none;
-}
-
-.contextDisclosure summary {
-  cursor: pointer;
+.loadedDisclosure {
+  margin-block-start: var(--cmt-spacing-16);
 }
 
 .contextContent {
+  flex: 1 1 auto;
   margin: 0;
+  max-block-size: min(24rem, 50vh);
   padding: 0 var(--cmt-spacing-16) var(--cmt-spacing-16) var(--cmt-spacing-32);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   color: var(--md-sys-color-on-surface);
   font: var(--md-sys-typescale-body-medium);
 }
@@ -86,24 +241,37 @@
   margin-block-start: var(--cmt-spacing-8);
 }
 
-.contextDisclosure summary:focus-visible {
-  outline: var(--cmt-focus-ring-width) solid var(--cmt-focus-ring-color);
-  outline-offset: calc(-1 * var(--cmt-focus-ring-separation));
-}
-
 @container (max-width: 40rem) {
   .boardColumn {
     grid-column: 1 / -1;
   }
 
-  .contextPanel {
-    display: none;
-  }
-
-  .contextDisclosure {
-    display: block;
+  .workspace .contextDisclosure {
     grid-column: 1 / -1;
     margin-block-start: var(--cmt-spacing-16);
+    align-self: start;
+  }
+
+  .contextContent {
+    max-block-size: min(16rem, 25vh);
+  }
+
+  .lookupForm {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "uuid-label"
+      "uuid-input"
+      "uuid-error"
+      "ply-label"
+      "ply-input"
+      "ply-error"
+      "actions";
+  }
+
+  .formActions {
+    min-inline-size: 0;
+    flex-direction: column;
+    align-items: stretch;
   }
 }
 
@@ -119,23 +287,26 @@
   }
 
   .heading,
-  .contextHeading,
-  .contextContent {
+  .fieldLabel,
+  .contextContent,
+  .loadingNote,
+  .successDetails {
     color: CanvasText;
   }
 
-  .contextPanel,
+  .fieldInput {
+    background: Canvas;
+    color: CanvasText;
+    border-color: CanvasText;
+  }
+
+  .formError {
+    color: CanvasText;
+  }
+
   .contextDisclosure {
     background: Canvas;
     border-color: CanvasText;
     color: CanvasText;
-  }
-
-  .contextDisclosure summary {
-    color: LinkText;
-  }
-
-  .contextDisclosure summary:focus-visible {
-    outline-color: Highlight;
   }
 }

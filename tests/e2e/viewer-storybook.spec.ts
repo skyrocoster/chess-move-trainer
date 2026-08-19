@@ -9,7 +9,7 @@ const STORY_IDS = {
 } as const;
 
 const WORKSPACE_ROOT = '[class*="workspace"]';
-const CONTEXT_PANEL = '[class*="contextPanel"]';
+const CONTEXT_PANEL = '[class*="contextDisclosure"]';
 const CONSTRAINED_WRAPPER = '[class*="constrainedStory"]';
 
 async function checkA11y(page: Page) {
@@ -54,7 +54,7 @@ test.describe("Viewer Workspace Storybook surface", () => {
     await expect(page.getByText("One static position - read-only")).toHaveCount(0);
     const board = page.getByRole("img", { name: BOARD_LABEL });
     await expect(board).toBeVisible();
-    await expect(page.getByRole("heading", { level: 2, name: "Context" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Position picker" })).toBeVisible();
     await expect(page.locator('aside, [role="complementary"]')).toHaveCount(0);
 
     const workspaceRoot = page.locator(WORKSPACE_ROOT).first();
@@ -89,7 +89,7 @@ test.describe("Viewer Workspace Storybook surface", () => {
 
     await checkA11y(page);
 
-    // Constrained story: container-query omission of the Context region.
+    // Constrained story: container-query reflow of the approved viewer surface.
     await page.goto(`${STORYBOOK_URL}/iframe.html?id=${STORY_IDS.constrained}&viewMode=story`);
     await expect(board).toBeVisible();
     await page.waitForTimeout(500);
@@ -100,7 +100,7 @@ test.describe("Viewer Workspace Storybook surface", () => {
       await wrapper.evaluate((element, width) => {
         (element as HTMLElement).style.inlineSize = `${width}px`;
       }, size);
-      await expect(page.getByRole("heading", { level: 2, name: "Context" })).toHaveCount(0);
+      await expect(page.getByRole("button", { name: "Position picker" })).toBeVisible();
       const boardBoxAtSize = await board.boundingBox();
       const wrapperBox = await wrapper.boundingBox();
       expect(boardBoxAtSize).not.toBeNull();
