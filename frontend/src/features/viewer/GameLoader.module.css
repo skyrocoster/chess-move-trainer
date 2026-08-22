@@ -1,0 +1,119 @@
+.form {
+  display: grid;
+  gap: var(--cmt-spacing-12);
+  padding: var(--cmt-spacing-16);
+}
+
+.fields {
+  display: grid;
+  grid-template-columns: minmax(12rem, 1fr) minmax(8rem, 0.5fr);
+  gap: var(--cmt-spacing-12);
+}
+
+.field {
+  display: grid;
+  gap: var(--cmt-spacing-4);
+  min-inline-size: 0;
+  color: var(--md-sys-color-on-surface);
+  font: var(--md-sys-typescale-body-medium);
+}
+
+.field input {
+  box-sizing: border-box;
+  inline-size: 100%;
+  min-block-size: calc(
+    var(--cmt-spacing-8) * 2 + var(--md-sys-typescale-body-medium-line-height) + 0.125rem
+  );
+  padding: var(--cmt-spacing-8) var(--cmt-spacing-12);
+  border: 1px solid var(--md-sys-color-outline);
+  border-radius: var(--cmt-radius-default);
+  background: var(--md-sys-color-surface);
+  color: var(--md-sys-color-on-surface);
+  font: inherit;
+}
+
+.field input:focus-visible {
+  outline: var(--cmt-focus-ring-width) solid var(--cmt-focus-ring-color);
+  outline-offset: var(--cmt-focus-ring-separation);
+}
+
+.field input[aria-invalid="true"] {
+  border-color: var(--md-sys-color-error);
+}
+
+.optional {
+  color: var(--md-sys-color-on-surface-variant);
+  font: var(--md-sys-typescale-label-medium);
+}
+
+.validationError,
+.loading,
+.failure {
+  margin: 0;
+  font: var(--md-sys-typescale-body-medium);
+}
+
+.validationError,
+.failure h2 {
+  color: var(--md-sys-color-error);
+}
+
+.loading {
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.failure {
+  display: grid;
+  gap: var(--cmt-spacing-4);
+  padding: var(--cmt-spacing-12);
+  border-inline-start: 0.25rem solid var(--md-sys-color-error);
+  background: var(--md-sys-color-error-container);
+  color: var(--md-sys-color-on-error-container);
+}
+
+.failure h2,
+.failure p {
+  margin: 0;
+}
+
+.failure h2 {
+  font: var(--md-sys-typescale-title-medium);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--cmt-spacing-12);
+}
+
+@container (max-width: 40rem) {
+  .fields {
+    grid-template-columns: 1fr;
+  }
+
+  .actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+@media (forced-colors: active) {
+  .field,
+  .optional,
+  .loading,
+  .failure,
+  .failure h2 {
+    color: CanvasText;
+  }
+
+  .field input {
+    background: Canvas;
+    color: CanvasText;
+    border-color: CanvasText;
+  }
+
+  .failure {
+    background: Canvas;
+    border-color: CanvasText;
+  }
+}

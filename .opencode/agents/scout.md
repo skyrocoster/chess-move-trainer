@@ -1,8 +1,8 @@
 ---
 description: Cheap read-only Scout for bounded repository facts with exact path and symbol evidence.
 mode: subagent
-model: opencode-go/deepseek-v4-flash
-variant: high
+model: opencode-go/ox-alpha-free
+variant: max
 permission:
   edit: deny
   bash: allow

@@ -1,283 +1,82 @@
-/*
- * Viewer workspace composition (Stage 1).
- *
- * Adopts the shipped MP-02 token surface (cmt-tokens.css and
- * cmt-typescale.css, loaded globally through app.css): no literal colors and
- * no inline application CSS. The workspace root is the CSS container and
- * reflows on its own available content width via a container query; it must
- * not couple to the app-shell viewport breakpoint.
- */
+/* Production composition for the accepted MP-08 wide and constrained arrangements. */
+.viewer {
+  container-type: inline-size;
+  inline-size: 100%;
+}
+
 .workspace {
   box-sizing: border-box;
-  background: var(--md-sys-color-background);
-  color: var(--md-sys-color-on-background);
-  column-gap: var(--cmt-spacing-24);
-  container-type: inline-size;
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  margin-inline: auto;
+  grid-template-areas:
+    "heading heading heading"
+    "loader loader loader"
+    "board eval context"
+    "controls . context";
+  grid-template-columns: minmax(0, 1fr) 2.75rem minmax(0, 1fr);
+  gap: var(--cmt-spacing-24);
   max-inline-size: 66rem;
   min-inline-size: 0;
+  margin-inline: auto;
   padding: var(--cmt-spacing-24);
+  background: var(--md-sys-color-background);
+  color: var(--md-sys-color-on-background);
 }
 
 .heading {
-  grid-column: 1 / -1;
+  grid-area: heading;
   margin: 0;
-  padding-block-end: var(--cmt-spacing-24);
+  padding-block-end: var(--cmt-spacing-8);
   color: var(--md-sys-color-on-surface);
-  font-family: var(--md-sys-typescale-headline-medium-font);
-  font-size: var(--md-sys-typescale-headline-medium-size);
-  font-weight: var(--md-sys-typescale-headline-medium-weight);
-  letter-spacing: var(--md-sys-typescale-headline-medium-letter-spacing);
-  line-height: var(--md-sys-typescale-headline-medium-line-height);
+  font: var(--md-sys-typescale-headline-medium);
   text-align: center;
 }
 
-.lookupForm,
-.resultArea {
-  grid-column: 1 / -1;
+.loader {
+  grid-area: loader;
   min-inline-size: 0;
 }
 
-.lookupForm {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(12rem, 1fr)) minmax(17rem, auto);
-  grid-template-areas:
-    "uuid-label ply-label ."
-    "uuid-input ply-input actions"
-    "uuid-error ply-error .";
-  column-gap: var(--cmt-spacing-12);
-  row-gap: var(--cmt-spacing-4);
-  align-items: start;
-  padding: var(--cmt-spacing-16);
-}
-
-.formField {
-  display: contents;
-}
-
-.formFieldUuid > label {
-  grid-area: uuid-label;
-}
-
-.formFieldUuid > input {
-  grid-area: uuid-input;
-}
-
-.formFieldPly > label {
-  grid-area: ply-label;
-}
-
-.formFieldPly > input {
-  grid-area: ply-input;
-}
-
-.formFieldUuid > div {
-  grid-area: uuid-error;
-}
-
-.formFieldPly > div {
-  grid-area: ply-error;
-}
-
-.formActions {
-  grid-area: actions;
-}
-
-.fieldLabel {
-  color: var(--md-sys-color-on-surface);
-  font: var(--md-sys-typescale-body-medium);
-}
-
-.fieldInput {
-  box-sizing: border-box;
+.board {
+  grid-area: board;
   min-inline-size: 0;
-  min-block-size: calc(
-    var(--cmt-spacing-8) * 2 + var(--md-sys-typescale-body-medium-line-height) + 0.125rem
-  );
-  padding: var(--cmt-spacing-8) var(--cmt-spacing-12);
-  border: 1px solid var(--md-sys-color-outline);
-  border-radius: var(--cmt-radius-default);
-  background: var(--md-sys-color-surface);
-  color: var(--md-sys-color-on-surface);
-  font: var(--md-sys-typescale-body-medium);
 }
 
-.fieldInput:focus-visible {
-  outline: var(--cmt-focus-ring-width) solid var(--cmt-focus-ring-color);
-  outline-offset: var(--cmt-focus-ring-separation);
-}
-
-.fieldInput[data-invalid] {
-  border-color: var(--md-sys-color-error);
-}
-
-.formActions {
-  display: flex;
-  min-inline-size: 17rem;
-  flex-wrap: nowrap;
-  gap: var(--cmt-spacing-12);
-}
-
-.formButton {
-  flex: 1 1 0;
+.evalBar {
+  grid-area: eval;
+  align-self: start;
   min-inline-size: 0;
-  box-sizing: border-box;
-  min-block-size: calc(
-    var(--cmt-spacing-8) * 2 + var(--md-sys-typescale-body-medium-line-height) + 0.125rem
-  );
-  padding: var(--cmt-spacing-8) var(--cmt-spacing-16);
-  font: var(--md-sys-typescale-body-medium);
+}
+
+.controls {
+  grid-area: controls;
+  min-inline-size: 0;
+}
+
+.context {
+  grid-area: context;
+  min-inline-size: 0;
+  align-self: stretch;
+}
+
+.announcement {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
   white-space: nowrap;
 }
 
-.formError {
-  margin: 0;
-  color: var(--md-sys-color-error);
-  font: var(--md-sys-typescale-body-medium);
-}
-
-.resultArea {
-  padding-block-start: var(--cmt-spacing-16);
-  padding-block-end: var(--cmt-spacing-16);
-}
-
-.failureWorkspace {
-  grid-template-columns: 1fr;
-}
-
-.workspace.failureWorkspace .boardColumn {
-  display: none;
-}
-
-.workspace.failureWorkspace .resultArea {
-  padding-block-end: 0;
-}
-
-.workspace.failureWorkspace .resultArea > [data-severity] {
-  max-inline-size: none;
-  padding: 0;
-  border: none;
-  background: transparent;
-}
-
-.workspace.failureWorkspace .contextDisclosure {
-  grid-column: 1 / -1;
-  align-self: start;
-  margin-block-start: var(--cmt-spacing-16);
-}
-
-.loadingNote {
-  margin: 0;
-  color: var(--md-sys-color-on-surface-variant);
-  font: var(--md-sys-typescale-body-medium);
-}
-
-.successDetails {
-  margin: 0;
-  padding: var(--cmt-spacing-16);
-  display: grid;
-  gap: var(--cmt-spacing-8);
-}
-
-.successRow {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: var(--cmt-spacing-8);
-}
-
-.successRow dt {
-  color: var(--md-sys-color-on-surface-variant);
-  font: var(--md-sys-typescale-label-large);
-}
-
-.successRow dd {
-  margin: 0;
-  color: var(--md-sys-color-on-surface);
-  font: var(--md-sys-typescale-body-medium);
-}
-
-.fenValue {
-  overflow-wrap: anywhere;
-}
-
-.boardColumn {
-  min-inline-size: 0;
-}
-
-.workspace .contextDisclosure {
-  grid-column: 2;
-  align-self: stretch;
-  display: flex;
-  flex-direction: column;
-  min-block-size: 0;
-}
-
-.workspace .contextDisclosure > :last-child {
-  flex: 1 1 auto;
-  display: flex;
-  flex-direction: column;
-  min-block-size: 0;
-}
-
-.loadedDisclosure {
-  margin-block-start: var(--cmt-spacing-16);
-}
-
-.contextContent {
-  flex: 1 1 auto;
-  margin: 0;
-  max-block-size: min(24rem, 50vh);
-  padding: 0 var(--cmt-spacing-16) var(--cmt-spacing-16) var(--cmt-spacing-32);
-  overflow-x: hidden;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  color: var(--md-sys-color-on-surface);
-  font: var(--md-sys-typescale-body-medium);
-}
-
-.contextContent li + li {
-  margin-block-start: var(--cmt-spacing-8);
-}
-
 @container (max-width: 40rem) {
-  .boardColumn {
-    grid-column: 1 / -1;
-  }
-
-  .workspace .contextDisclosure {
-    grid-column: 1 / -1;
-    margin-block-start: var(--cmt-spacing-16);
-    align-self: start;
-  }
-
-  .contextContent {
-    max-block-size: min(16rem, 25vh);
-  }
-
-  .lookupForm {
-    grid-template-columns: 1fr;
+  .workspace {
     grid-template-areas:
-      "uuid-label"
-      "uuid-input"
-      "uuid-error"
-      "ply-label"
-      "ply-input"
-      "ply-error"
-      "actions";
+      "heading heading heading"
+      "loader loader loader"
+      ". board eval"
+      ". controls ."
+      "context context context";
+    grid-template-columns: 2.75rem minmax(0, 1fr) 2.75rem;
   }
-
-  .formActions {
-    min-inline-size: 0;
-    flex-direction: column;
-    align-items: stretch;
-  }
-}
-
-.constrainedStory {
-  inline-size: 20rem;
-  max-inline-size: 100%;
 }
 
 @media (forced-colors: active) {
@@ -286,27 +85,7 @@
     color: CanvasText;
   }
 
-  .heading,
-  .fieldLabel,
-  .contextContent,
-  .loadingNote,
-  .successDetails {
-    color: CanvasText;
-  }
-
-  .fieldInput {
-    background: Canvas;
-    color: CanvasText;
-    border-color: CanvasText;
-  }
-
-  .formError {
-    color: CanvasText;
-  }
-
-  .contextDisclosure {
-    background: Canvas;
-    border-color: CanvasText;
+  .heading {
     color: CanvasText;
   }
 }

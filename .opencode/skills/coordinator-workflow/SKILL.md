@@ -17,8 +17,9 @@ frontier; delegate repository reads and edits.
 - Send disposable mock-ups or prototypes to `exploration` with one bounded brief. Their output remains
   noncanonical until explicit adoption.
 - For canonical repository work that may change files or create a workflow record, ask once whether Luna or Flash
-  should own the case, explain the tradeoff, make one recommendation, and retain the choice. Launch that
-  case-worker with `PHASE: ASSESS`.
+  should own the case, explain the tradeoff, make one recommendation, and retain the choice. Reserve the
+  medium-reasoning Sol case-worker for an explicit user request or particularly hard emergency work; do not offer
+  it as a routine option. Launch the selected case-worker with `PHASE: ASSESS`.
 - Use `scout` whenever a coordinator decision needs a missing or stale fact. Do not repeat clean case-worker reads.
 
 ## 2. Review assessment

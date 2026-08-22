@@ -61,6 +61,7 @@ REQUIRED_WORKFLOW_PATHS = (
     Path(".opencode/agents/scout.md"),
     Path(".opencode/agents/coordinator-caseworker.md"),
     Path(".opencode/agents/coordinator-caseworker-flash.md"),
+    Path(".opencode/agents/coordinator-caseworker-sol.md"),
     Path(".opencode/agents/quality.md"),
     Path(".opencode/agents/exploration.md"),
     Path(".opencode/skills/coordinator-workflow/SKILL.md"),
@@ -87,6 +88,7 @@ REQUIRED_AGENT_NAMES = {
     "scout.md",
     "coordinator-caseworker.md",
     "coordinator-caseworker-flash.md",
+    "coordinator-caseworker-sol.md",
     "quality.md",
     "exploration.md",
 }

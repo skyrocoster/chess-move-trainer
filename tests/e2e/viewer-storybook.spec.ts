@@ -2,15 +2,21 @@ import { expect, test, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 
 const STORYBOOK_URL = "http://127.0.0.1:6006";
-const BOARD_LABEL = "Chess board: standard starting position, White at the bottom";
+const BOARD_LABEL =
+  "Chess board: standard starting position, White at the bottom";
 const STORY_IDS = {
-  wide: "viewer-workspace--wide",
-  constrained: "viewer-workspace--constrained",
+  wide: "viewer-mp-08-viewer-workspace--wide",
+  constrained: "viewer-mp-08-viewer-workspace--constrained",
+} as const;
+const MOCKED_VIEWER_IDS = {
+  intermediateConstrained:
+    "viewer-stage-1-mocked-game-viewer--intermediate-constrained",
+  loadingWide: "viewer-stage-1-mocked-game-viewer--loading-wide",
 } as const;
 
 const WORKSPACE_ROOT = '[class*="workspace"]';
-const CONTEXT_PANEL = '[class*="contextDisclosure"]';
-const CONSTRAINED_WRAPPER = '[class*="constrainedStory"]';
+const CONTEXT_PANEL = '[class*="context"]';
+const CONSTRAINED_WRAPPER = '[class*="constrained"]';
 
 async function checkA11y(page: Page) {
   const results = await new AxeBuilder({ page })
@@ -25,7 +31,10 @@ async function checkA11y(page: Page) {
   expect(results.violations).toEqual([]);
 }
 
-async function expectNoWorkspaceLandmarkAttributes(page: Page, element: ReturnType<Page["locator"]>) {
+async function expectNoWorkspaceLandmarkAttributes(
+  page: Page,
+  element: ReturnType<Page["locator"]>,
+) {
   const attributes = await element.evaluate((node) => {
     const el = node as HTMLElement;
     return {
@@ -46,15 +55,23 @@ test.describe("Viewer Workspace Storybook surface", () => {
     await page.emulateMedia({ forcedColors: "active" });
 
     // Wide story: two balanced 1:1 columns in a centered 66rem workspace.
-    await page.goto(`${STORYBOOK_URL}/iframe.html?id=${STORY_IDS.wide}&viewMode=story`);
-    await expect(page.getByRole("heading", { level: 1, name: "Position viewer" })).toBeVisible();
+    await page.goto(
+      `${STORYBOOK_URL}/iframe.html?id=${STORY_IDS.wide}&viewMode=story`,
+    );
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Position viewer" }),
+    ).toBeVisible();
     // Allow Storybook's own a11y addon to finish its axe pass before we run ours.
     await page.waitForTimeout(500);
 
-    await expect(page.getByText("One static position - read-only")).toHaveCount(0);
+    await expect(page.getByText("One static position - read-only")).toHaveCount(
+      0,
+    );
     const board = page.getByRole("img", { name: BOARD_LABEL });
     await expect(board).toBeVisible();
-    await expect(page.getByRole("button", { name: "Position picker" })).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Game Loader" }),
+    ).toBeVisible();
     await expect(page.locator('aside, [role="complementary"]')).toHaveCount(0);
 
     const workspaceRoot = page.locator(WORKSPACE_ROOT).first();
@@ -67,12 +84,17 @@ test.describe("Viewer Workspace Storybook surface", () => {
     expect(workspaceBox).not.toBeNull();
     expect(workspaceBox?.width ?? 0).toBeLessThanOrEqual(1056);
     expect(
-      Math.abs((workspaceBox?.x ?? 0) + (workspaceBox?.width ?? 0) / 2 - viewportWidth / 2),
+      Math.abs(
+        (workspaceBox?.x ?? 0) +
+          (workspaceBox?.width ?? 0) / 2 -
+          viewportWidth / 2,
+      ),
     ).toBeLessThanOrEqual(2);
 
     expect(boardBox).not.toBeNull();
     expect(contextBox).not.toBeNull();
-    const workspaceCenter = (workspaceBox?.x ?? 0) + (workspaceBox?.width ?? 0) / 2;
+    const workspaceCenter =
+      (workspaceBox?.x ?? 0) + (workspaceBox?.width ?? 0) / 2;
     const boardCenter = (boardBox?.x ?? 0) + (boardBox?.width ?? 0) / 2;
     const contextCenter = (contextBox?.x ?? 0) + (contextBox?.width ?? 0) / 2;
     // Balanced 1:1 columns: the board centers in the left column and the Context panel centers in the
@@ -81,7 +103,10 @@ test.describe("Viewer Workspace Storybook surface", () => {
     expect(boardCenter).toBeLessThan(workspaceCenter);
     expect(contextCenter).toBeGreaterThan(workspaceCenter);
     expect(
-      Math.abs(Math.abs(boardCenter - workspaceCenter) - Math.abs(contextCenter - workspaceCenter)),
+      Math.abs(
+        Math.abs(boardCenter - workspaceCenter) -
+          Math.abs(contextCenter - workspaceCenter),
+      ),
     ).toBeLessThanOrEqual(2);
 
     await expectNoWorkspaceLandmarkAttributes(page, workspaceRoot);
@@ -90,7 +115,9 @@ test.describe("Viewer Workspace Storybook surface", () => {
     await checkA11y(page);
 
     // Constrained story: container-query reflow of the approved viewer surface.
-    await page.goto(`${STORYBOOK_URL}/iframe.html?id=${STORY_IDS.constrained}&viewMode=story`);
+    await page.goto(
+      `${STORYBOOK_URL}/iframe.html?id=${STORY_IDS.constrained}&viewMode=story`,
+    );
     await expect(board).toBeVisible();
     await page.waitForTimeout(500);
 
@@ -100,7 +127,9 @@ test.describe("Viewer Workspace Storybook surface", () => {
       await wrapper.evaluate((element, width) => {
         (element as HTMLElement).style.inlineSize = `${width}px`;
       }, size);
-      await expect(page.getByRole("button", { name: "Position picker" })).toBeVisible();
+      await expect(
+        page.getByRole("button", { name: "Game Loader" }),
+      ).toBeVisible();
       const boardBoxAtSize = await board.boundingBox();
       const wrapperBox = await wrapper.boundingBox();
       expect(boardBoxAtSize).not.toBeNull();
@@ -122,5 +151,102 @@ test.describe("Viewer Workspace Storybook surface", () => {
     await expectNoWorkspaceLandmarkAttributes(page, constrainedPanel);
 
     await checkA11y(page);
+  });
+
+  test("keeps the board toolbar compact, responsive, and operable in both viewer compositions", async ({
+    page,
+  }) => {
+    await page.goto(
+      `${STORYBOOK_URL}/iframe.html?id=${STORY_IDS.wide}&viewMode=story`,
+    );
+
+    const wideBoard = page.getByRole("img", { name: BOARD_LABEL });
+    const wideToolbar = page.getByRole("toolbar", { name: "Board controls" });
+    const wideButtons = wideToolbar.getByRole("button");
+    await expect(wideToolbar).toBeVisible();
+    await expect(wideButtons).toHaveCount(2);
+    await expect(page.getByRole("button", { name: "Previous" })).toBeDisabled();
+    await expect(page.getByRole("button", { name: "Next" })).toBeDisabled();
+    await expect(
+      wideToolbar.getByText("Previous", { exact: true }),
+    ).toBeVisible();
+    await expect(wideToolbar.getByText("Next", { exact: true })).toBeVisible();
+
+    const wideBoardBox = await wideBoard.boundingBox();
+    const wideToolbarBox = await wideToolbar.boundingBox();
+    const wideButtonBoxes = await wideButtons.evaluateAll((buttons) =>
+      buttons.map((button) => button.getBoundingClientRect().width),
+    );
+    expect(wideBoardBox).not.toBeNull();
+    expect(wideToolbarBox).not.toBeNull();
+    expect(wideToolbarBox?.y ?? 0).toBeGreaterThanOrEqual(
+      (wideBoardBox?.y ?? 0) + (wideBoardBox?.height ?? 0),
+    );
+    expect(
+      Math.abs((wideToolbarBox?.x ?? 0) - (wideBoardBox?.x ?? 0)),
+    ).toBeLessThanOrEqual(2);
+    expect(
+      Math.abs((wideToolbarBox?.width ?? 0) - (wideBoardBox?.width ?? 0)),
+    ).toBeLessThanOrEqual(2);
+    expect(
+      wideButtonBoxes.reduce((total, width) => total + width, 0),
+    ).toBeLessThan((wideToolbarBox?.width ?? 0) * 0.75);
+
+    await page.goto(
+      `${STORYBOOK_URL}/iframe.html?id=${MOCKED_VIEWER_IDS.intermediateConstrained}&viewMode=story`,
+    );
+    const wrapper = page.locator(CONSTRAINED_WRAPPER).first();
+    await wrapper.evaluate((element) => {
+      (element as HTMLElement).style.inlineSize = "320px";
+    });
+
+    const constrainedBoard = page.getByRole("img", { name: /ply 1/ });
+    const constrainedToolbar = page.getByRole("toolbar", {
+      name: "Board controls",
+    });
+    const previous = constrainedToolbar.getByRole("button", {
+      name: "Previous",
+    });
+    const next = constrainedToolbar.getByRole("button", { name: "Next" });
+    await expect(constrainedToolbar.getByRole("button")).toHaveCount(2);
+    await expect(
+      constrainedToolbar.getByText("Previous", { exact: true }),
+    ).toBeHidden();
+    await expect(
+      constrainedToolbar.getByText("Next", { exact: true }),
+    ).toBeHidden();
+    await expect(previous).toBeEnabled();
+    await expect(next).toBeEnabled();
+    await expect(constrainedToolbar).toHaveJSProperty(
+      "scrollWidth",
+      await constrainedToolbar.evaluate((element) => element.clientWidth),
+    );
+
+    const constrainedBoardBox = await constrainedBoard.boundingBox();
+    const constrainedToolbarBox = await constrainedToolbar.boundingBox();
+    expect(constrainedBoardBox).not.toBeNull();
+    expect(constrainedToolbarBox).not.toBeNull();
+    expect(constrainedToolbarBox?.y ?? 0).toBeGreaterThanOrEqual(
+      (constrainedBoardBox?.y ?? 0) + (constrainedBoardBox?.height ?? 0),
+    );
+
+    await previous.focus();
+    await page.keyboard.press("ArrowRight");
+    await expect(next).toBeFocused();
+    await page.keyboard.press("Enter");
+    await expect(page.getByText("Ply 2 of 3", { exact: true })).toBeVisible();
+
+    await page.goto(
+      `${STORYBOOK_URL}/iframe.html?id=${MOCKED_VIEWER_IDS.loadingWide}&viewMode=story`,
+    );
+    const loadingToolbar = page.getByRole("toolbar", {
+      name: "Board controls",
+    });
+    await expect(
+      loadingToolbar.getByRole("button", { name: "Previous" }),
+    ).toBeDisabled();
+    await expect(
+      loadingToolbar.getByRole("button", { name: "Next" }),
+    ).toBeDisabled();
   });
 });

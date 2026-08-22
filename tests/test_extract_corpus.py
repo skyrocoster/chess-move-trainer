@@ -10,6 +10,7 @@ from pathlib import Path
 import pytest
 
 from scripts.chess_com import extract_corpus
+from scripts.opening_catalog import EXPECTED_SOURCE_FILES, import_catalog
 
 SUBJECT_UUID = extract_corpus.DEFAULT_SUBJECT
 
@@ -390,7 +391,58 @@ def test_initial_population_completeness_and_run_history(tmp_path: Path) -> None
         ).fetchone()
         assert run[:5] == ("success", 4, 1, 11, 7)
         assert "oddschess" in run[5]
-        assert "4/4" in output.getvalue()
+    assert "4/4" in output.getvalue()
+
+
+def test_opening_catalog_publication_preserves_game_corpus_rows(tmp_path: Path) -> None:
+    db_path = tmp_path / "opening-boundary.db"
+    fixture_database(db_path)
+    source = tmp_path / "openings"
+    source.mkdir()
+    rows = {
+        "a.tsv": ("A00", "Amar Opening", "1. h3"),
+        "b.tsv": ("B10", "Caro-Kann Defense", "1. e4 c6"),
+        "c.tsv": ("C20", "King's Pawn Game", "1. e4 e5"),
+        "d.tsv": ("D00", "Queen's Pawn Game", "1. d4 d5"),
+        "e.tsv": ("E00", "Indian Game", "1. d4 Nf6"),
+    }
+    for source_file in EXPECTED_SOURCE_FILES:
+        eco, name, pgn = rows[source_file]
+        (source / source_file).write_text(
+            f"eco\tname\tpgn\n{eco}\t{name}\t{pgn}\n", encoding="utf-8"
+        )
+
+    with connection(db_path) as db:
+        seed_all_fixtures(db)
+        extract_corpus.run_extraction(db, output=io.StringIO())
+        before = persisted_fixture_bytes(db)
+        before_counts = corpus_counts(db)
+        before_state_keys = set(
+            db.execute(
+                "SELECT placement, side_to_move, castling, en_passant FROM position_state"
+            ).fetchall()
+        )
+
+        result = import_catalog(db, source)
+
+        after_state_keys = set(
+            db.execute(
+                "SELECT placement, side_to_move, castling, en_passant FROM position_state"
+            ).fetchall()
+        )
+        opening_keys = set(
+            db.execute(
+                "SELECT endpoint_placement, endpoint_side_to_move, endpoint_castling, "
+                "endpoint_en_passant FROM opening_catalog"
+            ).fetchall()
+        )
+        opening_only_keys = opening_keys - before_state_keys
+        assert result.record_count == 5
+        assert persisted_fixture_bytes(db) == before
+        assert corpus_counts(db) == before_counts
+        assert after_state_keys == before_state_keys
+        assert opening_only_keys
+        assert opening_only_keys.isdisjoint(after_state_keys)
 
 
 def test_population_failure_rolls_back_and_records_failed_run(

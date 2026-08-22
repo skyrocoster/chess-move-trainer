@@ -1,0 +1,86 @@
+.bar {
+  box-sizing: border-box;
+  display: grid;
+  grid-template-rows: auto minmax(12rem, 1fr) auto;
+  align-items: stretch;
+  gap: var(--cmt-spacing-4);
+  min-inline-size: 2.75rem;
+  min-block-size: 12rem;
+  padding-block: var(--cmt-spacing-4);
+  color: var(--md-sys-color-on-surface);
+}
+
+.label,
+.value {
+  overflow-wrap: anywhere;
+  font: var(--md-sys-typescale-label-small);
+  text-align: center;
+}
+
+.label {
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.value {
+  color: var(--md-sys-color-on-surface);
+}
+
+.track {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: stretch;
+  inline-size: 1.25rem;
+  min-block-size: 8rem;
+  margin-inline: auto;
+  overflow: hidden;
+  border: 1px solid var(--md-sys-color-outline);
+  border-radius: 999px;
+  background: var(--md-sys-color-surface-container-highest);
+}
+
+.indicator {
+  flex: none;
+  min-block-size: 0;
+  border-radius: inherit;
+  background: var(--md-sys-color-primary);
+  transition:
+    height 180ms ease,
+    background-color 180ms ease;
+}
+
+.bar[data-orientation="black"] .track {
+  justify-content: flex-start;
+}
+
+.bar[data-state="neutral"] .indicator {
+  background: var(--md-sys-color-outline);
+  opacity: 0.45;
+}
+
+.bar[data-state="pending"] .indicator {
+  background: var(--md-sys-color-secondary);
+  opacity: 0.8;
+}
+
+.bar[data-state="best-line"] .indicator {
+  background: var(--md-sys-color-primary);
+}
+
+@media (forced-colors: active) {
+  .bar,
+  .label,
+  .value {
+    color: CanvasText;
+  }
+
+  .track {
+    border-color: CanvasText;
+    background: Canvas;
+  }
+
+  .indicator {
+    background: Highlight;
+  }
+}

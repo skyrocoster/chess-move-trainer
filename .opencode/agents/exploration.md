@@ -1,8 +1,8 @@
 ---
 description: Isolated Exploration Agent for noncanonical mock-ups and prototypes under experiments.
 mode: subagent
-model: opencode-go/deepseek-v4-flash
-variant: high
+model: opencode-go/ox-alpha-free
+variant: max
 permission:
   edit:
     "*": deny

@@ -1,9 +1,7 @@
 /*
- * Feature-local lookup contract and deterministic mocks for the MP-07 viewer
- * (Stage 1). No real API exists yet: the viewer consumes an injected
- * PositionLookup and the default stub reports an unexpected failure until
- * Stage 3 wires the real backend client. Storybook stories and component
- * tests pass the canned deterministic mocks below.
+ * Legacy single-position lookup contract and deterministic mocks retained for
+ * direct MP-07 client regression coverage. The production viewer uses the
+ * whole-game GameLookup contract in positionApi.ts.
  */
 
 export type SubjectColor = "white" | "black";
@@ -55,7 +53,7 @@ export const mockUnexpectedFailure: PositionLookup = async () => ({
   status: "unexpected_failure",
 });
 
-/** Deterministic canned mocks keyed by the MP-07 visual state. */
+/** Deterministic canned mocks retained for the MP-07 client contract. */
 export const mockLookup = {
   successWhite: mockSuccessWhite,
   successBlack: mockSuccessBlack,
@@ -66,8 +64,8 @@ export const mockLookup = {
 } satisfies Record<string, PositionLookup>;
 
 /**
- * Default stub used by the viewer until Stage 3 wires the real backend
- * client. It deterministically reports an unexpected failure.
+ * Legacy default stub for callers that still exercise the single-position
+ * lookup contract.
  */
 export const defaultLookup: PositionLookup = async () => ({
   status: "unexpected_failure",

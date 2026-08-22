@@ -1,0 +1,108 @@
+.adapter {
+  box-sizing: border-box;
+  display: grid;
+  gap: var(--cmt-spacing-12);
+  inline-size: 100%;
+  max-inline-size: 40rem;
+  min-inline-size: 0;
+}
+
+.board {
+  aspect-ratio: 1;
+  inline-size: 100%;
+  max-inline-size: 40rem;
+  min-inline-size: 0;
+  overflow: hidden;
+}
+
+.branchPanel {
+  display: grid;
+  gap: var(--cmt-spacing-8);
+  padding: var(--cmt-spacing-12);
+  background: var(--md-sys-color-surface-container);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: 0.25rem;
+}
+
+.branchHeading {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--cmt-spacing-8);
+  align-items: baseline;
+  color: var(--md-sys-color-on-surface);
+  font: var(--md-sys-typescale-label-large);
+}
+
+.branchHeading span,
+.notice {
+  color: var(--md-sys-color-on-surface-variant);
+  font: var(--md-sys-typescale-body-small);
+}
+
+.fenFields {
+  display: grid;
+  gap: var(--cmt-spacing-8);
+  min-inline-size: 0;
+}
+
+.fenField {
+  display: grid;
+  gap: var(--cmt-spacing-4);
+  min-inline-size: 0;
+  margin: 0;
+  color: var(--md-sys-color-on-surface-variant);
+  font: var(--md-sys-typescale-body-small);
+}
+
+.fenField code {
+  color: var(--md-sys-color-on-surface);
+  overflow-wrap: anywhere;
+}
+
+.san {
+  min-block-size: 1.5rem;
+  margin: 0;
+  color: var(--md-sys-color-on-surface);
+  font: var(--md-sys-typescale-body-medium);
+  overflow-wrap: anywhere;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--cmt-spacing-8);
+}
+
+.notice {
+  margin: 0;
+}
+
+.terminal {
+  margin: 0;
+  color: var(--md-sys-color-on-surface);
+  font: var(--md-sys-typescale-label-large);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .board * {
+    animation-duration: 0s !important;
+    transition-duration: 0s !important;
+  }
+}
+
+@media (forced-colors: active) {
+  .branchPanel {
+    background: Canvas;
+    border-color: CanvasText;
+  }
+
+  .branchHeading,
+  .san,
+  .fenField,
+  .fenField code,
+  .terminal,
+  .branchHeading span,
+  .notice {
+    color: CanvasText;
+  }
+}

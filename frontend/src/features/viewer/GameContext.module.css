@@ -1,0 +1,49 @@
+.panel {
+  min-block-size: 100%;
+  padding: var(--cmt-spacing-16);
+}
+
+.empty {
+  margin: 0;
+  color: var(--md-sys-color-on-surface-variant);
+  font: var(--md-sys-typescale-body-medium);
+}
+
+.details {
+  display: grid;
+  gap: var(--cmt-spacing-12);
+  margin: 0;
+}
+
+.details > div {
+  display: grid;
+  gap: var(--cmt-spacing-4);
+}
+
+.details dt {
+  color: var(--md-sys-color-on-surface-variant);
+  font: var(--md-sys-typescale-label-large);
+}
+
+.details dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: var(--md-sys-color-on-surface);
+  font: var(--md-sys-typescale-body-medium);
+}
+
+.details a {
+  color: var(--md-sys-color-primary);
+}
+
+@media (forced-colors: active) {
+  .empty,
+  .details dt,
+  .details dd {
+    color: CanvasText;
+  }
+
+  .details a {
+    color: LinkText;
+  }
+}

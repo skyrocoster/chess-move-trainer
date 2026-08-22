@@ -1,0 +1,111 @@
+.container {
+  container-name: board-control;
+  container-type: inline-size;
+  display: grid;
+  gap: var(--cmt-spacing-12);
+  inline-size: 100%;
+  min-inline-size: 0;
+}
+
+.empty {
+  margin: 0;
+  color: var(--md-sys-color-on-surface-variant);
+  font: var(--md-sys-typescale-body-medium);
+}
+
+.toolbar {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--cmt-spacing-4);
+  inline-size: 100%;
+  min-inline-size: 0;
+  padding: var(--cmt-spacing-8);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--cmt-radius-12);
+  background: var(--md-sys-color-surface-container);
+}
+
+.button {
+  flex: 0 1 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--cmt-spacing-8);
+  min-inline-size: 0;
+  padding: var(--cmt-spacing-8) var(--cmt-spacing-12);
+  border: 1px solid transparent;
+  border-radius: var(--cmt-radius-default);
+  background: transparent;
+  color: var(--md-sys-color-on-surface);
+  font: var(--md-sys-typescale-label-medium);
+  cursor: pointer;
+}
+
+.button:hover:not(:disabled) {
+  background: var(--md-sys-color-surface-container-high);
+}
+
+.button:focus-visible {
+  outline: var(--cmt-focus-ring-width) solid var(--cmt-focus-ring-color);
+  outline-offset: var(--cmt-focus-ring-separation);
+}
+
+.button:disabled {
+  color: var(--md-sys-color-on-surface-variant);
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.button > svg {
+  flex: 0 0 auto;
+  inline-size: var(--cmt-spacing-24);
+  block-size: var(--cmt-spacing-24);
+}
+
+.label {
+  min-inline-size: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@container board-control (max-width: 24rem) {
+  .toolbar {
+    gap: 0;
+  }
+
+  .button {
+    padding-inline: var(--cmt-spacing-8);
+  }
+
+  .label {
+    display: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .empty,
+  .button {
+    color: CanvasText;
+  }
+
+  .toolbar,
+  .button {
+    border-color: ButtonBorder;
+  }
+
+  .toolbar {
+    background: Canvas;
+  }
+
+  .button {
+    background: ButtonFace;
+  }
+
+  .button:disabled {
+    color: GrayText;
+    opacity: 1;
+  }
+}

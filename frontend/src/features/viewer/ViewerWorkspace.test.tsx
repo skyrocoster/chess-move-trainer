@@ -6,283 +6,324 @@ import type {} from "@chialab/vitest-axe/matchers";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import type { ComponentProps } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import ViewerWorkspace from "./ViewerWorkspace";
+import type {
+  AnalysisClient,
+  EvaluationObservation,
+  EvaluationResult,
+  EvaluationStatus,
+} from "./analysisApi";
+import type { GameLookup, GameLookupResult } from "./positionApi";
 import {
-  mockCorpusUnavailable,
-  mockPositionNotFound,
-  mockStoredPositionInvalid,
-  mockSuccessBlack,
-  mockSuccessWhite,
-  mockUnexpectedFailure,
-  type LookupResult,
-  type PositionLookup,
-} from "./positionLookup";
+  STAGE1_GAME,
+  STAGE1_GAME_UUID,
+  STAGE1_UNSAFE_SOURCE_GAME,
+  type Stage1Game,
+} from "./stage1GameTypes";
 
 expect.extend(matchers);
 
 const BOARD_LABEL = "Chess board: standard starting position, White at the bottom";
-const GAME_UUID = "0101b08a-ce8b-11ee-b2fd-e90263e5548c";
-const SAMPLE_FEN = "rn1qk2r/1bp1bpp1/pp1ppn1p/8/4PB2/2NP1NP1/PPPQ1PBP/R3K2R b KQkq e3 0 8";
+const GAME_UUID = STAGE1_GAME_UUID;
+const BLACK_GAME: Stage1Game = { ...STAGE1_GAME, subject_color: "black" };
 
 const here = dirname(fileURLToPath(import.meta.url));
 const rawStyles = readFileSync(join(here, "ViewerWorkspace.module.css"), "utf8");
 
-afterEach(() => {
-  cleanup();
-  vi.unstubAllGlobals();
-});
+afterEach(() => cleanup());
 
-async function fillAndSubmit(
-  user: ReturnType<typeof userEvent.setup>,
-  uuid = GAME_UUID,
-  ply = "8",
-) {
+async function fillAndSubmit(user: ReturnType<typeof userEvent.setup>, uuid = GAME_UUID, ply = "") {
   await user.type(screen.getByLabelText("Game UUID"), uuid);
-  await user.type(screen.getByLabelText("Ply"), ply);
-  await user.click(screen.getByRole("button", { name: "Load position" }));
+  if (ply) {
+    await user.type(screen.getByLabelText(/Ply/), ply);
+  }
+  await user.click(screen.getByRole("button", { name: "Load game" }));
 }
 
-function jsonResponse(body: unknown, status = 200): Response {
+function successfulLookup(game: Stage1Game = STAGE1_GAME): GameLookup {
+  return vi.fn<GameLookup>(async (_uuid, initialPly) => ({
+    status: "success",
+    game: { ...game, initial_ply: initialPly ?? 0 },
+  }));
+}
+
+function noAnalysisClient(): AnalysisClient {
   return {
-    ok: status >= 200 && status < 300,
-    status,
-    json: async () => body,
-  } as Response;
+    observe: vi.fn(async (fen) => ({
+      status: "success" as const,
+      data: { fen, eligibility: "missing" as const, result: null, status: null, terminal: false },
+    })),
+    enqueue: vi.fn(async (fen, action) => ({
+      status: "success" as const,
+      data: {
+        fen,
+        action,
+        outcome: "queued",
+        eligibility: "missing" as const,
+        status: {
+          state: "queued" as const,
+          position: 0,
+          attempts: 1,
+          enqueued_at: "2026-08-21T00:00:00+00:00",
+          started_at: null,
+          completed_at: null,
+          error_code: null,
+        },
+      },
+    })),
+    status: vi.fn(),
+  };
+}
+
+function completedAnalysisClient(): AnalysisClient {
+  const result: EvaluationResult = {
+    fen: STAGE1_GAME.positions[0].fen,
+    profile_id: "mp09-balanced-nodes-v2-200000",
+    candidates: [
+      {
+        rank: 1,
+        score_kind: "cp",
+        score_value: 34,
+        wdl_wins: 420,
+        wdl_draws: 300,
+        wdl_losses: 280,
+        pv_uci: ["e2e4"],
+        depth: 20,
+        seldepth: 24,
+        nodes: 200000,
+        engine_time_ms: 100,
+      },
+    ],
+    terminal_kind: null,
+    completed_at: "2026-08-21T00:00:01+00:00",
+    wall_time_ms: 100,
+  };
+  const completedStatus: EvaluationStatus = {
+    state: "done",
+    position: 0,
+    attempts: 1,
+    enqueued_at: "2026-08-21T00:00:00+00:00",
+    started_at: "2026-08-21T00:00:00+00:00",
+    completed_at: "2026-08-21T00:00:01+00:00",
+    error_code: null,
+  };
+  const observe = vi.fn(async (fen: string) => {
+    const data: EvaluationObservation = {
+      fen,
+      eligibility: "eligible",
+      result: { ...result, fen },
+      status: completedStatus,
+      terminal: false,
+    };
+    return { status: "success" as const, data };
+  });
+  return {
+    observe,
+    enqueue: vi.fn(),
+    status: vi.fn(),
+  };
+}
+
+function renderViewer(props: ComponentProps<typeof ViewerWorkspace> = {}) {
+  return render(<ViewerWorkspace analysisClient={noAnalysisClient()} {...props} />);
 }
 
 describe("ViewerWorkspace", () => {
-  it("renders exactly one H1 'Position viewer' with no subtitle", () => {
-    render(<ViewerWorkspace />);
-    const headings = screen.getAllByRole("heading", { level: 1 });
+  it("composes the empty viewer with the static board and both empty panels", () => {
+    renderViewer();
 
-    expect(headings).toHaveLength(1);
-    expect(headings[0]).toHaveTextContent("Position viewer");
-    expect(screen.queryByText("One static position - read-only")).not.toBeInTheDocument();
-  });
-
-  it("renders the starting-position board with the settled label and adapter defaults", () => {
-    render(<ViewerWorkspace />);
-    const graphic = screen.getByRole("img", { name: BOARD_LABEL });
-    const description = document.getElementById(graphic.getAttribute("aria-describedby") ?? "");
-
-    expect(description).toHaveTextContent("Orientation: White at the bottom.");
-    expect(graphic.querySelectorAll("[data-square] span").length).toBeGreaterThan(0);
-    // The board adapter stays read-only: no interactive button inside the graphic.
-    expect(graphic.querySelector('[role="button"]')).toBeNull();
-  });
-
-  it("keeps the Context disclosure a plain container with no complementary landmark", () => {
-    const { container } = render(<ViewerWorkspace />);
-    const contextTrigger = screen.getByRole("button", { name: "Context" });
-    const panel = contextTrigger.closest('[class*="contextDisclosure"]');
-    const workspace = container.querySelector('[class*="workspace"]');
-
-    expect(contextTrigger).toBeVisible();
-    expect(screen.queryByRole("complementary")).toBeNull();
-    expect(container.querySelector("aside")).toBeNull();
-
-    expect(panel).not.toBeNull();
-    expect(workspace).not.toBeNull();
-    const elements = [panel as HTMLElement, workspace as HTMLElement];
-    for (const element of elements) {
-      expect(element).not.toHaveAttribute("role");
-      expect(element).not.toHaveAttribute("aria-label");
-      expect(element).not.toHaveAttribute("aria-labelledby");
-    }
-  });
-
-  it("ships the container-query omission contract with no viewport breakpoint", () => {
-    expect(rawStyles).toMatch(/@container\s*\(\s*max-width:\s*40rem\s*\)/);
-    expect(rawStyles.slice(rawStyles.indexOf("@container"))).toMatch(
-      /\.contextDisclosure\s*\{[^}]*grid-column:\s*1\s*\/\s*-1/,
+    expect(screen.getByRole("heading", { level: 1, name: "Position viewer" })).toBeVisible();
+    expect(screen.getByRole("img", { name: BOARD_LABEL })).toBeVisible();
+    expect(screen.getByRole("meter", { name: "Evaluation" })).toHaveAttribute(
+      "aria-valuetext",
+      "No analysis yet; evaluation neutral.",
     );
-    expect(rawStyles).toMatch(/@media\s*\(\s*forced-colors:\s*active\s*\)/);
-    expect(rawStyles).not.toMatch(/@media\s*\(\s*(?:max-width|min-width)\s*:/);
+    expect(screen.getAllByText("No game loaded")).toHaveLength(2);
+    expect(screen.getByRole("button", { name: "Previous" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Next" })).toBeDisabled();
   });
 
-  it("has no focused axe violations at the workspace boundary", async () => {
-    const { container } = render(<ViewerWorkspace />);
-    const results = await axe.run({ include: [container] });
-
-    expect(results).toHaveNoViolations();
-  });
-
-  it("rejects a malformed UUID without calling the lookup", async () => {
-    const lookup = vi.fn<PositionLookup>(async () => ({ status: "unexpected_failure" }));
+  it("uses the whole-game lookup, loads blank Ply at zero, and shows the complete context", async () => {
+    const lookup = successfulLookup(BLACK_GAME);
     const user = userEvent.setup();
-    render(<ViewerWorkspace lookup={lookup} />);
+    renderViewer({ lookup });
 
-    await fillAndSubmit(user, "not-a-uuid", "8");
+    await fillAndSubmit(user);
 
-    expect(screen.getByRole("alert")).toHaveTextContent(/valid game UUID/);
-    expect(lookup).not.toHaveBeenCalled();
+    expect(await screen.findByText("Ply 0 of 3")).toBeVisible();
+    expect(screen.getByText("Initial position")).toBeVisible();
+    expect(screen.getByRole("img", { name: /ply 0, Black at the bottom/ })).toBeVisible();
+    expect(screen.getByRole("link", { name: "Chess.com game" })).toHaveAttribute(
+      "target",
+      "_blank",
+    );
+    expect(lookup).toHaveBeenCalledWith(GAME_UUID, undefined, expect.any(AbortSignal));
   });
 
-  it("rejects a negative or non-whole ply without calling the lookup", async () => {
-    const lookup = vi.fn<PositionLookup>(async () => ({ status: "unexpected_failure" }));
+  it("loads an explicit Ply and traverses in memory without changing the form or requesting again", async () => {
+    const lookup = successfulLookup();
     const user = userEvent.setup();
-    render(<ViewerWorkspace lookup={lookup} />);
+    renderViewer({ lookup });
 
-    await fillAndSubmit(user, GAME_UUID, "-3");
+    await fillAndSubmit(user, GAME_UUID, "1");
+    await screen.findByText("Ply 1 of 3");
+    const next = screen.getByRole("button", { name: "Next" });
+    expect(screen.getByLabelText(/Ply/)).toHaveValue("1");
 
-    expect(screen.getByRole("alert")).toHaveTextContent(/whole ply/);
-    expect(lookup).not.toHaveBeenCalled();
+    await user.click(next);
+    expect(screen.getByText("Ply 2 of 3")).toBeVisible();
+    expect(screen.getByText("e5")).toBeVisible();
+    expect(screen.getByLabelText(/Ply/)).toHaveValue("1");
+    expect(lookup).toHaveBeenCalledOnce();
+    expect(document.activeElement).toBe(next);
+
+    await user.click(next);
+    expect(screen.getByText("Ply 3 of 3")).toBeVisible();
+    expect(next).toBeDisabled();
+    await user.click(screen.getByRole("button", { name: "Previous" }));
+    expect(screen.getByText("Ply 2 of 3")).toBeVisible();
   });
 
-  it("disables submission while loading and keeps the current board visible", async () => {
-    let resolveResult!: (result: LookupResult) => void;
-    const pending: PositionLookup = () =>
-      new Promise<LookupResult>((resolve) => {
-        resolveResult = resolve;
+  it.each([
+    ["game_not_found", "Game not found"],
+    ["position_not_found", "Position not found"],
+    ["corpus_unavailable", "Corpus unavailable"],
+    ["game_unavailable", "Game unavailable"],
+    ["unexpected_failure", "Unable to load game"],
+  ] as const)("maps the typed %s response to an accessible state", async (status, heading) => {
+    const lookup: GameLookup = vi.fn(async (): Promise<GameLookupResult> => ({ status }));
+    const user = userEvent.setup();
+    renderViewer({ lookup });
+
+    await fillAndSubmit(user);
+
+    expect(await screen.findByRole("heading", { name: heading, level: 2 })).toBeVisible();
+    expect(screen.getByRole("img", { name: BOARD_LABEL })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Next" })).toBeDisabled();
+  });
+
+  it("keeps the active game and controls during replacement loading and restores them after failure", async () => {
+    let calls = 0;
+    let resolveReplacement!: (result: GameLookupResult) => void;
+    const lookup: GameLookup = vi.fn<GameLookup>(async (_uuid, initialPly) => {
+      calls += 1;
+      if (calls === 1) {
+        return { status: "success", game: { ...STAGE1_GAME, initial_ply: initialPly ?? 0 } };
+      }
+      return new Promise<GameLookupResult>((resolve) => {
+        resolveReplacement = resolve;
       });
-    const user = userEvent.setup();
-    render(<ViewerWorkspace lookup={pending} />);
-
-    expect(screen.getByRole("img", { name: BOARD_LABEL })).toBeInTheDocument();
-    await fillAndSubmit(user);
-
-    expect(screen.getByRole("button", { name: "Load position" })).toBeDisabled();
-    expect(screen.getByText("Loading the requested position...")).toBeInTheDocument();
-    expect(screen.getByRole("img", { name: BOARD_LABEL })).toBeInTheDocument();
-
-    resolveResult({
-      status: "success",
-      game_uuid: GAME_UUID,
-      ply: 8,
-      fen: SAMPLE_FEN,
-      subject_color: "white",
     });
-    await screen.findByRole("img", { name: /ply 8, White at the bottom/ });
-    expect(screen.getByRole("button", { name: "Load position" })).toBeEnabled();
-  });
-
-  it("renders a successful White lookup with identity, FEN, color, and orientation", async () => {
     const user = userEvent.setup();
-    render(<ViewerWorkspace lookup={mockSuccessWhite} />);
+    renderViewer({ lookup });
 
-    await fillAndSubmit(user);
+    await fillAndSubmit(user, GAME_UUID, "1");
+    await screen.findByText("Ply 1 of 3");
+    await user.clear(screen.getByLabelText(/Ply/));
+    await user.type(screen.getByLabelText(/Ply/), "2");
+    await user.click(screen.getByRole("button", { name: "Load game" }));
 
+    await screen.findByText("Loading the complete game...");
+    expect(screen.getByText("Ply 1 of 3")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Next" })).toBeDisabled();
+
+    resolveReplacement({ status: "game_unavailable" });
     expect(
-      await screen.findByRole("img", { name: new RegExp(`ply 8, White at the bottom`) }),
-    ).toBeInTheDocument();
-    expect(screen.getByText(GAME_UUID)).toBeInTheDocument();
-    expect(screen.getByText(SAMPLE_FEN)).toBeInTheDocument();
-    expect(screen.getByText("White", { selector: "dd" })).toBeInTheDocument();
-    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+      await screen.findByRole("heading", { name: "Game unavailable", level: 2 }),
+    ).toBeVisible();
+    expect(screen.getByText("Ply 1 of 3")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Next" })).toBeEnabled();
   });
 
-  it("renders a successful Black lookup oriented with Black at the bottom", async () => {
-    const user = userEvent.setup();
-    render(<ViewerWorkspace lookup={mockSuccessBlack} />);
-
-    await fillAndSubmit(user);
-
-    expect(
-      await screen.findByRole("img", { name: new RegExp(`ply 8, Black at the bottom`) }),
-    ).toBeInTheDocument();
-    expect(screen.getByText("Black", { selector: "dd" })).toBeInTheDocument();
-  });
-
-  it("loads the success payload through the feature API client", async () => {
-    const fetchMock = vi.fn().mockResolvedValue(
-      jsonResponse({
-        game_uuid: GAME_UUID,
-        ply: 8,
-        fen: SAMPLE_FEN,
-        subject_color: "white",
-      }),
-    );
-    vi.stubGlobal("fetch", fetchMock);
-    const user = userEvent.setup();
-    render(<ViewerWorkspace />);
-
-    await fillAndSubmit(user);
-
-    expect(
-      await screen.findByRole("img", { name: /ply 8, White at the bottom/ }),
-    ).toBeInTheDocument();
-    expect(screen.getByText(SAMPLE_FEN)).toBeInTheDocument();
-    expect(fetchMock).toHaveBeenCalledWith(
-      `http://localhost:5666/api/games/${GAME_UUID}/positions/8`,
-      { signal: undefined },
-    );
-  });
-
-  it.each([
-    [404, "position_not_found", "Position not found"],
-    [503, "corpus_unavailable", "Corpus unavailable"],
-    [500, "stored_position_invalid", "Stored position unavailable"],
-  ] as const)("maps API error %s to the %s state", async (status, code, heading) => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValue(jsonResponse({ code, message: "safe" }, status)),
+  it("reset aborts a pending request and restores empty panels without stale replacement", async () => {
+    let resolvePending!: (result: GameLookupResult) => void;
+    const lookup: GameLookup = vi.fn(
+      () =>
+        new Promise<GameLookupResult>((resolve) => {
+          resolvePending = resolve;
+        }),
     );
     const user = userEvent.setup();
-    render(<ViewerWorkspace />);
+    renderViewer({ lookup });
 
     await fillAndSubmit(user);
+    await user.click(screen.getByRole("button", { name: "Reset" }));
+    expect(screen.getAllByText("No game loaded")).toHaveLength(2);
+    expect(screen.getByRole("img", { name: BOARD_LABEL })).toBeVisible();
 
-    expect(await screen.findByText(heading)).toBeInTheDocument();
-    expect(screen.queryByRole("img")).toBeNull();
+    resolvePending({ status: "success", game: STAGE1_GAME });
+    await Promise.resolve();
+    expect(screen.getAllByText("No game loaded")).toHaveLength(2);
+    expect(screen.getByLabelText("Game UUID")).toHaveValue("");
   });
 
-  it("maps an unexpected API failure and a network failure to the fallback state", async () => {
-    const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ code: "other" }, 502));
-    vi.stubGlobal("fetch", fetchMock);
+  it("renders unsafe source attribution as unavailable without rejecting the active game", async () => {
+    const lookup = successfulLookup(STAGE1_UNSAFE_SOURCE_GAME);
     const user = userEvent.setup();
-    render(<ViewerWorkspace />);
+    renderViewer({ lookup });
 
     await fillAndSubmit(user);
-    expect(await screen.findByText("Unable to load position")).toBeInTheDocument();
 
-    cleanup();
-    fetchMock.mockRejectedValueOnce(new Error("offline"));
-    render(<ViewerWorkspace />);
-    await fillAndSubmit(user);
-    expect(await screen.findByText("Unable to load position")).toBeInTheDocument();
+    expect(await screen.findByText("Ply 0 of 3")).toBeVisible();
+    expect(screen.getByText("Source unavailable")).toBeVisible();
+    expect(screen.queryByRole("link", { name: "Chess.com game" })).not.toBeInTheDocument();
   });
 
-  it.each([
-    [mockPositionNotFound, "Position not found"],
-    [mockCorpusUnavailable, "Corpus unavailable"],
-    [mockStoredPositionInvalid, "Stored position unavailable"],
-    [mockUnexpectedFailure, "Unable to load position"],
-  ] as const)("removes the prior board and shows the %s state", async (lookup, heading) => {
+  it("keeps the displayed board unchanged while analysis is requested", async () => {
+    const lookup = successfulLookup();
+    const analysisClient = noAnalysisClient();
     const user = userEvent.setup();
-    const { container } = render(<ViewerWorkspace lookup={lookup} />);
+    render(<ViewerWorkspace lookup={lookup} analysisClient={analysisClient} />);
 
     await fillAndSubmit(user);
+    const board = await screen.findByRole("img", { name: /ply 0, White at the bottom/ });
+    const boardLabel = board.getAttribute("aria-label");
+    const analyze = await screen.findByRole("button", { name: "Analyze position" });
 
-    expect(await screen.findByText(heading)).toBeInTheDocument();
-    // The prior (starting) board is removed so it is not mistaken for the request.
-    expect(screen.queryByRole("img")).toBeNull();
-    expect(container.querySelector('[class*="failureWorkspace"]')).toBeInTheDocument();
+    await user.click(analyze);
+
+    expect(analysisClient.enqueue).toHaveBeenCalledWith(
+      STAGE1_GAME.positions[0].fen,
+      "analyze",
+      expect.any(AbortSignal),
+    );
+    expect(screen.getByRole("img", { name: /ply 0, White at the bottom/ })).toHaveAttribute(
+      "aria-label",
+      boardLabel,
+    );
+    expect(screen.getByRole("img", { name: /ply 0, White at the bottom/ })).not.toHaveAttribute(
+      "aria-roledescription",
+      "draggable",
+    );
   });
 
-  it("resets the viewer to the empty form and the standard starting board", async () => {
+  it("shares one completed observation with the panel and the beside-board eval bar", async () => {
+    const lookup = successfulLookup();
+    const analysisClient = completedAnalysisClient();
     const user = userEvent.setup();
-    render(<ViewerWorkspace lookup={mockSuccessWhite} />);
+    render(<ViewerWorkspace lookup={lookup} analysisClient={analysisClient} />);
 
     await fillAndSubmit(user);
-    await screen.findByRole("img", { name: /ply 8, White at the bottom/ });
 
-    await user.click(screen.getByRole("button", { name: "Reset viewer" }));
-
-    expect(screen.getByRole("img", { name: BOARD_LABEL })).toBeInTheDocument();
-    expect((screen.getByLabelText("Game UUID") as HTMLInputElement).value).toBe("");
-    expect((screen.getByLabelText("Ply") as HTMLInputElement).value).toBe("");
+    expect(await screen.findByText("Analysis complete")).toBeVisible();
+    expect(screen.getByText("best-line evaluation +0.34.")).toBeVisible();
+    expect(screen.getByRole("meter", { name: "Evaluation" })).toHaveAttribute(
+      "data-state",
+      "best-line",
+    );
+    expect(analysisClient.observe).toHaveBeenCalledOnce();
+    expect(analysisClient.status).not.toHaveBeenCalled();
   });
 
-  it("has no focused axe violations after a successful lookup", async () => {
-    const { container } = render(<ViewerWorkspace lookup={mockSuccessWhite} />);
-    const user = userEvent.setup();
+  it("keeps the accepted container-query and accessibility boundaries", async () => {
+    expect(rawStyles).toMatch(/container-type:\s*inline-size/);
+    expect(rawStyles).toMatch(/@container\s*\(max-width:\s*40rem\)/);
+    expect(rawStyles).not.toMatch(/@media\s*\(\s*(?:max-width|min-width)\s*:/);
 
-    await fillAndSubmit(user);
-    await screen.findByRole("img", { name: /ply 8, White at the bottom/ });
-
-    const results = await axe.run({ include: [container] });
-    expect(results).toHaveNoViolations();
+    const { container } = renderViewer({ lookup: successfulLookup() });
+    expect(await axe.run({ include: [container] })).toHaveNoViolations();
   });
 });

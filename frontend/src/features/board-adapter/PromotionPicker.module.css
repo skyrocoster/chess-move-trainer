@@ -1,0 +1,212 @@
+.demo {
+  box-sizing: border-box;
+  display: grid;
+  gap: var(--cmt-spacing-16);
+  inline-size: 100%;
+  max-inline-size: 40rem;
+  min-inline-size: 0;
+  color: var(--md-sys-color-on-surface);
+}
+
+.demo h1 {
+  margin: 0;
+  font-family: var(--md-sys-typescale-title-large-font);
+  font-size: var(--md-sys-typescale-title-large-size);
+  font-weight: var(--md-sys-typescale-title-large-weight);
+  letter-spacing: var(--md-sys-typescale-title-large-letter-spacing);
+  line-height: var(--md-sys-typescale-title-large-line-height);
+}
+
+.demoBoard {
+  inline-size: 100%;
+  overflow: hidden;
+  border: 1px solid var(--md-sys-color-outline);
+  border-radius: var(--cmt-radius-default);
+}
+
+.demoState {
+  display: grid;
+  gap: var(--cmt-spacing-4);
+  font-family: var(--md-sys-typescale-body-medium-font);
+  font-size: var(--md-sys-typescale-body-medium-size);
+  font-weight: var(--md-sys-typescale-body-medium-weight);
+  letter-spacing: var(--md-sys-typescale-body-medium-letter-spacing);
+  line-height: var(--md-sys-typescale-body-medium-line-height);
+}
+
+.demoState p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.popoverBackdrop,
+.drawerBackdrop {
+  position: fixed;
+  z-index: 40;
+  inset: 0;
+  background: transparent;
+}
+
+.popoverPositioner {
+  z-index: 41;
+}
+
+.popoverPopup,
+.drawerPopup {
+  box-sizing: border-box;
+  display: grid;
+  gap: var(--cmt-spacing-12);
+  min-inline-size: min(calc(100vw - var(--cmt-spacing-32)), 20rem);
+  padding: var(--cmt-spacing-16);
+  border: 1px solid var(--md-sys-color-outline);
+  border-radius: var(--cmt-radius-12);
+  background: var(--md-sys-color-surface-container-high);
+  box-shadow: var(--cmt-elevation-e2);
+  color: var(--md-sys-color-on-surface);
+}
+
+.title {
+  margin: 0;
+  color: var(--md-sys-color-on-surface);
+  font-family: var(--md-sys-typescale-title-medium-font);
+  font-size: var(--md-sys-typescale-title-medium-size);
+  font-weight: var(--md-sys-typescale-title-medium-weight);
+  letter-spacing: var(--md-sys-typescale-title-medium-letter-spacing);
+  line-height: var(--md-sys-typescale-title-medium-line-height);
+}
+
+.description {
+  margin: 0;
+  color: var(--md-sys-color-on-surface-variant);
+  font-family: var(--md-sys-typescale-body-medium-font);
+  font-size: var(--md-sys-typescale-body-medium-size);
+  font-weight: var(--md-sys-typescale-body-medium-weight);
+  letter-spacing: var(--md-sys-typescale-body-medium-letter-spacing);
+  line-height: var(--md-sys-typescale-body-medium-line-height);
+}
+
+.choices {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(var(--cmt-spacing-48), 1fr));
+  gap: var(--cmt-spacing-8);
+}
+
+.choice {
+  display: grid;
+  min-block-size: var(--cmt-spacing-48);
+  min-inline-size: var(--cmt-spacing-48);
+  place-items: center;
+  gap: var(--cmt-spacing-4);
+  padding: var(--cmt-spacing-8);
+  border: 1px solid var(--md-sys-color-outline);
+  border-radius: var(--cmt-radius-default);
+  background: var(--md-sys-color-surface-container);
+  color: var(--md-sys-color-on-surface);
+  cursor: pointer;
+}
+
+.choice:hover {
+  background: var(--md-sys-color-secondary-container);
+  color: var(--md-sys-color-on-secondary-container);
+}
+
+.choice:focus-visible {
+  outline: var(--cmt-focus-ring-width) solid var(--cmt-focus-ring-color);
+  outline-offset: var(--cmt-focus-ring-separation);
+}
+
+.glyph {
+  font-family: "Noto Sans Symbols 2", "Segoe UI Symbol", system-ui, sans-serif;
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.choiceName {
+  font-family: var(--md-sys-typescale-label-medium-font);
+  font-size: var(--md-sys-typescale-label-medium-size);
+  font-weight: var(--md-sys-typescale-label-medium-weight);
+  letter-spacing: var(--md-sys-typescale-label-medium-letter-spacing);
+  line-height: var(--md-sys-typescale-label-medium-line-height);
+  text-transform: capitalize;
+}
+
+.liveRegion,
+.visuallyHidden {
+  position: absolute;
+  overflow: hidden;
+  inline-size: 1px;
+  block-size: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.drawerViewport {
+  position: fixed;
+  z-index: 41;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  pointer-events: none;
+}
+
+.drawerPopup {
+  inline-size: 100%;
+  max-block-size: 75vh;
+  border-radius: var(--cmt-radius-12) var(--cmt-radius-12) 0 0;
+  pointer-events: auto;
+  transform: translateY(0);
+  transition: transform 180ms ease-out;
+}
+
+.drawerPopup[data-starting-style],
+.drawerPopup[data-ending-style] {
+  transform: translateY(100%);
+}
+
+@media (forced-colors: active) {
+  .demoBoard,
+  .popoverPopup,
+  .drawerPopup {
+    border-color: CanvasText;
+    background: Canvas;
+    color: CanvasText;
+  }
+
+  .title,
+  .description,
+  .demo,
+  .demoState {
+    color: CanvasText;
+  }
+
+  .choice {
+    border-color: ButtonBorder;
+    background: ButtonFace;
+    color: ButtonText;
+  }
+
+  .choice:hover {
+    background: Highlight;
+    color: HighlightText;
+  }
+
+  .choice:focus-visible {
+    outline-color: Highlight;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .drawerPopup {
+    transition: none;
+  }
+}
+
+@media (max-width: 679px) {
+  .demo {
+    max-inline-size: 100%;
+  }
+}

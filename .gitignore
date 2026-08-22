@@ -30,12 +30,14 @@ Thumbs.db
 .coverage
 .stage-check/
 /artifacts/
+/data/stockfish/
 
 # Local databases and backups
 *.db
 *.db-shm
 *.db-wal
 *.db.backup.*
+*.db.analysis.lock
 
 # Tool-local configuration and dependencies
 .claude/
