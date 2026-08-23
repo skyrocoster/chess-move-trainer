@@ -4,14 +4,11 @@ import AxeBuilder from "@axe-core/playwright";
 const STORYBOOK_URL = "http://127.0.0.1:6006";
 const BOARD_LABEL =
   "Chess board: standard starting position, White at the bottom";
+const STAGE1_GAME_UUID = "0007925c-5a8d-11f0-9740-f690a301000f";
 const STORY_IDS = {
   wide: "viewer-mp-08-viewer-workspace--wide",
   constrained: "viewer-mp-08-viewer-workspace--constrained",
-} as const;
-const MOCKED_VIEWER_IDS = {
-  intermediateConstrained:
-    "viewer-stage-1-mocked-game-viewer--intermediate-constrained",
-  loadingWide: "viewer-stage-1-mocked-game-viewer--loading-wide",
+  loadingWide: "viewer-mp-08-viewer-workspace--loading-wide",
 } as const;
 
 const WORKSPACE_ROOT = '[class*="workspace"]';
@@ -192,9 +189,16 @@ test.describe("Viewer Workspace Storybook surface", () => {
       wideButtonBoxes.reduce((total, width) => total + width, 0),
     ).toBeLessThan((wideToolbarBox?.width ?? 0) * 0.75);
 
+    // Loaded intermediate coverage in the canonical constrained production
+    // composition: perform the workspace's real load flow to reach ply 1.
     await page.goto(
-      `${STORYBOOK_URL}/iframe.html?id=${MOCKED_VIEWER_IDS.intermediateConstrained}&viewMode=story`,
+      `${STORYBOOK_URL}/iframe.html?id=${STORY_IDS.constrained}&viewMode=story`,
     );
+    await page.getByLabel("Game UUID").fill(STAGE1_GAME_UUID);
+    await page.getByLabel(/Ply/).fill("1");
+    await page.getByRole("button", { name: "Load game" }).click();
+    await expect(page.getByText("Ply 1 of 3", { exact: true })).toBeVisible();
+
     const wrapper = page.locator(CONSTRAINED_WRAPPER).first();
     await wrapper.evaluate((element) => {
       (element as HTMLElement).style.inlineSize = "320px";
@@ -237,7 +241,7 @@ test.describe("Viewer Workspace Storybook surface", () => {
     await expect(page.getByText("Ply 2 of 3", { exact: true })).toBeVisible();
 
     await page.goto(
-      `${STORYBOOK_URL}/iframe.html?id=${MOCKED_VIEWER_IDS.loadingWide}&viewMode=story`,
+      `${STORYBOOK_URL}/iframe.html?id=${STORY_IDS.loadingWide}&viewMode=story`,
     );
     const loadingToolbar = page.getByRole("toolbar", {
       name: "Board controls",

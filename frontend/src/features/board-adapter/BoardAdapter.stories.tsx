@@ -2,11 +2,6 @@ import { userEvent, within } from "storybook/test";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 
 import { BoardAdapter, type BoardAdapterProps, STARTING_FEN } from "./BoardAdapter";
-import {
-  BoardAdapterNativeProbe,
-  NATIVE_PROBE_PROMOTION_FEN,
-  NATIVE_PROBE_STARTING_FEN,
-} from "./BoardAdapterNativeProbe";
 import styles from "./BoardAdapter.module.css";
 
 const RICH_FEN = "rn1qk2r/1bp1bpp1/pp1ppn1p/8/4PB2/2NP1NP1/PPPQ1PBP/R3K2R b KQkq e3 0 8";
@@ -87,23 +82,5 @@ export const ExpandedPositionDescription: Story = {
   },
   play: async ({ canvasElement }) => {
     await userEvent.click(within(canvasElement).getByText("Position description"));
-  },
-};
-
-export const NativeInteractionProbe: Story = {
-  name: "Native interaction probe",
-  render: () => <BoardAdapterNativeProbe fen={NATIVE_PROBE_STARTING_FEN} />,
-  args: {
-    fen: NATIVE_PROBE_STARTING_FEN,
-    label: "Native interaction probe",
-  },
-};
-
-export const NativePromotionProbe: Story = {
-  name: "Native promotion probe",
-  render: () => <BoardAdapterNativeProbe fen={NATIVE_PROBE_PROMOTION_FEN} />,
-  args: {
-    fen: NATIVE_PROBE_PROMOTION_FEN,
-    label: "Native promotion probe",
   },
 };

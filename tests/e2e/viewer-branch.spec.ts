@@ -3,8 +3,6 @@ import AxeBuilder from "@axe-core/playwright";
 
 const STORYBOOK_URL = "http://127.0.0.1:6006";
 const STORY_IDS = {
-  native: "board-adapter--native-interaction-probe",
-  promotion: "board-adapter--native-promotion-probe",
   pickerWide: "board-adapter-promotion-picker--wide-anchored-picker",
   pickerDrawer: "board-adapter-promotion-picker--constrained-drawer",
   pickerKeyboard:
@@ -13,12 +11,6 @@ const STORY_IDS = {
     "viewer-mp-08-viewer-workspace--temporary-branch-from-initial-ply",
   viewerPromotion: "viewer-mp-08-viewer-workspace--temporary-branch-promotion",
 } as const;
-
-async function openStory(page: Page, storyId: string) {
-  await page.goto(`${STORYBOOK_URL}/iframe.html?id=${storyId}&viewMode=story`);
-  await expect(page.getByTestId("native-interaction-probe")).toBeVisible();
-  await expect(page.getByTestId("native-probe-board")).toBeVisible();
-}
 
 function piece(page: Page, square: string) {
   return page.locator(
@@ -41,81 +33,6 @@ async function dragWithMouse(page: Page, source: Locator, target: Locator) {
   await page.mouse.down();
   await page.mouse.move(targetPoint.x, targetPoint.y, { steps: 6 });
   await page.mouse.up();
-}
-
-async function dragOffBoard(page: Page, source: Locator) {
-  const sourceBox = await source.boundingBox();
-  const boardBox = await page.getByTestId("native-probe-board").boundingBox();
-  expect(sourceBox).not.toBeNull();
-  expect(boardBox).not.toBeNull();
-  const sourcePoint = center(sourceBox!);
-  await page.mouse.move(sourcePoint.x, sourcePoint.y);
-  await page.mouse.down();
-  await page.mouse.move((boardBox?.x ?? 0) - 40, (boardBox?.y ?? 0) - 40, {
-    steps: 6,
-  });
-  await page.mouse.up();
-}
-
-async function dragWithTouch(
-  page: Page,
-  sourceSquare: string,
-  targetSquare: string,
-) {
-  const source = piece(page, sourceSquare);
-  const target = page.locator(`[data-square="${targetSquare}"]`);
-  const sourceBox = await source.boundingBox();
-  const targetBox = await target.boundingBox();
-  expect(sourceBox).not.toBeNull();
-  expect(targetBox).not.toBeNull();
-
-  const dispatchTouch = async (
-    type: string,
-    point: { x: number; y: number },
-    changed: boolean,
-  ) => {
-    await page.evaluate(
-      ({ sourceSquare, point, type, changed }) => {
-        const source = document.querySelector(
-          `[data-square="${sourceSquare}"] [aria-roledescription="draggable"]`,
-        );
-        if (!source) {
-          throw new Error(`Missing touch source ${sourceSquare}`);
-        }
-
-        const touch = new Touch({
-          identifier: 1,
-          target: source,
-          clientX: point.x,
-          clientY: point.y,
-          pageX: point.x,
-          pageY: point.y,
-          screenX: point.x,
-          screenY: point.y,
-          radiusX: 1,
-          radiusY: 1,
-          rotationAngle: 0,
-          force: 1,
-        });
-
-        source.dispatchEvent(
-          new TouchEvent(type, {
-            bubbles: true,
-            cancelable: true,
-            touches: changed ? [] : [touch],
-            changedTouches: [touch],
-          }),
-        );
-      },
-      { sourceSquare, point, type, changed },
-    );
-  };
-
-  await dispatchTouch("touchstart", center(sourceBox!), false);
-  await page.waitForTimeout(50);
-  await dispatchTouch("touchmove", center(targetBox!), false);
-  await page.waitForTimeout(50);
-  await dispatchTouch("touchend", center(targetBox!), true);
 }
 
 async function dragWithTouchOnBoard(
@@ -210,99 +127,6 @@ async function checkPromotionA11y(page: Page) {
     .analyze();
   expect(results.violations).toEqual([]);
 }
-
-test.describe("MP-11 Stage 1 native interaction probe", () => {
-  test("proves mouse/pointer, keyboard, focus, cancellation, rejection, and snapback", async ({
-    page,
-  }) => {
-    await openStory(page, STORY_IDS.native);
-    const events = page.getByTestId("native-probe-events");
-
-    await dragWithMouse(
-      page,
-      piece(page, "e2"),
-      page.locator('[data-square="e4"]'),
-    );
-    await expect(events).toContainText(
-      "pieceDrop|e2->e4|piece=wP|legal=true|promotion=false|accepted=true",
-    );
-    await expect(piece(page, "e2")).toHaveCount(1);
-    await expect(piece(page, "e4")).toHaveCount(0);
-
-    await dragWithMouse(
-      page,
-      piece(page, "e2"),
-      page.locator('[data-square="e5"]'),
-    );
-    await expect(events).toContainText(
-      "pieceDrop|e2->e5|piece=wP|legal=false|promotion=false|accepted=false",
-    );
-    await expect(piece(page, "e2")).toHaveCount(1);
-    await expect(piece(page, "e5")).toHaveCount(0);
-
-    await dragOffBoard(page, piece(page, "e2"));
-    await expect(events).toContainText(
-      "pieceDrop|e2->null|piece=wP|legal=false|promotion=false|accepted=false",
-    );
-    await expect(piece(page, "e2")).toHaveCount(1);
-
-    const keyboardPiece = piece(page, "e2");
-    await keyboardPiece.focus();
-    await expect(keyboardPiece).toBeFocused();
-    await page.keyboard.press("Space");
-    await expect(events).toContainText("pieceDrag|e2|piece=wP");
-    await page.keyboard.press("Escape");
-    await expect(events).toContainText("pieceDragCancel");
-    await expect(keyboardPiece).toBeFocused();
-
-    await keyboardPiece.focus();
-    await page.keyboard.press("Enter");
-    await page.keyboard.press("ArrowUp");
-    await page.keyboard.press("ArrowUp");
-    await page.keyboard.press("Enter");
-    await expect(events).toContainText(
-      "pieceDrop|e2->e4|piece=wP|legal=true|promotion=false|accepted=true",
-    );
-    await expect(piece(page, "e2")).toHaveCount(1);
-    await expect(piece(page, "e4")).toHaveCount(0);
-  });
-
-  test("proves the native touch sensor reaches the drop callback", async ({
-    page,
-  }) => {
-    await openStory(page, STORY_IDS.native);
-    await dragWithTouch(page, "e2", "e4");
-
-    await expect(page.getByTestId("native-probe-events")).toContainText(
-      "pieceDrop|e2->e4|piece=wP|legal=true|promotion=false|accepted=true",
-    );
-    await expect(piece(page, "e2")).toHaveCount(1);
-    await expect(piece(page, "e4")).toHaveCount(0);
-  });
-
-  test("proves promotion has no native chooser or promotion input callback", async ({
-    page,
-  }) => {
-    await openStory(page, STORY_IDS.promotion);
-    await dragWithMouse(
-      page,
-      piece(page, "e7"),
-      page.locator('[data-square="e8"]'),
-    );
-
-    await expect(page.getByTestId("native-probe-events")).toContainText(
-      "pieceDrop|e7->e8|piece=wP|legal=false|promotion=true|accepted=true",
-    );
-    await expect(
-      page.locator(
-        '[data-promotion-choice], [role="listbox"], [role="option"]',
-      ),
-    ).toHaveCount(0);
-    await expect(
-      page.getByText(/Native promotion|Promotion choice/i),
-    ).toHaveCount(0);
-  });
-});
 
 test.describe("MP-11 Stage 2 application-owned promotion picker", () => {
   test("keeps pending pointer promotion unchanged and commits each exact choice", async ({

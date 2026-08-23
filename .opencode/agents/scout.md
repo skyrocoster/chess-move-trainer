@@ -1,8 +1,8 @@
 ---
 description: Cheap read-only Scout for bounded repository facts with exact path and symbol evidence.
 mode: subagent
-model: opencode-go/ox-alpha-free
-variant: max
+model: openai/gpt-5.6-luna
+variant: xhigh
 permission:
   edit: deny
   bash: allow

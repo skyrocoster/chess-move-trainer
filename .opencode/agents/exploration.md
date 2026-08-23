@@ -1,8 +1,8 @@
 ---
 description: Isolated Exploration Agent for noncanonical mock-ups and prototypes under experiments.
 mode: subagent
-model: opencode-go/ox-alpha-free
-variant: max
+model: openai/gpt-5.6-luna
+variant: xhigh
 permission:
   edit:
     "*": deny
