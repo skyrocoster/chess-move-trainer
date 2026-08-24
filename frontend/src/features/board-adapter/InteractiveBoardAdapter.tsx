@@ -1,4 +1,4 @@
-import { Chess, type Move, type Square } from "chess.js";
+import { Chess, type Square } from "chess.js";
 import {
   cloneElement,
   useCallback,
@@ -24,25 +24,15 @@ import {
 } from "./PromotionPicker";
 import styles from "./InteractiveBoardAdapter.module.css";
 import type { BoardOrientation } from "./BoardAdapter";
+import type { Fen, Ply } from "../viewer/chessPrimitives";
+import type { BranchMove, BranchSnapshot } from "../viewer/temporaryBranchModel";
 
-export type BranchMove = Pick<Move, "color" | "from" | "to" | "san"> & {
-  promotion?: string;
-};
-
-export type BranchSnapshot = {
-  viewKey: string;
-  resetToken: number;
-  originFen: string;
-  currentFen: string;
-  originPly: number;
-  moves: readonly BranchMove[];
-  active: boolean;
-};
+export type { BranchMove, BranchSnapshot } from "../viewer/temporaryBranchModel";
 
 export type InteractiveBoardAdapterProps = {
   viewKey: string;
-  originFen: string;
-  originPly: number;
+  originFen: Fen;
+  originPly: Ply;
   orientation?: BoardOrientation;
   label: string;
   resetToken?: number;

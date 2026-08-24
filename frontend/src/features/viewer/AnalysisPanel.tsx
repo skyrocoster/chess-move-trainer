@@ -2,12 +2,13 @@ import { Chess } from "chess.js";
 
 import { Button } from "../design-system/Button";
 import type { AnalysisClient, EvaluationCandidate, EvaluationResult } from "./analysisApi";
+import type { Fen } from "./chessPrimitives";
 import { formatScore } from "./analysisFormatting";
 import { type AnalysisState, useAnalysisState } from "./analysisState";
 import styles from "./AnalysisPanel.module.css";
 
 export type AnalysisPanelProps = {
-  fen: string;
+  fen: Fen;
   client?: AnalysisClient;
   pollIntervalMs?: number;
   analysisState?: AnalysisState;
@@ -32,7 +33,7 @@ function moveFromUci(uci: string) {
   };
 }
 
-function formatPv(fen: string, pv: string[]): string {
+function formatPv(fen: Fen, pv: string[]): string {
   const chess = new Chess(fen);
   const sanMoves: string[] = [];
 

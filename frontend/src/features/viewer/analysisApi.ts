@@ -1,5 +1,7 @@
 import { validateFen } from "chess.js";
 
+import type { Fen } from "./chessPrimitives";
+
 const API_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:5666";
 export const MAX_FEN_LENGTH = 128;
 
@@ -33,7 +35,7 @@ export type EvaluationCandidate = {
 };
 
 export type EvaluationResult = {
-  fen: string;
+  fen: Fen;
   profile_id: string;
   candidates: EvaluationCandidate[];
   terminal_kind: string | null;
@@ -52,7 +54,7 @@ export type EvaluationStatus = {
 };
 
 export type EvaluationObservation = {
-  fen: string;
+  fen: Fen;
   eligibility: EvaluationEligibility;
   result: EvaluationResult | null;
   status: EvaluationStatus | null;
@@ -60,7 +62,7 @@ export type EvaluationObservation = {
 };
 
 export type EvaluationEnqueue = {
-  fen: string;
+  fen: Fen;
   action: EvaluationAction;
   outcome: string;
   eligibility: EvaluationEligibility;
@@ -68,7 +70,7 @@ export type EvaluationEnqueue = {
 };
 
 export type EvaluationPoll = {
-  fen: string;
+  fen: Fen;
   state: EvaluationQueueState | null;
   completed_at: string | null;
   error_code: string | null;
@@ -78,13 +80,13 @@ export type AnalysisFailure = { status: EvaluationErrorCode };
 export type AnalysisResult<T> = { status: "success"; data: T } | AnalysisFailure;
 
 export type AnalysisClient = {
-  observe: (fen: string, signal?: AbortSignal) => Promise<AnalysisResult<EvaluationObservation>>;
+  observe: (fen: Fen, signal?: AbortSignal) => Promise<AnalysisResult<EvaluationObservation>>;
   enqueue: (
-    fen: string,
+    fen: Fen,
     action: EvaluationAction,
     signal?: AbortSignal,
   ) => Promise<AnalysisResult<EvaluationEnqueue>>;
-  status: (fen: string, signal?: AbortSignal) => Promise<AnalysisResult<EvaluationPoll>>;
+  status: (fen: Fen, signal?: AbortSignal) => Promise<AnalysisResult<EvaluationPoll>>;
 };
 
 function isRecord(value: unknown): value is JsonRecord {
@@ -99,7 +101,7 @@ function isInteger(value: unknown, minimum = 0): value is number {
   return typeof value === "number" && Number.isInteger(value) && value >= minimum;
 }
 
-function isCanonicalFen(value: unknown): value is string {
+function isCanonicalFen(value: unknown): value is Fen {
   if (
     typeof value !== "string" ||
     value.length > MAX_FEN_LENGTH ||
@@ -181,7 +183,7 @@ function isCandidate(value: unknown): value is EvaluationCandidate {
   return value.score_kind !== "mate_given" || value.score_value === 0;
 }
 
-function isResult(value: unknown, fen: string): value is EvaluationResult {
+function isResult(value: unknown, fen: Fen): value is EvaluationResult {
   if (
     !isRecord(value) ||
     !hasExactKeys(value, [
@@ -229,7 +231,7 @@ function isEvaluationStatus(value: unknown): value is EvaluationStatus {
   );
 }
 
-function isObservation(value: unknown, fen: string): value is EvaluationObservation {
+function isObservation(value: unknown, fen: Fen): value is EvaluationObservation {
   return (
     isRecord(value) &&
     hasExactKeys(value, ["fen", "eligibility", "result", "status", "terminal"]) &&
@@ -241,7 +243,7 @@ function isObservation(value: unknown, fen: string): value is EvaluationObservat
   );
 }
 
-function isEnqueue(value: unknown, fen: string): value is EvaluationEnqueue {
+function isEnqueue(value: unknown, fen: Fen): value is EvaluationEnqueue {
   return (
     isRecord(value) &&
     hasExactKeys(value, ["fen", "action", "outcome", "eligibility", "status"]) &&
@@ -254,7 +256,7 @@ function isEnqueue(value: unknown, fen: string): value is EvaluationEnqueue {
   );
 }
 
-function isPoll(value: unknown, fen: string): value is EvaluationPoll {
+function isPoll(value: unknown, fen: Fen): value is EvaluationPoll {
   return (
     isRecord(value) &&
     hasExactKeys(value, ["fen", "state", "completed_at", "error_code"]) &&
@@ -310,13 +312,13 @@ function failureFromResponse(status: number, body: unknown): AnalysisFailure {
   return { status: "unexpected_failure" };
 }
 
-function validFenOrFailure(fen: string): AnalysisFailure | null {
+function validFenOrFailure(fen: Fen): AnalysisFailure | null {
   const status = validateAnalysisFen(fen);
   return status === null ? null : { status };
 }
 
 export const fetchEvaluation = async (
-  fen: string,
+  fen: Fen,
   signal?: AbortSignal,
 ): Promise<AnalysisResult<EvaluationObservation>> => {
   const failure = validFenOrFailure(fen);
@@ -337,7 +339,7 @@ export const fetchEvaluation = async (
 };
 
 export const enqueueEvaluation = async (
-  fen: string,
+  fen: Fen,
   action: EvaluationAction,
   signal?: AbortSignal,
 ): Promise<AnalysisResult<EvaluationEnqueue>> => {
@@ -366,7 +368,7 @@ export const enqueueEvaluation = async (
 };
 
 export const fetchEvaluationStatus = async (
-  fen: string,
+  fen: Fen,
   signal?: AbortSignal,
 ): Promise<AnalysisResult<EvaluationPoll>> => {
   const failure = validFenOrFailure(fen);

@@ -7,6 +7,7 @@ import {
   type EvaluationObservation,
   defaultAnalysisClient,
 } from "./analysisApi";
+import type { Fen } from "./chessPrimitives";
 
 const DEFAULT_POLL_INTERVAL_MS = 1000;
 const MAX_POLL_ATTEMPTS = 60;
@@ -40,7 +41,7 @@ function failureMessage(failure: AnalysisFailure): string {
 }
 
 export function useAnalysisState(
-  fen: string | null,
+  fen: Fen | null,
   client: AnalysisClient = defaultAnalysisClient,
   pollIntervalMs = DEFAULT_POLL_INTERVAL_MS,
 ): AnalysisState {
@@ -50,7 +51,7 @@ export function useAnalysisState(
   const [actionError, setActionError] = useState<string | null>(null);
   const [actionPending, setActionPending] = useState(false);
   const [refreshToken, setRefreshToken] = useState(0);
-  const previousFen = useRef<string | null>(null);
+  const previousFen = useRef<Fen | null>(null);
   const actionController = useRef<AbortController | null>(null);
 
   useEffect(() => {

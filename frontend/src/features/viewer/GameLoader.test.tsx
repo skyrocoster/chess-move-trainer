@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { GameLoader } from "./GameLoader";
-import { STAGE1_GAME_UUID } from "./stage1GameTypes";
+import { VIEWER_GAME_UUID } from "./viewerFixtures";
 
 afterEach(() => cleanup());
 
@@ -25,10 +25,10 @@ describe("GameLoader", () => {
     const user = userEvent.setup();
     render(<GameLoader onSubmit={onSubmit} />);
 
-    await user.type(screen.getByLabelText("Game UUID"), STAGE1_GAME_UUID);
+    await user.type(screen.getByLabelText("Game UUID"), VIEWER_GAME_UUID);
     await user.click(screen.getByRole("button", { name: "Load game" }));
 
-    expect(onSubmit).toHaveBeenCalledWith({ gameUuid: STAGE1_GAME_UUID, ply: "" });
+    expect(onSubmit).toHaveBeenCalledWith({ gameUuid: VIEWER_GAME_UUID, ply: "" });
   });
 
   it("rejects malformed UUID and non-whole Ply before submission", async () => {
@@ -45,7 +45,7 @@ describe("GameLoader", () => {
   });
 
   it("keeps Reset available while loading and exposes a polite loading state", () => {
-    render(<GameLoader status="loading" gameUuid={STAGE1_GAME_UUID} />);
+    render(<GameLoader status="loading" gameUuid={VIEWER_GAME_UUID} />);
 
     expect(screen.getByRole("button", { name: "Load game" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Reset" })).toBeEnabled();
@@ -69,7 +69,7 @@ describe("GameLoader", () => {
     const user = userEvent.setup();
     render(<GameLoader onReset={onReset} />);
 
-    await user.type(screen.getByLabelText("Game UUID"), STAGE1_GAME_UUID);
+    await user.type(screen.getByLabelText("Game UUID"), VIEWER_GAME_UUID);
     await user.type(screen.getByLabelText(/Ply/), "2");
     await user.click(screen.getByRole("button", { name: "Reset" }));
 

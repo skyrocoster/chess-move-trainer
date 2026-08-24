@@ -51,7 +51,7 @@ without becoming a universal viewer, session, game, opening, or tree framework.
 
 ## Slice results
 
-- **MVC-01:** Focused Plan/result link reserved for later selection and acceptance.
+- **MVC-01:** [Completed MVC-01 Foundations Plan/result](../plans/done/mvc-01-foundations/mvc-01-foundations.md).
 - **MVC-02:** Focused Plan/result link reserved for later selection and acceptance.
 - **MVC-03:** Focused Plan/result link reserved for later selection and acceptance.
 - **MVC-04:** Focused Plan/result link reserved for later selection and acceptance.

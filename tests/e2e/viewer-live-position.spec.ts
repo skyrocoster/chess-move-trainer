@@ -26,7 +26,7 @@ test("loads the full corpus game and traverses all positions in memory", async (
   await loadGame(page);
 
   await expect(
-    page.getByRole("img", { name: /ply 0, Black at the bottom/ }),
+    page.getByRole("group", { name: /ply 0, Black at the bottom/ }),
   ).toBeVisible();
   await expect(page.getByText("Ply 0 of 82", { exact: true })).toBeVisible();
   await expect(
@@ -100,7 +100,7 @@ test("loads an explicit useful initial Ply and maps typed game and position fail
     page.getByRole("heading", { name: "Game not found", level: 2 }),
   ).toBeVisible();
   await expect(
-    page.getByRole("img", { name: /ply 41, Black at the bottom/ }),
+    page.getByRole("group", { name: /ply 41, Black at the bottom/ }),
   ).toBeVisible();
 
   await page.getByLabel("Game UUID").fill(GAME_UUID);
@@ -110,7 +110,7 @@ test("loads an explicit useful initial Ply and maps typed game and position fail
     page.getByRole("heading", { name: "Position not found", level: 2 }),
   ).toBeVisible();
   await expect(
-    page.getByRole("img", { name: /ply 41, Black at the bottom/ }),
+    page.getByRole("group", { name: /ply 41, Black at the bottom/ }),
   ).toBeVisible();
 });
 

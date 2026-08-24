@@ -2,17 +2,18 @@ import { Disclosure } from "../design-system/Disclosure";
 import { AnalysisPanel } from "./AnalysisPanel";
 import type { AnalysisClient } from "./analysisApi";
 import type { AnalysisState } from "./analysisState";
-import type { Stage1Game, Stage1Position } from "./stage1GameTypes";
+import type { Fen } from "./chessPrimitives";
+import type { Game, GamePosition } from "./gameModel";
 import { safeSourceUrl } from "./stage1SourceSafety";
 import styles from "./GameContext.module.css";
 
 export type GameContextProps = {
-  game?: Stage1Game | null;
-  position?: Stage1Position;
+  game?: Game | null;
+  position?: GamePosition;
   analysisClient?: AnalysisClient;
   analysisPollIntervalMs?: number;
   analysisState?: AnalysisState;
-  analysisFen?: string;
+  analysisFen?: Fen;
 };
 
 function SourceAttribution({ sourceUrl }: { sourceUrl: string | null }) {

@@ -2,8 +2,8 @@ import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { GameContext } from "./GameContext";
-import { STAGE1_GAME, STAGE1_UNSAFE_SOURCE_GAME } from "./stage1GameTypes";
 import { safeSourceUrl } from "./stage1SourceSafety";
+import { UNSAFE_SOURCE_GAME, VIEWER_GAME } from "./viewerFixtures";
 
 afterEach(() => cleanup());
 
@@ -19,7 +19,7 @@ describe("GameContext", () => {
   });
 
   it("shows only the current ply, SAN/initial text, and source attribution", () => {
-    render(<GameContext game={STAGE1_GAME} position={STAGE1_GAME.positions[0]} />);
+    render(<GameContext game={VIEWER_GAME} position={VIEWER_GAME.positions[0]} />);
 
     expect(screen.getByText("Ply 0 of 3")).toBeVisible();
     expect(screen.getByText("Initial position")).toBeVisible();
@@ -27,16 +27,11 @@ describe("GameContext", () => {
       "target",
       "_blank",
     );
-    expect(screen.queryByText(STAGE1_GAME.game_uuid)).not.toBeInTheDocument();
+    expect(screen.queryByText(VIEWER_GAME.game_uuid)).not.toBeInTheDocument();
   });
 
   it("renders unsafe source data as unavailable without a link", () => {
-    render(
-      <GameContext
-        game={STAGE1_UNSAFE_SOURCE_GAME}
-        position={STAGE1_UNSAFE_SOURCE_GAME.positions[1]}
-      />,
-    );
+    render(<GameContext game={UNSAFE_SOURCE_GAME} position={UNSAFE_SOURCE_GAME.positions[1]} />);
 
     expect(screen.getByText("Source unavailable")).toBeVisible();
     expect(screen.queryByRole("link", { name: "Chess.com game" })).not.toBeInTheDocument();

@@ -2,13 +2,13 @@ import { useState, type FormEvent } from "react";
 
 import { Button } from "../design-system/Button";
 import { Disclosure } from "../design-system/Disclosure";
-import { STAGE1_FAILURE_COPY, type Stage1FailureKind } from "./stage1GameTypes";
+import { GAME_FAILURE_COPY, type GameFailureKind } from "./gameModel";
 import styles from "./GameLoader.module.css";
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const PLY_PATTERN = /^\d+$/;
 
-export type GameLoaderStatus = "idle" | "loading" | Stage1FailureKind;
+export type GameLoaderStatus = "idle" | "loading" | GameFailureKind;
 
 export type GameLoaderValues = {
   gameUuid: string;
@@ -54,7 +54,7 @@ export function GameLoader({
   const currentGameUuid = gameUuid ?? internalGameUuid;
   const currentPly = ply ?? internalPly;
   const loading = status === "loading";
-  const failure = status !== "idle" && status !== "loading" ? STAGE1_FAILURE_COPY[status] : null;
+  const failure = status !== "idle" && status !== "loading" ? GAME_FAILURE_COPY[status] : null;
 
   function updateGameUuid(value: string) {
     setInternalGameUuid(value);

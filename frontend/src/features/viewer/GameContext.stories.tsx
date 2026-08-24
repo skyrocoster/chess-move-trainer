@@ -4,11 +4,7 @@ import "../../styles/cmt-tokens.css";
 import "../../styles/cmt-typescale.css";
 import { GameContext } from "./GameContext";
 import styles from "./Stage1Story.module.css";
-import {
-  STAGE1_GAME,
-  STAGE1_MISSING_SOURCE_GAME,
-  STAGE1_UNSAFE_SOURCE_GAME,
-} from "./stage1GameTypes";
+import { MISSING_SOURCE_GAME, UNSAFE_SOURCE_GAME, VIEWER_GAME } from "./viewerFixtures";
 
 const meta = {
   title: "Application/Viewer/Game Context",
@@ -31,39 +27,39 @@ export const Empty: Story = {
 };
 
 export const InitialPosition: Story = {
-  args: { game: STAGE1_GAME, position: STAGE1_GAME.positions[0] },
+  args: { game: VIEWER_GAME, position: VIEWER_GAME.positions[0] },
   render: (args) => frame(<GameContext {...args} />),
 };
 
 export const IntermediatePosition: Story = {
-  args: { game: STAGE1_GAME, position: STAGE1_GAME.positions[2] },
+  args: { game: VIEWER_GAME, position: VIEWER_GAME.positions[2] },
   render: (args) => frame(<GameContext {...args} />),
 };
 
 export const FinalPosition: Story = {
-  args: { game: STAGE1_GAME, position: STAGE1_GAME.positions.at(-1) },
+  args: { game: VIEWER_GAME, position: VIEWER_GAME.positions.at(-1) },
   render: (args) => frame(<GameContext {...args} />),
 };
 
 export const BlackSubject: Story = {
   args: {
-    game: { ...STAGE1_GAME, subject_color: "black" },
-    position: STAGE1_GAME.positions[1],
+    game: { ...VIEWER_GAME, subject_color: "black" },
+    position: VIEWER_GAME.positions[1],
   },
   render: (args) => frame(<GameContext {...args} />),
 };
 
 export const UnsafeSource: Story = {
-  args: { game: STAGE1_UNSAFE_SOURCE_GAME, position: STAGE1_UNSAFE_SOURCE_GAME.positions[1] },
+  args: { game: UNSAFE_SOURCE_GAME, position: UNSAFE_SOURCE_GAME.positions[1] },
   render: (args) => frame(<GameContext {...args} />),
 };
 
 export const MissingSource: Story = {
-  args: { game: STAGE1_MISSING_SOURCE_GAME, position: STAGE1_MISSING_SOURCE_GAME.positions[1] },
+  args: { game: MISSING_SOURCE_GAME, position: MISSING_SOURCE_GAME.positions[1] },
   render: (args) => frame(<GameContext {...args} />),
 };
 
 export const Constrained: Story = {
-  args: { game: STAGE1_GAME, position: STAGE1_GAME.positions[2] },
+  args: { game: VIEWER_GAME, position: VIEWER_GAME.positions[2] },
   render: (args) => constrained(<GameContext {...args} />),
 };

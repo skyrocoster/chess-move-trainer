@@ -1,18 +1,16 @@
 import { useCallback, useRef, useState } from "react";
 
 import { BoardAdapter, STARTING_FEN, type BoardOrientation } from "../board-adapter/BoardAdapter";
-import {
-  InteractiveBoardAdapter,
-  type BranchSnapshot,
-} from "../board-adapter/InteractiveBoardAdapter";
+import { InteractiveBoardAdapter } from "../board-adapter/InteractiveBoardAdapter";
 import { BoardControl } from "./BoardControl";
 import { EvalBar } from "./EvalBar";
 import { GameContext } from "./GameContext";
 import { GameLoader, type GameLoaderStatus, type GameLoaderValues } from "./GameLoader";
 import { defaultAnalysisClient, type AnalysisClient } from "./analysisApi";
 import { useAnalysisState } from "./analysisState";
+import type { Game } from "./gameModel";
 import { fetchGame, type GameLookup } from "./positionApi";
-import type { Stage1Game } from "./stage1GameTypes";
+import type { BranchSnapshot } from "./temporaryBranchModel";
 import styles from "./ViewerWorkspace.module.css";
 
 const BOARD_LABEL = "Chess board: standard starting position, White at the bottom";
@@ -23,7 +21,7 @@ const START_BOARD = {
   label: BOARD_LABEL,
 };
 
-function announcementFor(game: Stage1Game, index: number): string {
+function announcementFor(game: Game, index: number): string {
   const position = game.positions[index];
   const finalPly = game.positions.at(-1)?.ply ?? 0;
   return `Ply ${position.ply} of ${finalPly}: ${position.san ?? "Initial position"}`;
@@ -43,7 +41,7 @@ export default function ViewerWorkspace({
   const [gameUuidInput, setGameUuidInput] = useState("");
   const [plyInput, setPlyInput] = useState("");
   const [status, setStatus] = useState<GameLoaderStatus>("idle");
-  const [game, setGame] = useState<Stage1Game | null>(null);
+  const [game, setGame] = useState<Game | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [announcement, setAnnouncement] = useState("");
   const [branchSnapshot, setBranchSnapshot] = useState<BranchSnapshot | null>(null);

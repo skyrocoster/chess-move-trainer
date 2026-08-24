@@ -17,18 +17,14 @@ import type {
   EvaluationStatus,
 } from "./analysisApi";
 import type { GameLookup, GameLookupResult } from "./positionApi";
-import {
-  STAGE1_GAME,
-  STAGE1_GAME_UUID,
-  STAGE1_UNSAFE_SOURCE_GAME,
-  type Stage1Game,
-} from "./stage1GameTypes";
+import type { Game } from "./gameModel";
+import { UNSAFE_SOURCE_GAME, VIEWER_GAME, VIEWER_GAME_UUID } from "./viewerFixtures";
 
 expect.extend(matchers);
 
 const BOARD_LABEL = "Chess board: standard starting position, White at the bottom";
-const GAME_UUID = STAGE1_GAME_UUID;
-const BLACK_GAME: Stage1Game = { ...STAGE1_GAME, subject_color: "black" };
+const GAME_UUID = VIEWER_GAME_UUID;
+const BLACK_GAME: Game = { ...VIEWER_GAME, subject_color: "black" };
 
 const here = dirname(fileURLToPath(import.meta.url));
 const rawStyles = readFileSync(join(here, "ViewerWorkspace.module.css"), "utf8");
@@ -43,7 +39,7 @@ async function fillAndSubmit(user: ReturnType<typeof userEvent.setup>, uuid = GA
   await user.click(screen.getByRole("button", { name: "Load game" }));
 }
 
-function successfulLookup(game: Stage1Game = STAGE1_GAME): GameLookup {
+function successfulLookup(game: Game = VIEWER_GAME): GameLookup {
   return vi.fn<GameLookup>(async (_uuid, initialPly) => ({
     status: "success",
     game: { ...game, initial_ply: initialPly ?? 0 },
@@ -80,7 +76,7 @@ function noAnalysisClient(): AnalysisClient {
 
 function completedAnalysisClient(): AnalysisClient {
   const result: EvaluationResult = {
-    fen: STAGE1_GAME.positions[0].fen,
+    fen: VIEWER_GAME.positions[0].fen,
     profile_id: "mp09-balanced-nodes-v2-200000",
     candidates: [
       {
@@ -211,7 +207,7 @@ describe("ViewerWorkspace", () => {
     const lookup: GameLookup = vi.fn<GameLookup>(async (_uuid, initialPly) => {
       calls += 1;
       if (calls === 1) {
-        return { status: "success", game: { ...STAGE1_GAME, initial_ply: initialPly ?? 0 } };
+        return { status: "success", game: { ...VIEWER_GAME, initial_ply: initialPly ?? 0 } };
       }
       return new Promise<GameLookupResult>((resolve) => {
         resolveReplacement = resolve;
@@ -254,14 +250,14 @@ describe("ViewerWorkspace", () => {
     expect(screen.getAllByText("No game loaded")).toHaveLength(2);
     expect(screen.getByRole("img", { name: BOARD_LABEL })).toBeVisible();
 
-    resolvePending({ status: "success", game: STAGE1_GAME });
+    resolvePending({ status: "success", game: VIEWER_GAME });
     await Promise.resolve();
     expect(screen.getAllByText("No game loaded")).toHaveLength(2);
     expect(screen.getByLabelText("Game UUID")).toHaveValue("");
   });
 
   it("renders unsafe source attribution as unavailable without rejecting the active game", async () => {
-    const lookup = successfulLookup(STAGE1_UNSAFE_SOURCE_GAME);
+    const lookup = successfulLookup(UNSAFE_SOURCE_GAME);
     const user = userEvent.setup();
     renderViewer({ lookup });
 
@@ -286,7 +282,7 @@ describe("ViewerWorkspace", () => {
     await user.click(analyze);
 
     expect(analysisClient.enqueue).toHaveBeenCalledWith(
-      STAGE1_GAME.positions[0].fen,
+      VIEWER_GAME.positions[0].fen,
       "analyze",
       expect.any(AbortSignal),
     );

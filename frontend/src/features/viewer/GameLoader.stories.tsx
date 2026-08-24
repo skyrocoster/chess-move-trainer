@@ -5,7 +5,7 @@ import "../../styles/cmt-tokens.css";
 import "../../styles/cmt-typescale.css";
 import { GameLoader } from "./GameLoader";
 import styles from "./Stage1Story.module.css";
-import { STAGE1_GAME_UUID } from "./stage1GameTypes";
+import { VIEWER_GAME_UUID } from "./viewerFixtures";
 
 const meta = {
   title: "Application/Viewer/Game Loader",
@@ -28,37 +28,37 @@ export const Empty: Story = {
 };
 
 export const Loading: Story = {
-  args: { status: "loading", gameUuid: STAGE1_GAME_UUID, ply: "" },
+  args: { status: "loading", gameUuid: VIEWER_GAME_UUID, ply: "" },
   render: (args) => frame(<GameLoader {...args} />),
 };
 
 export const GameNotFound: Story = {
-  args: { status: "game_not_found", gameUuid: STAGE1_GAME_UUID },
+  args: { status: "game_not_found", gameUuid: VIEWER_GAME_UUID },
   render: (args) => frame(<GameLoader {...args} />),
 };
 
 export const PositionNotFound: Story = {
-  args: { status: "position_not_found", gameUuid: STAGE1_GAME_UUID, ply: "99" },
+  args: { status: "position_not_found", gameUuid: VIEWER_GAME_UUID, ply: "99" },
   render: (args) => frame(<GameLoader {...args} />),
 };
 
 export const CorpusUnavailable: Story = {
-  args: { status: "corpus_unavailable", gameUuid: STAGE1_GAME_UUID },
+  args: { status: "corpus_unavailable", gameUuid: VIEWER_GAME_UUID },
   render: (args) => frame(<GameLoader {...args} />),
 };
 
 export const GameUnavailable: Story = {
-  args: { status: "game_unavailable", gameUuid: STAGE1_GAME_UUID },
+  args: { status: "game_unavailable", gameUuid: VIEWER_GAME_UUID },
   render: (args) => frame(<GameLoader {...args} />),
 };
 
 export const UnableToLoadGame: Story = {
-  args: { status: "unexpected_failure", gameUuid: STAGE1_GAME_UUID },
+  args: { status: "unexpected_failure", gameUuid: VIEWER_GAME_UUID },
   render: (args) => frame(<GameLoader {...args} />),
 };
 
 export const Constrained: Story = {
-  args: { gameUuid: STAGE1_GAME_UUID },
+  args: { gameUuid: VIEWER_GAME_UUID },
   render: (args) => constrained(<GameLoader {...args} />),
 };
 
@@ -83,13 +83,13 @@ export const ValidationAndRetry: Story = {
 
     const gameUuid = canvas.getByRole("textbox", { name: "Game UUID" });
     const ply = canvas.getByRole("textbox", { name: /Ply/ });
-    await userEvent.type(gameUuid, STAGE1_GAME_UUID);
+    await userEvent.type(gameUuid, VIEWER_GAME_UUID);
     await userEvent.type(ply, "2");
     await userEvent.click(canvas.getByRole("button", { name: "Load game" }));
-    await expect(args.onGameUuidChange).toHaveBeenLastCalledWith(STAGE1_GAME_UUID);
+    await expect(args.onGameUuidChange).toHaveBeenLastCalledWith(VIEWER_GAME_UUID);
     await expect(args.onPlyChange).toHaveBeenLastCalledWith("2");
     await expect(args.onSubmit).toHaveBeenCalledTimes(1);
-    await expect(args.onSubmit).toHaveBeenCalledWith({ gameUuid: STAGE1_GAME_UUID, ply: "2" });
+    await expect(args.onSubmit).toHaveBeenCalledWith({ gameUuid: VIEWER_GAME_UUID, ply: "2" });
 
     await userEvent.click(canvas.getByRole("button", { name: "Reset" }));
     await expect(gameUuid).toHaveValue("");

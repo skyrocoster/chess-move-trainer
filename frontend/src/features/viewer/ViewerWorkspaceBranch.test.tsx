@@ -6,9 +6,9 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import type { AnalysisClient } from "./analysisApi";
 import ViewerWorkspace from "./ViewerWorkspace";
 import type { GameLookup } from "./positionApi";
-import { STAGE1_GAME, STAGE1_GAME_UUID } from "./stage1GameTypes";
+import { VIEWER_GAME, VIEWER_GAME_UUID } from "./viewerFixtures";
 
-const BRANCH_FEN = STAGE1_GAME.positions[1].fen;
+const BRANCH_FEN = VIEWER_GAME.positions[1].fen;
 
 vi.mock("../board-adapter/InteractiveBoardAdapter", () => ({
   InteractiveBoardAdapter: ({
@@ -99,7 +99,7 @@ afterEach(() => cleanup());
 function successfulLookup(): GameLookup {
   return vi.fn(async (_uuid, initialPly) => ({
     status: "success" as const,
-    game: { ...STAGE1_GAME, initial_ply: initialPly ?? 0 },
+    game: { ...VIEWER_GAME, initial_ply: initialPly ?? 0 },
   }));
 }
 
@@ -138,7 +138,7 @@ function analysisClient(): AnalysisClient {
 }
 
 async function loadGame(user: ReturnType<typeof userEvent.setup>, ply = "") {
-  await user.type(screen.getByLabelText("Game UUID"), STAGE1_GAME_UUID);
+  await user.type(screen.getByLabelText("Game UUID"), VIEWER_GAME_UUID);
   if (ply) {
     await user.type(screen.getByLabelText(/Ply/), ply);
   }
@@ -195,7 +195,7 @@ describe("ViewerWorkspace temporary branch ownership", () => {
     const lookup: GameLookup = vi.fn(async (_uuid, initialPly) => {
       calls += 1;
       return calls === 1
-        ? { status: "success" as const, game: { ...STAGE1_GAME, initial_ply: initialPly ?? 0 } }
+        ? { status: "success" as const, game: { ...VIEWER_GAME, initial_ply: initialPly ?? 0 } }
         : { status: "game_unavailable" as const };
     });
     const user = userEvent.setup();

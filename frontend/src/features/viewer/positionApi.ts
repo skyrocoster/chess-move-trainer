@@ -1,28 +1,39 @@
 import { validateFen } from "chess.js";
 
 import { safeSourceUrl } from "./stage1SourceSafety";
-import type { Stage1Game, Stage1Position } from "./stage1GameTypes";
-import type { LookupResult } from "./positionLookup";
+import type { ChessSide, Fen, Ply } from "./chessPrimitives";
+import type { Game, GamePosition, GameFailureKind } from "./gameModel";
 
 const API_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:5666";
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 type JsonRecord = Record<string, unknown>;
 
-export type GameLookupFailure =
-  | "game_not_found"
-  | "position_not_found"
-  | "corpus_unavailable"
-  | "game_unavailable"
-  | "unexpected_failure";
+export type GameLookupFailure = GameFailureKind;
 
-export type GameLookupResult =
-  | { status: "success"; game: Stage1Game }
-  | { status: GameLookupFailure };
+export type GameLookupResult = { status: "success"; game: Game } | { status: GameLookupFailure };
+
+export type SubjectColor = ChessSide;
+
+export type PositionLookupSuccess = {
+  status: "success";
+  game_uuid: string;
+  ply: Ply;
+  fen: Fen;
+  subject_color: SubjectColor;
+};
+
+export type PositionLookupFailure =
+  | { status: "position_not_found" }
+  | { status: "corpus_unavailable" }
+  | { status: "stored_position_invalid" }
+  | { status: "unexpected_failure" };
+
+export type LookupResult = PositionLookupSuccess | PositionLookupFailure;
 
 export type GameLookup = (
   gameUuid: string,
-  initialPly?: number,
+  initialPly?: Ply,
   signal?: AbortSignal,
 ) => Promise<GameLookupResult>;
 
@@ -42,7 +53,7 @@ function isNonnegativeInteger(value: unknown): value is number {
   return typeof value === "number" && Number.isInteger(value) && value >= 0;
 }
 
-function isPosition(value: unknown, expectedPly: number): value is Stage1Position {
+function isPosition(value: unknown, expectedPly: Ply): value is GamePosition {
   if (!isRecord(value) || !hasExactKeys(value, ["ply", "fen", "san"])) {
     return false;
   }
@@ -64,13 +75,13 @@ function isPosition(value: unknown, expectedPly: number): value is Stage1Positio
 function isGameBody(
   body: unknown,
   requestedUuid: string,
-  requestedPly: number,
+  requestedPly: Ply,
 ): body is {
   game_uuid: string;
   initial_ply: number;
-  subject_color: "white" | "black";
+  subject_color: ChessSide;
   source_url: string | null;
-  positions: Stage1Position[];
+  positions: GamePosition[];
 } {
   if (
     !isRecord(body) ||
@@ -192,7 +203,7 @@ export const fetchGame: GameLookup = async (gameUuid, initialPly, signal) => {
 
 export async function fetchPosition(
   gameUuid: string,
-  ply: number,
+  ply: Ply,
   signal?: AbortSignal,
 ): Promise<LookupResult> {
   const response = await fetch(

@@ -10,10 +10,10 @@ import type {
   EvaluationResult,
   EvaluationStatus,
 } from "./analysisApi";
-import { STAGE1_GAME } from "./stage1GameTypes";
 import styles from "./Stage1Story.module.css";
+import { VIEWER_GAME } from "./viewerFixtures";
 
-const FEN = STAGE1_GAME.positions[0].fen;
+const FEN = VIEWER_GAME.positions[0].fen;
 
 const meta = {
   title: "Application/Viewer/Analysis Panel",
@@ -91,7 +91,7 @@ function clientFor(value: EvaluationObservation): AnalysisClient {
   return {
     observe: fn(async () => ({ status: "success" as const, data: value })),
     enqueue: fn(async (_fen, action) => ({
-      status: "success",
+      status: "success" as const,
       data: {
         fen: FEN,
         action,

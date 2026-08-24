@@ -5,9 +5,10 @@ import "../../styles/cmt-tokens.css";
 import "../../styles/cmt-typescale.css";
 import ViewerWorkspace from "./ViewerWorkspace";
 import type { AnalysisClient } from "./analysisApi";
+import type { Game } from "./gameModel";
 import type { GameLookup, GameLookupFailure } from "./positionApi";
 import styles from "./Stage1Story.module.css";
-import { STAGE1_GAME, STAGE1_GAME_UUID, type Stage1Game } from "./stage1GameTypes";
+import { VIEWER_GAME, VIEWER_GAME_UUID } from "./viewerFixtures";
 
 const meta = {
   title: "Application/Viewer/Workspace",
@@ -25,9 +26,9 @@ const constrained = (children: React.ReactNode) => (
   </main>
 );
 
-function completeGameLookup(game: Stage1Game = STAGE1_GAME): GameLookup {
+function completeGameLookup(game: Game = VIEWER_GAME): GameLookup {
   return fn(async (_uuid, initialPly) => ({
-    status: "success",
+    status: "success" as const,
     game: { ...game, initial_ply: initialPly ?? 0 },
   }));
 }
@@ -39,16 +40,16 @@ function failureLookup(status: GameLookupFailure): GameLookup {
 function storyAnalysisClient(): AnalysisClient {
   return {
     observe: fn(async (fen) => ({
-      status: "success",
-      data: { fen, eligibility: "missing", result: null, status: null, terminal: false },
+      status: "success" as const,
+      data: { fen, eligibility: "missing" as const, result: null, status: null, terminal: false },
     })),
     enqueue: fn(async () => {
       throw new Error("Stage 1 workspace stories do not exercise analysis actions");
     }),
     status: fn(async () => ({
-      status: "success",
+      status: "success" as const,
       data: {
-        fen: STAGE1_GAME.positions[0].fen,
+        fen: VIEWER_GAME.positions[0].fen,
         state: null,
         completed_at: null,
         error_code: null,
@@ -58,9 +59,9 @@ function storyAnalysisClient(): AnalysisClient {
 }
 
 const pendingLookup: GameLookup = () => new Promise(() => {});
-const blackGame: Stage1Game = { ...STAGE1_GAME, subject_color: "black" };
-const promotionGame: Stage1Game = {
-  game_uuid: STAGE1_GAME_UUID,
+const blackGame: Game = { ...VIEWER_GAME, subject_color: "black" };
+const promotionGame: Game = {
+  game_uuid: VIEWER_GAME_UUID,
   initial_ply: 0,
   subject_color: "white",
   source_url: "https://www.chess.com/game/live/140399891142",
@@ -72,19 +73,19 @@ const promotionGame: Stage1Game = {
     },
   ],
 };
-const singlePositionGame = (fen: string): Stage1Game => ({
-  ...STAGE1_GAME,
+const singlePositionGame = (fen: string): Game => ({
+  ...VIEWER_GAME,
   positions: [{ ply: 0, fen, san: null }],
 });
 const castlingGame = singlePositionGame("r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1");
 const enPassantGame = singlePositionGame("4k3/3p4/8/4P3/8/8/8/4K3 b - - 0 1");
 const terminalGame = singlePositionGame("7k/5Q2/p5K1/8/8/8/8/8 b - - 0 1");
-const unsafeGame: Stage1Game = {
-  ...STAGE1_GAME,
+const unsafeGame: Game = {
+  ...VIEWER_GAME,
   source_url: "https://example.com/game/live/unsafe",
 };
 
-async function submit(canvas: ReturnType<typeof within>, uuid = STAGE1_GAME_UUID, ply?: string) {
+async function submit(canvas: ReturnType<typeof within>, uuid = VIEWER_GAME_UUID, ply?: string) {
   await userEvent.type(canvas.getByLabelText("Game UUID"), uuid);
   if (ply !== undefined) {
     await userEvent.type(canvas.getByLabelText(/Ply/), ply);
@@ -103,7 +104,7 @@ const loadingPlay: NonNullable<Story["play"]> = async ({ canvasElement }) => {
 
 const initialPlay: NonNullable<Story["play"]> = async ({ canvasElement }) => {
   const canvas = within(canvasElement);
-  await submit(canvas, STAGE1_GAME_UUID, "0");
+  await submit(canvas, VIEWER_GAME_UUID, "0");
   await expect(canvas.getByText("Ply 0 of 3")).toBeVisible();
   await expect(canvas.getByText("Initial position")).toBeVisible();
   await expect(canvas.getByRole("button", { name: "Previous" })).toBeDisabled();
@@ -111,7 +112,7 @@ const initialPlay: NonNullable<Story["play"]> = async ({ canvasElement }) => {
 
 const intermediatePlay: NonNullable<Story["play"]> = async ({ canvasElement }) => {
   const canvas = within(canvasElement);
-  await submit(canvas, STAGE1_GAME_UUID, "1");
+  await submit(canvas, VIEWER_GAME_UUID, "1");
   await expect(canvas.getByText("Ply 1 of 3")).toBeVisible();
   await userEvent.click(canvas.getByRole("button", { name: "Next" }));
   await expect(canvas.getByText("Ply 2 of 3")).toBeVisible();
@@ -119,14 +120,14 @@ const intermediatePlay: NonNullable<Story["play"]> = async ({ canvasElement }) =
 
 const finalPlay: NonNullable<Story["play"]> = async ({ canvasElement }) => {
   const canvas = within(canvasElement);
-  await submit(canvas, STAGE1_GAME_UUID, "3");
+  await submit(canvas, VIEWER_GAME_UUID, "3");
   await expect(canvas.getByText("Ply 3 of 3")).toBeVisible();
   await expect(canvas.getByRole("button", { name: "Next" })).toBeDisabled();
 };
 
 const stage4InitialPlay: NonNullable<Story["play"]> = async ({ canvasElement }) => {
   const canvas = within(canvasElement);
-  await submit(canvas, STAGE1_GAME_UUID, "0");
+  await submit(canvas, VIEWER_GAME_UUID, "0");
   await expect(canvas.getByText("Ply 0 of 0")).toBeVisible();
 };
 
@@ -251,14 +252,14 @@ export const ReplacementFailure: Story = {
     const lookup: GameLookup = async (_uuid, initialPly) => {
       calls += 1;
       return calls === 1
-        ? { status: "success", game: { ...STAGE1_GAME, initial_ply: initialPly ?? 0 } }
+        ? { status: "success", game: { ...VIEWER_GAME, initial_ply: initialPly ?? 0 } }
         : { status: "game_unavailable" };
     };
     return frame(<ViewerWorkspace lookup={lookup} analysisClient={storyAnalysisClient()} />);
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await submit(canvas, STAGE1_GAME_UUID, "1");
+    await submit(canvas, VIEWER_GAME_UUID, "1");
     await expect(canvas.getByText("Ply 1 of 3")).toBeVisible();
     await userEvent.clear(canvas.getByLabelText(/Ply/));
     await userEvent.type(canvas.getByLabelText(/Ply/), "2");
@@ -300,7 +301,7 @@ export const BranchNavigationGate: Story = {
   render: (args) => frame(<ViewerWorkspace analysisClient={storyAnalysisClient()} {...args} />),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await submit(canvas, STAGE1_GAME_UUID, "0");
+    await submit(canvas, VIEWER_GAME_UUID, "0");
     await expect(canvas.getByText("Ply 0 of 3")).toBeVisible();
     const pawn = canvasElement.querySelector<HTMLElement>(
       '[data-square="e2"] [aria-roledescription="draggable"]',
@@ -321,7 +322,7 @@ export const BranchPromotion: Story = {
   render: (args) => frame(<ViewerWorkspace analysisClient={storyAnalysisClient()} {...args} />),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await submit(canvas, STAGE1_GAME_UUID, "0");
+    await submit(canvas, VIEWER_GAME_UUID, "0");
     await expect(canvas.getByText("Ply 0 of 0")).toBeVisible();
   },
 };
@@ -353,7 +354,7 @@ export const BranchReplacementDiscard: Story = {
   render: (args) => frame(<ViewerWorkspace analysisClient={storyAnalysisClient()} {...args} />),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await submit(canvas, STAGE1_GAME_UUID, "0");
+    await submit(canvas, VIEWER_GAME_UUID, "0");
     const pawn = canvasElement.querySelector<HTMLElement>(
       '[data-square="e2"] [aria-roledescription="draggable"]',
     );
