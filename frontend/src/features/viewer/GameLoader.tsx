@@ -17,12 +17,10 @@ export type GameLoaderValues = {
 
 export type GameLoaderProps = {
   status?: GameLoaderStatus;
-  gameUuid?: string;
-  ply?: string;
-  defaultGameUuid?: string;
-  defaultPly?: string;
-  onGameUuidChange?: (value: string) => void;
-  onPlyChange?: (value: string) => void;
+  gameUuid: string;
+  ply: string;
+  onGameUuidChange: (value: string) => void;
+  onPlyChange: (value: string) => void;
   onSubmit?: (values: GameLoaderValues) => void;
   onReset?: () => void;
 };
@@ -41,49 +39,39 @@ export function GameLoader({
   status = "idle",
   gameUuid,
   ply,
-  defaultGameUuid = "",
-  defaultPly = "",
   onGameUuidChange,
   onPlyChange,
   onSubmit,
   onReset,
 }: GameLoaderProps) {
-  const [internalGameUuid, setInternalGameUuid] = useState(defaultGameUuid);
-  const [internalPly, setInternalPly] = useState(defaultPly);
   const [validationError, setValidationError] = useState<string | null>(null);
-  const currentGameUuid = gameUuid ?? internalGameUuid;
-  const currentPly = ply ?? internalPly;
   const loading = status === "loading";
   const failure = status !== "idle" && status !== "loading" ? GAME_FAILURE_COPY[status] : null;
 
   function updateGameUuid(value: string) {
-    setInternalGameUuid(value);
-    onGameUuidChange?.(value);
+    onGameUuidChange(value);
     setValidationError(null);
   }
 
   function updatePly(value: string) {
-    setInternalPly(value);
-    onPlyChange?.(value);
+    onPlyChange(value);
     setValidationError(null);
   }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const error = validationMessage(currentGameUuid, currentPly);
+    const error = validationMessage(gameUuid, ply);
     if (error) {
       setValidationError(error);
       return;
     }
-    onSubmit?.({ gameUuid: currentGameUuid.trim(), ply: currentPly.trim() });
+    onSubmit?.({ gameUuid: gameUuid.trim(), ply: ply.trim() });
   }
 
   function handleReset() {
-    setInternalGameUuid("");
-    setInternalPly("");
     setValidationError(null);
-    onGameUuidChange?.("");
-    onPlyChange?.("");
+    onGameUuidChange("");
+    onPlyChange("");
     onReset?.();
   }
 
@@ -94,9 +82,9 @@ export function GameLoader({
           <label className={styles.field}>
             <span>Game UUID</span>
             <input
-              value={currentGameUuid}
+              value={gameUuid}
               onChange={(event) => updateGameUuid(event.target.value)}
-              aria-invalid={validationError !== null && !UUID_PATTERN.test(currentGameUuid.trim())}
+              aria-invalid={validationError !== null && !UUID_PATTERN.test(gameUuid.trim())}
               autoComplete="off"
               spellCheck={false}
             />
@@ -106,10 +94,10 @@ export function GameLoader({
               Ply <span className={styles.optional}>(optional)</span>
             </span>
             <input
-              value={currentPly}
+              value={ply}
               onChange={(event) => updatePly(event.target.value)}
               inputMode="numeric"
-              aria-invalid={validationError !== null && currentPly.trim() !== ""}
+              aria-invalid={validationError !== null && ply.trim() !== ""}
               autoComplete="off"
             />
           </label>

@@ -88,6 +88,49 @@ describe("BoardAdapter", () => {
     expect(container.querySelector('[class*="adapter"]')).toBeInTheDocument();
   });
 
+  it("updates controlled presentation props while preserving its description association", () => {
+    const { rerender } = renderStartingPosition({ label: "Controlled position" });
+    const initialGraphic = screen.getByRole("img", { name: "Controlled position" });
+    const descriptionId = initialGraphic.getAttribute("aria-describedby");
+
+    expect(descriptionId).toBeTruthy();
+    expect(document.getElementById(descriptionId ?? "")).toHaveTextContent(
+      "Orientation: White at the bottom. Side to move: White.",
+    );
+
+    rerender(<BoardAdapter fen={STARTING_FEN} label="Updated controlled position" />);
+
+    const updatedGraphic = screen.getByRole("img", { name: "Updated controlled position" });
+    expect(updatedGraphic).toHaveAttribute("aria-describedby", descriptionId);
+    expect(document.getElementById(descriptionId ?? "")).toHaveTextContent(
+      "Orientation: White at the bottom. Side to move: White.",
+    );
+  });
+
+  it("gives each static instance a unique matching description id", () => {
+    render(
+      <>
+        <BoardAdapter fen={STARTING_FEN} label="First position" />
+        <BoardAdapter fen={RICH_FEN} label="Second position" />
+      </>,
+    );
+
+    const firstGraphic = screen.getByRole("img", { name: "First position" });
+    const secondGraphic = screen.getByRole("img", { name: "Second position" });
+    const firstDescriptionId = firstGraphic.getAttribute("aria-describedby");
+    const secondDescriptionId = secondGraphic.getAttribute("aria-describedby");
+
+    expect(firstDescriptionId).toBeTruthy();
+    expect(secondDescriptionId).toBeTruthy();
+    expect(firstDescriptionId).not.toBe(secondDescriptionId);
+    expect(document.getElementById(firstDescriptionId ?? "")).toHaveTextContent(
+      "Side to move: White.",
+    );
+    expect(document.getElementById(secondDescriptionId ?? "")).toHaveTextContent(
+      "Side to move: Black.",
+    );
+  });
+
   it("keeps the assistive description while the disclosure is collapsed or expanded", () => {
     renderStartingPosition();
     const graphic = screen.getByRole("img", { name: "Starting position" });

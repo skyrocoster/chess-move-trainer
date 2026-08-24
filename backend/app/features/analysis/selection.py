@@ -42,7 +42,7 @@ class SelectedPosition:
 class SelectionReport:
     game_uuids: tuple[str, ...]
     positions: tuple[SelectedPosition, ...]
-    eligible_positions: int
+    already_done: int
     skipped_positions: int
     stale_positions: int
     missing_positions: int
@@ -58,7 +58,7 @@ class SelectionReport:
         return {
             "games": list(self.game_uuids),
             "selected_positions": len(self.positions),
-            "eligible_positions": self.eligible_positions,
+            "already_done": self.already_done,
             "skipped_positions": self.skipped_positions,
             "stale_positions": self.stale_positions,
             "missing_positions": self.missing_positions,
@@ -216,7 +216,7 @@ def _select_positions(
     )
     repository = AnalysisRepository(connection)
     states = repository.eligibilities(tuple(position.fen for position in positions), profile)
-    eligible = sum(state is ResultEligibility.ELIGIBLE for state in states.values())
+    already_done = sum(state is ResultEligibility.ELIGIBLE for state in states.values())
     stale = sum(state is ResultEligibility.STALE for state in states.values())
     missing = sum(state is ResultEligibility.MISSING for state in states.values())
     processable = frozenset(
@@ -225,8 +225,8 @@ def _select_positions(
     return SelectionReport(
         normalized,
         positions,
-        eligible_positions=eligible,
-        skipped_positions=eligible,
+        already_done=already_done,
+        skipped_positions=already_done,
         stale_positions=stale,
         missing_positions=missing,
         processable_fens=processable,

@@ -122,7 +122,7 @@ def test_preflight_counts_projection_and_hash_memory_without_mutation(tmp_path: 
     before = database.read_bytes()
     preflight = run_read_only_preflight(database, profile, workers=5, projection_basis=_basis())
 
-    assert preflight.report.eligible_positions == 1
+    assert preflight.report.already_done == 1
     assert preflight.report.skipped_positions == 1
     assert preflight.report.stale_positions == 1
     assert preflight.report.missing_positions == 1

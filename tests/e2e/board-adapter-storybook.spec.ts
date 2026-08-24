@@ -22,6 +22,46 @@ async function openStory(page: Page, storyId: string) {
   await page.waitForTimeout(500);
 }
 
+async function expectDescriptionAssociation(
+  page: Page,
+  graphic: ReturnType<Page["getByRole"]>,
+) {
+  const descriptionId = await graphic.getAttribute("aria-describedby");
+
+  expect(descriptionId).toMatch(/^board-position-description-/);
+  if (!descriptionId) {
+    throw new Error("The static board has no generated description id.");
+  }
+
+  const description = page.locator(`[id="${descriptionId}"]`);
+  await expect(description).toHaveCount(1);
+  await expect(
+    page.locator(`[aria-describedby="${descriptionId}"]`),
+  ).toHaveCount(1);
+  return description;
+}
+
+async function expectStaticGraphic(page: Page, label: string) {
+  const graphic = page.getByRole("img", { name: label });
+
+  await expect(graphic).toBeVisible();
+  await expect(graphic).toHaveAttribute("aria-label", label);
+  await expectDescriptionAssociation(page, graphic);
+  await expect(graphic).not.toHaveAttribute("tabindex");
+  await expect(
+    graphic.locator("[role], [tabindex], [aria-roledescription], [aria-live]"),
+  ).toHaveCount(0);
+
+  const packageBoard = graphic.locator('[aria-hidden="true"][inert]');
+  await expect(packageBoard).toHaveCount(1);
+  await expect(packageBoard).toHaveCSS("pointer-events", "none");
+  await expect(page.locator('[aria-roledescription="draggable"]')).toHaveCount(
+    0,
+  );
+
+  return graphic;
+}
+
 async function checkA11y(page: Page) {
   const results = await new AxeBuilder({ page })
     .disableRules([
@@ -42,35 +82,57 @@ test.describe("Board Adapter Storybook surface", () => {
     await page.emulateMedia({ forcedColors: "active" });
 
     await openStory(page, STORY_IDS.starting);
-    await expect(
-      page.getByRole("img", { name: "Starting position" }),
-    ).toBeVisible();
-    await expect(
-      page.locator('[role="img"] [role], [role="img"] [tabindex]'),
-    ).toHaveCount(0);
-    await expect(
-      page.locator('[aria-roledescription="draggable"]'),
-    ).toHaveCount(0);
+    const startingGraphic = await expectStaticGraphic(
+      page,
+      "Starting position",
+    );
+    await expect(page.locator("[data-square] span")).not.toHaveCount(0);
+    await expect(startingGraphic).toHaveCSS(
+      "background-color",
+      "rgb(255, 255, 255)",
+    );
+    await expect(startingGraphic).toHaveCSS("border-top-color", "rgb(0, 0, 0)");
+    expect(
+      await page.evaluate(
+        () => window.matchMedia("(forced-colors: active)").matches,
+      ),
+    ).toBe(true);
+    const startingDescription = await expectDescriptionAssociation(
+      page,
+      startingGraphic,
+    );
+    const startingDescriptionId =
+      await startingGraphic.getAttribute("aria-describedby");
+    if (!startingDescriptionId) {
+      throw new Error("The starting static board lost its description id.");
+    }
+    await expect(startingDescription).toContainText(
+      "Orientation: White at the bottom. Side to move: White.",
+    );
     await checkA11y(page);
 
     const summary = page.getByText("Position description");
     const details = summary.locator("..");
     await expect(details).not.toHaveAttribute("data-open");
     await summary.focus();
+    await expect(summary).toBeFocused();
     await page.keyboard.press("Enter");
     await expect(details).toHaveAttribute("data-open");
-    await expect(
-      page.getByRole("img", { name: "Starting position" }),
-    ).toHaveAttribute("aria-describedby", /.+/);
+    await expect(startingGraphic).toHaveAttribute(
+      "aria-describedby",
+      startingDescriptionId,
+    );
     await page.keyboard.press("Enter");
     await expect(details).not.toHaveAttribute("data-open");
 
     await openStory(page, STORY_IDS.rich);
-    const richGraphic = page.getByRole("img", {
-      name: "Rich position with complete game state",
-    });
-    const richDescription = page.locator(
-      `#${await richGraphic.getAttribute("aria-describedby")}`,
+    const richGraphic = await expectStaticGraphic(
+      page,
+      "Rich position with complete game state",
+    );
+    const richDescription = await expectDescriptionAssociation(
+      page,
+      richGraphic,
     );
     await expect(richDescription).toContainText("Side to move: Black");
     await expect(richDescription).toContainText("En-passant target: e3.");
@@ -78,12 +140,13 @@ test.describe("Board Adapter Storybook surface", () => {
     await checkA11y(page);
 
     await openStory(page, STORY_IDS.black);
-    await expect(
-      page.getByRole("img", { name: "Starting position from Black's side" }),
-    ).toBeVisible();
-    const blackGraphic = page.locator('[role="img"]');
-    const blackDescription = page.locator(
-      `#${await blackGraphic.getAttribute("aria-describedby")}`,
+    const blackGraphic = await expectStaticGraphic(
+      page,
+      "Starting position from Black's side",
+    );
+    const blackDescription = await expectDescriptionAssociation(
+      page,
+      blackGraphic,
     );
     await expect(blackDescription).toContainText(
       "Orientation: Black at the bottom.",
@@ -91,10 +154,15 @@ test.describe("Board Adapter Storybook surface", () => {
     await checkA11y(page);
 
     await openStory(page, STORY_IDS.hidden);
+    await expectStaticGraphic(page, "Starting position without coordinates");
     await expect(page.locator("[data-square] span")).toHaveCount(0);
     await checkA11y(page);
 
     await openStory(page, STORY_IDS.constrained);
+    await expectStaticGraphic(
+      page,
+      "Starting position in a constrained container",
+    );
     const constrainedContainer = page.locator('[class*="constrainedStory"]');
     await expect(constrainedContainer).toHaveCount(1);
     for (const size of [320, 480, 640]) {
@@ -114,16 +182,24 @@ test.describe("Board Adapter Storybook surface", () => {
     await openStory(page, STORY_IDS.invalid);
     await expect(page.getByText("Position unavailable")).toBeVisible();
     await expect(page.getByRole("img")).toHaveCount(0);
+    await expect(page.getByRole("status")).toBeVisible();
     await checkA11y(page);
 
     await openStory(page, STORY_IDS.expanded);
-    await expect(
-      page.getByText("Position description").locator(".."),
-    ).toHaveAttribute("data-open");
-    await expect(page.getByRole("img")).toHaveAttribute(
-      "aria-describedby",
-      /.+/,
+    const expandedGraphic = await expectStaticGraphic(
+      page,
+      "Rich position with expanded description",
     );
+    const expandedDetails = page
+      .getByRole("button", {
+        name: "Position description",
+      })
+      .locator("..");
+    await expect(expandedDetails).toHaveAttribute("data-open");
+    await expect(page.getByLabel("Position description")).toContainText(
+      "Side to move: Black.",
+    );
+    await expectDescriptionAssociation(page, expandedGraphic);
     await checkA11y(page);
   });
 });

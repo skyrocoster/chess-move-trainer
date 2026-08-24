@@ -286,7 +286,7 @@ def run_batch(
                     completed += 1
                     consecutive_failures = 0
                     if progress:
-                        progress(completed, report.eligible_positions)
+                        progress(completed, len(report.positions_to_process))
                 if consecutive_failures >= MAX_CONSECUTIVE_FAILURES:
                     circuit_breaker = True
             dispatch()
@@ -315,7 +315,7 @@ def run_batch(
         started_at=started_at,
         finished_at=datetime.now(UTC).isoformat(),
         selected_positions=len(report.positions),
-        eligible_positions=report.eligible_positions,
+        eligible_positions=report.already_done,
         completed_positions=completed,
         failed_positions=len(failures),
         details=details,

@@ -1,8 +1,8 @@
 ---
 description: Independent Quality Agent for fresh validation or one exact coordinator-authorized repair.
 mode: subagent
-model: opencode-go/ox-alpha-free
-variant: max
+model: opencode/mimo-v2.5-free
+#variant: max
 permission:
   read: allow
   edit: allow

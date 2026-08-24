@@ -1,4 +1,4 @@
-import { userEvent, within } from "storybook/test";
+import { expect, userEvent, within } from "storybook/test";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 
 import { BoardAdapter, type BoardAdapterProps, STARTING_FEN } from "./BoardAdapter";
@@ -24,6 +24,32 @@ const startingArgs: BoardAdapterProps = {
 export const DefaultValidStartingPosition: Story = {
   name: "Default valid starting position",
   args: startingArgs,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const graphic = canvas.getByRole("img", { name: "Starting position" });
+
+    const descriptionId = graphic.getAttribute("aria-describedby");
+    if (!descriptionId || !/^board-position-description-/.test(descriptionId)) {
+      throw new Error("The static board has no generated description id.");
+    }
+    await expect(canvasElement.ownerDocument.getElementById(descriptionId)).toHaveTextContent(
+      "Orientation: White at the bottom. Side to move: White.",
+    );
+    await expect(
+      graphic.querySelectorAll("[role], [tabindex], [aria-roledescription]"),
+    ).toHaveLength(0);
+    await expect(graphic.querySelector('[aria-hidden="true"][inert]')).toBeTruthy();
+
+    const trigger = canvas.getByRole("button", { name: "Position description" });
+    await expect(trigger).toHaveAttribute("aria-expanded", "false");
+    await trigger.focus();
+    await expect(trigger).toHaveFocus();
+    await userEvent.keyboard("{Enter}");
+    await expect(trigger).toHaveAttribute("aria-expanded", "true");
+    await expect(graphic).toHaveAttribute("aria-describedby", descriptionId);
+    await userEvent.keyboard("{Enter}");
+    await expect(trigger).toHaveAttribute("aria-expanded", "false");
+  },
 };
 
 export const RichPosition: Story = {
@@ -31,6 +57,21 @@ export const RichPosition: Story = {
   args: {
     fen: RICH_FEN,
     label: "Rich position with complete game state",
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const graphic = canvas.getByRole("img", {
+      name: "Rich position with complete game state",
+    });
+    const descriptionId = graphic.getAttribute("aria-describedby");
+
+    if (!descriptionId) {
+      throw new Error("The rich static board has no generated description id.");
+    }
+    const description = canvasElement.ownerDocument.getElementById(descriptionId);
+    await expect(description).toHaveTextContent("Side to move: Black.");
+    await expect(description).toHaveTextContent("En-passant target: e3.");
+    await expect(description).toHaveTextContent("Fullmove number: 8.");
   },
 };
 
@@ -41,6 +82,20 @@ export const BlackOrientation: Story = {
     orientation: "black",
     label: "Starting position from Black's side",
   },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const graphic = canvas.getByRole("img", {
+      name: "Starting position from Black's side",
+    });
+    const descriptionId = graphic.getAttribute("aria-describedby");
+
+    if (!descriptionId) {
+      throw new Error("The Black-oriented static board has no generated description id.");
+    }
+    await expect(canvasElement.ownerDocument.getElementById(descriptionId)).toHaveTextContent(
+      "Orientation: Black at the bottom.",
+    );
+  },
 };
 
 export const HiddenCoordinates: Story = {
@@ -49,6 +104,14 @@ export const HiddenCoordinates: Story = {
     ...startingArgs,
     showCoordinates: false,
     label: "Starting position without coordinates",
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const graphic = canvas.getByRole("img", {
+      name: "Starting position without coordinates",
+    });
+
+    await expect(graphic.querySelectorAll("[data-square] span")).toHaveLength(0);
   },
 };
 
@@ -63,6 +126,17 @@ export const ConstrainedWidth: Story = {
     ...startingArgs,
     label: "Starting position in a constrained container",
   },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const graphic = canvas.getByRole("img", {
+      name: "Starting position in a constrained container",
+    });
+    const bounds = graphic.getBoundingClientRect();
+
+    if (bounds.width <= 0 || Math.abs(bounds.width - bounds.height) > 0.5) {
+      throw new Error("The constrained static board is not a visible square.");
+    }
+  },
 };
 
 export const InvalidFen: Story = {
@@ -70,6 +144,13 @@ export const InvalidFen: Story = {
   args: {
     fen: INVALID_FEN,
     label: "Unavailable invalid position",
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+
+    await expect(canvas.getByRole("status")).toBeVisible();
+    await expect(canvas.getByText("Position unavailable")).toBeVisible();
+    await expect(canvasElement.querySelectorAll('[role="img"]')).toHaveLength(0);
   },
 };
 
@@ -81,6 +162,17 @@ export const ExpandedPositionDescription: Story = {
     showCoordinates: true,
   },
   play: async ({ canvasElement }) => {
-    await userEvent.click(within(canvasElement).getByText("Position description"));
+    const canvas = within(canvasElement);
+    const trigger = canvas.getByRole("button", { name: "Position description" });
+
+    await expect(trigger).toHaveAttribute("aria-expanded", "false");
+    await trigger.focus();
+    await userEvent.keyboard("{Enter}");
+    await expect(trigger).toHaveAttribute("aria-expanded", "true");
+    const descriptionPanel = canvasElement.querySelector('[aria-label="Position description"]');
+    if (!descriptionPanel) {
+      throw new Error("The expanded position description is missing.");
+    }
+    await expect(descriptionPanel).toHaveTextContent("Side to move: Black.");
   },
 };

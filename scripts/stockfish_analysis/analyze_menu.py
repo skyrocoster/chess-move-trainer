@@ -15,20 +15,12 @@ DEFAULT_ENGINE = (
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 ANALYSIS_SCRIPT = Path(__file__).resolve().with_name("analyze_positions.py")
 QUALIFIED_PROFILE = "mp09-balanced-nodes-v2-200000"
-RUNNING_NOTICE_SECONDS = 30
 
 
 def run_cmd(cmd: list[str]) -> int:
     print(f"\n> {' '.join(cmd)}\n", flush=True)
     process = subprocess.Popen(cmd, cwd=REPOSITORY_ROOT)
-    while True:
-        try:
-            return process.wait(timeout=RUNNING_NOTICE_SECONDS)
-        except subprocess.TimeoutExpired:
-            print(
-                "Analysis is still running; waiting for the next progress update...",
-                flush=True,
-            )
+    return process.wait()
 
 
 def menu() -> None:

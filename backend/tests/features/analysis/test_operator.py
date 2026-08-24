@@ -204,7 +204,7 @@ def test_eligibility_stale_reuse_and_idempotent_resume(tmp_path: Path) -> None:
     assert first.completed_positions == 3
     assert second.status == "success"
     assert second.completed_positions == 0
-    assert second.report.eligible_positions == 3
+    assert second.report.already_done == 3
     assert second.report.skipped_positions == 3
     assert len(engines) == 1
 

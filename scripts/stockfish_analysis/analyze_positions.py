@@ -6,6 +6,7 @@ import argparse
 import signal
 import sqlite3
 import sys
+import time
 from pathlib import Path
 
 if __package__ in (None, ""):
@@ -29,10 +30,22 @@ from backend.app.features.analysis.provisioning import (  # noqa: E402
     ProvisionedStockfish,
     verify_override,
 )
+from scripts.dev import clear_port  # noqa: E402
 
 DEFAULT_DATABASE = Path(__file__).resolve().parents[2] / "data/database/chess_games.db"
+BACKEND_PORT = 5666
 QUALIFIED_PROFILE_ID = "mp09-balanced-nodes-v2-200000"
 QUALIFIED_NODE_BUDGET = 200_000
+
+
+def _format_duration(seconds: float) -> str:
+    if seconds < 60:
+        return f"{seconds:.0f}s"
+    if seconds < 3600:
+        return f"{seconds / 60:.0f}m {seconds % 60:.0f}s"
+    hours = int(seconds // 3600)
+    minutes = int((seconds % 3600) // 60)
+    return f"{hours}h {minutes}m"
 
 
 def initialize_database(path: Path) -> None:
@@ -127,56 +140,39 @@ def _profile(args: argparse.Namespace) -> tuple[AnalysisProfile, ProvisionedStoc
 
 def _print_preflight(preflight: CorpusPreflight) -> None:
     report = preflight.report
-    print("Corpus preflight (strictly read-only; no database or data changes made).")
-    print(f"database: {preflight.database}")
-    print(f"selected_positions: {len(report.positions)}")
-    print("queue_order: minimum corpus ply ascending, exact FEN ascending tie-breaker")
-    print(f"eligible_positions: {report.eligible_positions}")
-    print(f"skipped_positions: {report.skipped_positions}")
-    print(f"stale_positions: {report.stale_positions}")
-    print(f"missing_positions: {report.missing_positions}")
+    total = len(report.positions)
+    to_process = len(report.positions_to_process)
+    print("Corpus preflight (read-only, no changes made).")
+    print(f"  database:           {preflight.database}")
+    print(f"  total positions:    {total:,}")
+    print(f"  already done:       {report.already_done:,} (skipped)")
+    print(f"  need re-analysis:   {report.stale_positions:,} (settings changed)")
+    print(f"  need analysis:      {report.missing_positions:,} (never analysed)")
+    print(f"  to process:         {to_process:,}")
+    print("  queue order:        ply ascending, FEN ascending")
     print(
-        f"active_engine: {preflight.profile.engine_name} "
+        f"  engine:             {preflight.profile.engine_name} "
         f"(version {preflight.profile.engine_version})"
     )
-    print(f"engine_binary_sha256: {preflight.profile.engine_binary_sha256}")
-    print(f"active_profile: {preflight.profile.profile_id}")
-    print(f"active_settings: {preflight.profile.settings_json}")
-    print(f"workers: {preflight.workers}")
-    print(f"total_hash_memory_mib: {preflight.total_hash_memory_mib}")
-    print(f"total_hash_memory: {preflight.total_hash_memory_mib} MiB")
+    print(f"  profile:            {preflight.profile.profile_id}")
+    print(f"  workers:            {preflight.workers}")
+    print(f"  hash per worker:    {preflight.total_hash_memory_mib // preflight.workers} MiB")
+    print(f"  projected duration: {_format_duration(preflight.projected_duration_seconds)}")
+    if preflight.projected_pending_duration_seconds > 0:
+        print(
+            "  pending duration:   "
+            f"{_format_duration(preflight.projected_pending_duration_seconds)}"
+        )
     print(
-        "disk_projection: "
-        f"{preflight.projected_disk_bytes} bytes "
-        f"({preflight.projected_disk_bytes / (1024 * 1024):.2f} MiB)"
+        f"  projected disk:     "
+        f"{preflight.projected_disk_bytes / (1024 * 1024):.1f} MiB"
     )
-    print(
-        "pending_disk_projection: "
-        f"{preflight.projected_pending_disk_bytes} bytes "
-        f"({preflight.projected_pending_disk_bytes / (1024 * 1024):.2f} MiB)"
-    )
-    print(
-        "projection_basis: "
-        f"{preflight.projection_basis.source} "
-        f"({preflight.projection_basis.mean_seconds_per_fen:.6f} seconds/FEN, "
-        f"{preflight.projection_basis.mean_payload_bytes:.2f} bytes/FEN)"
-    )
-    print(
-        "projected_duration: "
-        f"{preflight.projected_duration_seconds:.1f} seconds "
-        f"({preflight.projected_duration_seconds / 3600:.2f} hours)"
-    )
-    print(
-        "pending_projected_duration: "
-        f"{preflight.projected_pending_duration_seconds:.1f} seconds "
-        f"({preflight.projected_pending_duration_seconds / 3600:.2f} hours)"
-    )
-    print(f"watchdog_seconds: {preflight.watchdog_seconds:g}")
-    print(f"lock_path: {preflight.lock_path}")
-    print(
-        "lock_implication: a confirmed corpus run acquires one top-level lock; "
-        "this preflight does not create or acquire it"
-    )
+    if preflight.projected_pending_disk_bytes > 0:
+        print(
+            f"  pending disk:       "
+            f"{preflight.projected_pending_disk_bytes / (1024 * 1024):.1f} MiB"
+        )
+    print(f"  watchdog:           {preflight.watchdog_seconds:g}s")
 
 
 def _confirm_all() -> bool:
@@ -228,6 +224,24 @@ def main(argv: list[str] | None = None) -> int:
                 if args.confirm_all:
                     print("Noninteractive full-corpus confirmation accepted via --confirm-all.")
 
+                print(f"Clearing backend port {BACKEND_PORT} to avoid database lock contention.")
+                clear_port(BACKEND_PORT)
+
+                start_time = time.monotonic()
+
+                def progress(done: int, total: int) -> None:
+                    elapsed = time.monotonic() - start_time
+                    rate = done / elapsed if elapsed > 0 else 0
+                    remaining = (total - done) / rate if rate > 0 else 0
+                    print(
+                        f"\rProgress: {done:,}/{total:,} "
+                        f"({done * 100 // total}%) "
+                        f"[{_format_duration(elapsed)} elapsed, "
+                        f"~{_format_duration(remaining)} remaining]",
+                        end="",
+                        flush=True,
+                    )
+
                 controller = InterruptController()
 
                 def handle_interrupt(_signum: int, _frame: object) -> None:
@@ -254,20 +268,43 @@ def main(argv: list[str] | None = None) -> int:
                         ),
                         workers=args.workers,
                         controller=controller,
-                        progress=lambda done, total: print(
-                            f"\rProgress: {done}/{total} ({done * 100 // total}%)",
-                            end="",
-                            flush=True,
-                        ),
+                        progress=progress,
                     )
                 finally:
                     signal.signal(signal.SIGINT, previous)
+                elapsed = time.monotonic() - start_time
                 print()
-                print(f"run_id: {result.run_id}")
-                print(f"status: {result.status}")
-                print(f"completed_positions: {result.completed_positions}")
-                print(f"failed_positions: {len(result.failures)}")
+                print("Run complete.")
+                print(f"  run_id:         {result.run_id}")
+                print(f"  status:         {result.status}")
+                print(f"  positions:      {len(result.report.positions):,} total")
+                print(f"    already done:   {result.report.already_done:,} (skipped)")
+                print(
+                    f"    need re-analysis: {result.report.stale_positions:,}"
+                )
+                print(f"    need analysis:  {result.report.missing_positions:,}")
+                print(f"  completed:      {result.completed_positions:,}")
+                print(f"  failed:         {len(result.failures)}")
+                print(f"  duration:       {_format_duration(elapsed)}")
                 return 0
+
+            print(f"Clearing backend port {BACKEND_PORT} to avoid database lock contention.")
+            clear_port(BACKEND_PORT)
+
+            start_time = time.monotonic()
+
+            def game_progress(done: int, total: int) -> None:
+                elapsed = time.monotonic() - start_time
+                rate = done / elapsed if elapsed > 0 else 0
+                remaining = (total - done) / rate if rate > 0 else 0
+                print(
+                    f"\rProgress: {done:,}/{total:,} "
+                    f"({done * 100 // total}%) "
+                    f"[{_format_duration(elapsed)} elapsed, "
+                    f"~{_format_duration(remaining)} remaining]",
+                    end="",
+                    flush=True,
+                )
 
             controller = InterruptController()
 
@@ -296,22 +333,22 @@ def main(argv: list[str] | None = None) -> int:
                     ),
                     workers=args.workers,
                     controller=controller,
-                    progress=lambda done, total: print(
-                        f"\rProgress: {done}/{total} ({done * 100 // total}%)", end="", flush=True
-                    ),
+                    progress=game_progress,
                 )
             finally:
                 signal.signal(signal.SIGINT, previous)
+            elapsed = time.monotonic() - start_time
             print()
-            print(f"run_id: {result.run_id}")
-            print(f"status: {result.status}")
-            print(f"selected_positions: {len(result.report.positions)}")
-            print(f"eligible_positions: {result.report.eligible_positions}")
-            print(f"skipped_positions: {result.report.skipped_positions}")
-            print(f"stale_positions: {result.report.stale_positions}")
-            print(f"missing_positions: {result.report.missing_positions}")
-            print(f"completed_positions: {result.completed_positions}")
-            print(f"failed_positions: {len(result.failures)}")
+            print("Run complete.")
+            print(f"  run_id:         {result.run_id}")
+            print(f"  status:         {result.status}")
+            print(f"  positions:      {len(result.report.positions):,} total")
+            print(f"    already done:   {result.report.already_done:,} (skipped)")
+            print(f"    need re-analysis: {result.report.stale_positions:,}")
+            print(f"    need analysis:  {result.report.missing_positions:,}")
+            print(f"  completed:      {result.completed_positions:,}")
+            print(f"  failed:         {len(result.failures)}")
+            print(f"  duration:       {_format_duration(elapsed)}")
         return 0
     except (OSError, RuntimeError, ValueError, sqlite3.Error) as error:
         print(f"Analysis operation failed: {error}", file=sys.stderr)
