@@ -54,7 +54,7 @@ without becoming a universal viewer, session, game, opening, or tree framework.
 - **MVC-01:** [Completed MVC-01 Foundations Plan/result](../plans/done/mvc-01-foundations/mvc-01-foundations.md).
 - **MVC-02:** [Completed MVC-02 Game loader Plan/result](../plans/done/mvc-02-game-loader/mvc-02-game-loader.md).
 - **MVC-03:** [Completed MVC-03 Static board Plan/result](../plans/done/mvc-03-static-board/mvc-03-static-board.md).
-- **MVC-04:** Focused Plan/result link reserved for later selection and acceptance.
+- **MVC-04:** [Completed MVC-04 Promotion picker Plan/result](../plans/done/mvc-04-promotion-picker/mvc-04-promotion-picker.md).
 - **MVC-05:** Focused Plan/result link reserved for later selection and acceptance.
 - **MVC-06:** Focused Plan/result link reserved for later selection and acceptance.
 - **MVC-07:** Focused Plan/result link reserved for later selection and acceptance.

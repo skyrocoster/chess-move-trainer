@@ -339,9 +339,9 @@ def verify_node(node: dict, root_total: int) -> None:
             bad("other_moves counts do not reconcile")
         if other["games"] > with_next:
             bad("other_moves exceeds games_with_next")
-        if other["local_pct"] != pct(other["games"], with_next) or other[
-            "cumulative_pct"
-        ] != pct(other["games"], root_total):
+        if other["local_pct"] != pct(other["games"], with_next) or other["cumulative_pct"] != pct(
+            other["games"], root_total
+        ):
             bad("other_moves percentage fields disagree with their denominators")
         other_keys = [(-entry["count"], entry["san"]) for entry in moves]
         if other_keys != sorted(other_keys):

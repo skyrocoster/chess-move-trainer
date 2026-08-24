@@ -32,5 +32,8 @@ Do not implement product or test changes yourself. You may maintain active workf
 scope correction when it preserves the approved outcome; ask before changing behavior, direction, contracts,
 dependencies, ownership, destructive effects, or acceptance.
 
+Route README maintenance to `readme-updater` — after new features, moved files, renamed directories, or any
+structural change that would make existing READMEs stale. These changes do not need to be validated.
+
 Preserve unrelated worktree changes and completed historical records. Never commit or push. Use
 `.venv\Scripts\python.exe scripts\check.py` for full closeout and `--fix` only when explicitly authorized.

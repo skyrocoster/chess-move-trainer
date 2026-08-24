@@ -163,10 +163,7 @@ def _print_preflight(preflight: CorpusPreflight) -> None:
             "  pending duration:   "
             f"{_format_duration(preflight.projected_pending_duration_seconds)}"
         )
-    print(
-        f"  projected disk:     "
-        f"{preflight.projected_disk_bytes / (1024 * 1024):.1f} MiB"
-    )
+    print(f"  projected disk:     {preflight.projected_disk_bytes / (1024 * 1024):.1f} MiB")
     if preflight.projected_pending_disk_bytes > 0:
         print(
             f"  pending disk:       "
@@ -279,9 +276,7 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"  status:         {result.status}")
                 print(f"  positions:      {len(result.report.positions):,} total")
                 print(f"    already done:   {result.report.already_done:,} (skipped)")
-                print(
-                    f"    need re-analysis: {result.report.stale_positions:,}"
-                )
+                print(f"    need re-analysis: {result.report.stale_positions:,}")
                 print(f"    need analysis:  {result.report.missing_positions:,}")
                 print(f"  completed:      {result.completed_positions:,}")
                 print(f"  failed:         {len(result.failures)}")

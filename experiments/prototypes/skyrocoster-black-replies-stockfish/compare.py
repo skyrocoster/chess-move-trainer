@@ -90,9 +90,7 @@ def resolve_identity(connection: sqlite3.Connection, username: str) -> PlayerIde
     return PlayerIdentity(str(uuid), str(selected_username), int(corpus_id))
 
 
-def qualifying_games(
-    connection: sqlite3.Connection, identity: PlayerIdentity
-) -> list[GameRecord]:
+def qualifying_games(connection: sqlite3.Connection, identity: PlayerIdentity) -> list[GameRecord]:
     rows = connection.execute(
         """
         SELECT g.uuid, g.pgn, g.white_result, g.black_result
@@ -322,10 +320,7 @@ def format_wdl(wdl: tuple[int, int, int]) -> str:
 def print_engine_table(engine_id: dict[str, str], replies: list[EngineReply], path: Path) -> None:
     print(f"ENGINE_ID: {engine_id.get('name', 'unknown')} by {engine_id.get('author', 'unknown')}")
     print(f"ENGINE_BINARY: {path}")
-    print(
-        "ENGINE_SETTINGS: nodes=200000 MultiPV=5 Threads=1 Hash=128 MiB "
-        "UCI_ShowWDL=true"
-    )
+    print("ENGINE_SETTINGS: nodes=200000 MultiPV=5 Threads=1 Hash=128 MiB UCI_ShowWDL=true")
     print("ENGINE_ANALYSIS: fresh process; exact target FEN; no result persistence")
     print("ENGINE_TOP_5_BLACK_PERSPECTIVE:")
     for reply in replies:
@@ -375,9 +370,13 @@ def print_interpretation(personal: list[PersonalReply], engine: list[EngineReply
         f"({most_frequent.games} games; W-D-L={most_frequent.wins}-{most_frequent.draws}-"
         f"{most_frequent.losses})."
     )
-    print(f"  Aligns with Stockfish first choice ({first_engine}): {'yes' if most_frequent.move == first_engine else 'no'}.")
+    print(
+        f"  Aligns with Stockfish first choice ({first_engine}): {'yes' if most_frequent.move == first_engine else 'no'}."
+    )
     print(f"  Its historical whole-game outcome is {direction} by chess score ({chess_score:.2%}).")
-    print("  This describes frequency and outcomes separately from engine strength; it is not causal move-quality evidence.")
+    print(
+        "  This describes frequency and outcomes separately from engine strength; it is not causal move-quality evidence."
+    )
     print("  Small replies are flagged above and should not be called wrong from results alone.")
 
 
@@ -403,7 +402,9 @@ def main() -> None:
         identity = resolve_identity(connection, args.username)
         records = qualifying_games(connection, identity)
         if not records:
-            raise SystemExit(f"No qualifying chess games found with {identity.username!r} as Black.")
+            raise SystemExit(
+                f"No qualifying chess games found with {identity.username!r} as Black."
+            )
         matches, rejected = match_corpus(records, target_fen)
 
     personal = personal_report(matches)
@@ -418,9 +419,13 @@ def main() -> None:
     print(f"QUALIFYING_BLACK_GAMES: {len(records)}")
     print(f"MATCHED_EXACT_PREFIX_GAMES: {len(matches)}")
     print(f"MATCHED_EXACT_PREFIX_OCCURRENCES: {len(matches)}")
-    print(f"MATCHED_GAMES_WITH_IMMEDIATE_REPLY: {sum(match.reply is not None for match in matches)}")
+    print(
+        f"MATCHED_GAMES_WITH_IMMEDIATE_REPLY: {sum(match.reply is not None for match in matches)}"
+    )
     print(f"MATCHED_GAMES_WITHOUT_IMMEDIATE_REPLY: {sum(match.reply is None for match in matches)}")
-    print("MATCH_RULE: complete SAN prefix from standard initial position; adjacent same-game mainline plies")
+    print(
+        "MATCH_RULE: complete SAN prefix from standard initial position; adjacent same-game mainline plies"
+    )
     print("TRANSPOSITIONS: excluded by exact-prefix matching; no position-only search")
     print(f"DUPLICATE_OCCURRENCES_EXCLUDED: {rejected.get('duplicate same-game occurrence', 0)}")
     print("REPLAY_REJECTIONS:")
@@ -431,8 +436,12 @@ def main() -> None:
     print_engine_table(engine_id, engine_replies, args.engine)
     print_overlap(engine_replies, personal)
     print_interpretation(personal, engine_replies)
-    print("LIMITATIONS: one user-specified line; whole-game outcomes are descriptive, not causal; tiny samples are unstable; node-limited engine analysis is not a personal playing-strength estimate.")
-    print("ENGINE_SHUTDOWN: clean quit/close attempted in finally; no database/cache/output-file writes")
+    print(
+        "LIMITATIONS: one user-specified line; whole-game outcomes are descriptive, not causal; tiny samples are unstable; node-limited engine analysis is not a personal playing-strength estimate."
+    )
+    print(
+        "ENGINE_SHUTDOWN: clean quit/close attempted in finally; no database/cache/output-file writes"
+    )
 
 
 if __name__ == "__main__":

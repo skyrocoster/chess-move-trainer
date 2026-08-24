@@ -83,7 +83,9 @@ def copy_edge(edge: dict[str, Any]) -> dict[str, Any]:
 
 
 def validate_edge(edge: dict[str, Any], games_with_next: int, root_total: int) -> None:
-    require(set(edge) == {"san", "uci", "count", "local_pct", "cumulative_pct"}, "edge schema changed")
+    require(
+        set(edge) == {"san", "uci", "count", "local_pct", "cumulative_pct"}, "edge schema changed"
+    )
     require(isinstance(edge["san"], str) and edge["san"], "edge SAN is empty")
     require(isinstance(edge["uci"], str) and edge["uci"], "edge UCI is empty")
     require(isinstance(edge["count"], int) and edge["count"] > 0, "edge count is invalid")
@@ -114,17 +116,25 @@ def validate_node(
     require(isinstance(sans, list) and isinstance(ucis, list), f"{node_id} prefixes are not lists")
     require(len(sans) == len(ucis) == node["ply"], f"{node_id} prefix length disagrees with ply")
     require(node["line"] == format_line(sans), f"{node_id} complete line is not canonical")
-    require(node_id == "n" + hashlib.sha256("\x1f".join(sans).encode("utf-8")).hexdigest()[:16], f"{node_id} ID disagrees with prefix")
+    require(
+        node_id == "n" + hashlib.sha256("\x1f".join(sans).encode("utf-8")).hexdigest()[:16],
+        f"{node_id} ID disagrees with prefix",
+    )
     require(node["side_to_move"] in {"white", "black"}, f"{node_id} side to move is invalid")
     require(len(node["fen"].split()) == 6, f"{node_id} does not contain a six-field FEN")
     require(node["games"] > 0 and node["games"] <= root_total, f"{node_id} game count is invalid")
 
     outcomes = node["outcomes"]
-    require(set(outcomes) == {"win", "draw", "loss", "unknown"}, f"{node_id} outcome schema changed")
+    require(
+        set(outcomes) == {"win", "draw", "loss", "unknown"}, f"{node_id} outcome schema changed"
+    )
     require(sum(outcomes.values()) == node["games"], f"{node_id} outcomes do not reconcile")
     classifiable = outcomes["win"] + outcomes["draw"] + outcomes["loss"]
     require(node["classifiable_games"] == classifiable, f"{node_id} classifiable count is invalid")
-    require(node["raw_win_pct"] == pct(outcomes["win"], classifiable), f"{node_id} raw win percentage is invalid")
+    require(
+        node["raw_win_pct"] == pct(outcomes["win"], classifiable),
+        f"{node_id} raw win percentage is invalid",
+    )
     require(
         node["chess_score_pct"] == pct(2 * outcomes["win"] + outcomes["draw"], 2 * classifiable),
         f"{node_id} chess score percentage is invalid",
@@ -157,15 +167,27 @@ def validate_node(
         validate_edge(arrival, node["games_with_next"], root_total)
         require(arrival["san"] not in child_by_san, f"{node_id} has duplicate child SAN")
         child_by_san[arrival["san"]] = child
-        require(child["games"] == arrival["count"], f"{child['node_id']} count disagrees with arrival")
+        require(
+            child["games"] == arrival["count"], f"{child['node_id']} count disagrees with arrival"
+        )
         require(child["ply"] == node["ply"] + 1, f"{child['node_id']} is not the next ply")
-        require(child["moves_san"] == [*sans, arrival["san"]], f"{child['node_id']} SAN prefix changed")
-        require(child["moves_uci"] == [*ucis, arrival["uci"]], f"{child['node_id']} UCI prefix changed")
-        require(child["arrived_via"] == next(edge for edge in observed if edge["san"] == arrival["san"]), f"{child['node_id']} arrival is not the source edge")
+        require(
+            child["moves_san"] == [*sans, arrival["san"]], f"{child['node_id']} SAN prefix changed"
+        )
+        require(
+            child["moves_uci"] == [*ucis, arrival["uci"]], f"{child['node_id']} UCI prefix changed"
+        )
+        require(
+            child["arrived_via"]
+            == next(edge for edge in observed if edge["san"] == arrival["san"]),
+            f"{child['node_id']} arrival is not the source edge",
+        )
 
     require(
         [(-child["arrived_via"]["count"], child["arrived_via"]["san"]) for child in children]
-        == sorted((-child["arrived_via"]["count"], child["arrived_via"]["san"]) for child in children),
+        == sorted(
+            (-child["arrived_via"]["count"], child["arrived_via"]["san"]) for child in children
+        ),
         f"{node_id} children are not deterministically ordered",
     )
 
@@ -175,10 +197,21 @@ def validate_node(
         moves = other["moves"]
         require(moves, f"{node_id} has an empty other-moves group")
         require(other["move_count"] == len(moves), f"{node_id} other-moves count is invalid")
-        require(other["games"] == sum(edge["count"] for edge in moves), f"{node_id} other-moves games are invalid")
-        require(other["games"] <= node["games_with_next"], f"{node_id} other-moves exceed next games")
-        require(other["local_pct"] == pct(other["games"], node["games_with_next"]), f"{node_id} other-moves local percentage is invalid")
-        require(other["cumulative_pct"] == pct(other["games"], root_total), f"{node_id} other-moves cumulative percentage is invalid")
+        require(
+            other["games"] == sum(edge["count"] for edge in moves),
+            f"{node_id} other-moves games are invalid",
+        )
+        require(
+            other["games"] <= node["games_with_next"], f"{node_id} other-moves exceed next games"
+        )
+        require(
+            other["local_pct"] == pct(other["games"], node["games_with_next"]),
+            f"{node_id} other-moves local percentage is invalid",
+        )
+        require(
+            other["cumulative_pct"] == pct(other["games"], root_total),
+            f"{node_id} other-moves cumulative percentage is invalid",
+        )
         for edge in moves:
             validate_edge(edge, node["games_with_next"], root_total)
             require(edge["san"] not in other_by_san, f"{node_id} has duplicate other SAN")
@@ -191,20 +224,36 @@ def validate_node(
 
     observed_by_san = {edge["san"]: edge for edge in observed}
     require(len(observed_by_san) == len(observed), f"{node_id} observed SAN is not unique")
-    require(set(child_by_san) | set(other_by_san) == set(observed_by_san), f"{node_id} branches do not cover observed moves")
+    require(
+        set(child_by_san) | set(other_by_san) == set(observed_by_san),
+        f"{node_id} branches do not cover observed moves",
+    )
     require(not set(child_by_san) & set(other_by_san), f"{node_id} child and other moves overlap")
     require(
-        sum(child["games"] for child in children) + (other["games"] if other else 0) == node["games_with_next"],
+        sum(child["games"] for child in children) + (other["games"] if other else 0)
+        == node["games_with_next"],
         f"{node_id} child and other games do not reconcile",
     )
 
     qualifying = {edge["san"] for edge in observed if 10 * edge["count"] > node["games_with_next"]}
     eligible = node["games"] >= MIN_SUPPORT_GAMES and node["games_with_next"] > 0 and qualifying
     if node["expansion"] == "expanded":
-        require(node["stop_reason"] is None and eligible and set(child_by_san) == qualifying, f"{node_id} expansion state is invalid")
+        require(
+            node["stop_reason"] is None and eligible and set(child_by_san) == qualifying,
+            f"{node_id} expansion state is invalid",
+        )
     elif node["expansion"] == "stopped":
-        expected_reason = STOP_BELOW_SUPPORT if node["games"] < MIN_SUPPORT_GAMES else STOP_NO_NEXT if not node["games_with_next"] else STOP_NO_QUALIFYING
-        require(not children and not eligible and node["stop_reason"] == expected_reason, f"{node_id} stop state is invalid")
+        expected_reason = (
+            STOP_BELOW_SUPPORT
+            if node["games"] < MIN_SUPPORT_GAMES
+            else STOP_NO_NEXT
+            if not node["games_with_next"]
+            else STOP_NO_QUALIFYING
+        )
+        require(
+            not children and not eligible and node["stop_reason"] == expected_reason,
+            f"{node_id} stop state is invalid",
+        )
     else:
         fail(f"{node_id} has an unknown expansion marker")
 
@@ -219,23 +268,44 @@ def validate_node(
         validate_node(child, node, all_nodes, seen_ids, root_total)
 
 
-def validate_source(source: dict[str, Any]) -> tuple[list[tuple[dict[str, Any], dict[str, Any] | None]], dict[str, Any]]:
-    require(source.get("schema") == "caro-kann-history-tree/v1", "source schema/version is not caro-kann-history-tree/v1")
+def validate_source(
+    source: dict[str, Any],
+) -> tuple[list[tuple[dict[str, Any], dict[str, Any] | None]], dict[str, Any]]:
+    require(
+        source.get("schema") == "caro-kann-history-tree/v1",
+        "source schema/version is not caro-kann-history-tree/v1",
+    )
     thresholds = source.get("thresholds", {})
-    require(thresholds.get("min_games_to_expand_node") == MIN_SUPPORT_GAMES, "minimum support metadata changed")
-    require(thresholds.get("expand_single_move_when_local_pct_strictly_above") == STRICT_LOCAL_THRESHOLD, "strict >10% metadata changed")
-    require(thresholds.get("percent_precision_decimals") == PERCENT_DECIMALS, "percentage precision metadata changed")
+    require(
+        thresholds.get("min_games_to_expand_node") == MIN_SUPPORT_GAMES,
+        "minimum support metadata changed",
+    )
+    require(
+        thresholds.get("expand_single_move_when_local_pct_strictly_above")
+        == STRICT_LOCAL_THRESHOLD,
+        "strict >10% metadata changed",
+    )
+    require(
+        thresholds.get("percent_precision_decimals") == PERCENT_DECIMALS,
+        "percentage precision metadata changed",
+    )
 
     generated_from = source.get("generated_from", {})
     require(generated_from.get("player_color") == "black", "source player color metadata changed")
     require(generated_from.get("rules_filter") == "chess", "source rules metadata changed")
-    require(generated_from.get("username_resolved_case_insensitively") == "Skyrocoster", "source player metadata changed")
+    require(
+        generated_from.get("username_resolved_case_insensitively") == "Skyrocoster",
+        "source player metadata changed",
+    )
     root_cohort = source.get("root_cohort", {})
     root = source.get("tree")
     require(isinstance(root, dict), "source tree is missing")
     require(root_cohort.get("total_games") == ROOT_TOTAL, "root denominator is not 3,358")
     require(root["games"] == ROOT_TOTAL, "tree root games are not 3,358")
-    require(root["moves_san"] == ROOT_PREFIX_SAN and root["ply"] == 2, "source root prefix is not exactly 1. e4 c6")
+    require(
+        root["moves_san"] == ROOT_PREFIX_SAN and root["ply"] == 2,
+        "source root prefix is not exactly 1. e4 c6",
+    )
 
     all_nodes: list[tuple[dict[str, Any], dict[str, Any] | None]] = []
     validate_node(root, None, all_nodes, set(), ROOT_TOTAL)
@@ -249,20 +319,44 @@ def validate_source(source: dict[str, Any]) -> tuple[list[tuple[dict[str, Any], 
     require(len(all_nodes) == EXPECTED_NODE_COUNT, "source node count is not 229")
     require(expanded_count == EXPECTED_EXPANDED_COUNT, "source expanded-node count is not 106")
     require(stopped_count == EXPECTED_STOPPED_COUNT, "source stopped-node count is not 123")
-    require(max(node["ply"] for node, _parent in all_nodes) == EXPECTED_MAX_DEPTH, "source maximum depth is not 16")
-    require(stats.get("real_position_nodes") == EXPECTED_NODE_COUNT, "source stats node count changed")
-    require(stats.get("expanded_nodes") == EXPECTED_EXPANDED_COUNT, "source stats expanded count changed")
-    require(stats.get("stopped_nodes") == EXPECTED_STOPPED_COUNT, "source stats stopped count changed")
-    require(stats.get("max_depth_plies") == EXPECTED_MAX_DEPTH, "source stats maximum depth changed")
+    require(
+        max(node["ply"] for node, _parent in all_nodes) == EXPECTED_MAX_DEPTH,
+        "source maximum depth is not 16",
+    )
+    require(
+        stats.get("real_position_nodes") == EXPECTED_NODE_COUNT, "source stats node count changed"
+    )
+    require(
+        stats.get("expanded_nodes") == EXPECTED_EXPANDED_COUNT,
+        "source stats expanded count changed",
+    )
+    require(
+        stats.get("stopped_nodes") == EXPECTED_STOPPED_COUNT, "source stats stopped count changed"
+    )
+    require(
+        stats.get("max_depth_plies") == EXPECTED_MAX_DEPTH, "source stats maximum depth changed"
+    )
     source_stop_counts = stats.get("stop_reason_counts", {})
     require(
-        {reason: source_stop_counts.get(reason, 0) for reason in set(source_stop_counts) | set(stop_counts)}
-        == {reason: stop_counts.get(reason, 0) for reason in set(source_stop_counts) | set(stop_counts)},
+        {
+            reason: source_stop_counts.get(reason, 0)
+            for reason in set(source_stop_counts) | set(stop_counts)
+        }
+        == {
+            reason: stop_counts.get(reason, 0)
+            for reason in set(source_stop_counts) | set(stop_counts)
+        },
         "source stop-reason stats do not match nodes",
     )
     require(root_cohort.get("total_games") == root["games"], "root metadata and tree disagree")
-    require(root_cohort.get("games_with_immediate_next") == root["games_with_next"], "root next-move metadata changed")
-    require(root_cohort.get("games_ended_or_no_next") == root["games_without_next"], "root ended metadata changed")
+    require(
+        root_cohort.get("games_with_immediate_next") == root["games_with_next"],
+        "root next-move metadata changed",
+    )
+    require(
+        root_cohort.get("games_ended_or_no_next") == root["games_without_next"],
+        "root ended metadata changed",
+    )
     return all_nodes, root
 
 
@@ -272,14 +366,23 @@ def bucket_name_for_stop(reason: str) -> tuple[str, str]:
     if reason == STOP_NO_NEXT:
         return "ended_or_no_next", "ended/no-next"
     if reason == STOP_NO_QUALIFYING:
-        return "stop_no_individual_move_above_10pct_local", "stopped: no individual move above 10% locally"
+        return (
+            "stop_no_individual_move_above_10pct_local",
+            "stopped: no individual move above 10% locally",
+        )
     return f"stop_reason_{reason}", f"source stop reason: {reason}"
 
 
-def make_bucket_order(all_nodes: list[tuple[dict[str, Any], dict[str, Any] | None]]) -> list[tuple[str, str]]:
+def make_bucket_order(
+    all_nodes: list[tuple[dict[str, Any], dict[str, Any] | None]],
+) -> list[tuple[str, str]]:
     buckets = list(BASE_BUCKETS)
     extra_reasons = sorted(
-        {node["stop_reason"] for node, _parent in all_nodes if node["stop_reason"] not in {None, STOP_BELOW_SUPPORT, STOP_NO_NEXT}}
+        {
+            node["stop_reason"]
+            for node, _parent in all_nodes
+            if node["stop_reason"] not in {None, STOP_BELOW_SUPPORT, STOP_NO_NEXT}
+        }
     )
     buckets.extend(bucket_name_for_stop(reason) for reason in extra_reasons)
     return buckets
@@ -294,7 +397,9 @@ def build_funnel(
     for node, _parent in all_nodes:
         by_depth[node["ply"]].append(node)
     depths = sorted(by_depth)
-    require(depths == list(range(2, EXPECTED_MAX_DEPTH + 1)), "source has a gap in represented plies")
+    require(
+        depths == list(range(2, EXPECTED_MAX_DEPTH + 1)), "source has a gap in represented plies"
+    )
 
     rows: list[dict[str, Any]] = []
     for depth in depths:
@@ -318,7 +423,9 @@ def build_funnel(
                 if node["stop_reason"] == STOP_NO_NEXT:
                     stopped_no_next += node["games"]
         attrition = sum(bucket_games.values())
-        require(represented == continuing + attrition, f"funnel row at ply {depth} does not reconcile")
+        require(
+            represented == continuing + attrition, f"funnel row at ply {depth} does not reconcile"
+        )
         buckets: list[dict[str, Any]] = []
         for key, label in bucket_order:
             bucket: dict[str, Any] = {
@@ -380,13 +487,24 @@ def build_branch_context(
                 "child_side_to_move": child["side_to_move"],
             }
         )
-    branches.sort(key=lambda branch: (len(branch["child_prefix_san"]), branch["child_line"], branch["child_node_id"]))
+    branches.sort(
+        key=lambda branch: (
+            len(branch["child_prefix_san"]),
+            branch["child_line"],
+            branch["child_node_id"],
+        )
+    )
     return branches
 
 
-def build_stopped_line(node: dict[str, Any], parent: dict[str, Any] | None, rank: int, root_total: int) -> dict[str, Any]:
+def build_stopped_line(
+    node: dict[str, Any], parent: dict[str, Any] | None, rank: int, root_total: int
+) -> dict[str, Any]:
     arrival = node["arrived_via"]
-    require(parent is not None and arrival is not None, f"stopped node {node['node_id']} has no arrival context")
+    require(
+        parent is not None and arrival is not None,
+        f"stopped node {node['node_id']} has no arrival context",
+    )
     return {
         "rank": rank,
         "rank_basis": {
@@ -438,7 +556,9 @@ def build_analysis(source_path: Path, source: dict[str, Any]) -> dict[str, Any]:
         build_stopped_line(node, parent, rank, root_total)
         for rank, (node, parent) in enumerate(stopped_nodes, start=1)
     ]
-    require(len(stopped_lines) == EXPECTED_STOPPED_COUNT, "analysis did not retain all stopped lines")
+    require(
+        len(stopped_lines) == EXPECTED_STOPPED_COUNT, "analysis did not retain all stopped lines"
+    )
 
     top_ten = stopped_lines[:10]
     top_references = [
@@ -565,11 +685,21 @@ def build_markdown(payload: dict[str, Any]) -> str:
         "## Coverage funnel",
         "",
     ]
-    bucket_order = [bucket["bucket"] for bucket in payload["coverage_funnel"][0]["attrition_buckets"]]
+    bucket_order = [
+        bucket["bucket"] for bucket in payload["coverage_funnel"][0]["attrition_buckets"]
+    ]
     bucket_labels = {
-        bucket["bucket"]: bucket["label"] for bucket in payload["coverage_funnel"][0]["attrition_buckets"]
+        bucket["bucket"]: bucket["label"]
+        for bucket in payload["coverage_funnel"][0]["attrition_buckets"]
     }
-    headers = ["Ply", "Represented", "Root coverage", "Continuing", *[bucket_labels[key] for key in bucket_order], "Reconciles"]
+    headers = [
+        "Ply",
+        "Represented",
+        "Root coverage",
+        "Continuing",
+        *[bucket_labels[key] for key in bucket_order],
+        "Reconciles",
+    ]
     lines.append("| " + " | ".join(headers) + " |")
     lines.append("| " + " | ".join("---" for _header in headers) + " |")
     for row in payload["coverage_funnel"]:

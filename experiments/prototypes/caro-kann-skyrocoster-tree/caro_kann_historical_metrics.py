@@ -166,7 +166,11 @@ class GameRecord:
 
     @property
     def time_class_key(self) -> str:
-        return self.time_class if self.time_class in {"bullet", "blitz", "rapid"} else "other_or_unknown"
+        return (
+            self.time_class
+            if self.time_class in {"bullet", "blitz", "rapid"}
+            else "other_or_unknown"
+        )
 
     @property
     def recency_key(self) -> str:
@@ -260,15 +264,23 @@ def load_source(path: Path) -> tuple[dict[str, Any], list[tuple[dict[str, Any], 
     require(isinstance(root, dict), "source tree is missing")
     require(root.get("moves_san") == list(ROOT_PREFIX), "source root prefix changed")
     require(root.get("games") == EXPECTED_ROOT_GAMES, "source root games changed")
-    require(source.get("root_cohort", {}).get("total_games") == EXPECTED_ROOT_GAMES, "source root denominator changed")
-    require(source.get("stats", {}).get("real_position_nodes") == EXPECTED_NODE_COUNT, "source node count metadata changed")
+    require(
+        source.get("root_cohort", {}).get("total_games") == EXPECTED_ROOT_GAMES,
+        "source root denominator changed",
+    )
+    require(
+        source.get("stats", {}).get("real_position_nodes") == EXPECTED_NODE_COUNT,
+        "source node count metadata changed",
+    )
 
     nodes: list[tuple[dict[str, Any], str | None]] = []
 
     def walk(node: dict[str, Any], parent_id: str | None) -> None:
         node_id = node.get("node_id")
         require(isinstance(node_id, str), "source node has no stable ID")
-        require(node_id == node_id_for(node["moves_san"]), f"source node ID disagrees for {node_id}")
+        require(
+            node_id == node_id_for(node["moves_san"]), f"source node ID disagrees for {node_id}"
+        )
         if parent_id is None:
             require(node.get("arrived_via") is None, "source root has an arrival edge")
         else:
@@ -280,7 +292,9 @@ def load_source(path: Path) -> tuple[dict[str, Any], list[tuple[dict[str, Any], 
 
     walk(root, None)
     require(len(nodes) == EXPECTED_NODE_COUNT, "source does not contain 229 nodes")
-    require(len({node["node_id"] for node, _ in nodes}) == len(nodes), "source node IDs are not unique")
+    require(
+        len({node["node_id"] for node, _ in nodes}) == len(nodes), "source node IDs are not unique"
+    )
 
     observed_count = sum(len(node["observed_next_moves"]) for node, _ in nodes)
     unexpanded_count = 0
@@ -290,13 +304,22 @@ def load_source(path: Path) -> tuple[dict[str, Any], list[tuple[dict[str, Any], 
             set(child_sans).issubset({edge["san"] for edge in node["observed_next_moves"]}),
             f"source child branches are not observed at {node['node_id']}",
         )
-        unexpanded_count += sum(edge["san"] not in child_sans for edge in node["observed_next_moves"])
-    require(observed_count == EXPECTED_BRANCH_COUNT, "source does not contain 863 observed branches")
-    require(unexpanded_count == EXPECTED_UNEXPANDED_BRANCH_COUNT, "source does not contain 635 unexpanded branches")
+        unexpanded_count += sum(
+            edge["san"] not in child_sans for edge in node["observed_next_moves"]
+        )
+    require(
+        observed_count == EXPECTED_BRANCH_COUNT, "source does not contain 863 observed branches"
+    )
+    require(
+        unexpanded_count == EXPECTED_UNEXPANDED_BRANCH_COUNT,
+        "source does not contain 635 unexpanded branches",
+    )
     return source, nodes
 
 
-def replay_prefix(sans: Iterable[str], ucis: Iterable[str] | None = None) -> tuple[chess.Board, tuple[str, ...]]:
+def replay_prefix(
+    sans: Iterable[str], ucis: Iterable[str] | None = None
+) -> tuple[chess.Board, tuple[str, ...]]:
     board = chess.Board()
     replayed_ucis: list[str] = []
     expected_ucis = tuple(ucis) if ucis is not None else None
@@ -327,8 +350,10 @@ def metric_core(counts: dict[str, int]) -> dict[str, Any]:
         p = successes / trials
         z2 = WILSON_Z * WILSON_Z
         center = (p + z2 / (2 * trials)) / (1 + z2 / trials)
-        half = WILSON_Z * ((p * (1 - p) / trials + z2 / (4 * trials * trials)) ** 0.5) / (
-            1 + z2 / trials
+        half = (
+            WILSON_Z
+            * ((p * (1 - p) / trials + z2 / (4 * trials * trials)) ** 0.5)
+            / (1 + z2 / trials)
         )
         interval = {
             "method": "95% Wilson-style heuristic on effective half-points; descriptive uncertainty, not a binomial claim",
@@ -363,7 +388,11 @@ def add_extended_metrics(
     root_score = root_core["chess_score_pct_unrounded"]
     delta = None if score is None or root_score is None else score - root_score
     parent_delta = None
-    if parent_core is not None and score is not None and parent_core["chess_score_pct_unrounded"] is not None:
+    if (
+        parent_core is not None
+        and score is not None
+        and parent_core["chess_score_pct_unrounded"] is not None
+    ):
         parent_delta = score - parent_core["chess_score_pct_unrounded"]
     sibling_comparison: dict[str, Any] | None = None
     if sibling_indexes is not None and records is not None:
@@ -379,7 +408,11 @@ def add_extended_metrics(
                 "wilson_95_interval": sibling_core["wilson_95_interval"],
                 "branch_minus_other_siblings_gap_pp": gap,
             }
-    impact = None if score is None or root_score is None else core["classifiable_games"] * (score - root_score) / 100.0
+    impact = (
+        None
+        if score is None or root_score is None
+        else core["classifiable_games"] * (score - root_score) / 100.0
+    )
     shortfall = None if impact is None else max(0.0, -impact)
     return {
         **core,
@@ -397,7 +430,9 @@ def add_extended_metrics(
     }
 
 
-def classify_indexes(records: list[GameRecord], indexes: list[int], attr: str, keys: tuple[str, ...]) -> dict[str, list[int]]:
+def classify_indexes(
+    records: list[GameRecord], indexes: list[int], attr: str, keys: tuple[str, ...]
+) -> dict[str, list[int]]:
     grouped = {key: [] for key in keys}
     for index in indexes:
         grouped[getattr(records[index], attr)].append(index)
@@ -418,8 +453,12 @@ def validate_core_metric(metric: dict[str, Any], counts: dict[str, int], label: 
         require(metric.get(key) == expected[key], f"{label} metric field {key} is inconsistent")
 
 
-def validate_slice_metrics(records: list[GameRecord], indexes: list[int], slices: dict[str, Any], label: str) -> None:
-    validate_core_metric(slices["combined"], outcome_counts(records, indexes), f"{label} combined slice")
+def validate_slice_metrics(
+    records: list[GameRecord], indexes: list[int], slices: dict[str, Any], label: str
+) -> None:
+    validate_core_metric(
+        slices["combined"], outcome_counts(records, indexes), f"{label} combined slice"
+    )
     specifications = (
         ("time_class", "time_class_key", TIME_CLASS_KEYS),
         ("recency", "recency_key", RECENCY_KEYS),
@@ -474,7 +513,8 @@ def make_slices(records: list[GameRecord], indexes: list[int]) -> dict[str, Any]
             for key, bucket_indexes in buckets.items()
         }
         require(
-            sum(metric["games"] for metric in result[group_name].values()) == result["combined"]["games"],
+            sum(metric["games"] for metric in result[group_name].values())
+            == result["combined"]["games"],
             f"{group_name} slice games do not reconcile",
         )
         for outcome in ("win", "draw", "loss", "unknown"):
@@ -503,9 +543,14 @@ def validate_replayed_population(
     require(len(root_records) == EXPECTED_ROOT_GAMES, "replay root games are not 3,358")
     root_outcomes = outcome_counts(root_records, range(len(root_records)))
     require(root_outcomes == EXPECTED_ROOT_OUTCOMES, "replay root outcomes changed")
-    require(all(record.sans[:2] == ROOT_PREFIX for record in root_records), "a root game does not start exactly e4 c6")
+    require(
+        all(record.sans[:2] == ROOT_PREFIX for record in root_records),
+        "a root game does not start exactly e4 c6",
+    )
     root_ucis = root_records[0].ucis[:2]
-    require(all(record.ucis[:2] == root_ucis for record in root_records), "root UCI prefixes disagree")
+    require(
+        all(record.ucis[:2] == root_ucis for record in root_records), "root UCI prefixes disagree"
+    )
 
     prefix_members: dict[tuple[str, ...], list[int]] = defaultdict(list)
     for index, record in enumerate(root_records):
@@ -525,12 +570,25 @@ def validate_replayed_population(
         member_indexes = prefix_members[sans]
         node_members[node_id] = member_indexes
         counts = outcome_counts(root_records, member_indexes)
-        require(len(member_indexes) == node["games"], f"node {node_id} replay membership count differs")
+        require(
+            len(member_indexes) == node["games"], f"node {node_id} replay membership count differs"
+        )
         require(counts == node["outcomes"], f"node {node_id} replay outcomes differ")
-        require(node["classifiable_games"] == sum(counts[key] for key in ("win", "draw", "loss")), f"node {node_id} classifiable count differs")
-        require(sum(edge["count"] for edge in node["observed_next_moves"]) == node["games_with_next"], f"node {node_id} observed next counts do not partition")
-        expected_next = {index for index in member_indexes if len(root_records[index].sans) > len(sans)}
-        require(len(expected_next) == node["games_with_next"], f"node {node_id} games_with_next differs on replay")
+        require(
+            node["classifiable_games"] == sum(counts[key] for key in ("win", "draw", "loss")),
+            f"node {node_id} classifiable count differs",
+        )
+        require(
+            sum(edge["count"] for edge in node["observed_next_moves"]) == node["games_with_next"],
+            f"node {node_id} observed next counts do not partition",
+        )
+        expected_next = {
+            index for index in member_indexes if len(root_records[index].sans) > len(sans)
+        }
+        require(
+            len(expected_next) == node["games_with_next"],
+            f"node {node_id} games_with_next differs on replay",
+        )
 
         board, replayed_ucis = replay_prefix(sans, ucis)
         require(tuple(replayed_ucis) == ucis, f"node {node_id} UCI prefix does not replay")
@@ -538,8 +596,15 @@ def validate_replayed_population(
         expected_side = "white" if board.turn == chess.WHITE else "black"
         require(node["side_to_move"] == expected_side, f"node {node_id} side does not replay")
         if parent_id is not None:
-            parent = next(parent_node for parent_node, parent_parent in nodes if parent_node["node_id"] == parent_id)
-            require(tuple(sans[:-1]) == tuple(parent["moves_san"]), f"node {node_id} parent prefix differs")
+            parent = next(
+                parent_node
+                for parent_node, parent_parent in nodes
+                if parent_node["node_id"] == parent_id
+            )
+            require(
+                tuple(sans[:-1]) == tuple(parent["moves_san"]),
+                f"node {node_id} parent prefix differs",
+            )
 
         child_by_san = {child["arrived_via"]["san"]: child for child in node["children"]}
         represented_indexes: set[int] = set()
@@ -550,23 +615,41 @@ def validate_replayed_population(
             branch_id = branch_id_for(full_sans)
             require(branch_id not in seen_branch_ids, f"duplicate branch ID {branch_id}")
             seen_branch_ids.add(branch_id)
-            require(len(members) == edge["count"], f"branch {branch_id} replay membership count differs")
-            require(all(root_records[index].ucis[len(sans)] == edge["uci"] for index in members), f"branch {branch_id} UCI membership differs")
+            require(
+                len(members) == edge["count"], f"branch {branch_id} replay membership count differs"
+            )
+            require(
+                all(root_records[index].ucis[len(sans)] == edge["uci"] for index in members),
+                f"branch {branch_id} UCI membership differs",
+            )
             represented_indexes.update(members)
             branch_board, full_ucis = replay_prefix(full_sans, (*ucis, edge["uci"]))
             child = child_by_san.get(edge_san)
             if child is not None:
-                require(child["node_id"] == node_id_for(full_sans), f"child ID does not match branch {branch_id}")
-                require(child["games"] == edge["count"], f"child count does not match branch {branch_id}")
-                require(set(members) == set(node_members.get(child["node_id"], members)), f"child membership differs for branch {branch_id}")
-            expected_actor = "White opponent" if node["side_to_move"] == "white" else "Black Skyrocoster"
+                require(
+                    child["node_id"] == node_id_for(full_sans),
+                    f"child ID does not match branch {branch_id}",
+                )
+                require(
+                    child["games"] == edge["count"],
+                    f"child count does not match branch {branch_id}",
+                )
+                require(
+                    set(members) == set(node_members.get(child["node_id"], members)),
+                    f"child membership differs for branch {branch_id}",
+                )
+            expected_actor = (
+                "White opponent" if node["side_to_move"] == "white" else "Black Skyrocoster"
+            )
             branch_members[branch_id] = members
             branch_specs.append(
                 {
                     "branch_id": branch_id,
                     "parent_node_id": node_id,
                     "child_node_id": child["node_id"] if child is not None else None,
-                    "branch_status": "expanded_child" if child is not None else "unexpanded_observed_move",
+                    "branch_status": "expanded_child"
+                    if child is not None
+                    else "unexpanded_observed_move",
                     "parent_sans": sans,
                     "parent_ucis": ucis,
                     "parent_fen": node["fen"],
@@ -584,11 +667,18 @@ def validate_replayed_population(
                     "member_indexes": members,
                 }
             )
-        require(represented_indexes == expected_next, f"node {node_id} branches do not partition games_with_next")
+        require(
+            represented_indexes == expected_next,
+            f"node {node_id} branches do not partition games_with_next",
+        )
 
     require(len(node_members) == EXPECTED_NODE_COUNT, "replay did not cover all source nodes")
     require(len(branch_specs) == EXPECTED_BRANCH_COUNT, "replay did not cover all source branches")
-    require(sum(spec["branch_status"] == "unexpanded_observed_move" for spec in branch_specs) == EXPECTED_UNEXPANDED_BRANCH_COUNT, "replay unexpanded count differs")
+    require(
+        sum(spec["branch_status"] == "unexpanded_observed_move" for spec in branch_specs)
+        == EXPECTED_UNEXPANDED_BRANCH_COUNT,
+        "replay unexpanded count differs",
+    )
     return node_members, branch_specs, branch_members
 
 
@@ -603,16 +693,29 @@ def build_records(
     root_loss_count = root_core["outcomes"]["loss"]
     node_cores: dict[str, dict[str, Any]] = {}
     for node, _parent_id in nodes:
-        node_cores[node["node_id"]] = metric_core(outcome_counts(records, node_members[node["node_id"]]))
+        node_cores[node["node_id"]] = metric_core(
+            outcome_counts(records, node_members[node["node_id"]])
+        )
 
     position_records: list[dict[str, Any]] = []
     for node, parent_id in nodes:
         node_id = node["node_id"]
         indexes = node_members[node_id]
         core = node_cores[node_id]
-        metrics = add_extended_metrics(core, indexes, root_core, root_loss_count, len(root_indexes), records=records)
+        metrics = add_extended_metrics(
+            core, indexes, root_core, root_loss_count, len(root_indexes), records=records
+        )
         slices = make_slices(records, indexes)
-        validate_extended_metrics(metrics, core, indexes, root_core, root_loss_count, len(root_indexes), f"node {node_id}", records=records)
+        validate_extended_metrics(
+            metrics,
+            core,
+            indexes,
+            root_core,
+            root_loss_count,
+            len(root_indexes),
+            f"node {node_id}",
+            records=records,
+        )
         validate_slice_metrics(records, indexes, slices, f"node {node_id}")
         position_records.append(
             {
@@ -642,7 +745,9 @@ def build_records(
 
     branch_indexes_by_parent: dict[str, list[tuple[str, list[int]]]] = defaultdict(list)
     for spec in branch_specs:
-        branch_indexes_by_parent[spec["parent_node_id"]].append((spec["branch_id"], spec["member_indexes"]))
+        branch_indexes_by_parent[spec["parent_node_id"]].append(
+            (spec["branch_id"], spec["member_indexes"])
+        )
 
     branch_records: list[dict[str, Any]] = []
     for spec in branch_specs:
@@ -714,11 +819,37 @@ def build_records(
 
     root_summaries = {
         "combined": root_core,
-        "time_class": {key: metric_core(outcome_counts(records, classify_indexes(records, root_indexes, "time_class_key", TIME_CLASS_KEYS)[key])) for key in TIME_CLASS_KEYS},
-        "recency": {key: metric_core(outcome_counts(records, classify_indexes(records, root_indexes, "recency_key", RECENCY_KEYS)[key])) for key in RECENCY_KEYS},
-        "opponent_strength": {key: metric_core(outcome_counts(records, classify_indexes(records, root_indexes, "strength_key", STRENGTH_KEYS)[key])) for key in STRENGTH_KEYS},
+        "time_class": {
+            key: metric_core(
+                outcome_counts(
+                    records,
+                    classify_indexes(records, root_indexes, "time_class_key", TIME_CLASS_KEYS)[key],
+                )
+            )
+            for key in TIME_CLASS_KEYS
+        },
+        "recency": {
+            key: metric_core(
+                outcome_counts(
+                    records,
+                    classify_indexes(records, root_indexes, "recency_key", RECENCY_KEYS)[key],
+                )
+            )
+            for key in RECENCY_KEYS
+        },
+        "opponent_strength": {
+            key: metric_core(
+                outcome_counts(
+                    records,
+                    classify_indexes(records, root_indexes, "strength_key", STRENGTH_KEYS)[key],
+                )
+            )
+            for key in STRENGTH_KEYS
+        },
     }
-    validate_core_metric(root_summaries["combined"], outcome_counts(records, root_indexes), "root combined")
+    validate_core_metric(
+        root_summaries["combined"], outcome_counts(records, root_indexes), "root combined"
+    )
     for group_name, attr, keys in (
         ("time_class", "time_class_key", TIME_CLASS_KEYS),
         ("recency", "recency_key", RECENCY_KEYS),
@@ -726,12 +857,22 @@ def build_records(
     ):
         buckets = classify_indexes(records, root_indexes, attr, keys)
         for key in keys:
-            validate_core_metric(root_summaries[group_name][key], outcome_counts(records, buckets[key]), f"root {group_name}/{key}")
+            validate_core_metric(
+                root_summaries[group_name][key],
+                outcome_counts(records, buckets[key]),
+                f"root {group_name}/{key}",
+            )
     return position_records, branch_records, root_summaries
 
 
-def metric_for_lens(record: dict[str, Any], lens: dict[str, Any]) -> tuple[float | None, dict[str, Any]]:
-    metric = record["metrics"] if lens["slice_group"] is None else record["slices"][lens["slice_group"]][lens["slice_key"]]
+def metric_for_lens(
+    record: dict[str, Any], lens: dict[str, Any]
+) -> tuple[float | None, dict[str, Any]]:
+    metric = (
+        record["metrics"]
+        if lens["slice_group"] is None
+        else record["slices"][lens["slice_group"]][lens["slice_key"]]
+    )
     return metric.get(lens["metric_key"]), metric
 
 
@@ -889,7 +1030,15 @@ def build_rankings(branch_records: list[dict[str, Any]]) -> list[dict[str, Any]]
             )
         candidates.sort(key=lambda item: item[:5])
         rows: list[dict[str, Any]] = []
-        for rank, (_sort_metric, _negative_games, _line, _san, _uci, record, metric_object) in enumerate(candidates[:10], 1):
+        for rank, (
+            _sort_metric,
+            _negative_games,
+            _line,
+            _san,
+            _uci,
+            record,
+            metric_object,
+        ) in enumerate(candidates[:10], 1):
             metric_value = metric_object.get(lens["metric_key"])
             if "." in lens["metric_key"]:
                 metric_value = nested_metric_value(record["metrics"], lens["metric_key"])
@@ -919,7 +1068,12 @@ def build_rankings(branch_records: list[dict[str, Any]]) -> list[dict[str, Any]]
                 "slice_key": lens["slice_key"],
                 "direction": lens["direction"],
                 "sample_filter": None,
-                "ranking_tie_break": ["larger relevant slice sample", "complete exact SAN line", "move SAN", "move UCI"],
+                "ranking_tie_break": [
+                    "larger relevant slice sample",
+                    "complete exact SAN line",
+                    "move SAN",
+                    "move UCI",
+                ],
                 "rows": rows,
             }
         )
@@ -940,9 +1094,18 @@ def validate_rankings(rankings: list[dict[str, Any]], branch_records: list[dict[
             if "." in lens["metric_key"]:
                 metric = nested_metric_value(record["metrics"], lens["metric_key"])
             require(metric is not None, f"ranking {lens['id']} retained a null metric")
-            require(row["metric_value_unrounded"] == metric, f"ranking {lens['id']} metric display/reference differs")
-            require(row["sample_games"] == metric_object["games"], f"ranking {lens['id']} sample differs")
-            require(row["interval"] == metric_object["wilson_95_interval"], f"ranking {lens['id']} interval differs")
+            require(
+                row["metric_value_unrounded"] == metric,
+                f"ranking {lens['id']} metric display/reference differs",
+            )
+            require(
+                row["sample_games"] == metric_object["games"],
+                f"ranking {lens['id']} sample differs",
+            )
+            require(
+                row["interval"] == metric_object["wilson_95_interval"],
+                f"ranking {lens['id']} interval differs",
+            )
             require(row["line"] == record["line"], f"ranking {lens['id']} line reference differs")
             values.append(
                 (
@@ -976,7 +1139,9 @@ def build_payload(
         actor_counts[record["actor"]] += 1
     root = root_summaries["combined"]
     root_indexes = list(range(root["games"]))
-    dates = [records[index].date_utc for index in root_indexes if records[index].date_utc is not None]
+    dates = [
+        records[index].date_utc for index in root_indexes if records[index].date_utc is not None
+    ]
     return {
         "schema": SCHEMA,
         "description": "Descriptive, noncanonical historical poor-results metrics for every exact Caro-Kann tree node and observed move branch; no move is labelled wrong or useful.",
@@ -1016,8 +1181,12 @@ def build_payload(
         "record_counts": {
             "position_nodes": len(position_records),
             "move_branches": len(branch_records),
-            "expanded_child_branches": sum(record["child_node_id"] is not None for record in branch_records),
-            "unexpanded_move_entries": sum(record["child_node_id"] is None for record in branch_records),
+            "expanded_child_branches": sum(
+                record["child_node_id"] is not None for record in branch_records
+            ),
+            "unexpanded_move_entries": sum(
+                record["child_node_id"] is None for record in branch_records
+            ),
             "actor_branch_records": actor_counts,
         },
         "root_cohort_summaries": root_summaries,
@@ -1074,7 +1243,12 @@ def fmt_interval(interval: dict[str, Any] | None) -> str:
 
 
 def markdown_summary_table(name: str, metric_map: dict[str, dict[str, Any]]) -> list[str]:
-    lines = [f"### {name}", "", "| Slice | n | W-D-L / unknown | Raw win | Chess score | 95% heuristic interval |", "|---|---:|---:|---:|---:|---:|"]
+    lines = [
+        f"### {name}",
+        "",
+        "| Slice | n | W-D-L / unknown | Raw win | Chess score | 95% heuristic interval |",
+        "|---|---:|---:|---:|---:|---:|",
+    ]
     for key, metric in metric_map.items():
         lines.append(
             f"| `{key}` | {metric['games']} | {fmt_outcomes(metric)} | {fmt(metric['raw_win_pct'], '%')} | {fmt(metric['chess_score_pct'], '%')} | {fmt_interval(metric['wilson_95_interval'])} |"
@@ -1110,7 +1284,9 @@ def build_markdown(payload: dict[str, Any]) -> str:
     ]
     lines.extend(markdown_summary_table("Root time-class summary", root["time_class"]))
     lines.extend(markdown_summary_table("Root recency summary", root["recency"]))
-    lines.extend(markdown_summary_table("Root opponent-strength summary", root["opponent_strength"]))
+    lines.extend(
+        markdown_summary_table("Root opponent-strength summary", root["opponent_strength"])
+    )
     lines.extend(
         [
             "## Metric definitions and boundaries",
@@ -1190,34 +1366,78 @@ def main() -> None:
     json_path = ensure_experiment_path(args.json_output, "JSON output")
     markdown_path = ensure_experiment_path(args.markdown_output, "Markdown output")
     database_path = args.database.resolve()
-    require(args.username.casefold() == "skyrocoster", "this approved analysis is fixed to Skyrocoster")
+    require(
+        args.username.casefold() == "skyrocoster", "this approved analysis is fixed to Skyrocoster"
+    )
     source, nodes = load_source(source_path)
     source_hash = sha256_file(source_path)
 
     database_hash_before = sha256_file(database_path)
     connection = sqlite3.connect(f"{database_path.as_uri()}?mode=ro", uri=True)
     try:
-        player_uuid, username, corpus_id = tree_builder.resolve_corpus_player(connection, args.username)
+        player_uuid, username, corpus_id = tree_builder.resolve_corpus_player(
+            connection, args.username
+        )
         candidate_count, validated_records = load_replayed_games(connection, corpus_id, player_uuid)
     finally:
         connection.close()
     database_hash_after = sha256_file(database_path)
-    require(database_hash_before == database_hash_after, "database hash changed during read-only replay")
+    require(
+        database_hash_before == database_hash_after, "database hash changed during read-only replay"
+    )
     require(candidate_count == EXPECTED_CANDIDATE_GAMES, "candidate game count changed")
     root_records = [record for record in validated_records if record.sans[:2] == ROOT_PREFIX]
-    require(max(record.date_utc for record in root_records if record.date_utc is not None) == EXPECTED_NEWEST_DATE, "newest root cohort date changed")
-    require(sum(record.time_class_key == "bullet" for record in root_records) == 1346, "root bullet dimension changed")
-    require(sum(record.time_class_key == "blitz" for record in root_records) == 1463, "root blitz dimension changed")
-    require(sum(record.time_class_key == "rapid" for record in root_records) == 544, "root rapid dimension changed")
-    require(sum(record.time_class_key == "other_or_unknown" for record in root_records) == 5, "root other/unknown time dimension changed")
-    require(sum(record.recency_key == "recent_12_months" for record in root_records) + sum(record.recency_key == "older" for record in root_records) + sum(record.recency_key == "date_unknown" for record in root_records) == EXPECTED_ROOT_GAMES, "root recency buckets do not reconcile")
-    require(sum(record.strength_key == "stronger" for record in root_records) == 29, "root stronger dimension changed")
-    require(sum(record.strength_key == "similar" for record in root_records) == 3325, "root similar dimension changed")
-    require(sum(record.strength_key == "weaker" for record in root_records) == 4, "root weaker dimension changed")
+    require(
+        max(record.date_utc for record in root_records if record.date_utc is not None)
+        == EXPECTED_NEWEST_DATE,
+        "newest root cohort date changed",
+    )
+    require(
+        sum(record.time_class_key == "bullet" for record in root_records) == 1346,
+        "root bullet dimension changed",
+    )
+    require(
+        sum(record.time_class_key == "blitz" for record in root_records) == 1463,
+        "root blitz dimension changed",
+    )
+    require(
+        sum(record.time_class_key == "rapid" for record in root_records) == 544,
+        "root rapid dimension changed",
+    )
+    require(
+        sum(record.time_class_key == "other_or_unknown" for record in root_records) == 5,
+        "root other/unknown time dimension changed",
+    )
+    require(
+        sum(record.recency_key == "recent_12_months" for record in root_records)
+        + sum(record.recency_key == "older" for record in root_records)
+        + sum(record.recency_key == "date_unknown" for record in root_records)
+        == EXPECTED_ROOT_GAMES,
+        "root recency buckets do not reconcile",
+    )
+    require(
+        sum(record.strength_key == "stronger" for record in root_records) == 29,
+        "root stronger dimension changed",
+    )
+    require(
+        sum(record.strength_key == "similar" for record in root_records) == 3325,
+        "root similar dimension changed",
+    )
+    require(
+        sum(record.strength_key == "weaker" for record in root_records) == 4,
+        "root weaker dimension changed",
+    )
 
-    node_members, branch_specs, _branch_members = validate_replayed_population(source, nodes, root_records)
-    position_records, branch_records, root_summaries = build_records(nodes, branch_specs, node_members, root_records)
-    require(root_summaries["combined"]["outcomes"] == EXPECTED_ROOT_OUTCOMES, "generated root outcomes changed")
+    node_members, branch_specs, _branch_members = validate_replayed_population(
+        source, nodes, root_records
+    )
+    position_records, branch_records, root_summaries = build_records(
+        nodes, branch_specs, node_members, root_records
+    )
+    require(
+        root_summaries["combined"]["outcomes"] == EXPECTED_ROOT_OUTCOMES,
+        "generated root outcomes changed",
+    )
     rankings = build_rankings(branch_records)
     validate_rankings(rankings, branch_records)
     payload = build_payload(
@@ -1235,7 +1455,10 @@ def main() -> None:
         root_summaries,
         rankings,
     )
-    require(payload["generated_from"]["source_tree"]["sha256"] == source_hash, "source hash changed during run")
+    require(
+        payload["generated_from"]["source_tree"]["sha256"] == source_hash,
+        "source hash changed during run",
+    )
     write_outputs(json_path, markdown_path, payload)
     print(
         f"Validated {len(position_records)} position nodes, {len(branch_records)} observed move branches "

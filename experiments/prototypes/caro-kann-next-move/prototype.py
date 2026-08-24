@@ -29,6 +29,8 @@ class PlayerIdentity:
     uuid: str
     username: str
     corpus_id: int
+
+
 @dataclass(frozen=True)
 class MoveReport:
     target_fen: str
@@ -37,6 +39,8 @@ class MoveReport:
     games_with_next: int
     occurrences_with_next: int
     counts: list[tuple[str, int]]
+
+
 @dataclass(frozen=True)
 class PersonalReply:
     move: str
@@ -44,6 +48,8 @@ class PersonalReply:
     wins: int
     draws: int
     losses: int
+
+
 @dataclass(frozen=True)
 class PersonalReport:
     target_fen: str
@@ -51,13 +57,19 @@ class PersonalReport:
     matched_occurrences: int
     games_with_immediate_reply: int
     replies: list[PersonalReply]
+
+
 @dataclass(frozen=True)
 class EngineReply:
     rank: int
     move: str
     score: str
     wdl: tuple[int, int, int] | None
+
+
 State = tuple[str, str, str, str]
+
+
 def line_state_ids(
     connection: sqlite3.Connection, moves: tuple[str, ...]
 ) -> tuple[list[int], str] | None:
@@ -87,11 +99,15 @@ def line_state_ids(
             return None
         state_ids.append(int(state_row[0]))
     return state_ids, board.fen(en_passant="fen")
+
+
 def board_after(moves: tuple[str, ...]) -> chess.Board:
     board = chess.Board()
     for move in moves:
         board.push_san(move)
     return board
+
+
 def resolve_identity(connection: sqlite3.Connection, username: str) -> PlayerIdentity:
     rows = connection.execute(
         """
@@ -110,6 +126,8 @@ def resolve_identity(connection: sqlite3.Connection, username: str) -> PlayerIde
         raise SystemExit(f"Ambiguous corpus-backed username {username!r}: {matches}")
     uuid, selected_username, corpus_id = rows[0]
     return PlayerIdentity(str(uuid), str(selected_username), int(corpus_id))
+
+
 def qualifying_game_count(connection: sqlite3.Connection, identity: PlayerIdentity) -> int:
     return int(
         connection.execute(
@@ -125,6 +143,8 @@ def qualifying_game_count(connection: sqlite3.Connection, identity: PlayerIdenti
             (identity.corpus_id, identity.uuid, identity.uuid),
         ).fetchone()[0]
     )
+
+
 def prefix_match_sql(
     identity: PlayerIdentity, moves: tuple[str, ...], state_ids: list[int]
 ) -> tuple[str, list[object]]:
@@ -163,10 +183,12 @@ def prefix_match_sql(
         ), matched AS (
             SELECT game.game_uuid
             FROM qualifying_games AS game
-            {''.join(joins)}
+            {"".join(joins)}
         )
     """
     return query, params
+
+
 def count_prefix_next_moves(
     connection: sqlite3.Connection,
     identity: PlayerIdentity,
@@ -215,6 +237,8 @@ def count_prefix_next_moves(
         occurrences_with_next=int(occurrences_with_next),
         counts=[(str(move), int(count)) for move, count in counts],
     )
+
+
 def personal_reply_report(
     connection: sqlite3.Connection, identity: PlayerIdentity, moves: tuple[str, ...]
 ) -> PersonalReport:
@@ -264,12 +288,16 @@ def personal_reply_report(
         games_with_immediate_reply=immediate_games,
         replies=replies,
     )
+
+
 def black_score_label(score: chess.engine.PovScore) -> str:
     black_score = score.pov(chess.BLACK)
     mate = black_score.mate()
     if mate is not None:
         return f"mate {mate:+d} (Black perspective)"
     return f"cp {black_score.score():+d} (Black perspective)"
+
+
 def black_wdl(info: chess.engine.InfoDict) -> tuple[int, int, int] | None:
     raw_wdl = info.get("wdl")
     if raw_wdl is None:
@@ -280,6 +308,8 @@ def black_wdl(info: chess.engine.InfoDict) -> tuple[int, int, int] | None:
     except (TypeError, ValueError):
         return None
     return int(wins), int(draws), int(losses)
+
+
 def analyze_with_stockfish(
     board: chess.Board, engine_path: Path
 ) -> tuple[dict[str, str], list[EngineReply]]:
@@ -331,6 +361,8 @@ def analyze_with_stockfish(
                 engine.quit()
             except (OSError, chess.engine.EngineError):
                 pass
+
+
 def format_line(moves: list[str]) -> str:
     numbered: list[str] = []
     for index, move in enumerate(moves):
@@ -339,6 +371,8 @@ def format_line(moves: list[str]) -> str:
         else:
             numbered[-1] += f" {move}"
     return " ".join(numbered)
+
+
 def print_counts(label: str, report: MoveReport) -> None:
     print(f"{label}_TARGET_FEN: {report.target_fen}")
     print(f"{label}_MATCHED_GAMES: {report.matched_games}")
@@ -348,8 +382,12 @@ def print_counts(label: str, report: MoveReport) -> None:
     print(f"{label}_MOVE_COUNTS:")
     for move, count in report.counts:
         print(f"  {move}: {count}")
+
+
 def format_wdl(wdl: tuple[int, int, int] | None) -> str:
     return "unavailable" if wdl is None else f"{wdl[0]}-{wdl[1]}-{wdl[2]}"
+
+
 def print_personal_report(report: PersonalReport) -> None:
     print(f"PERSONAL_TARGET_FEN: {report.target_fen}")
     print(f"PERSONAL_MATCHED_GAMES: {report.matched_games}")
@@ -364,22 +402,20 @@ def print_personal_report(report: PersonalReport) -> None:
             f"  {reply.move}: games={reply.games} W-D-L={reply.wins}-{reply.draws}-{reply.losses} "
             f"raw_win={raw_win:.2f}% chess_score={chess_score:.2f}%{tiny_sample}"
         )
+
+
 def print_engine_report(
     engine_id: dict[str, str], replies: list[EngineReply], engine_path: Path
 ) -> None:
     print(f"ENGINE_ID: {engine_id.get('name', 'unknown')} by {engine_id.get('author', 'unknown')}")
     print(f"ENGINE_BINARY: {engine_path}")
-    print(
-        "ENGINE_SETTINGS: nodes=200000 MultiPV=5 Threads=1 Hash=128 MiB "
-        "UCI_ShowWDL=true"
-    )
+    print("ENGINE_SETTINGS: nodes=200000 MultiPV=5 Threads=1 Hash=128 MiB UCI_ShowWDL=true")
     print("ENGINE_SCORE_PERSPECTIVE: Black; WDL is engine W-D-L on its configured scale")
     print("ENGINE_TOP_5:")
     for reply in replies:
-        print(
-            f"  #{reply.rank} {reply.move}: score={reply.score} "
-            f"WDL={format_wdl(reply.wdl)}"
-        )
+        print(f"  #{reply.rank} {reply.move}: score={reply.score} WDL={format_wdl(reply.wdl)}")
+
+
 def print_move_comparison(engine_replies: list[EngineReply], personal: PersonalReport) -> None:
     engine_moves = {reply.move: reply.rank for reply in engine_replies}
     personal_moves = {reply.move: reply.games for reply in personal.replies}
@@ -387,13 +423,17 @@ def print_move_comparison(engine_replies: list[EngineReply], personal: PersonalR
     moves.extend(sorted(set(personal_moves) - set(engine_moves)))
     print("MOVE_OVERLAP:")
     for move in moves:
-        engine_label = f"engine_rank=#{engine_moves[move]}" if move in engine_moves else "engine_only=no"
+        engine_label = (
+            f"engine_rank=#{engine_moves[move]}" if move in engine_moves else "engine_only=no"
+        )
         personal_label = (
             f"personal_games={personal_moves[move]}"
             if move in personal_moves
             else "personal_played=no"
         )
         print(f"  {move}: {engine_label} {personal_label}")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--database", type=Path, default=DEFAULT_DATABASE)
@@ -459,7 +499,9 @@ def main() -> None:
             print(f"DIVERGENCE_AFTER_WHITE_MOVE: {white_move}")
             print(f"OBSERVED_ONLY_BLACK_REPLY: {black_move}")
             print(f"ACCEPTED_LINE_AT_STOP: {format_line(prefix)}")
-            print("STOP_REASON: first Black reply distribution below the 90% continuation threshold")
+            print(
+                "STOP_REASON: first Black reply distribution below the 90% continuation threshold"
+            )
             break
 
         if tuple(prefix) != TARGET_PREFIX:

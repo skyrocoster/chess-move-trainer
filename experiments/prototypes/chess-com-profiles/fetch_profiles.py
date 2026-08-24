@@ -65,7 +65,9 @@ def main() -> None:
     cached = {f.stem for f in ARTIFACTS.glob("*.json")}
     to_fetch = [u for u in usernames if u not in cached]
 
-    print(f"Found {len(usernames)} unique opponents, {len(cached)} cached, {len(to_fetch)} to fetch")
+    print(
+        f"Found {len(usernames)} unique opponents, {len(cached)} cached, {len(to_fetch)} to fetch"
+    )
 
     for i, username in enumerate(to_fetch):
         print(f"[{i + 1}/{len(to_fetch)}] {username} ... ", end="", flush=True)
