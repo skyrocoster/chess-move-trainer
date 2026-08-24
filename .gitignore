@@ -50,3 +50,6 @@ Thumbs.db
 !.opencode/agents/
 !.opencode/agents/**
 opencode.json
+
+# Scratch workspace
+Scratch/
