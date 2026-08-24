@@ -5,7 +5,7 @@ import { FEEDBACK_VARIANTS } from "./feedbackTypes";
 import type { FeedbackSeverity } from "./feedbackTypes";
 
 const meta = {
-  title: "Feedback/SemanticVariants",
+  title: "Design System/Feedback/Semantic Variants",
   component: FeedbackCore,
   parameters: {
     layout: "fullscreen",

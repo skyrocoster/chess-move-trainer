@@ -1,4 +1,4 @@
-import { expect, userEvent, within } from "storybook/test";
+import { expect, fn, userEvent, within } from "storybook/test";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 
 import "../../styles/cmt-tokens.css";
@@ -8,7 +8,7 @@ import styles from "./Stage1Story.module.css";
 import { STAGE1_GAME_UUID } from "./stage1GameTypes";
 
 const meta = {
-  title: "Viewer/Stage 1/Game Loader",
+  title: "Application/Viewer/Game Loader",
   component: GameLoader,
   parameters: { layout: "fullscreen" },
 } satisfies Meta<typeof GameLoader>;
@@ -63,14 +63,39 @@ export const Constrained: Story = {
 };
 
 export const ValidationAndRetry: Story = {
-  render: () => frame(<GameLoader />),
-  play: async ({ canvasElement }) => {
+  name: "Validation, submit, and reset",
+  args: {
+    onGameUuidChange: fn(),
+    onPlyChange: fn(),
+    onSubmit: fn(),
+    onReset: fn(),
+  },
+  render: (args) => frame(<GameLoader {...args} />),
+  play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement);
     await userEvent.click(canvas.getByRole("button", { name: "Load game" }));
     await expect(canvas.getByRole("alert")).toHaveTextContent("valid game UUID");
+    await expect(args.onSubmit).not.toHaveBeenCalled();
     await expect(canvas.getByRole("button", { name: "Game Loader" })).toHaveAttribute(
       "aria-expanded",
       "true",
     );
+
+    const gameUuid = canvas.getByRole("textbox", { name: "Game UUID" });
+    const ply = canvas.getByRole("textbox", { name: /Ply/ });
+    await userEvent.type(gameUuid, STAGE1_GAME_UUID);
+    await userEvent.type(ply, "2");
+    await userEvent.click(canvas.getByRole("button", { name: "Load game" }));
+    await expect(args.onGameUuidChange).toHaveBeenLastCalledWith(STAGE1_GAME_UUID);
+    await expect(args.onPlyChange).toHaveBeenLastCalledWith("2");
+    await expect(args.onSubmit).toHaveBeenCalledTimes(1);
+    await expect(args.onSubmit).toHaveBeenCalledWith({ gameUuid: STAGE1_GAME_UUID, ply: "2" });
+
+    await userEvent.click(canvas.getByRole("button", { name: "Reset" }));
+    await expect(gameUuid).toHaveValue("");
+    await expect(ply).toHaveValue("");
+    await expect(args.onGameUuidChange).toHaveBeenLastCalledWith("");
+    await expect(args.onPlyChange).toHaveBeenLastCalledWith("");
+    await expect(args.onReset).toHaveBeenCalledTimes(1);
   },
 };

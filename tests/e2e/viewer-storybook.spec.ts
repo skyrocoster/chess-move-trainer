@@ -6,9 +6,9 @@ const BOARD_LABEL =
   "Chess board: standard starting position, White at the bottom";
 const STAGE1_GAME_UUID = "0007925c-5a8d-11f0-9740-f690a301000f";
 const STORY_IDS = {
-  wide: "viewer-mp-08-viewer-workspace--wide",
-  constrained: "viewer-mp-08-viewer-workspace--constrained",
-  loadingWide: "viewer-mp-08-viewer-workspace--loading-wide",
+  wide: "application-viewer-workspace--wide",
+  constrained: "application-viewer-workspace--constrained",
+  loadingWide: "application-viewer-workspace--loading-wide",
 } as const;
 
 const WORKSPACE_ROOT = '[class*="workspace"]';
@@ -204,7 +204,7 @@ test.describe("Viewer Workspace Storybook surface", () => {
       (element as HTMLElement).style.inlineSize = "320px";
     });
 
-    const constrainedBoard = page.getByRole("img", { name: /ply 1/ });
+    const constrainedBoard = page.getByRole("group", { name: /ply 1/ });
     const constrainedToolbar = page.getByRole("toolbar", {
       name: "Board controls",
     });

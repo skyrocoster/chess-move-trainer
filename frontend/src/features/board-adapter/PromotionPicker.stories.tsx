@@ -1,12 +1,26 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { expect, fn, userEvent, within } from "storybook/test";
 
 import { PromotionPickerDemo, type PromotionPickerDemoProps } from "./PromotionPickerDemo";
 
 const meta = {
-  title: "Board Adapter/Promotion Picker",
+  title: "Documentation/Demos/Promotion Picker",
   component: PromotionPickerDemo,
+  decorators: [
+    (Story) => (
+      <div style={{ background: "var(--md-sys-color-background)" }}>
+        <Story />
+      </div>
+    ),
+  ],
   parameters: {
     layout: "centered",
+    docs: {
+      description: {
+        component:
+          "Storybook-only demonstration fixture for the production promotion picker and its board integration.",
+      },
+    },
   },
 } satisfies Meta<typeof PromotionPickerDemo>;
 
@@ -40,11 +54,28 @@ export const KeyboardSelection: Story = {
   args: {
     ...defaultArgs,
     presentation: "popover",
+    onCommit: fn(),
+  },
+  play: async ({ args, canvasElement }) => {
+    const body = within(canvasElement.ownerDocument.body);
+    const dialog = await body.findByRole("dialog", { name: "Choose a promotion piece" });
+    const choices = within(dialog);
+    await expect(choices.getByRole("button", { name: "Promote to queen" })).toHaveFocus();
+    await userEvent.tab();
+    await expect(choices.getByRole("button", { name: "Promote to rook" })).toHaveFocus();
+    await userEvent.keyboard("{Enter}");
+    await expect(args.onCommit).toHaveBeenCalledTimes(1);
+    await expect(args.onCommit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        move: expect.objectContaining({ from: "e7", to: "e8", promotion: "r" }),
+        history: [expect.stringContaining("e8=R")],
+      }),
+    );
   },
 };
 
 export const NativeKeyboardPromotionInitiation: Story = {
-  name: "Native keyboard promotion initiation",
+  name: "Promotion initiation browser fixture",
   args: {
     color: "w",
     presentation: "drawer",
@@ -53,15 +84,25 @@ export const NativeKeyboardPromotionInitiation: Story = {
 };
 
 export const Cancellation: Story = {
-  name: "Escape, outside, and backdrop cancellation",
+  name: "Escape cancellation",
   args: {
     ...defaultArgs,
     presentation: "drawer",
+    onCancel: fn(),
+  },
+  play: async ({ args, canvasElement }) => {
+    const body = within(canvasElement.ownerDocument.body);
+    await body.findByRole("dialog", { name: "Choose a promotion piece" });
+    await userEvent.keyboard("{Escape}");
+    await expect(args.onCancel).toHaveBeenCalledTimes(1);
+    await expect(
+      body.queryByRole("dialog", { name: "Choose a promotion piece" }),
+    ).not.toBeInTheDocument();
   },
 };
 
 export const StaleAndIllegalRejection: Story = {
-  name: "Stale and illegal rejection state",
+  name: "Pending selection for rejection browser proof",
   args: {
     ...defaultArgs,
     presentation: "popover",
@@ -69,7 +110,7 @@ export const StaleAndIllegalRejection: Story = {
 };
 
 export const ForcedColorsAndReducedMotion: Story = {
-  name: "Forced colors and reduced motion",
+  name: "Media emulation browser fixture",
   args: {
     ...defaultArgs,
     presentation: "drawer",

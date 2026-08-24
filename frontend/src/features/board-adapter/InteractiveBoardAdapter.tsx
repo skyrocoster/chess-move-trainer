@@ -1,6 +1,19 @@
 import { Chess, type Move, type Square } from "chess.js";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { Chessboard, type PieceDropHandlerArgs } from "react-chessboard";
+import {
+  cloneElement,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ReactElement,
+  type SVGProps,
+} from "react";
+import {
+  Chessboard,
+  defaultPieces,
+  type PieceDropHandlerArgs,
+  type PieceRenderObject,
+} from "react-chessboard";
 
 import { Button } from "../design-system/Button";
 import {
@@ -35,6 +48,32 @@ export type InteractiveBoardAdapterProps = {
   resetToken?: number;
   onBranchChange?: (snapshot: BranchSnapshot) => void;
 };
+
+const PIECE_NAMES: Record<string, string> = {
+  wP: "White pawn",
+  wR: "White rook",
+  wN: "White knight",
+  wB: "White bishop",
+  wQ: "White queen",
+  wK: "White king",
+  bP: "Black pawn",
+  bR: "Black rook",
+  bN: "Black knight",
+  bB: "Black bishop",
+  bQ: "Black queen",
+  bK: "Black king",
+};
+
+const accessiblePieces = Object.fromEntries(
+  Object.entries(defaultPieces).map(([pieceType, renderPiece]) => [
+    pieceType,
+    (props?: { fill?: string; square?: string; svgStyle?: React.CSSProperties }) => {
+      const piece = renderPiece(props) as ReactElement<SVGProps<SVGSVGElement>>;
+      const name = `${PIECE_NAMES[pieceType]}${props?.square ? ` on ${props.square}` : ""}`;
+      return cloneElement(piece, { "aria-label": name, role: "img" });
+    },
+  ]),
+) as PieceRenderObject;
 
 function isPromotionTarget(color: PromotionColor, square: Square) {
   return color === "w" ? square.endsWith("8") : square.endsWith("1");
@@ -262,6 +301,7 @@ export function InteractiveBoardAdapter({
     onPieceDrag: () => undefined,
     onPieceDragCancel: () => undefined,
     onPieceDrop: handlePieceDrop,
+    pieces: accessiblePieces,
     position: currentFen,
     showAnimations: false,
     showNotation: true,
@@ -273,7 +313,7 @@ export function InteractiveBoardAdapter({
         ref={boardRootRef}
         className={styles.board}
         data-testid="interactive-board"
-        role="img"
+        role="group"
         aria-label={label}
       >
         <Chessboard options={options} />

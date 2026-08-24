@@ -10,6 +10,11 @@ const preview: Preview = {
       </div>
     ),
   ],
+  parameters: {
+    a11y: {
+      test: "error",
+    },
+  },
 };
 
 export default preview;

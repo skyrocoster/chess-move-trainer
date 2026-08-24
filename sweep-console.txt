@@ -1,0 +1,5 @@
+Total messages: 3 (Errors: 0, Warnings: 0)
+Returning 2 messages for level "warning"
+
+[WARNING] Accessing the Story Store is deprecated and will be removed in 9.0 @ http://127.0.0.1:6006/node_modules/.cache/storybook/10.5.8/1e8d972d900bca133086bd0f2a507dc200194c3a4e84ff3ab0634962711df360/sb-vite/deps/storybook_internal_preview_runtime.js?v=49372dd5:10946
+[WARNING] Accessing the Story Store is deprecated and will be removed in 9.0 @ http://127.0.0.1:6006/node_modules/.cache/storybook/10.5.8/1e8d972d900bca133086bd0f2a507dc200194c3a4e84ff3ab0634962711df360/sb-vite/deps/storybook_internal_preview_runtime.js?v=49372dd5:10946

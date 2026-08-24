@@ -4,15 +4,15 @@ import { expect, test, type Page } from "@playwright/test";
 const STORYBOOK_ORIGIN = "http://127.0.0.1:6006";
 const STORYBOOK_ROOT_SELECTOR = "#storybook-root";
 const STORY_IDS = {
-  wideHealthy: "app-shell-appshell--wide-healthy",
-  constrainedClosed: "app-shell-appshell--constrained-closed",
-  constrainedOpen: "app-shell-appshell--constrained-open",
-  loading: "app-shell-appshell--loading",
-  healthy: "app-shell-appshell--healthy",
-  unavailable: "app-shell-appshell--unavailable",
-  unexpectedFailure: "app-shell-appshell--unexpected-failure-try-again",
+  wideHealthy: "application-shell--wide-healthy",
+  constrainedClosed: "application-shell--constrained-closed",
+  constrainedOpen: "application-shell--constrained-open",
+  loading: "application-shell--loading",
+  healthy: "application-shell--healthy",
+  unavailable: "application-shell--unavailable",
+  unexpectedFailure: "application-shell--unexpected-failure-try-again",
   unexpectedFailureBrowserProof:
-    "app-shell-appshell--unexpected-failure-browser-proof",
+    "application-shell--unexpected-failure-browser-proof",
 } as const;
 
 function storyUrl(storyId: string) {

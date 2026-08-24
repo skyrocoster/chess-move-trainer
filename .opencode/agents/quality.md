@@ -1,8 +1,8 @@
 ---
 description: Independent Quality Agent for fresh validation or one exact coordinator-authorized repair.
 mode: subagent
-model: openai/gpt-5.6-luna
-variant: xhigh
+model: opencode-go/ox-alpha-free
+variant: max
 permission:
   read: allow
   edit: allow

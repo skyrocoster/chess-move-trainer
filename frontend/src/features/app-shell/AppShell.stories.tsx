@@ -9,7 +9,7 @@ import { PageContentBoundary } from "./PageContentBoundary";
 import { StatusView } from "../status/StatusView";
 
 const meta = {
-  title: "App Shell/AppShell",
+  title: "Application/Shell",
   component: AppShell,
   args: {
     children: <StatusView state={{ kind: "success" }} />,

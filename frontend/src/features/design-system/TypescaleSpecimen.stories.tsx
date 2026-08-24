@@ -3,10 +3,15 @@ import "../../styles/cmt-typescale.css";
 import { TypescaleSpecimen } from "./TypescaleSpecimen";
 
 const meta = {
-  title: "DesignSystem/CompleteTypescale",
+  title: "Design System/Documentation/Typography",
   component: TypescaleSpecimen,
   parameters: {
     layout: "fullscreen",
+    docs: {
+      description: {
+        component: "Storybook-only documentation specimen for the production typography scale.",
+      },
+    },
   },
 } satisfies Meta<typeof TypescaleSpecimen>;
 

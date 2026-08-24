@@ -9,8 +9,15 @@ import type { AnalysisState } from "./analysisState";
 const FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
 const meta = {
-  title: "Viewer/MP-10/Eval Bar",
+  title: "Application/Viewer/Evaluation Bar",
   component: EvalBar,
+  decorators: [
+    (Story) => (
+      <div style={{ background: "var(--md-sys-color-background)" }}>
+        <Story />
+      </div>
+    ),
+  ],
   parameters: { layout: "centered" },
 } satisfies Meta<typeof EvalBar>;
 

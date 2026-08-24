@@ -6,10 +6,16 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { CombinedComposition } from "./CombinedComposition";
 
 const meta = {
-  title: "Composition/TournamentAnalysisDesk",
+  title: "Documentation/Compositions/Tournament Analysis Desk",
   component: CombinedComposition,
   parameters: {
     layout: "fullscreen",
+    docs: {
+      description: {
+        component:
+          "Storybook-only composition fixture demonstrating production design-system treatments without application behavior.",
+      },
+    },
   },
 } satisfies Meta<typeof CombinedComposition>;
 

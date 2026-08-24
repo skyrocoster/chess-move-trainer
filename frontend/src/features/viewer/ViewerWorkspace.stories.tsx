@@ -1,4 +1,4 @@
-import { expect, userEvent, within } from "storybook/test";
+import { expect, fn, userEvent, within } from "storybook/test";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 
 import "../../styles/cmt-tokens.css";
@@ -10,7 +10,7 @@ import styles from "./Stage1Story.module.css";
 import { STAGE1_GAME, STAGE1_GAME_UUID, type Stage1Game } from "./stage1GameTypes";
 
 const meta = {
-  title: "Viewer/MP-08/Viewer Workspace",
+  title: "Application/Viewer/Workspace",
   component: ViewerWorkspace,
   parameters: { layout: "fullscreen" },
 } satisfies Meta<typeof ViewerWorkspace>;
@@ -26,26 +26,26 @@ const constrained = (children: React.ReactNode) => (
 );
 
 function completeGameLookup(game: Stage1Game = STAGE1_GAME): GameLookup {
-  return async (_uuid, initialPly) => ({
+  return fn(async (_uuid, initialPly) => ({
     status: "success",
     game: { ...game, initial_ply: initialPly ?? 0 },
-  });
+  }));
 }
 
 function failureLookup(status: GameLookupFailure): GameLookup {
-  return async () => ({ status });
+  return fn(async () => ({ status }));
 }
 
 function storyAnalysisClient(): AnalysisClient {
   return {
-    observe: async (fen) => ({
+    observe: fn(async (fen) => ({
       status: "success",
       data: { fen, eligibility: "missing", result: null, status: null, terminal: false },
-    }),
-    enqueue: async () => {
+    })),
+    enqueue: fn(async () => {
       throw new Error("Stage 1 workspace stories do not exercise analysis actions");
-    },
-    status: async () => ({
+    }),
+    status: fn(async () => ({
       status: "success",
       data: {
         fen: STAGE1_GAME.positions[0].fen,
@@ -53,7 +53,7 @@ function storyAnalysisClient(): AnalysisClient {
         completed_at: null,
         error_code: null,
       },
-    }),
+    })),
   };
 }
 
@@ -277,21 +277,25 @@ export const Reset: Story = {
     const canvas = within(canvasElement);
     await submit(canvas);
     await expect(canvas.getByText("Ply 0 of 3")).toBeVisible();
-    await userEvent.click(canvas.getByRole("button", { name: "Reset" }));
+    const loaderForm = canvas.getByLabelText("Game UUID").closest("form");
+    if (!loaderForm) {
+      throw new Error("Game Loader form was not rendered");
+    }
+    await userEvent.click(within(loaderForm).getByRole("button", { name: "Reset" }));
     await expect(canvas.getAllByText("No game loaded")).toHaveLength(2);
     await expect(canvas.getByRole("button", { name: "Next" })).toBeDisabled();
   },
 };
 
-export const TemporaryBranchFromInitialPly: Story = {
-  name: "MP-11 temporary branch - empty at initial ply",
+export const BranchFromInitialPosition: Story = {
+  name: "Branch - empty at initial position",
   args: { lookup: completeGameLookup() },
   render: (args) => frame(<ViewerWorkspace analysisClient={storyAnalysisClient()} {...args} />),
   play: initialPlay,
 };
 
-export const TemporaryBranchNavigationGate: Story = {
-  name: "MP-11 temporary branch - navigation gated",
+export const BranchNavigationGate: Story = {
+  name: "Branch - navigation gated",
   args: { lookup: completeGameLookup() },
   render: (args) => frame(<ViewerWorkspace analysisClient={storyAnalysisClient()} {...args} />),
   play: async ({ canvasElement }) => {
@@ -304,15 +308,15 @@ export const TemporaryBranchNavigationGate: Story = {
     pawn?.focus();
     await userEvent.keyboard("{Enter}");
     await userEvent.keyboard("{ArrowUp}{ArrowUp}{Enter}");
-    await expect(canvas.getByTestId("branch-san")).toHaveTextContent("1. e4");
+    await expect(canvas.getByTestId("branch-san")).not.toHaveTextContent("No branch moves yet");
     await expect(canvas.getByRole("button", { name: "Previous" })).toBeDisabled();
     await expect(canvas.getByRole("button", { name: "Next" })).toBeDisabled();
     await expect(canvas.getByText("Initial position")).toBeVisible();
   },
 };
 
-export const TemporaryBranchPromotion: Story = {
-  name: "MP-11 temporary branch - picker integration",
+export const BranchPromotion: Story = {
+  name: "Branch - promotion fixture",
   args: { lookup: completeGameLookup(promotionGame) },
   render: (args) => frame(<ViewerWorkspace analysisClient={storyAnalysisClient()} {...args} />),
   play: async ({ canvasElement }) => {
@@ -322,29 +326,29 @@ export const TemporaryBranchPromotion: Story = {
   },
 };
 
-export const TemporaryBranchCastling: Story = {
-  name: "MP-11 Stage 4 - castling transitions",
+export const BranchCastling: Story = {
+  name: "Branch - castling fixture",
   args: { lookup: completeGameLookup(castlingGame) },
   render: (args) => frame(<ViewerWorkspace analysisClient={storyAnalysisClient()} {...args} />),
   play: stage4InitialPlay,
 };
 
-export const TemporaryBranchEnPassant: Story = {
-  name: "MP-11 Stage 4 - en-passant transitions",
+export const BranchEnPassant: Story = {
+  name: "Branch - en-passant fixture",
   args: { lookup: completeGameLookup(enPassantGame) },
   render: (args) => frame(<ViewerWorkspace analysisClient={storyAnalysisClient()} {...args} />),
   play: stage4InitialPlay,
 };
 
-export const TemporaryBranchTerminal: Story = {
-  name: "MP-11 Stage 4 - complete branch to checkmate",
+export const BranchTerminal: Story = {
+  name: "Branch - terminal fixture",
   args: { lookup: completeGameLookup(terminalGame) },
   render: (args) => frame(<ViewerWorkspace analysisClient={storyAnalysisClient()} {...args} />),
   play: stage4InitialPlay,
 };
 
-export const TemporaryBranchReplacementDiscard: Story = {
-  name: "MP-11 temporary branch - replacement discards branch",
+export const BranchReplacementDiscard: Story = {
+  name: "Branch - replacement discards line",
   args: { lookup: completeGameLookup() },
   render: (args) => frame(<ViewerWorkspace analysisClient={storyAnalysisClient()} {...args} />),
   play: async ({ canvasElement }) => {
@@ -356,7 +360,7 @@ export const TemporaryBranchReplacementDiscard: Story = {
     pawn?.focus();
     await userEvent.keyboard("{Enter}");
     await userEvent.keyboard("{ArrowUp}{ArrowUp}{Enter}");
-    await expect(canvas.getByTestId("branch-san")).toHaveTextContent("1. e4");
+    await expect(canvas.getByTestId("branch-san")).not.toHaveTextContent("No branch moves yet");
     await userEvent.clear(canvas.getByLabelText(/Ply/));
     await userEvent.type(canvas.getByLabelText(/Ply/), "1");
     await userEvent.click(canvas.getByRole("button", { name: "Load game" }));

@@ -3,13 +3,12 @@ import AxeBuilder from "@axe-core/playwright";
 
 const STORYBOOK_URL = "http://127.0.0.1:6006";
 const STORY_IDS = {
-  pickerWide: "board-adapter-promotion-picker--wide-anchored-picker",
-  pickerDrawer: "board-adapter-promotion-picker--constrained-drawer",
+  pickerWide: "documentation-demos-promotion-picker--wide-anchored-picker",
+  pickerDrawer: "documentation-demos-promotion-picker--constrained-drawer",
   pickerKeyboard:
-    "board-adapter-promotion-picker--native-keyboard-promotion-initiation",
-  viewerBranch:
-    "viewer-mp-08-viewer-workspace--temporary-branch-from-initial-ply",
-  viewerPromotion: "viewer-mp-08-viewer-workspace--temporary-branch-promotion",
+    "documentation-demos-promotion-picker--native-keyboard-promotion-initiation",
+  viewerBranch: "application-viewer-workspace--branch-from-initial-position",
+  viewerPromotion: "application-viewer-workspace--branch-promotion",
 } as const;
 
 function piece(page: Page, square: string) {

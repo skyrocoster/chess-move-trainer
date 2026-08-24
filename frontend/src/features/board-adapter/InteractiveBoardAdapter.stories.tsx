@@ -1,4 +1,4 @@
-import { expect, userEvent } from "storybook/test";
+import { expect, fn, userEvent, within } from "storybook/test";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 
 import "../../styles/cmt-tokens.css";
@@ -10,7 +10,7 @@ const STARTING_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 const PROMOTION_FEN = "k7/4P3/8/8/8/8/8/4K3 w - - 0 1";
 
 const meta = {
-  title: "Board Adapter/Interactive Temporary Branch",
+  title: "Application/Board/Interactive Board",
   component: InteractiveBoardAdapter,
   parameters: { layout: "fullscreen" },
 } satisfies Meta<typeof InteractiveBoardAdapter>;
@@ -51,15 +51,24 @@ export const BranchActive: Story = {
     originFen: STARTING_FEN,
     originPly: 0,
     label: "Interactive analysis board at captured ply 0",
+    onBranchChange: fn(),
   },
   render: (args) => frame(<InteractiveBoardAdapter {...args} />),
-  play: async ({ canvasElement }) => {
+  play: async ({ args, canvasElement }) => {
     await startWhitePawnBranch(canvasElement);
     await expect(canvasElement.querySelector('[data-testid="branch-san"]')).toHaveTextContent(
-      "1. e4",
+      "1. e3",
     );
     await expect(canvasElement.querySelector('[data-testid="branch-status"]')).toHaveTextContent(
       "committed",
+    );
+    await expect(args.onBranchChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        viewKey: "story:active",
+        originPly: 0,
+        active: true,
+        moves: [expect.objectContaining({ from: "e2", to: "e3", san: "e3" })],
+      }),
     );
   },
 };
@@ -71,22 +80,26 @@ export const UndoAndReset: Story = {
     originFen: STARTING_FEN,
     originPly: 0,
     label: "Interactive analysis board at captured ply 0",
+    onBranchChange: fn(),
   },
   render: (args) => frame(<InteractiveBoardAdapter {...args} />),
-  play: async ({ canvasElement }) => {
+  play: async ({ args, canvasElement }) => {
+    const canvas = within(canvasElement);
     await startWhitePawnBranch(canvasElement);
-    await userEvent.click(
-      canvasElement.querySelector('[aria-label="Temporary branch actions"] button')!,
-    );
+    await userEvent.click(canvas.getByRole("button", { name: "Undo" }));
     await expect(canvasElement.querySelector('[data-testid="branch-san"]')).toHaveTextContent(
       "No branch moves yet",
     );
-    await startWhitePawnBranch(canvasElement);
-    await userEvent.click(
-      canvasElement.querySelectorAll('[aria-label="Temporary branch actions"] button')[1],
+    await expect(args.onBranchChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({ active: false, moves: [] }),
     );
+    await startWhitePawnBranch(canvasElement);
+    await userEvent.click(canvas.getByRole("button", { name: "Reset" }));
     await expect(canvasElement.querySelector('[data-testid="branch-san"]')).toHaveTextContent(
       "No branch moves yet",
+    );
+    await expect(args.onBranchChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({ active: false, moves: [] }),
     );
   },
 };

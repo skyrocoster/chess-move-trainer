@@ -15,6 +15,11 @@ Plans are durable implementation context, not transient executor instructions. T
 the case-worker and coordinator keep exact execution boundaries in the active conversation. A transient
 `handoff.md` may exist only during context rollover and is removed at closeout.
 
+## Database schema
+
+- [AI-readable SQLite schema](../data/database/schema.txt) is the generated reference for the repository-supported
+  tables, keys, relationships, indexes, triggers, and canonical SQL.
+
 ## Technology stack
 
 **Backend**

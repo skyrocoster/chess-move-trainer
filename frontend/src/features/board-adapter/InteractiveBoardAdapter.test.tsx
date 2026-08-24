@@ -4,37 +4,46 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { InteractiveBoardAdapter } from "./InteractiveBoardAdapter";
 
 vi.mock("react-chessboard", () => ({
+  defaultPieces: Object.fromEntries(
+    ["wP", "wR", "wN", "wB", "wQ", "wK", "bP", "bR", "bN", "bB", "bQ", "bK"].map((pieceType) => [
+      pieceType,
+      () => <svg data-default-piece={pieceType} />,
+    ]),
+  ),
   Chessboard: ({
     options,
   }: {
     options: {
       position: string;
+      pieces: Record<string, (props?: { square?: string }) => React.JSX.Element>;
       onPieceDrop: (args: { sourceSquare: string; targetSquare: string | null }) => boolean;
     };
   }) => (
     <div data-testid="mock-chessboard" data-position={options.position}>
       {[
-        ["e2", "e4", "White pawn"],
-        ["e7", "e5", "Black pawn"],
-        ["g1", "f3", "White knight"],
-        ["e7", "e8", "White promotion pawn"],
-        ["e2", "e5", "Illegal white pawn"],
-        ["e1", "g1", "White kingside castle"],
-        ["e8", "c8", "Black queenside castle"],
-        ["d7", "d5", "Black double-step pawn"],
-        ["e5", "d6", "White en-passant capture"],
-        ["a6", "a5", "Black terminal fixture pawn"],
-        ["f7", "g7", "White terminal fixture queen"],
-      ].map(([source, target, name]) => (
+        ["e2", "e4", "wP"],
+        ["e7", "e5", "bP"],
+        ["g8", "f6", "bN"],
+        ["g1", "f3", "wN"],
+        ["e7", "e8", "wP"],
+        ["e2", "e5", "wP"],
+        ["e1", "g1", "wK"],
+        ["e8", "c8", "bK"],
+        ["d7", "d5", "bP"],
+        ["e5", "d6", "wP"],
+        ["a6", "a5", "bP"],
+        ["f7", "g7", "wQ"],
+      ].map(([source, target, pieceType]) => (
         <button
-          key={`${source}-${target}-${name}`}
+          key={`${source}-${target}-${pieceType}`}
           type="button"
           data-testid={`move-${source}-${target}`}
           data-square={source}
           aria-roledescription="draggable"
-          aria-label={name}
           onClick={() => options.onPieceDrop({ sourceSquare: source, targetSquare: target })}
-        />
+        >
+          {options.pieces[pieceType]?.({ square: source })}
+        </button>
       ))}
     </div>
   ),
@@ -61,6 +70,24 @@ function renderAdapter(originFen = STARTING_FEN) {
 }
 
 describe("InteractiveBoardAdapter", () => {
+  it("names operable pieces without changing representative move behavior", () => {
+    renderAdapter();
+
+    expect(screen.getByRole("group", { name: "Interactive analysis board" })).toBeInTheDocument();
+    expect(
+      screen.queryByRole("img", { name: "Interactive analysis board" }),
+    ).not.toBeInTheDocument();
+    const whitePawn = screen.getByTestId("move-e2-e4");
+    const blackKnight = screen.getByTestId("move-g8-f6");
+    expect(whitePawn).toHaveAccessibleName("White pawn on e2");
+    expect(blackKnight).toHaveAccessibleName("Black knight on g8");
+
+    fireEvent.click(whitePawn);
+    fireEvent.click(blackKnight);
+
+    expect(screen.getByTestId("branch-san")).toHaveTextContent("1. e4 1... Nf6");
+  });
+
   it("starts empty, rejects illegal movement without mutation, and supports both Undo and Reset", () => {
     renderAdapter();
 

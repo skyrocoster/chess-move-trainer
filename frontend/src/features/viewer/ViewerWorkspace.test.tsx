@@ -155,7 +155,7 @@ describe("ViewerWorkspace", () => {
 
     expect(await screen.findByText("Ply 0 of 3")).toBeVisible();
     expect(screen.getByText("Initial position")).toBeVisible();
-    expect(screen.getByRole("img", { name: /ply 0, Black at the bottom/ })).toBeVisible();
+    expect(screen.getByRole("group", { name: /ply 0, Black at the bottom/ })).toBeVisible();
     expect(screen.getByRole("link", { name: "Chess.com game" })).toHaveAttribute(
       "target",
       "_blank",
@@ -279,7 +279,7 @@ describe("ViewerWorkspace", () => {
     render(<ViewerWorkspace lookup={lookup} analysisClient={analysisClient} />);
 
     await fillAndSubmit(user);
-    const board = await screen.findByRole("img", { name: /ply 0, White at the bottom/ });
+    const board = await screen.findByRole("group", { name: /ply 0, White at the bottom/ });
     const boardLabel = board.getAttribute("aria-label");
     const analyze = await screen.findByRole("button", { name: "Analyze position" });
 
@@ -290,11 +290,11 @@ describe("ViewerWorkspace", () => {
       "analyze",
       expect.any(AbortSignal),
     );
-    expect(screen.getByRole("img", { name: /ply 0, White at the bottom/ })).toHaveAttribute(
+    expect(screen.getByRole("group", { name: /ply 0, White at the bottom/ })).toHaveAttribute(
       "aria-label",
       boardLabel,
     );
-    expect(screen.getByRole("img", { name: /ply 0, White at the bottom/ })).not.toHaveAttribute(
+    expect(screen.getByRole("group", { name: /ply 0, White at the bottom/ })).not.toHaveAttribute(
       "aria-roledescription",
       "draggable",
     );

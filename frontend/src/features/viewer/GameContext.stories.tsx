@@ -11,7 +11,7 @@ import {
 } from "./stage1GameTypes";
 
 const meta = {
-  title: "Viewer/Stage 1/Game Context",
+  title: "Application/Viewer/Game Context",
   component: GameContext,
   parameters: { layout: "fullscreen" },
 } satisfies Meta<typeof GameContext>;

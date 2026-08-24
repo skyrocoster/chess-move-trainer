@@ -1,8 +1,8 @@
 ---
 description: Isolated Exploration Agent for noncanonical mock-ups and prototypes under experiments.
 mode: subagent
-model: openai/gpt-5.6-luna
-variant: xhigh
+model: opencode-go/ox-alpha-free
+variant: max
 permission:
   edit:
     "*": deny
@@ -31,3 +31,4 @@ Write only under `experiments/`. Keep small reusable inputs in `experiments/fixt
 output in ignored `.artifacts/` locations. Exploration is noncanonical until the user explicitly adopts it.
 Never edit application source, tests, Plans, canonical documentation, manifests outside `experiments/`, or
 unrelated `Scratch` content. Report exact output paths and observed results, then stop.
+You do not have to be as aggressive with following repo rules around formatting, line lengths, file sizes etc. Your work is designed to influence future production work.

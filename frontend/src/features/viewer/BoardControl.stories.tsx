@@ -1,4 +1,4 @@
-import { expect, userEvent, within } from "storybook/test";
+import { expect, fn, userEvent, within } from "storybook/test";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 
 import "../../styles/cmt-tokens.css";
@@ -7,7 +7,7 @@ import { BoardControl } from "./BoardControl";
 import styles from "./Stage1Story.module.css";
 
 const meta = {
-  title: "Viewer/Stage 1/Board Control",
+  title: "Application/Viewer/Board Controls",
   component: BoardControl,
   parameters: { layout: "fullscreen" },
 } satisfies Meta<typeof BoardControl>;
@@ -32,12 +32,26 @@ export const InitialBoundary: Story = {
 };
 
 export const Intermediate: Story = {
-  args: { currentPly: 1, finalPly: 3 },
-  render: (args) => frame(<BoardControl {...args} />),
-  play: async ({ canvasElement }) => {
+  args: { currentPly: 1, finalPly: 3, onPrevious: fn(), onNext: fn() },
+  render: (args) =>
+    frame(
+      <BoardControl
+        {...args}
+        onPrevious={() => args.onPrevious?.()}
+        onNext={() => args.onNext?.()}
+      />,
+    ),
+  play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement);
-    await expect(canvas.getByRole("button", { name: "Previous" })).toBeEnabled();
-    await expect(canvas.getByRole("button", { name: "Next" })).toBeEnabled();
+    const previous = canvas.getByRole("button", { name: "Previous" });
+    const next = canvas.getByRole("button", { name: "Next" });
+    await expect(previous).toBeEnabled();
+    await expect(next).toBeEnabled();
+
+    await userEvent.click(previous);
+    await userEvent.click(next);
+    await expect(args.onPrevious).toHaveBeenCalledTimes(1);
+    await expect(args.onNext).toHaveBeenCalledTimes(1);
   },
 };
 
@@ -62,15 +76,26 @@ export const Constrained: Story = {
 };
 
 export const KeyboardToolbar: Story = {
-  args: { currentPly: 1, finalPly: 3 },
-  render: (args) => frame(<BoardControl {...args} />),
-  play: async ({ canvasElement }) => {
+  args: { currentPly: 1, finalPly: 3, onPrevious: fn(), onNext: fn() },
+  render: (args) =>
+    frame(
+      <BoardControl
+        {...args}
+        onPrevious={() => args.onPrevious?.()}
+        onNext={() => args.onNext?.()}
+      />,
+    ),
+  play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement);
     const toolbar = canvas.getByRole("toolbar", { name: "Board controls" });
     const previous = within(toolbar).getByRole("button", { name: "Previous" });
     const next = within(toolbar).getByRole("button", { name: "Next" });
     previous.focus();
+    await userEvent.keyboard("{Enter}");
+    await expect(args.onPrevious).toHaveBeenCalledTimes(1);
     await userEvent.keyboard("{ArrowRight}");
     await expect(next).toHaveFocus();
+    await userEvent.keyboard(" ");
+    await expect(args.onNext).toHaveBeenCalledTimes(1);
   },
 };

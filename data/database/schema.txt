@@ -1,92 +1,1922 @@
-CREATE UNIQUE INDEX one_current_month
-            ON fetch_state (username) WHERE is_current = 1
+<!-- GENERATED FILE: DO NOT EDIT MANUALLY. -->
+# AI-readable SQLite schema
 
+> This document is generated from the repository-supported DDL in memory.
+> It contains schema structure only; it does not read or describe runtime database data.
+> Generator: `data/database/dump_schema.py`.
+
+## Source DDL owners
+
+- `scripts/chess_com/fetch_games.py:create_schema`
+- `scripts/chess_com/_schema.py:ensure_corpus_schema`
+- `scripts/opening_catalog/schema.py:ensure_schema`
+- `scripts/opening_catalog/schema.py:ensure_relationship_schema`
+- `scripts/opening_catalog/classification_schema.py:ensure_classification_schema`
+- `scripts/opening_catalog/preferred_move_schema.py:ensure_preferred_move_schema`
+- `scripts/opening_catalog/recurrence_schema.py:ensure_recurrence_schema`
+- `backend/app/features/analysis/schema.py:initialize_analysis_schema`
+- `backend/app/features/evaluation/schema.py:initialize_evaluation_schema`
+
+## Navigation
+
+### Tables
+- [`analysis_batch_run`](#table-analysis_batch_run)
+- [`analysis_candidate`](#table-analysis_candidate)
+- [`analysis_position_failure`](#table-analysis_position_failure)
+- [`analysis_result`](#table-analysis_result)
+- [`analysis_schema`](#table-analysis_schema)
+- [`corpus`](#table-corpus)
+- [`corpus_game`](#table-corpus_game)
+- [`corpus_run`](#table-corpus_run)
+- [`corpus_schema`](#table-corpus_schema)
+- [`evaluation_queue`](#table-evaluation_queue)
+- [`evaluation_schema`](#table-evaluation_schema)
+- [`fetch_state`](#table-fetch_state)
+- [`games`](#table-games)
+- [`opening_catalog`](#table-opening_catalog)
+- [`opening_catalog_schema`](#table-opening_catalog_schema)
+- [`opening_catalog_state`](#table-opening_catalog_state)
+- [`opening_classification_anchor`](#table-opening_classification_anchor)
+- [`opening_classification_game`](#table-opening_classification_game)
+- [`opening_classification_route`](#table-opening_classification_route)
+- [`opening_classification_run`](#table-opening_classification_run)
+- [`opening_classification_schema`](#table-opening_classification_schema)
+- [`opening_classification_state`](#table-opening_classification_state)
+- [`opening_import_run`](#table-opening_import_run)
+- [`opening_parent_link`](#table-opening_parent_link)
+- [`opening_position_membership`](#table-opening_position_membership)
+- [`opening_preferred_move_event`](#table-opening_preferred_move_event)
+- [`opening_preferred_move_requirement_event`](#table-opening_preferred_move_requirement_event)
+- [`opening_preferred_move_schema`](#table-opening_preferred_move_schema)
+- [`opening_recurrence_branch_event`](#table-opening_recurrence_branch_event)
+- [`opening_recurrence_branch_projection`](#table-opening_recurrence_branch_projection)
+- [`opening_recurrence_game`](#table-opening_recurrence_game)
+- [`opening_recurrence_occurrence`](#table-opening_recurrence_occurrence)
+- [`opening_recurrence_position_projection`](#table-opening_recurrence_position_projection)
+- [`opening_recurrence_route_branch_projection`](#table-opening_recurrence_route_branch_projection)
+- [`opening_recurrence_route_event`](#table-opening_recurrence_route_event)
+- [`opening_recurrence_route_projection`](#table-opening_recurrence_route_projection)
+- [`opening_recurrence_run`](#table-opening_recurrence_run)
+- [`opening_recurrence_schema`](#table-opening_recurrence_schema)
+- [`opening_recurrence_state`](#table-opening_recurrence_state)
+- [`opening_relationship_position`](#table-opening_relationship_position)
+- [`opening_relationship_run`](#table-opening_relationship_run)
+- [`opening_relationship_schema`](#table-opening_relationship_schema)
+- [`opening_relationship_state`](#table-opening_relationship_state)
+- [`opening_source_file`](#table-opening_source_file)
+- [`opening_source_manifest`](#table-opening_source_manifest)
+- [`opening_transposition_link`](#table-opening_transposition_link)
+- [`players`](#table-players)
+- [`position_occurrence`](#table-position_occurrence)
+- [`position_state`](#table-position_state)
+
+### Indexs
+- [`evaluation_queue_fifo`](#index-evaluation_queue_fifo)
+- [`one_current_month`](#index-one_current_month)
+- [`opening_catalog_endpoint_idx`](#index-opening_catalog_endpoint_idx)
+- [`opening_classification_anchor_position_idx`](#index-opening_classification_anchor_position_idx)
+- [`opening_classification_route_game_idx`](#index-opening_classification_route_game_idx)
+- [`opening_import_run_manifest_idx`](#index-opening_import_run_manifest_idx)
+- [`opening_parent_link_parent_idx`](#index-opening_parent_link_parent_idx)
+- [`opening_position_membership_position_idx`](#index-opening_position_membership_position_idx)
+- [`opening_preferred_move_lookup`](#index-opening_preferred_move_lookup)
+- [`opening_preferred_move_requirement_lookup`](#index-opening_preferred_move_requirement_lookup)
+- [`opening_recurrence_branch_event_parent_idx`](#index-opening_recurrence_branch_event_parent_idx)
+- [`opening_recurrence_occurrence_position_idx`](#index-opening_recurrence_occurrence_position_idx)
+- [`opening_recurrence_route_event_position_idx`](#index-opening_recurrence_route_event_position_idx)
+- [`opening_transposition_link_position_idx`](#index-opening_transposition_link_position_idx)
+- [`position_occurrence_state_idx`](#index-position_occurrence_state_idx)
+
+### Triggers
+- [`analysis_batch_run_no_delete`](#trigger-analysis_batch_run_no_delete)
+- [`analysis_batch_run_no_update`](#trigger-analysis_batch_run_no_update)
+- [`analysis_failure_no_delete`](#trigger-analysis_failure_no_delete)
+- [`analysis_failure_no_update`](#trigger-analysis_failure_no_update)
+- [`opening_preferred_move_no_delete`](#trigger-opening_preferred_move_no_delete)
+- [`opening_preferred_move_no_update`](#trigger-opening_preferred_move_no_update)
+- [`opening_preferred_move_requirement_no_delete`](#trigger-opening_preferred_move_requirement_no_delete)
+- [`opening_preferred_move_requirement_no_update`](#trigger-opening_preferred_move_requirement_no_update)
+
+## Schema objects
+
+### Table: `analysis_batch_run`
+<a id="table-analysis_batch_run"></a>
+
+#### Columns
+
+| PK order | Name | Type | Nullable | Default |
+| ---: | --- | --- | --- | --- |
+| 1 | `run_id` | `INTEGER` | YES | `` |
+| 0 | `status` | `TEXT` | NO | `` |
+| 0 | `selection_json` | `TEXT` | NO | `` |
+| 0 | `settings_fingerprint` | `TEXT` | NO | `` |
+| 0 | `started_at` | `TEXT` | NO | `` |
+| 0 | `finished_at` | `TEXT` | NO | `` |
+| 0 | `selected_positions` | `INTEGER` | NO | `` |
+| 0 | `eligible_positions` | `INTEGER` | NO | `` |
+| 0 | `completed_positions` | `INTEGER` | NO | `` |
+| 0 | `failed_positions` | `INTEGER` | NO | `` |
+| 0 | `details` | `TEXT` | YES | `` |
+
+#### Foreign keys
+
+None declared.
+
+#### Canonical SQL
+
+```sql
+CREATE TABLE analysis_batch_run ( run_id INTEGER PRIMARY KEY, status TEXT NOT NULL CHECK (status IN ('success', 'failed', 'interrupted')), selection_json TEXT NOT NULL, settings_fingerprint TEXT NOT NULL, started_at TEXT NOT NULL, finished_at TEXT NOT NULL, selected_positions INTEGER NOT NULL, eligible_positions INTEGER NOT NULL, completed_positions INTEGER NOT NULL, failed_positions INTEGER NOT NULL, details TEXT NULL )
+```
+
+### Table: `analysis_candidate`
+<a id="table-analysis_candidate"></a>
+
+#### Columns
+
+| PK order | Name | Type | Nullable | Default |
+| ---: | --- | --- | --- | --- |
+| 1 | `fen` | `TEXT` | NO | `` |
+| 2 | `rank` | `INTEGER` | NO | `` |
+| 0 | `score_kind` | `TEXT` | NO | `` |
+| 0 | `score_value` | `INTEGER` | NO | `` |
+| 0 | `wdl_wins` | `INTEGER` | NO | `` |
+| 0 | `wdl_draws` | `INTEGER` | NO | `` |
+| 0 | `wdl_losses` | `INTEGER` | NO | `` |
+| 0 | `pv_uci_json` | `TEXT` | NO | `` |
+| 0 | `depth` | `INTEGER` | NO | `` |
+| 0 | `seldepth` | `INTEGER` | NO | `` |
+| 0 | `nodes` | `INTEGER` | NO | `` |
+| 0 | `engine_time_ms` | `INTEGER` | NO | `` |
+
+#### Foreign keys
+
+| ID | Order | From | To table | To column | On update | On delete | Match |
+| ---: | ---: | --- | --- | --- | --- | --- | --- |
+| 0 | 0 | `fen` | `analysis_result` | `fen` | NO ACTION | CASCADE | NONE |
+
+#### Canonical SQL
+
+```sql
+CREATE TABLE analysis_candidate ( fen TEXT NOT NULL, rank INTEGER NOT NULL CHECK (rank BETWEEN 1 AND 5), score_kind TEXT NOT NULL CHECK (score_kind IN ('cp', 'mate', 'mate_given')), score_value INTEGER NOT NULL, wdl_wins INTEGER NOT NULL, wdl_draws INTEGER NOT NULL, wdl_losses INTEGER NOT NULL, pv_uci_json TEXT NOT NULL, depth INTEGER NOT NULL, seldepth INTEGER NOT NULL, nodes INTEGER NOT NULL, engine_time_ms INTEGER NOT NULL, PRIMARY KEY (fen, rank), FOREIGN KEY (fen) REFERENCES analysis_result(fen) ON DELETE CASCADE )
+```
+
+### Table: `analysis_position_failure`
+<a id="table-analysis_position_failure"></a>
+
+#### Columns
+
+| PK order | Name | Type | Nullable | Default |
+| ---: | --- | --- | --- | --- |
+| 1 | `failure_id` | `INTEGER` | YES | `` |
+| 0 | `run_id` | `INTEGER` | NO | `` |
+| 0 | `fen` | `TEXT` | NO | `` |
+| 0 | `settings_fingerprint` | `TEXT` | NO | `` |
+| 0 | `attempts` | `INTEGER` | NO | `` |
+| 0 | `error_code` | `TEXT` | NO | `` |
+| 0 | `details` | `TEXT` | NO | `` |
+| 0 | `failed_at` | `TEXT` | NO | `` |
+
+#### Foreign keys
+
+| ID | Order | From | To table | To column | On update | On delete | Match |
+| ---: | ---: | --- | --- | --- | --- | --- | --- |
+| 0 | 0 | `run_id` | `analysis_batch_run` | `run_id` | NO ACTION | NO ACTION | NONE |
+
+#### Canonical SQL
+
+```sql
+CREATE TABLE analysis_position_failure ( failure_id INTEGER PRIMARY KEY, run_id INTEGER NOT NULL, fen TEXT NOT NULL, settings_fingerprint TEXT NOT NULL, attempts INTEGER NOT NULL CHECK (attempts >= 1), error_code TEXT NOT NULL, details TEXT NOT NULL, failed_at TEXT NOT NULL, UNIQUE (run_id, fen), FOREIGN KEY (run_id) REFERENCES analysis_batch_run(run_id) )
+```
+
+### Table: `analysis_result`
+<a id="table-analysis_result"></a>
+
+#### Columns
+
+| PK order | Name | Type | Nullable | Default |
+| ---: | --- | --- | --- | --- |
+| 1 | `fen` | `TEXT` | YES | `` |
+| 0 | `schema_version` | `INTEGER` | NO | `` |
+| 0 | `profile_id` | `TEXT` | NO | `` |
+| 0 | `settings_json` | `TEXT` | NO | `` |
+| 0 | `settings_fingerprint` | `TEXT` | NO | `` |
+| 0 | `engine_binary_sha256` | `TEXT` | NO | `` |
+| 0 | `engine_name` | `TEXT` | NO | `` |
+| 0 | `engine_version` | `TEXT` | NO | `` |
+| 0 | `terminal_kind` | `TEXT` | YES | `` |
+| 0 | `candidate_count` | `INTEGER` | NO | `` |
+| 0 | `completed_at` | `TEXT` | NO | `` |
+| 0 | `wall_time_ms` | `INTEGER` | NO | `` |
+
+#### Foreign keys
+
+None declared.
+
+#### Canonical SQL
+
+```sql
+CREATE TABLE analysis_result ( fen TEXT PRIMARY KEY, schema_version INTEGER NOT NULL, profile_id TEXT NOT NULL, settings_json TEXT NOT NULL, settings_fingerprint TEXT NOT NULL, engine_binary_sha256 TEXT NOT NULL, engine_name TEXT NOT NULL, engine_version TEXT NOT NULL, terminal_kind TEXT NULL, candidate_count INTEGER NOT NULL CHECK (candidate_count BETWEEN 0 AND 5), completed_at TEXT NOT NULL, wall_time_ms INTEGER NOT NULL CHECK (wall_time_ms >= 0) )
+```
+
+### Table: `analysis_schema`
+<a id="table-analysis_schema"></a>
+
+#### Columns
+
+| PK order | Name | Type | Nullable | Default |
+| ---: | --- | --- | --- | --- |
+| 1 | `id` | `INTEGER` | YES | `` |
+| 0 | `version` | `INTEGER` | NO | `` |
+| 0 | `applied_at` | `TEXT` | NO | `` |
+
+#### Foreign keys
+
+None declared.
+
+#### Canonical SQL
+
+```sql
+CREATE TABLE analysis_schema ( id INTEGER PRIMARY KEY CHECK (id = 1), version INTEGER NOT NULL, applied_at TEXT NOT NULL )
+```
+
+### Table: `corpus`
+<a id="table-corpus"></a>
+
+#### Columns
+
+| PK order | Name | Type | Nullable | Default |
+| ---: | --- | --- | --- | --- |
+| 1 | `corpus_id` | `INTEGER` | YES | `` |
+| 0 | `subject_player_uuid` | `TEXT` | NO | `` |
+
+#### Foreign keys
+
+| ID | Order | From | To table | To column | On update | On delete | Match |
+| ---: | ---: | --- | --- | --- | --- | --- | --- |
+| 0 | 0 | `subject_player_uuid` | `players` | `uuid` | NO ACTION | NO ACTION | NONE |
+
+#### Canonical SQL
+
+```sql
+CREATE TABLE corpus ( corpus_id INTEGER PRIMARY KEY, subject_player_uuid TEXT NOT NULL UNIQUE, FOREIGN KEY (subject_player_uuid) REFERENCES players(uuid) )
+```
+
+### Table: `corpus_game`
+<a id="table-corpus_game"></a>
+
+#### Columns
+
+| PK order | Name | Type | Nullable | Default |
+| ---: | --- | --- | --- | --- |
+| 1 | `corpus_id` | `INTEGER` | NO | `` |
+| 2 | `game_uuid` | `TEXT` | NO | `` |
+| 0 | `rules` | `TEXT` | NO | `` |
+| 0 | `fingerprint` | `TEXT` | NO | `` |
+
+#### Foreign keys
+
+| ID | Order | From | To table | To column | On update | On delete | Match |
+| ---: | ---: | --- | --- | --- | --- | --- | --- |
+| 0 | 0 | `game_uuid` | `games` | `uuid` | NO ACTION | NO ACTION | NONE |
+| 1 | 0 | `corpus_id` | `corpus` | `corpus_id` | NO ACTION | NO ACTION | NONE |
+
+#### Canonical SQL
+
+```sql
+CREATE TABLE corpus_game ( corpus_id INTEGER NOT NULL, game_uuid TEXT NOT NULL, rules TEXT NOT NULL CHECK (rules = 'chess'), fingerprint TEXT NOT NULL, PRIMARY KEY (corpus_id, game_uuid), FOREIGN KEY (corpus_id) REFERENCES corpus(corpus_id), FOREIGN KEY (game_uuid) REFERENCES games(uuid) )
+```
+
+### Table: `corpus_run`
+<a id="table-corpus_run"></a>
+
+#### Columns
+
+| PK order | Name | Type | Nullable | Default |
+| ---: | --- | --- | --- | --- |
+| 1 | `run_id` | `INTEGER` | YES | `` |
+| 0 | `corpus_id` | `INTEGER` | NO | `` |
+| 0 | `status` | `TEXT` | NO | `` |
+| 0 | `started_at` | `TEXT` | YES | `` |
+| 0 | `finished_at` | `TEXT` | YES | `` |
+| 0 | `accepted_games` | `INTEGER` | NO | `0` |
+| 0 | `excluded_games` | `INTEGER` | NO | `0` |
+| 0 | `new_games` | `INTEGER` | NO | `0` |
+| 0 | `changed_games` | `INTEGER` | NO | `0` |
+| 0 | `removed_games` | `INTEGER` | NO | `0` |
+| 0 | `unchanged_games` | `INTEGER` | NO | `0` |
+| 0 | `ordered_positions` | `INTEGER` | NO | `0` |
+| 0 | `unique_states` | `INTEGER` | NO | `` |
+| 0 | `validation` | `TEXT` | NO | `` |
+| 0 | `details` | `TEXT` | YES | `` |
+
+#### Foreign keys
+
+| ID | Order | From | To table | To column | On update | On delete | Match |
+| ---: | ---: | --- | --- | --- | --- | --- | --- |
+| 0 | 0 | `corpus_id` | `corpus` | `corpus_id` | NO ACTION | NO ACTION | NONE |
+
+#### Canonical SQL
+
+```sql
+CREATE TABLE corpus_run ( run_id INTEGER PRIMARY KEY, corpus_id INTEGER NOT NULL, status TEXT NOT NULL CHECK (status IN ('running', 'success', 'failed', 'interrupted')), started_at TEXT, finished_at TEXT NULL, accepted_games INTEGER NOT NULL DEFAULT 0, excluded_games INTEGER NOT NULL DEFAULT 0, new_games INTEGER NOT NULL DEFAULT 0, changed_games INTEGER NOT NULL DEFAULT 0, removed_games INTEGER NOT NULL DEFAULT 0, unchanged_games INTEGER NOT NULL DEFAULT 0, ordered_positions INTEGER NOT NULL DEFAULT 0, unique_states INTEGER NOT NULL, validation TEXT NOT NULL, details TEXT NULL, FOREIGN KEY (corpus_id) REFERENCES corpus(corpus_id) )
+```
+
+### Table: `corpus_schema`
+<a id="table-corpus_schema"></a>
+
+#### Columns
+
+| PK order | Name | Type | Nullable | Default |
+| ---: | --- | --- | --- | --- |
+| 1 | `id` | `INTEGER` | YES | `` |
+| 0 | `version` | `INTEGER` | NO | `` |
+| 0 | `applied_at` | `TEXT` | NO | `` |
+
+#### Foreign keys
+
+None declared.
+
+#### Canonical SQL
+
+```sql
+CREATE TABLE corpus_schema ( id INTEGER PRIMARY KEY CHECK (id = 1), version INTEGER NOT NULL, applied_at TEXT NOT NULL )
+```
+
+### Table: `evaluation_queue`
+<a id="table-evaluation_queue"></a>
+
+#### Columns
+
+| PK order | Name | Type | Nullable | Default |
+| ---: | --- | --- | --- | --- |
+| 1 | `fen` | `TEXT` | YES | `` |
+| 0 | `state` | `TEXT` | NO | `` |
+| 0 | `position` | `INTEGER` | NO | `` |
+| 0 | `attempts` | `INTEGER` | NO | `` |
+| 0 | `schema_version` | `INTEGER` | NO | `` |
+| 0 | `enqueued_at` | `TEXT` | NO | `` |
+| 0 | `started_at` | `TEXT` | YES | `` |
+| 0 | `finished_at` | `TEXT` | YES | `` |
+| 0 | `last_error_code` | `TEXT` | YES | `` |
+| 0 | `last_error_details` | `TEXT` | YES | `` |
+
+#### Foreign keys
+
+None declared.
+
+#### Canonical SQL
+
+```sql
+CREATE TABLE evaluation_queue ( fen TEXT PRIMARY KEY, state TEXT NOT NULL CHECK (state IN ('queued', 'running', 'done', 'failed')), position INTEGER NOT NULL, attempts INTEGER NOT NULL CHECK (attempts >= 0), schema_version INTEGER NOT NULL, enqueued_at TEXT NOT NULL, started_at TEXT NULL, finished_at TEXT NULL, last_error_code TEXT NULL, last_error_details TEXT NULL )
+```
+
+### Table: `evaluation_schema`
+<a id="table-evaluation_schema"></a>
+
+#### Columns
+
+| PK order | Name | Type | Nullable | Default |
+| ---: | --- | --- | --- | --- |
+| 1 | `id` | `INTEGER` | YES | `` |
+| 0 | `version` | `INTEGER` | NO | `` |
+| 0 | `applied_at` | `TEXT` | NO | `` |
+
+#### Foreign keys
+
+None declared.
+
+#### Canonical SQL
+
+```sql
+CREATE TABLE evaluation_schema ( id INTEGER PRIMARY KEY CHECK (id = 1), version INTEGER NOT NULL, applied_at TEXT NOT NULL )
+```
+
+### Table: `fetch_state`
+<a id="table-fetch_state"></a>
+
+#### Columns
+
+| PK order | Name | Type | Nullable | Default |
+| ---: | --- | --- | --- | --- |
+| 1 | `username` | `TEXT` | NO | `` |
+| 2 | `year` | `INTEGER` | NO | `` |
+| 3 | `month` | `INTEGER` | NO | `` |
+| 0 | `etag` | `TEXT` | YES | `` |
+| 0 | `last_fetched` | `TEXT` | YES | `` |
+| 0 | `is_current` | `INTEGER` | NO | `` |
+
+#### Foreign keys
+
+None declared.
+
+#### Canonical SQL
+
+```sql
+CREATE TABLE fetch_state ( username TEXT NOT NULL, year INTEGER NOT NULL, month INTEGER NOT NULL, etag TEXT, last_fetched TEXT, is_current INTEGER NOT NULL, PRIMARY KEY (username, year, month) )
+```
+
+### Table: `games`
+<a id="table-games"></a>
+
+#### Columns
+
+| PK order | Name | Type | Nullable | Default |
+| ---: | --- | --- | --- | --- |
+| 1 | `uuid` | `TEXT` | YES | `` |
+| 0 | `url` | `TEXT` | NO | `` |
+| 0 | `pgn` | `TEXT` | NO | `` |
+| 0 | `time_control` | `TEXT` | NO | `` |
+| 0 | `end_time` | `INTEGER` | NO | `` |
+| 0 | `rated` | `INTEGER` | YES | `` |
+| 0 | `tcn` | `TEXT` | YES | `` |
+| 0 | `initial_setup` | `TEXT` | YES | `` |
+| 0 | `fen` | `TEXT` | YES | `` |
+| 0 | `time_class` | `TEXT` | YES | `` |
+| 0 | `rules` | `TEXT` | YES | `` |
+| 0 | `eco` | `TEXT` | YES | `` |
+| 0 | `white_player_uuid` | `TEXT` | NO | `` |
+| 0 | `black_player_uuid` | `TEXT` | NO | `` |
+| 0 | `white_rating` | `INTEGER` | YES | `` |
+| 0 | `black_rating` | `INTEGER` | YES | `` |
+| 0 | `white_result` | `TEXT` | YES | `` |
+| 0 | `black_result` | `TEXT` | YES | `` |
+| 0 | `white_accuracy` | `REAL` | YES | `` |
+| 0 | `black_accuracy` | `REAL` | YES | `` |
+| 0 | `tournament` | `TEXT` | YES | `` |
+| 0 | `match` | `TEXT` | YES | `` |
+| 0 | `year` | `INTEGER` | NO | `` |
+| 0 | `month` | `INTEGER` | NO | `` |
+
+#### Foreign keys
+
+| ID | Order | From | To table | To column | On update | On delete | Match |
+| ---: | ---: | --- | --- | --- | --- | --- | --- |
+| 0 | 0 | `black_player_uuid` | `players` | `uuid` | NO ACTION | NO ACTION | NONE |
+| 1 | 0 | `white_player_uuid` | `players` | `uuid` | NO ACTION | NO ACTION | NONE |
+
+#### Canonical SQL
+
+```sql
+CREATE TABLE games ( uuid TEXT PRIMARY KEY, url TEXT NOT NULL, pgn TEXT NOT NULL, time_control TEXT NOT NULL, end_time INTEGER NOT NULL, rated INTEGER, tcn TEXT, initial_setup TEXT, fen TEXT, time_class TEXT, rules TEXT, eco TEXT, white_player_uuid TEXT NOT NULL, black_player_uuid TEXT NOT NULL, white_rating INTEGER, black_rating INTEGER, white_result TEXT, black_result TEXT, white_accuracy REAL, black_accuracy REAL, tournament TEXT, match TEXT, year INTEGER NOT NULL, month INTEGER NOT NULL, FOREIGN KEY (white_player_uuid) REFERENCES players(uuid), FOREIGN KEY (black_player_uuid) REFERENCES players(uuid), UNIQUE (year, month, uuid) )
+```
+
+### Table: `opening_catalog`
+<a id="table-opening_catalog"></a>
+
+#### Columns
+
+| PK order | Name | Type | Nullable | Default |
+| ---: | --- | --- | --- | --- |
+| 1 | `manifest_hash` | `TEXT` | NO | `` |
+| 2 | `source_file` | `TEXT` | NO | `` |
+| 3 | `source_row_ordinal` | `INTEGER` | NO | `` |
+| 0 | `source_row_hash` | `TEXT` | NO | `` |
+| 0 | `eco` | `TEXT` | NO | `` |
+| 0 | `name` | `TEXT` | NO | `` |
+| 0 | `move_sequence` | `TEXT` | NO | `` |
+| 0 | `endpoint_fen` | `TEXT` | NO | `` |
+| 0 | `endpoint_placement` | `TEXT` | NO | `` |
+| 0 | `endpoint_side_to_move` | `TEXT` | NO | `` |
+| 0 | `endpoint_castling` | `TEXT` | NO | `` |
+| 0 | `endpoint_en_passant` | `TEXT` | NO | `` |
+| 0 | `endpoint_halfmove_clock` | `INTEGER` | NO | `` |
+| 0 | `endpoint_fullmove_number` | `INTEGER` | NO | `` |
+
+#### Foreign keys
+
+| ID | Order | From | To table | To column | On update | On delete | Match |
+| ---: | ---: | --- | --- | --- | --- | --- | --- |
+| 0 | 0 | `manifest_hash` | `opening_source_file` | `manifest_hash` | NO ACTION | NO ACTION | NONE |
+| 0 | 1 | `source_file` | `opening_source_file` | `source_file` | NO ACTION | NO ACTION | NONE |
+
+#### Canonical SQL
+
+```sql
+CREATE TABLE opening_catalog ( manifest_hash TEXT NOT NULL, source_file TEXT NOT NULL, source_row_ordinal INTEGER NOT NULL CHECK (source_row_ordinal > 0), source_row_hash TEXT NOT NULL, eco TEXT NOT NULL, name TEXT NOT NULL, move_sequence TEXT NOT NULL, endpoint_fen TEXT NOT NULL, endpoint_placement TEXT NOT NULL, endpoint_side_to_move TEXT NOT NULL, endpoint_castling TEXT NOT NULL, endpoint_en_passant TEXT NOT NULL, endpoint_halfmove_clock INTEGER NOT NULL, endpoint_fullmove_number INTEGER NOT NULL, PRIMARY KEY (manifest_hash, source_file, source_row_ordinal), FOREIGN KEY (manifest_hash, source_file) REFERENCES opening_source_file(manifest_hash, source_file) )
+```
+
+### Table: `opening_catalog_schema`
+<a id="table-opening_catalog_schema"></a>
+
+#### Columns
+
+| PK order | Name | Type | Nullable | Default |
+| ---: | --- | --- | --- | --- |
+| 1 | `id` | `INTEGER` | YES | `` |
+| 0 | `version` | `INTEGER` | NO | `` |
+| 0 | `applied_at` | `TEXT` | NO | `` |
+
+#### Foreign keys
+
+None declared.
+
+#### Canonical SQL
+
+```sql
+CREATE TABLE opening_catalog_schema ( id INTEGER PRIMARY KEY CHECK (id = 1), version INTEGER NOT NULL, applied_at TEXT NOT NULL )
+```
+
+### Table: `opening_catalog_state`
+<a id="table-opening_catalog_state"></a>
+
+#### Columns
+
+| PK order | Name | Type | Nullable | Default |
+| ---: | --- | --- | --- | --- |
+| 1 | `id` | `INTEGER` | YES | `` |
+| 0 | `accepted_manifest_hash` | `TEXT` | NO | `` |
+| 0 | `accepted_schema_version` | `INTEGER` | NO | `` |
+| 0 | `accepted_at` | `TEXT` | NO | `` |
+| 0 | `record_count` | `INTEGER` | NO | `` |
+
+#### Foreign keys
+
+| ID | Order | From | To table | To column | On update | On delete | Match |
+| ---: | ---: | --- | --- | --- | --- | --- | --- |
+| 0 | 0 | `accepted_manifest_hash` | `opening_source_manifest` | `manifest_hash` | NO ACTION | NO ACTION | NONE |
+
+#### Canonical SQL
+
+```sql
+CREATE TABLE opening_catalog_state ( id INTEGER PRIMARY KEY CHECK (id = 1), accepted_manifest_hash TEXT NOT NULL, accepted_schema_version INTEGER NOT NULL, accepted_at TEXT NOT NULL, record_count INTEGER NOT NULL, FOREIGN KEY (accepted_manifest_hash) REFERENCES opening_source_manifest(manifest_hash) )
+```
+
+### Table: `opening_classification_anchor`
+<a id="table-opening_classification_anchor"></a>
+
+#### Columns
+
+| PK order | Name | Type | Nullable | Default |
+| ---: | --- | --- | --- | --- |
+| 1 | `manifest_hash` | `TEXT` | NO | `` |
+| 2 | `corpus_id` | `INTEGER` | NO | `` |
+| 3 | `game_uuid` | `TEXT` | NO | `` |
+| 4 | `anchor_ply` | `INTEGER` | NO | `` |
+| 5 | `source_file` | `TEXT` | NO | `` |
+| 6 | `source_row_ordinal` | `INTEGER` | NO | `` |
+| 0 | `anchor_placement` | `TEXT` | NO | `` |
+| 0 | `anchor_side_to_move` | `TEXT` | NO | `` |
+| 0 | `anchor_castling` | `TEXT` | NO | `` |
+| 0 | `anchor_en_passant` | `TEXT` | NO | `` |
+| 0 | `anchor_san` | `TEXT` | NO | `` |
+| 0 | `anchor_uci` | `TEXT` | NO | `` |
+
+#### Foreign keys
+
+| ID | Order | From | To table | To column | On update | On delete | Match |
+| ---: | ---: | --- | --- | --- | --- | --- | --- |
+| 0 | 0 | `game_uuid` | `position_occurrence` | `game_uuid` | NO ACTION | NO ACTION | NONE |
+| 0 | 1 | `anchor_ply` | `position_occurrence` | `ply` | NO ACTION | NO ACTION | NONE |
+| 1 | 0 | `manifest_hash` | `opening_catalog` | `manifest_hash` | NO ACTION | NO ACTION | NONE |
+| 1 | 1 | `source_file` | `opening_catalog` | `source_file` | NO ACTION | NO ACTION | NONE |
+| 1 | 2 | `source_row_ordinal` | `opening_catalog` | `source_row_ordinal` | NO ACTION | NO ACTION | NONE |
+| 2 | 0 | `manifest_hash` | `opening_classification_game` | `manifest_hash` | NO ACTION | NO ACTION | NONE |
+| 2 | 1 | `corpus_id` | `opening_classification_game` | `corpus_id` | NO ACTION | NO ACTION | NONE |
+| 2 | 2 | `game_uuid` | `opening_classification_game` | `game_uuid` | NO ACTION | NO ACTION | NONE |
+
+#### Canonical SQL
+
+```sql
+CREATE TABLE opening_classification_anchor ( manifest_hash TEXT NOT NULL, corpus_id INTEGER NOT NULL, game_uuid TEXT NOT NULL, anchor_ply INTEGER NOT NULL CHECK (anchor_ply > 0), source_file TEXT NOT NULL, source_row_ordinal INTEGER NOT NULL CHECK (source_row_ordinal > 0), anchor_placement TEXT NOT NULL, anchor_side_to_move TEXT NOT NULL, anchor_castling TEXT NOT NULL, anchor_en_passant TEXT NOT NULL, anchor_san TEXT NOT NULL, anchor_uci TEXT NOT NULL, PRIMARY KEY ( manifest_hash, corpus_id, game_uuid, anchor_ply, source_file, source_row_ordinal ), FOREIGN KEY (manifest_hash, corpus_id, game_uuid) REFERENCES opening_classification_game(manifest_hash, corpus_id, game_uuid), FOREIGN KEY (manifest_hash, source_file, source_row_ordinal) REFERENCES opening_catalog(manifest_hash, source_file, source_row_ordinal), FOREIGN KEY (game_uuid, anchor_ply) REFERENCES position_occurrence(game_uuid, ply) ) WITHOUT ROWID
+```
+
+### Table: `opening_classification_game`
+<a id="table-opening_classification_game"></a>
+
+#### Columns
+
+| PK order | Name | Type | Nullable | Default |
+| ---: | --- | --- | --- | --- |
+| 1 | `manifest_hash` | `TEXT` | NO | `` |
+| 2 | `corpus_id` | `INTEGER` | NO | `` |
+| 3 | `game_uuid` | `TEXT` | NO | `` |
+| 0 | `source_fingerprint` | `TEXT` | NO | `` |
+
+#### Foreign keys
+
+| ID | Order | From | To table | To column | On update | On delete | Match |
+| ---: | ---: | --- | --- | --- | --- | --- | --- |
+| 0 | 0 | `corpus_id` | `corpus_game` | `corpus_id` | NO ACTION | NO ACTION | NONE |
+| 0 | 1 | `game_uuid` | `corpus_game` | `game_uuid` | NO ACTION | NO ACTION | NONE |
+| 1 | 0 | `manifest_hash` | `opening_source_manifest` | `manifest_hash` | NO ACTION | NO ACTION | NONE |
+
+#### Canonical SQL
+
+```sql
+CREATE TABLE opening_classification_game ( manifest_hash TEXT NOT NULL, corpus_id INTEGER NOT NULL, game_uuid TEXT NOT NULL, source_fingerprint TEXT NOT NULL, PRIMARY KEY (manifest_hash, corpus_id, game_uuid), FOREIGN KEY (manifest_hash) REFERENCES opening_source_manifest(manifest_hash), FOREIGN KEY (corpus_id, game_uuid) REFERENCES corpus_game(corpus_id, game_uuid) ) WITHOUT ROWID
+```
+
+### Table: `opening_classification_route`
+<a id="table-opening_classification_route"></a>
+
+#### Columns
+
+| PK order | Name | Type | Nullable | Default |
+| ---: | --- | --- | --- | --- |
+| 1 | `manifest_hash` | `TEXT` | NO | `` |
+| 2 | `corpus_id` | `INTEGER` | NO | `` |
+| 3 | `game_uuid` | `TEXT` | NO | `` |
+| 4 | `anchor_ply` | `INTEGER` | NO | `` |
+| 5 | `source_file` | `TEXT` | NO | `` |
+| 6 | `source_row_ordinal` | `INTEGER` | NO | `` |
+| 7 | `route_ply` | `INTEGER` | NO | `` |
+| 0 | `route_placement` | `TEXT` | NO | `` |
+| 0 | `route_side_to_move` | `TEXT` | NO | `` |
+| 0 | `route_castling` | `TEXT` | NO | `` |
+| 0 | `route_en_passant` | `TEXT` | NO | `` |
+| 0 | `route_san` | `TEXT` | NO | `` |
+| 0 | `route_uci` | `TEXT` | NO | `` |
+| 0 | `route_halfmove_clock` | `INTEGER` | NO | `` |
+| 0 | `route_fullmove_number` | `INTEGER` | NO | `` |
+
+#### Foreign keys
+
+| ID | Order | From | To table | To column | On update | On delete | Match |
+| ---: | ---: | --- | --- | --- | --- | --- | --- |
+| 0 | 0 | `game_uuid` | `position_occurrence` | `game_uuid` | NO ACTION | NO ACTION | NONE |
+| 0 | 1 | `route_ply` | `position_occurrence` | `ply` | NO ACTION | NO ACTION | NONE |
+| 1 | 0 | `manifest_hash` | `opening_classification_anchor` | `manifest_hash` | NO ACTION | NO ACTION | NONE |
+| 1 | 1 | `corpus_id` | `opening_classification_anchor` | `corpus_id` | NO ACTION | NO ACTION | NONE |
+| 1 | 2 | `game_uuid` | `opening_classification_anchor` | `game_uuid` | NO ACTION | NO ACTION | NONE |
+| 1 | 3 | `anchor_ply` | `opening_classification_anchor` | `anchor_ply` | NO ACTION | NO ACTION | NONE |
+| 1 | 4 | `source_file` | `opening_classification_anchor` | `source_file` | NO ACTION | NO ACTION | NONE |
+| 1 | 5 | `source_row_ordinal` | `opening_classification_anchor` | `source_row_ordinal` | NO ACTION | NO ACTION | NONE |
+
+#### Canonical SQL
+
+```sql
+CREATE TABLE opening_classification_route ( manifest_hash TEXT NOT NULL, corpus_id INTEGER NOT NULL, game_uuid TEXT NOT NULL, anchor_ply INTEGER NOT NULL, source_file TEXT NOT NULL, source_row_ordinal INTEGER NOT NULL, route_ply INTEGER NOT NULL CHECK (route_ply >= anchor_ply), route_placement TEXT NOT NULL, route_side_to_move TEXT NOT NULL, route_castling TEXT NOT NULL, route_en_passant TEXT NOT NULL, route_san TEXT NOT NULL, route_uci TEXT NOT NULL, route_halfmove_clock INTEGER NOT NULL, route_fullmove_number INTEGER NOT NULL, PRIMARY KEY ( manifest_hash, corpus_id, game_uuid, anchor_ply, source_file, source_row_ordinal, route_ply ), FOREIGN KEY ( manifest_hash, corpus_id, game_uuid, anchor_ply, source_file, source_row_ordinal ) REFERENCES opening_classification_anchor( manifest_hash, corpus_id, game_uuid, anchor_ply, source_file, source_row_ordinal ), FOREIGN KEY (game_uuid, route_ply) REFERENCES position_occurrence(game_uuid, ply) ) WITHOUT ROWID
+```
+
+### Table: `opening_classification_run`
+<a id="table-opening_classification_run"></a>
+
+#### Columns
+
+| PK order | Name | Type | Nullable | Default |
+| ---: | --- | --- | --- | --- |
+| 1 | `run_id` | `TEXT` | NO | `` |
+| 0 | `manifest_hash` | `TEXT` | NO | `` |
+| 0 | `corpus_id` | `INTEGER` | NO | `` |
+| 0 | `schema_version` | `INTEGER` | NO | `` |
+| 0 | `catalog_schema_version` | `INTEGER` | NO | `` |
+| 0 | `relationship_schema_version` | `INTEGER` | NO | `` |
+| 0 | `status` | `TEXT` | NO | `` |
+| 0 | `started_at` | `TEXT` | NO | `` |
+| 0 | `finished_at` | `TEXT` | YES | `` |
+| 0 | `details` | `TEXT` | YES | `` |
+
+#### Foreign keys
+
+| ID | Order | From | To table | To column | On update | On delete | Match |
+| ---: | ---: | --- | --- | --- | --- | --- | --- |
+| 0 | 0 | `corpus_id` | `corpus` | `corpus_id` | NO ACTION | NO ACTION | NONE |
+| 1 | 0 | `manifest_hash` | `opening_relationship_state` | `accepted_manifest_hash` | NO ACTION | NO ACTION | NONE |
+| 2 | 0 | `manifest_hash` | `opening_source_manifest` | `manifest_hash` | NO ACTION | NO ACTION | NONE |
+
+#### Canonical SQL
+
+```sql
+CREATE TABLE opening_classification_run ( run_id TEXT PRIMARY KEY, manifest_hash TEXT NOT NULL, corpus_id INTEGER NOT NULL, schema_version INTEGER NOT NULL, catalog_schema_version INTEGER NOT NULL, relationship_schema_version INTEGER NOT NULL, status TEXT NOT NULL CHECK ( status IN ('running', 'success', 'failed', 'interrupted') ), started_at TEXT NOT NULL, finished_at TEXT, details TEXT, UNIQUE (manifest_hash, corpus_id), FOREIGN KEY (manifest_hash) REFERENCES opening_source_manifest(manifest_hash), FOREIGN KEY (manifest_hash) REFERENCES opening_relationship_state(accepted_manifest_hash), FOREIGN KEY (corpus_id) REFERENCES corpus(corpus_id) ) WITHOUT ROWID
+```
+
+### Table: `opening_classification_schema`
+<a id="table-opening_classification_schema"></a>
+
+#### Columns
+
+| PK order | Name | Type | Nullable | Default |
+| ---: | --- | --- | --- | --- |
+| 1 | `id` | `INTEGER` | NO | `` |
+| 0 | `version` | `INTEGER` | NO | `` |
+
+#### Foreign keys
+
+None declared.
+
+#### Canonical SQL
+
+```sql
+CREATE TABLE opening_classification_schema ( id INTEGER PRIMARY KEY CHECK (id = 1), version INTEGER NOT NULL ) WITHOUT ROWID
+```
+
+### Table: `opening_classification_state`
+<a id="table-opening_classification_state"></a>
+
+#### Columns
+
+| PK order | Name | Type | Nullable | Default |
+| ---: | --- | --- | --- | --- |
+| 1 | `accepted_manifest_hash` | `TEXT` | NO | `` |
+| 2 | `corpus_id` | `INTEGER` | NO | `` |
+| 0 | `accepted_schema_version` | `INTEGER` | NO | `` |
+| 0 | `accepted_catalog_schema_version` | `INTEGER` | NO | `` |
+| 0 | `accepted_relationship_schema_version` | `INTEGER` | NO | `` |
+| 0 | `accepted_at` | `TEXT` | NO | `` |
+
+#### Foreign keys
+
+| ID | Order | From | To table | To column | On update | On delete | Match |
+| ---: | ---: | --- | --- | --- | --- | --- | --- |
+| 0 | 0 | `corpus_id` | `corpus` | `corpus_id` | NO ACTION | NO ACTION | NONE |
+| 1 | 0 | `accepted_manifest_hash` | `opening_relationship_state` | `accepted_manifest_hash` | NO ACTION | NO ACTION | NONE |
+| 2 | 0 | `accepted_manifest_hash` | `opening_source_manifest` | `manifest_hash` | NO ACTION | NO ACTION | NONE |
+
+#### Canonical SQL
+
+```sql
+CREATE TABLE opening_classification_state ( accepted_manifest_hash TEXT NOT NULL, corpus_id INTEGER NOT NULL, accepted_schema_version INTEGER NOT NULL, accepted_catalog_schema_version INTEGER NOT NULL, accepted_relationship_schema_version INTEGER NOT NULL, accepted_at TEXT NOT NULL, PRIMARY KEY (accepted_manifest_hash, corpus_id), FOREIGN KEY (accepted_manifest_hash) REFERENCES opening_source_manifest(manifest_hash), FOREIGN KEY (accepted_manifest_hash) REFERENCES opening_relationship_state(accepted_manifest_hash), FOREIGN KEY (corpus_id) REFERENCES corpus(corpus_id) ) WITHOUT ROWID
+```
+
+### Table: `opening_import_run`
+<a id="table-opening_import_run"></a>
+
+#### Columns
+
+| PK order | Name | Type | Nullable | Default |
+| ---: | --- | --- | --- | --- |
+| 1 | `run_id` | `TEXT` | YES | `` |
+| 0 | `manifest_hash` | `TEXT` | NO | `` |
+| 0 | `schema_version` | `INTEGER` | NO | `` |
+| 0 | `status` | `TEXT` | NO | `` |
+| 0 | `started_at` | `TEXT` | NO | `` |
+| 0 | `finished_at` | `TEXT` | YES | `` |
+| 0 | `record_count` | `INTEGER` | NO | `0` |
+| 0 | `details` | `TEXT` | YES | `` |
+
+#### Foreign keys
+
+| ID | Order | From | To table | To column | On update | On delete | Match |
+| ---: | ---: | --- | --- | --- | --- | --- | --- |
+| 0 | 0 | `manifest_hash` | `opening_source_manifest` | `manifest_hash` | NO ACTION | NO ACTION | NONE |
+
+#### Canonical SQL
+
+```sql
+CREATE TABLE opening_import_run ( run_id TEXT PRIMARY KEY, manifest_hash TEXT NOT NULL, schema_version INTEGER NOT NULL, status TEXT NOT NULL CHECK (status IN ('running', 'success', 'failed', 'interrupted')), started_at TEXT NOT NULL, finished_at TEXT, record_count INTEGER NOT NULL DEFAULT 0, details TEXT, FOREIGN KEY (manifest_hash) REFERENCES opening_source_manifest(manifest_hash) )
+```
+
+### Table: `opening_parent_link`
+<a id="table-opening_parent_link"></a>
+
+#### Columns
+
+| PK order | Name | Type | Nullable | Default |
+| ---: | --- | --- | --- | --- |
+| 1 | `manifest_hash` | `TEXT` | NO | `` |
+| 2 | `child_source_file` | `TEXT` | NO | `` |
+| 3 | `child_source_row_ordinal` | `INTEGER` | NO | `` |
+| 4 | `child_ply` | `INTEGER` | NO | `` |
+| 5 | `parent_source_file` | `TEXT` | NO | `` |
+| 6 | `parent_source_row_ordinal` | `INTEGER` | NO | `` |
+
+#### Foreign keys
+
+| ID | Order | From | To table | To column | On update | On delete | Match |
+| ---: | ---: | --- | --- | --- | --- | --- | --- |
+| 0 | 0 | `manifest_hash` | `opening_position_membership` | `manifest_hash` | NO ACTION | NO ACTION | NONE |
+| 0 | 1 | `child_source_file` | `opening_position_membership` | `source_file` | NO ACTION | NO ACTION | NONE |
+| 0 | 2 | `child_source_row_ordinal` | `opening_position_membership` | `source_row_ordinal` | NO ACTION | NO ACTION | NONE |
+| 0 | 3 | `child_ply` | `opening_position_membership` | `ply` | NO ACTION | NO ACTION | NONE |
+| 1 | 0 | `manifest_hash` | `opening_catalog` | `manifest_hash` | NO ACTION | NO ACTION | NONE |
+| 1 | 1 | `parent_source_file` | `opening_catalog` | `source_file` | NO ACTION | NO ACTION | NONE |
+| 1 | 2 | `parent_source_row_ordinal` | `opening_catalog` | `source_row_ordinal` | NO ACTION | NO ACTION | NONE |
+| 2 | 0 | `manifest_hash` | `opening_catalog` | `manifest_hash` | NO ACTION | NO ACTION | NONE |
+| 2 | 1 | `child_source_file` | `opening_catalog` | `source_file` | NO ACTION | NO ACTION | NONE |
+| 2 | 2 | `child_source_row_ordinal` | `opening_catalog` | `source_row_ordinal` | NO ACTION | NO ACTION | NONE |
+
+#### Canonical SQL
+
+```sql
+CREATE TABLE opening_parent_link ( manifest_hash TEXT NOT NULL, child_source_file TEXT NOT NULL, child_source_row_ordinal INTEGER NOT NULL, child_ply INTEGER NOT NULL CHECK (child_ply > 0), parent_source_file TEXT NOT NULL, parent_source_row_ordinal INTEGER NOT NULL, PRIMARY KEY ( manifest_hash, child_source_file, child_source_row_ordinal, child_ply, parent_source_file, parent_source_row_ordinal ), FOREIGN KEY (manifest_hash, child_source_file, child_source_row_ordinal) REFERENCES opening_catalog(manifest_hash, source_file, source_row_ordinal), FOREIGN KEY (manifest_hash, parent_source_file, parent_source_row_ordinal) REFERENCES opening_catalog(manifest_hash, source_file, source_row_ordinal), FOREIGN KEY (manifest_hash, child_source_file, child_source_row_ordinal, child_ply) REFERENCES opening_position_membership( manifest_hash, source_file, source_row_ordinal, ply ) ) WITHOUT ROWID
+```
+
+### Table: `opening_position_membership`
+<a id="table-opening_position_membership"></a>
+
+#### Columns
+
+| PK order | Name | Type | Nullable | Default |
+| ---: | --- | --- | --- | --- |
+| 1 | `manifest_hash` | `TEXT` | NO | `` |
+| 2 | `source_file` | `TEXT` | NO | `` |
+| 3 | `source_row_ordinal` | `INTEGER` | NO | `` |
+| 4 | `ply` | `INTEGER` | NO | `` |
+| 0 | `placement` | `TEXT` | NO | `` |
+| 0 | `side_to_move` | `TEXT` | NO | `` |
+| 0 | `castling` | `TEXT` | NO | `` |
+| 0 | `en_passant` | `TEXT` | NO | `` |
+| 0 | `uci` | `TEXT` | NO | `` |
+| 0 | `san` | `TEXT` | NO | `` |
+| 0 | `uci_prefix` | `TEXT` | NO | `` |
+
+#### Foreign keys
+
+| ID | Order | From | To table | To column | On update | On delete | Match |
+| ---: | ---: | --- | --- | --- | --- | --- | --- |
+| 0 | 0 | `manifest_hash` | `opening_relationship_position` | `manifest_hash` | NO ACTION | NO ACTION | NONE |
+| 0 | 1 | `placement` | `opening_relationship_position` | `placement` | NO ACTION | NO ACTION | NONE |
+| 0 | 2 | `side_to_move` | `opening_relationship_position` | `side_to_move` | NO ACTION | NO ACTION | NONE |
+| 0 | 3 | `castling` | `opening_relationship_position` | `castling` | NO ACTION | NO ACTION | NONE |
+| 0 | 4 | `en_passant` | `opening_relationship_position` | `en_passant` | NO ACTION | NO ACTION | NONE |
+| 1 | 0 | `manifest_hash` | `opening_catalog` | `manifest_hash` | NO ACTION | NO ACTION | NONE |
+| 1 | 1 | `source_file` | `opening_catalog` | `source_file` | NO ACTION | NO ACTION | NONE |
+| 1 | 2 | `source_row_ordinal` | `opening_catalog` | `source_row_ordinal` | NO ACTION | NO ACTION | NONE |
+
+#### Canonical SQL
+
+```sql
+CREATE TABLE opening_position_membership ( manifest_hash TEXT NOT NULL, source_file TEXT NOT NULL, source_row_ordinal INTEGER NOT NULL, ply INTEGER NOT NULL CHECK (ply > 0), placement TEXT NOT NULL, side_to_move TEXT NOT NULL, castling TEXT NOT NULL, en_passant TEXT NOT NULL, uci TEXT NOT NULL, san TEXT NOT NULL, uci_prefix TEXT NOT NULL, PRIMARY KEY (manifest_hash, source_file, source_row_ordinal, ply), FOREIGN KEY (manifest_hash, source_file, source_row_ordinal) REFERENCES opening_catalog(manifest_hash, source_file, source_row_ordinal), FOREIGN KEY ( manifest_hash, placement, side_to_move, castling, en_passant ) REFERENCES opening_relationship_position( manifest_hash, placement, side_to_move, castling, en_passant ) ) WITHOUT ROWID
+```
+
+### Table: `opening_preferred_move_event`
+<a id="table-opening_preferred_move_event"></a>
+
+#### Columns
+
+| PK order | Name | Type | Nullable | Default |
+| ---: | --- | --- | --- | --- |
+| 1 | `event_id` | `INTEGER` | YES | `` |
+| 0 | `player_uuid` | `TEXT` | NO | `` |
+| 0 | `placement` | `TEXT` | NO | `` |
+| 0 | `side_to_move` | `TEXT` | NO | `` |
+| 0 | `castling` | `TEXT` | NO | `` |
+| 0 | `en_passant` | `TEXT` | NO | `` |
+| 0 | `action` | `TEXT` | NO | `` |
+| 0 | `move_uci` | `TEXT` | YES | `` |
+| 0 | `move_san` | `TEXT` | YES | `` |
+| 0 | `effective_at` | `TEXT` | NO | `` |
+| 0 | `recorded_at` | `TEXT` | NO | `strftime('%Y-%m-%dT%H:%M:%fZ', 'now')` |
+
+#### Foreign keys
+
+| ID | Order | From | To table | To column | On update | On delete | Match |
+| ---: | ---: | --- | --- | --- | --- | --- | --- |
+| 0 | 0 | `placement` | `position_state` | `placement` | NO ACTION | NO ACTION | NONE |
+| 0 | 1 | `side_to_move` | `position_state` | `side_to_move` | NO ACTION | NO ACTION | NONE |
+| 0 | 2 | `castling` | `position_state` | `castling` | NO ACTION | NO ACTION | NONE |
+| 0 | 3 | `en_passant` | `position_state` | `en_passant` | NO ACTION | NO ACTION | NONE |
+| 1 | 0 | `player_uuid` | `players` | `uuid` | NO ACTION | NO ACTION | NONE |
+
+#### Canonical SQL
+
+```sql
+CREATE TABLE opening_preferred_move_event ( event_id INTEGER PRIMARY KEY, player_uuid TEXT NOT NULL, placement TEXT NOT NULL, side_to_move TEXT NOT NULL CHECK (side_to_move IN ('w', 'b')), castling TEXT NOT NULL, en_passant TEXT NOT NULL, action TEXT NOT NULL CHECK (action IN ('set', 'remove')), move_uci TEXT, move_san TEXT, effective_at TEXT NOT NULL, recorded_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')), CHECK ( (action = 'set' AND move_uci IS NOT NULL AND move_san IS NOT NULL) OR (action = 'remove' AND move_uci IS NULL AND move_san IS NULL) ), FOREIGN KEY (player_uuid) REFERENCES players(uuid), FOREIGN KEY (placement, side_to_move, castling, en_passant) REFERENCES position_state(placement, side_to_move, castling, en_passant) )
+```
+
+### Table: `opening_preferred_move_requirement_event`
+<a id="table-opening_preferred_move_requirement_event"></a>
+
+#### Columns
+
+| PK order | Name | Type | Nullable | Default |
+| ---: | --- | --- | --- | --- |
+| 1 | `event_id` | `INTEGER` | YES | `` |
+| 0 | `player_uuid` | `TEXT` | NO | `` |
+| 0 | `placement` | `TEXT` | NO | `` |
+| 0 | `side_to_move` | `TEXT` | NO | `` |
+| 0 | `castling` | `TEXT` | NO | `` |
+| 0 | `en_passant` | `TEXT` | NO | `` |
+| 0 | `action` | `TEXT` | NO | `` |
+| 0 | `effective_at` | `TEXT` | NO | `` |
+| 0 | `recorded_at` | `TEXT` | NO | `strftime('%Y-%m-%dT%H:%M:%fZ', 'now')` |
+
+#### Foreign keys
+
+| ID | Order | From | To table | To column | On update | On delete | Match |
+| ---: | ---: | --- | --- | --- | --- | --- | --- |
+| 0 | 0 | `placement` | `position_state` | `placement` | NO ACTION | NO ACTION | NONE |
+| 0 | 1 | `side_to_move` | `position_state` | `side_to_move` | NO ACTION | NO ACTION | NONE |
+| 0 | 2 | `castling` | `position_state` | `castling` | NO ACTION | NO ACTION | NONE |
+| 0 | 3 | `en_passant` | `position_state` | `en_passant` | NO ACTION | NO ACTION | NONE |
+| 1 | 0 | `player_uuid` | `players` | `uuid` | NO ACTION | NO ACTION | NONE |
+
+#### Canonical SQL
+
+```sql
+CREATE TABLE opening_preferred_move_requirement_event ( event_id INTEGER PRIMARY KEY, player_uuid TEXT NOT NULL, placement TEXT NOT NULL, side_to_move TEXT NOT NULL CHECK (side_to_move IN ('w', 'b')), castling TEXT NOT NULL, en_passant TEXT NOT NULL, action TEXT NOT NULL CHECK (action IN ('active', 'inactive')), effective_at TEXT NOT NULL, recorded_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')), FOREIGN KEY (player_uuid) REFERENCES players(uuid), FOREIGN KEY (placement, side_to_move, castling, en_passant) REFERENCES position_state(placement, side_to_move, castling, en_passant) )
+```
+
+### Table: `opening_preferred_move_schema`
+<a id="table-opening_preferred_move_schema"></a>
+
+#### Columns
+
+| PK order | Name | Type | Nullable | Default |
+| ---: | --- | --- | --- | --- |
+| 1 | `id` | `INTEGER` | NO | `` |
+| 0 | `version` | `INTEGER` | NO | `` |
+
+#### Foreign keys
+
+None declared.
+
+#### Canonical SQL
+
+```sql
+CREATE TABLE opening_preferred_move_schema ( id INTEGER PRIMARY KEY CHECK (id = 1), version INTEGER NOT NULL ) WITHOUT ROWID
+```
+
+### Table: `opening_recurrence_branch_event`
+<a id="table-opening_recurrence_branch_event"></a>
+
+#### Columns
+
+| PK order | Name | Type | Nullable | Default |
+| ---: | --- | --- | --- | --- |
+| 1 | `manifest_hash` | `TEXT` | NO | `` |
+| 2 | `corpus_id` | `INTEGER` | NO | `` |
+| 3 | `game_uuid` | `TEXT` | NO | `` |
+| 4 | `parent_ply` | `INTEGER` | NO | `` |
+| 0 | `parent_placement` | `TEXT` | NO | `` |
+| 0 | `parent_side_to_move` | `TEXT` | NO | `` |
+| 0 | `parent_castling` | `TEXT` | NO | `` |
+| 0 | `parent_en_passant` | `TEXT` | NO | `` |
+| 5 | `branch_kind` | `TEXT` | NO | `` |
+| 0 | `child_ply` | `INTEGER` | NO | `` |
+| 0 | `child_placement` | `TEXT` | YES | `` |
+| 0 | `child_side_to_move` | `TEXT` | YES | `` |
+| 0 | `child_castling` | `TEXT` | YES | `` |
+| 0 | `child_en_passant` | `TEXT` | YES | `` |
+| 0 | `child_san` | `TEXT` | YES | `` |
+| 0 | `child_uci` | `TEXT` | YES | `` |
+| 0 | `terminal_outcome` | `TEXT` | YES | `` |
+
+#### Foreign keys
+
+| ID | Order | From | To table | To column | On update | On delete | Match |
+| ---: | ---: | --- | --- | --- | --- | --- | --- |
+| 0 | 0 | `manifest_hash` | `opening_recurrence_occurrence` | `manifest_hash` | NO ACTION | NO ACTION | NONE |
+| 0 | 1 | `corpus_id` | `opening_recurrence_occurrence` | `corpus_id` | NO ACTION | NO ACTION | NONE |
+| 0 | 2 | `game_uuid` | `opening_recurrence_occurrence` | `game_uuid` | NO ACTION | NO ACTION | NONE |
+| 0 | 3 | `child_ply` | `opening_recurrence_occurrence` | `ply` | NO ACTION | NO ACTION | NONE |
+| 1 | 0 | `manifest_hash` | `opening_recurrence_occurrence` | `manifest_hash` | NO ACTION | NO ACTION | NONE |
+| 1 | 1 | `corpus_id` | `opening_recurrence_occurrence` | `corpus_id` | NO ACTION | NO ACTION | NONE |
+| 1 | 2 | `game_uuid` | `opening_recurrence_occurrence` | `game_uuid` | NO ACTION | NO ACTION | NONE |
+| 1 | 3 | `parent_ply` | `opening_recurrence_occurrence` | `ply` | NO ACTION | NO ACTION | NONE |
+
+#### Canonical SQL
+
+```sql
+CREATE TABLE opening_recurrence_branch_event ( manifest_hash TEXT NOT NULL, corpus_id INTEGER NOT NULL, game_uuid TEXT NOT NULL, parent_ply INTEGER NOT NULL CHECK (parent_ply >= 0), parent_placement TEXT NOT NULL, parent_side_to_move TEXT NOT NULL CHECK (parent_side_to_move IN ('w', 'b')), parent_castling TEXT NOT NULL, parent_en_passant TEXT NOT NULL, branch_kind TEXT NOT NULL CHECK (branch_kind IN ('move', 'terminal')), child_ply INTEGER NOT NULL CHECK (child_ply >= parent_ply), child_placement TEXT, child_side_to_move TEXT CHECK (child_side_to_move IN ('w', 'b')), child_castling TEXT, child_en_passant TEXT, child_san TEXT, child_uci TEXT, terminal_outcome TEXT, PRIMARY KEY (manifest_hash, corpus_id, game_uuid, parent_ply, branch_kind), CHECK ( (branch_kind = 'move' AND child_ply = parent_ply + 1 AND child_uci IS NOT NULL) OR (branch_kind = 'terminal' AND child_ply = parent_ply AND child_uci IS NULL) ), FOREIGN KEY (manifest_hash, corpus_id, game_uuid, parent_ply) REFERENCES opening_recurrence_occurrence(manifest_hash, corpus_id, game_uuid, ply), FOREIGN KEY (manifest_hash, corpus_id, game_uuid, child_ply) REFERENCES opening_recurrence_occurrence(manifest_hash, corpus_id, game_uuid, ply) ) WITHOUT ROWID
+```
+
+### Table: `opening_recurrence_branch_projection`
+<a id="table-opening_recurrence_branch_projection"></a>
+
+#### Columns
+
+| PK order | Name | Type | Nullable | Default |
+| ---: | --- | --- | --- | --- |
+| 1 | `manifest_hash` | `TEXT` | NO | `` |
+| 2 | `corpus_id` | `INTEGER` | NO | `` |
+| 3 | `parent_placement` | `TEXT` | NO | `` |
+| 4 | `parent_side_to_move` | `TEXT` | NO | `` |
+| 5 | `parent_castling` | `TEXT` | NO | `` |
+| 6 | `parent_en_passant` | `TEXT` | NO | `` |
+| 7 | `branch_kind` | `TEXT` | NO | `` |
+| 8 | `child_uci` | `TEXT` | NO | `` |
+| 9 | `color_scope` | `TEXT` | NO | `` |
+| 0 | `raw_event_count` | `INTEGER` | NO | `` |
+| 0 | `distinct_game_count` | `INTEGER` | NO | `` |
+| 0 | `first_game_sequence` | `INTEGER` | YES | `` |
+| 0 | `first_game_uuid` | `TEXT` | YES | `` |
+| 0 | `first_parent_ply` | `INTEGER` | YES | `` |
+| 0 | `last_game_sequence` | `INTEGER` | YES | `` |
+| 0 | `last_game_uuid` | `TEXT` | YES | `` |
+| 0 | `last_parent_ply` | `INTEGER` | YES | `` |
+
+#### Foreign keys
+
+| ID | Order | From | To table | To column | On update | On delete | Match |
+| ---: | ---: | --- | --- | --- | --- | --- | --- |
+| 0 | 0 | `corpus_id` | `corpus` | `corpus_id` | NO ACTION | NO ACTION | NONE |
+
+#### Canonical SQL
+
+```sql
+CREATE TABLE opening_recurrence_branch_projection ( manifest_hash TEXT NOT NULL, corpus_id INTEGER NOT NULL, parent_placement TEXT NOT NULL, parent_side_to_move TEXT NOT NULL CHECK (parent_side_to_move IN ('w', 'b')), parent_castling TEXT NOT NULL, parent_en_passant TEXT NOT NULL, branch_kind TEXT NOT NULL CHECK (branch_kind IN ('move', 'terminal')), child_uci TEXT NOT NULL, color_scope TEXT NOT NULL CHECK (color_scope IN ('overall', 'white', 'black')), raw_event_count INTEGER NOT NULL CHECK (raw_event_count >= 0), distinct_game_count INTEGER NOT NULL CHECK (distinct_game_count >= 0), first_game_sequence INTEGER, first_game_uuid TEXT, first_parent_ply INTEGER, last_game_sequence INTEGER, last_game_uuid TEXT, last_parent_ply INTEGER, PRIMARY KEY ( manifest_hash, corpus_id, parent_placement, parent_side_to_move, parent_castling, parent_en_passant, branch_kind, child_uci, color_scope ), FOREIGN KEY (corpus_id) REFERENCES corpus(corpus_id), CHECK ( (branch_kind = 'move' AND child_uci <> '') OR (branch_kind = 'terminal' AND child_uci = '') ) ) WITHOUT ROWID
+```
+
+### Table: `opening_recurrence_game`
+<a id="table-opening_recurrence_game"></a>
+
+#### Columns
+
+| PK order | Name | Type | Nullable | Default |
+| ---: | --- | --- | --- | --- |
+| 1 | `manifest_hash` | `TEXT` | NO | `` |
+| 2 | `corpus_id` | `INTEGER` | NO | `` |
+| 3 | `game_uuid` | `TEXT` | NO | `` |
+| 0 | `source_fingerprint` | `TEXT` | NO | `` |
+| 0 | `metadata_fingerprint` | `TEXT` | NO | `` |
+| 0 | `game_sequence` | `INTEGER` | NO | `` |
+| 0 | `game_color` | `TEXT` | NO | `'white'` |
+| 0 | `end_time` | `INTEGER` | YES | `` |
+| 0 | `year` | `INTEGER` | YES | `` |
+| 0 | `month` | `INTEGER` | YES | `` |
+| 0 | `time_control` | `TEXT` | YES | `` |
+| 0 | `time_class` | `TEXT` | YES | `` |
+| 0 | `white_rating` | `INTEGER` | YES | `` |
+| 0 | `black_rating` | `INTEGER` | YES | `` |
+| 0 | `white_result` | `TEXT` | YES | `` |
+| 0 | `black_result` | `TEXT` | YES | `` |
+
+#### Foreign keys
+
+| ID | Order | From | To table | To column | On update | On delete | Match |
+| ---: | ---: | --- | --- | --- | --- | --- | --- |
+| 0 | 0 | `corpus_id` | `corpus_game` | `corpus_id` | NO ACTION | NO ACTION | NONE |
+| 0 | 1 | `game_uuid` | `corpus_game` | `game_uuid` | NO ACTION | NO ACTION | NONE |
+| 1 | 0 | `manifest_hash` | `opening_classification_game` | `manifest_hash` | NO ACTION | NO ACTION | NONE |
+| 1 | 1 | `corpus_id` | `opening_classification_game` | `corpus_id` | NO ACTION | NO ACTION | NONE |
+| 1 | 2 | `game_uuid` | `opening_classification_game` | `game_uuid` | NO ACTION | NO ACTION | NONE |
+
+#### Canonical SQL
+
+```sql
+CREATE TABLE opening_recurrence_game ( manifest_hash TEXT NOT NULL, corpus_id INTEGER NOT NULL, game_uuid TEXT NOT NULL, source_fingerprint TEXT NOT NULL, metadata_fingerprint TEXT NOT NULL, game_sequence INTEGER NOT NULL CHECK (game_sequence > 0), game_color TEXT NOT NULL DEFAULT 'white' CHECK (game_color IN ('white', 'black')), end_time INTEGER, year INTEGER, month INTEGER, time_control TEXT, time_class TEXT, white_rating INTEGER, black_rating INTEGER, white_result TEXT, black_result TEXT, PRIMARY KEY (manifest_hash, corpus_id, game_uuid), UNIQUE (manifest_hash, corpus_id, game_sequence), FOREIGN KEY (manifest_hash, corpus_id, game_uuid) REFERENCES opening_classification_game(manifest_hash, corpus_id, game_uuid), FOREIGN KEY (corpus_id, game_uuid) REFERENCES corpus_game(corpus_id, game_uuid) ) WITHOUT ROWID
+```
+
+### Table: `opening_recurrence_occurrence`
+<a id="table-opening_recurrence_occurrence"></a>
+
+#### Columns
+
+| PK order | Name | Type | Nullable | Default |
+| ---: | --- | --- | --- | --- |
+| 1 | `manifest_hash` | `TEXT` | NO | `` |
+| 2 | `corpus_id` | `INTEGER` | NO | `` |
+| 3 | `game_uuid` | `TEXT` | NO | `` |
+| 4 | `ply` | `INTEGER` | NO | `` |
+| 0 | `placement` | `TEXT` | NO | `` |
+| 0 | `side_to_move` | `TEXT` | NO | `` |
+| 0 | `castling` | `TEXT` | NO | `` |
+| 0 | `en_passant` | `TEXT` | NO | `` |
+| 0 | `san` | `TEXT` | YES | `` |
+| 0 | `uci` | `TEXT` | YES | `` |
+| 0 | `halfmove_clock` | `INTEGER` | NO | `` |
+| 0 | `fullmove_number` | `INTEGER` | NO | `` |
+
+#### Foreign keys
+
+| ID | Order | From | To table | To column | On update | On delete | Match |
+| ---: | ---: | --- | --- | --- | --- | --- | --- |
+| 0 | 0 | `placement` | `position_state` | `placement` | NO ACTION | NO ACTION | NONE |
+| 0 | 1 | `side_to_move` | `position_state` | `side_to_move` | NO ACTION | NO ACTION | NONE |
+| 0 | 2 | `castling` | `position_state` | `castling` | NO ACTION | NO ACTION | NONE |
+| 0 | 3 | `en_passant` | `position_state` | `en_passant` | NO ACTION | NO ACTION | NONE |
+| 1 | 0 | `game_uuid` | `position_occurrence` | `game_uuid` | NO ACTION | NO ACTION | NONE |
+| 1 | 1 | `ply` | `position_occurrence` | `ply` | NO ACTION | NO ACTION | NONE |
+| 2 | 0 | `manifest_hash` | `opening_recurrence_game` | `manifest_hash` | NO ACTION | NO ACTION | NONE |
+| 2 | 1 | `corpus_id` | `opening_recurrence_game` | `corpus_id` | NO ACTION | NO ACTION | NONE |
+| 2 | 2 | `game_uuid` | `opening_recurrence_game` | `game_uuid` | NO ACTION | NO ACTION | NONE |
+
+#### Canonical SQL
+
+```sql
+CREATE TABLE opening_recurrence_occurrence ( manifest_hash TEXT NOT NULL, corpus_id INTEGER NOT NULL, game_uuid TEXT NOT NULL, ply INTEGER NOT NULL CHECK (ply >= 0), placement TEXT NOT NULL, side_to_move TEXT NOT NULL CHECK (side_to_move IN ('w', 'b')), castling TEXT NOT NULL, en_passant TEXT NOT NULL, san TEXT, uci TEXT, halfmove_clock INTEGER NOT NULL CHECK (halfmove_clock >= 0), fullmove_number INTEGER NOT NULL CHECK (fullmove_number >= 1), PRIMARY KEY (manifest_hash, corpus_id, game_uuid, ply), FOREIGN KEY (manifest_hash, corpus_id, game_uuid) REFERENCES opening_recurrence_game(manifest_hash, corpus_id, game_uuid), FOREIGN KEY (game_uuid, ply) REFERENCES position_occurrence(game_uuid, ply), FOREIGN KEY (placement, side_to_move, castling, en_passant) REFERENCES position_state(placement, side_to_move, castling, en_passant) ) WITHOUT ROWID
+```
+
+### Table: `opening_recurrence_position_projection`
+<a id="table-opening_recurrence_position_projection"></a>
+
+#### Columns
+
+| PK order | Name | Type | Nullable | Default |
+| ---: | --- | --- | --- | --- |
+| 1 | `manifest_hash` | `TEXT` | NO | `` |
+| 2 | `corpus_id` | `INTEGER` | NO | `` |
+| 3 | `placement` | `TEXT` | NO | `` |
+| 4 | `side_to_move` | `TEXT` | NO | `` |
+| 5 | `castling` | `TEXT` | NO | `` |
+| 6 | `en_passant` | `TEXT` | NO | `` |
+| 7 | `color_scope` | `TEXT` | NO | `` |
+| 0 | `raw_occurrence_count` | `INTEGER` | NO | `` |
+| 0 | `distinct_game_count` | `INTEGER` | NO | `` |
+| 0 | `first_game_sequence` | `INTEGER` | YES | `` |
+| 0 | `first_game_uuid` | `TEXT` | YES | `` |
+| 0 | `first_ply` | `INTEGER` | YES | `` |
+| 0 | `last_game_sequence` | `INTEGER` | YES | `` |
+| 0 | `last_game_uuid` | `TEXT` | YES | `` |
+| 0 | `last_ply` | `INTEGER` | YES | `` |
+
+#### Foreign keys
+
+| ID | Order | From | To table | To column | On update | On delete | Match |
+| ---: | ---: | --- | --- | --- | --- | --- | --- |
+| 0 | 0 | `corpus_id` | `corpus` | `corpus_id` | NO ACTION | NO ACTION | NONE |
+
+#### Canonical SQL
+
+```sql
+CREATE TABLE opening_recurrence_position_projection ( manifest_hash TEXT NOT NULL, corpus_id INTEGER NOT NULL, placement TEXT NOT NULL, side_to_move TEXT NOT NULL CHECK (side_to_move IN ('w', 'b')), castling TEXT NOT NULL, en_passant TEXT NOT NULL, color_scope TEXT NOT NULL CHECK (color_scope IN ('overall', 'white', 'black')), raw_occurrence_count INTEGER NOT NULL CHECK (raw_occurrence_count >= 0), distinct_game_count INTEGER NOT NULL CHECK (distinct_game_count >= 0), first_game_sequence INTEGER, first_game_uuid TEXT, first_ply INTEGER, last_game_sequence INTEGER, last_game_uuid TEXT, last_ply INTEGER, PRIMARY KEY ( manifest_hash, corpus_id, placement, side_to_move, castling, en_passant, color_scope ), FOREIGN KEY (corpus_id) REFERENCES corpus(corpus_id) ) WITHOUT ROWID
+```
+
+### Table: `opening_recurrence_route_branch_projection`
+<a id="table-opening_recurrence_route_branch_projection"></a>
+
+#### Columns
+
+| PK order | Name | Type | Nullable | Default |
+| ---: | --- | --- | --- | --- |
+| 1 | `manifest_hash` | `TEXT` | NO | `` |
+| 2 | `corpus_id` | `INTEGER` | NO | `` |
+| 3 | `anchor_ply` | `INTEGER` | NO | `` |
+| 4 | `source_file` | `TEXT` | NO | `` |
+| 5 | `source_row_ordinal` | `INTEGER` | NO | `` |
+| 6 | `parent_placement` | `TEXT` | NO | `` |
+| 7 | `parent_side_to_move` | `TEXT` | NO | `` |
+| 8 | `parent_castling` | `TEXT` | NO | `` |
+| 9 | `parent_en_passant` | `TEXT` | NO | `` |
+| 10 | `branch_kind` | `TEXT` | NO | `` |
+| 11 | `child_uci` | `TEXT` | NO | `` |
+| 12 | `color_scope` | `TEXT` | NO | `` |
+| 0 | `raw_event_count` | `INTEGER` | NO | `` |
+| 0 | `distinct_game_count` | `INTEGER` | NO | `` |
+| 0 | `first_game_sequence` | `INTEGER` | YES | `` |
+| 0 | `first_game_uuid` | `TEXT` | YES | `` |
+| 0 | `first_parent_ply` | `INTEGER` | YES | `` |
+| 0 | `last_game_sequence` | `INTEGER` | YES | `` |
+| 0 | `last_game_uuid` | `TEXT` | YES | `` |
+| 0 | `last_parent_ply` | `INTEGER` | YES | `` |
+
+#### Foreign keys
+
+| ID | Order | From | To table | To column | On update | On delete | Match |
+| ---: | ---: | --- | --- | --- | --- | --- | --- |
+| 0 | 0 | `corpus_id` | `corpus` | `corpus_id` | NO ACTION | NO ACTION | NONE |
+| 1 | 0 | `manifest_hash` | `opening_catalog` | `manifest_hash` | NO ACTION | NO ACTION | NONE |
+| 1 | 1 | `source_file` | `opening_catalog` | `source_file` | NO ACTION | NO ACTION | NONE |
+| 1 | 2 | `source_row_ordinal` | `opening_catalog` | `source_row_ordinal` | NO ACTION | NO ACTION | NONE |
+
+#### Canonical SQL
+
+```sql
+CREATE TABLE opening_recurrence_route_branch_projection ( manifest_hash TEXT NOT NULL, corpus_id INTEGER NOT NULL, anchor_ply INTEGER NOT NULL CHECK (anchor_ply > 0), source_file TEXT NOT NULL, source_row_ordinal INTEGER NOT NULL CHECK (source_row_ordinal > 0), parent_placement TEXT NOT NULL, parent_side_to_move TEXT NOT NULL CHECK (parent_side_to_move IN ('w', 'b')), parent_castling TEXT NOT NULL, parent_en_passant TEXT NOT NULL, branch_kind TEXT NOT NULL CHECK (branch_kind IN ('move', 'terminal')), child_uci TEXT NOT NULL, color_scope TEXT NOT NULL CHECK (color_scope IN ('overall', 'white', 'black')), raw_event_count INTEGER NOT NULL CHECK (raw_event_count >= 0), distinct_game_count INTEGER NOT NULL CHECK (distinct_game_count >= 0), first_game_sequence INTEGER, first_game_uuid TEXT, first_parent_ply INTEGER, last_game_sequence INTEGER, last_game_uuid TEXT, last_parent_ply INTEGER, PRIMARY KEY ( manifest_hash, corpus_id, anchor_ply, source_file, source_row_ordinal, parent_placement, parent_side_to_move, parent_castling, parent_en_passant, branch_kind, child_uci, color_scope ), FOREIGN KEY (manifest_hash, source_file, source_row_ordinal) REFERENCES opening_catalog(manifest_hash, source_file, source_row_ordinal), FOREIGN KEY (corpus_id) REFERENCES corpus(corpus_id), CHECK ( (branch_kind = 'move' AND child_uci <> '') OR (branch_kind = 'terminal' AND child_uci = '') ) ) WITHOUT ROWID
+```
+
+### Table: `opening_recurrence_route_event`
+<a id="table-opening_recurrence_route_event"></a>
+
+#### Columns
+
+| PK order | Name | Type | Nullable | Default |
+| ---: | --- | --- | --- | --- |
+| 1 | `manifest_hash` | `TEXT` | NO | `` |
+| 2 | `corpus_id` | `INTEGER` | NO | `` |
+| 3 | `game_uuid` | `TEXT` | NO | `` |
+| 4 | `anchor_ply` | `INTEGER` | NO | `` |
+| 5 | `source_file` | `TEXT` | NO | `` |
+| 6 | `source_row_ordinal` | `INTEGER` | NO | `` |
+| 7 | `route_ply` | `INTEGER` | NO | `` |
+| 0 | `placement` | `TEXT` | NO | `` |
+| 0 | `side_to_move` | `TEXT` | NO | `` |
+| 0 | `castling` | `TEXT` | NO | `` |
+| 0 | `en_passant` | `TEXT` | NO | `` |
+| 0 | `san` | `TEXT` | NO | `` |
+| 0 | `uci` | `TEXT` | NO | `` |
+| 0 | `halfmove_clock` | `INTEGER` | NO | `` |
+| 0 | `fullmove_number` | `INTEGER` | NO | `` |
+
+#### Foreign keys
+
+| ID | Order | From | To table | To column | On update | On delete | Match |
+| ---: | ---: | --- | --- | --- | --- | --- | --- |
+| 0 | 0 | `manifest_hash` | `opening_recurrence_occurrence` | `manifest_hash` | NO ACTION | NO ACTION | NONE |
+| 0 | 1 | `corpus_id` | `opening_recurrence_occurrence` | `corpus_id` | NO ACTION | NO ACTION | NONE |
+| 0 | 2 | `game_uuid` | `opening_recurrence_occurrence` | `game_uuid` | NO ACTION | NO ACTION | NONE |
+| 0 | 3 | `route_ply` | `opening_recurrence_occurrence` | `ply` | NO ACTION | NO ACTION | NONE |
+| 1 | 0 | `manifest_hash` | `opening_classification_route` | `manifest_hash` | NO ACTION | NO ACTION | NONE |
+| 1 | 1 | `corpus_id` | `opening_classification_route` | `corpus_id` | NO ACTION | NO ACTION | NONE |
+| 1 | 2 | `game_uuid` | `opening_classification_route` | `game_uuid` | NO ACTION | NO ACTION | NONE |
+| 1 | 3 | `anchor_ply` | `opening_classification_route` | `anchor_ply` | NO ACTION | NO ACTION | NONE |
+| 1 | 4 | `source_file` | `opening_classification_route` | `source_file` | NO ACTION | NO ACTION | NONE |
+| 1 | 5 | `source_row_ordinal` | `opening_classification_route` | `source_row_ordinal` | NO ACTION | NO ACTION | NONE |
+| 1 | 6 | `route_ply` | `opening_classification_route` | `route_ply` | NO ACTION | NO ACTION | NONE |
+
+#### Canonical SQL
+
+```sql
+CREATE TABLE opening_recurrence_route_event ( manifest_hash TEXT NOT NULL, corpus_id INTEGER NOT NULL, game_uuid TEXT NOT NULL, anchor_ply INTEGER NOT NULL CHECK (anchor_ply > 0), source_file TEXT NOT NULL, source_row_ordinal INTEGER NOT NULL CHECK (source_row_ordinal > 0), route_ply INTEGER NOT NULL CHECK (route_ply >= anchor_ply), placement TEXT NOT NULL, side_to_move TEXT NOT NULL CHECK (side_to_move IN ('w', 'b')), castling TEXT NOT NULL, en_passant TEXT NOT NULL, san TEXT NOT NULL, uci TEXT NOT NULL, halfmove_clock INTEGER NOT NULL CHECK (halfmove_clock >= 0), fullmove_number INTEGER NOT NULL CHECK (fullmove_number >= 1), PRIMARY KEY ( manifest_hash, corpus_id, game_uuid, anchor_ply, source_file, source_row_ordinal, route_ply ), FOREIGN KEY ( manifest_hash, corpus_id, game_uuid, anchor_ply, source_file, source_row_ordinal, route_ply ) REFERENCES opening_classification_route( manifest_hash, corpus_id, game_uuid, anchor_ply, source_file, source_row_ordinal, route_ply ), FOREIGN KEY (manifest_hash, corpus_id, game_uuid, route_ply) REFERENCES opening_recurrence_occurrence(manifest_hash, corpus_id, game_uuid, ply) ) WITHOUT ROWID
+```
+
+### Table: `opening_recurrence_route_projection`
+<a id="table-opening_recurrence_route_projection"></a>
+
+#### Columns
+
+| PK order | Name | Type | Nullable | Default |
+| ---: | --- | --- | --- | --- |
+| 1 | `manifest_hash` | `TEXT` | NO | `` |
+| 2 | `corpus_id` | `INTEGER` | NO | `` |
+| 3 | `anchor_ply` | `INTEGER` | NO | `` |
+| 4 | `source_file` | `TEXT` | NO | `` |
+| 5 | `source_row_ordinal` | `INTEGER` | NO | `` |
+| 6 | `placement` | `TEXT` | NO | `` |
+| 7 | `side_to_move` | `TEXT` | NO | `` |
+| 8 | `castling` | `TEXT` | NO | `` |
+| 9 | `en_passant` | `TEXT` | NO | `` |
+| 10 | `color_scope` | `TEXT` | NO | `` |
+| 0 | `raw_occurrence_count` | `INTEGER` | NO | `` |
+| 0 | `distinct_game_count` | `INTEGER` | NO | `` |
+| 0 | `first_game_sequence` | `INTEGER` | YES | `` |
+| 0 | `first_game_uuid` | `TEXT` | YES | `` |
+| 0 | `first_route_ply` | `INTEGER` | YES | `` |
+| 0 | `last_game_sequence` | `INTEGER` | YES | `` |
+| 0 | `last_game_uuid` | `TEXT` | YES | `` |
+| 0 | `last_route_ply` | `INTEGER` | YES | `` |
+
+#### Foreign keys
+
+| ID | Order | From | To table | To column | On update | On delete | Match |
+| ---: | ---: | --- | --- | --- | --- | --- | --- |
+| 0 | 0 | `manifest_hash` | `opening_catalog` | `manifest_hash` | NO ACTION | NO ACTION | NONE |
+| 0 | 1 | `source_file` | `opening_catalog` | `source_file` | NO ACTION | NO ACTION | NONE |
+| 0 | 2 | `source_row_ordinal` | `opening_catalog` | `source_row_ordinal` | NO ACTION | NO ACTION | NONE |
+
+#### Canonical SQL
+
+```sql
+CREATE TABLE opening_recurrence_route_projection ( manifest_hash TEXT NOT NULL, corpus_id INTEGER NOT NULL, anchor_ply INTEGER NOT NULL CHECK (anchor_ply > 0), source_file TEXT NOT NULL, source_row_ordinal INTEGER NOT NULL CHECK (source_row_ordinal > 0), placement TEXT NOT NULL, side_to_move TEXT NOT NULL CHECK (side_to_move IN ('w', 'b')), castling TEXT NOT NULL, en_passant TEXT NOT NULL, color_scope TEXT NOT NULL CHECK (color_scope IN ('overall', 'white', 'black')), raw_occurrence_count INTEGER NOT NULL CHECK (raw_occurrence_count >= 0), distinct_game_count INTEGER NOT NULL CHECK (distinct_game_count >= 0), first_game_sequence INTEGER, first_game_uuid TEXT, first_route_ply INTEGER, last_game_sequence INTEGER, last_game_uuid TEXT, last_route_ply INTEGER, PRIMARY KEY ( manifest_hash, corpus_id, anchor_ply, source_file, source_row_ordinal, placement, side_to_move, castling, en_passant, color_scope ), FOREIGN KEY (manifest_hash, source_file, source_row_ordinal) REFERENCES opening_catalog(manifest_hash, source_file, source_row_ordinal) ) WITHOUT ROWID
+```
+
+### Table: `opening_recurrence_run`
+<a id="table-opening_recurrence_run"></a>
+
+#### Columns
+
+| PK order | Name | Type | Nullable | Default |
+| ---: | --- | --- | --- | --- |
+| 1 | `run_id` | `TEXT` | NO | `` |
+| 0 | `manifest_hash` | `TEXT` | NO | `` |
+| 0 | `corpus_id` | `INTEGER` | NO | `` |
+| 0 | `schema_version` | `INTEGER` | NO | `` |
+| 0 | `classification_schema_version` | `INTEGER` | NO | `` |
+| 0 | `catalog_schema_version` | `INTEGER` | NO | `` |
+| 0 | `relationship_schema_version` | `INTEGER` | NO | `` |
+| 0 | `corpus_schema_version` | `INTEGER` | NO | `` |
+| 0 | `classification_input_signature` | `TEXT` | NO | `` |
+| 0 | `corpus_input_signature` | `TEXT` | NO | `` |
+| 0 | `game_metadata_input_signature` | `TEXT` | NO | `` |
+| 0 | `status` | `TEXT` | NO | `` |
+| 0 | `started_at` | `TEXT` | NO | `` |
+| 0 | `finished_at` | `TEXT` | YES | `` |
+| 0 | `game_count` | `INTEGER` | NO | `` |
+| 0 | `occurrence_count` | `INTEGER` | NO | `` |
+| 0 | `route_event_count` | `INTEGER` | NO | `` |
+| 0 | `branch_event_count` | `INTEGER` | NO | `` |
+| 0 | `details` | `TEXT` | YES | `` |
+
+#### Foreign keys
+
+| ID | Order | From | To table | To column | On update | On delete | Match |
+| ---: | ---: | --- | --- | --- | --- | --- | --- |
+| 0 | 0 | `corpus_id` | `corpus` | `corpus_id` | NO ACTION | NO ACTION | NONE |
+| 1 | 0 | `manifest_hash` | `opening_classification_state` | `accepted_manifest_hash` | NO ACTION | NO ACTION | NONE |
+| 1 | 1 | `corpus_id` | `opening_classification_state` | `corpus_id` | NO ACTION | NO ACTION | NONE |
+
+#### Canonical SQL
+
+```sql
+CREATE TABLE opening_recurrence_run ( run_id TEXT PRIMARY KEY, manifest_hash TEXT NOT NULL, corpus_id INTEGER NOT NULL, schema_version INTEGER NOT NULL, classification_schema_version INTEGER NOT NULL, catalog_schema_version INTEGER NOT NULL, relationship_schema_version INTEGER NOT NULL, corpus_schema_version INTEGER NOT NULL, classification_input_signature TEXT NOT NULL, corpus_input_signature TEXT NOT NULL, game_metadata_input_signature TEXT NOT NULL, status TEXT NOT NULL CHECK ( status IN ('running', 'success', 'failed', 'interrupted') ), started_at TEXT NOT NULL, finished_at TEXT, game_count INTEGER NOT NULL CHECK (game_count >= 0), occurrence_count INTEGER NOT NULL CHECK (occurrence_count >= 0), route_event_count INTEGER NOT NULL CHECK (route_event_count >= 0), branch_event_count INTEGER NOT NULL CHECK (branch_event_count >= 0), details TEXT, UNIQUE (manifest_hash, corpus_id, run_id), FOREIGN KEY (manifest_hash, corpus_id) REFERENCES opening_classification_state(accepted_manifest_hash, corpus_id), FOREIGN KEY (corpus_id) REFERENCES corpus(corpus_id) ) WITHOUT ROWID
+```
+
+### Table: `opening_recurrence_schema`
+<a id="table-opening_recurrence_schema"></a>
+
+#### Columns
+
+| PK order | Name | Type | Nullable | Default |
+| ---: | --- | --- | --- | --- |
+| 1 | `id` | `INTEGER` | NO | `` |
+| 0 | `version` | `INTEGER` | NO | `` |
+
+#### Foreign keys
+
+None declared.
+
+#### Canonical SQL
+
+```sql
+CREATE TABLE opening_recurrence_schema ( id INTEGER PRIMARY KEY CHECK (id = 1), version INTEGER NOT NULL ) WITHOUT ROWID
+```
+
+### Table: `opening_recurrence_state`
+<a id="table-opening_recurrence_state"></a>
+
+#### Columns
+
+| PK order | Name | Type | Nullable | Default |
+| ---: | --- | --- | --- | --- |
+| 1 | `accepted_manifest_hash` | `TEXT` | NO | `` |
+| 2 | `corpus_id` | `INTEGER` | NO | `` |
+| 0 | `accepted_schema_version` | `INTEGER` | NO | `` |
+| 0 | `accepted_classification_schema_version` | `INTEGER` | NO | `` |
+| 0 | `accepted_catalog_schema_version` | `INTEGER` | NO | `` |
+| 0 | `accepted_relationship_schema_version` | `INTEGER` | NO | `` |
+| 0 | `accepted_corpus_schema_version` | `INTEGER` | NO | `` |
+| 0 | `classification_input_signature` | `TEXT` | NO | `` |
+| 0 | `corpus_input_signature` | `TEXT` | NO | `` |
+| 0 | `game_metadata_input_signature` | `TEXT` | NO | `` |
+| 0 | `accepted_at` | `TEXT` | NO | `` |
+| 0 | `game_count` | `INTEGER` | NO | `` |
+| 0 | `occurrence_count` | `INTEGER` | NO | `` |
+| 0 | `route_event_count` | `INTEGER` | NO | `` |
+| 0 | `branch_event_count` | `INTEGER` | NO | `` |
+
+#### Foreign keys
+
+| ID | Order | From | To table | To column | On update | On delete | Match |
+| ---: | ---: | --- | --- | --- | --- | --- | --- |
+| 0 | 0 | `corpus_id` | `corpus` | `corpus_id` | NO ACTION | NO ACTION | NONE |
+| 1 | 0 | `accepted_manifest_hash` | `opening_classification_state` | `accepted_manifest_hash` | NO ACTION | NO ACTION | NONE |
+| 1 | 1 | `corpus_id` | `opening_classification_state` | `corpus_id` | NO ACTION | NO ACTION | NONE |
+| 2 | 0 | `accepted_manifest_hash` | `opening_relationship_state` | `accepted_manifest_hash` | NO ACTION | NO ACTION | NONE |
+| 3 | 0 | `accepted_manifest_hash` | `opening_source_manifest` | `manifest_hash` | NO ACTION | NO ACTION | NONE |
+
+#### Canonical SQL
+
+```sql
+CREATE TABLE opening_recurrence_state ( accepted_manifest_hash TEXT NOT NULL, corpus_id INTEGER NOT NULL, accepted_schema_version INTEGER NOT NULL, accepted_classification_schema_version INTEGER NOT NULL, accepted_catalog_schema_version INTEGER NOT NULL, accepted_relationship_schema_version INTEGER NOT NULL, accepted_corpus_schema_version INTEGER NOT NULL, classification_input_signature TEXT NOT NULL, corpus_input_signature TEXT NOT NULL, game_metadata_input_signature TEXT NOT NULL, accepted_at TEXT NOT NULL, game_count INTEGER NOT NULL CHECK (game_count >= 0), occurrence_count INTEGER NOT NULL CHECK (occurrence_count >= 0), route_event_count INTEGER NOT NULL CHECK (route_event_count >= 0), branch_event_count INTEGER NOT NULL CHECK (branch_event_count >= 0), PRIMARY KEY (accepted_manifest_hash, corpus_id), FOREIGN KEY (accepted_manifest_hash) REFERENCES opening_source_manifest(manifest_hash), FOREIGN KEY (accepted_manifest_hash) REFERENCES opening_relationship_state(accepted_manifest_hash), FOREIGN KEY (accepted_manifest_hash, corpus_id) REFERENCES opening_classification_state(accepted_manifest_hash, corpus_id), FOREIGN KEY (corpus_id) REFERENCES corpus(corpus_id) ) WITHOUT ROWID
+```
+
+### Table: `opening_relationship_position`
+<a id="table-opening_relationship_position"></a>
+
+#### Columns
+
+| PK order | Name | Type | Nullable | Default |
+| ---: | --- | --- | --- | --- |
+| 1 | `manifest_hash` | `TEXT` | NO | `` |
+| 2 | `placement` | `TEXT` | NO | `` |
+| 3 | `side_to_move` | `TEXT` | NO | `` |
+| 4 | `castling` | `TEXT` | NO | `` |
+| 5 | `en_passant` | `TEXT` | NO | `` |
+
+#### Foreign keys
+
+| ID | Order | From | To table | To column | On update | On delete | Match |
+| ---: | ---: | --- | --- | --- | --- | --- | --- |
+| 0 | 0 | `manifest_hash` | `opening_source_manifest` | `manifest_hash` | NO ACTION | NO ACTION | NONE |
+
+#### Canonical SQL
+
+```sql
+CREATE TABLE opening_relationship_position ( manifest_hash TEXT NOT NULL, placement TEXT NOT NULL, side_to_move TEXT NOT NULL, castling TEXT NOT NULL, en_passant TEXT NOT NULL, PRIMARY KEY ( manifest_hash, placement, side_to_move, castling, en_passant ), FOREIGN KEY (manifest_hash) REFERENCES opening_source_manifest(manifest_hash) ) WITHOUT ROWID
+```
+
+### Table: `opening_relationship_run`
+<a id="table-opening_relationship_run"></a>
+
+#### Columns
+
+| PK order | Name | Type | Nullable | Default |
+| ---: | --- | --- | --- | --- |
+| 1 | `run_id` | `TEXT` | NO | `` |
+| 0 | `manifest_hash` | `TEXT` | NO | `` |
+| 0 | `schema_version` | `INTEGER` | NO | `` |
+| 0 | `status` | `TEXT` | NO | `` |
+| 0 | `record_count` | `INTEGER` | NO | `` |
+| 0 | `position_count` | `INTEGER` | NO | `` |
+| 0 | `membership_count` | `INTEGER` | NO | `` |
+| 0 | `parent_link_count` | `INTEGER` | NO | `` |
+| 0 | `transposition_link_count` | `INTEGER` | NO | `` |
+| 0 | `details` | `TEXT` | YES | `` |
+
+#### Foreign keys
+
+| ID | Order | From | To table | To column | On update | On delete | Match |
+| ---: | ---: | --- | --- | --- | --- | --- | --- |
+| 0 | 0 | `manifest_hash` | `opening_source_manifest` | `manifest_hash` | NO ACTION | NO ACTION | NONE |
+
+#### Canonical SQL
+
+```sql
+CREATE TABLE opening_relationship_run ( run_id TEXT PRIMARY KEY, manifest_hash TEXT NOT NULL UNIQUE, schema_version INTEGER NOT NULL, status TEXT NOT NULL CHECK (status IN ('running', 'success')), record_count INTEGER NOT NULL CHECK (record_count >= 0), position_count INTEGER NOT NULL CHECK (position_count >= 0), membership_count INTEGER NOT NULL CHECK (membership_count >= 0), parent_link_count INTEGER NOT NULL CHECK (parent_link_count >= 0), transposition_link_count INTEGER NOT NULL CHECK (transposition_link_count >= 0), details TEXT, FOREIGN KEY (manifest_hash) REFERENCES opening_source_manifest(manifest_hash) ) WITHOUT ROWID
+```
+
+### Table: `opening_relationship_schema`
+<a id="table-opening_relationship_schema"></a>
+
+#### Columns
+
+| PK order | Name | Type | Nullable | Default |
+| ---: | --- | --- | --- | --- |
+| 1 | `id` | `INTEGER` | NO | `` |
+| 0 | `version` | `INTEGER` | NO | `` |
+
+#### Foreign keys
+
+None declared.
+
+#### Canonical SQL
+
+```sql
+CREATE TABLE opening_relationship_schema ( id INTEGER PRIMARY KEY CHECK (id = 1), version INTEGER NOT NULL ) WITHOUT ROWID
+```
+
+### Table: `opening_relationship_state`
+<a id="table-opening_relationship_state"></a>
+
+#### Columns
+
+| PK order | Name | Type | Nullable | Default |
+| ---: | --- | --- | --- | --- |
+| 1 | `accepted_manifest_hash` | `TEXT` | NO | `` |
+| 0 | `accepted_schema_version` | `INTEGER` | NO | `` |
+| 0 | `record_count` | `INTEGER` | NO | `` |
+| 0 | `position_count` | `INTEGER` | NO | `` |
+| 0 | `membership_count` | `INTEGER` | NO | `` |
+| 0 | `parent_link_count` | `INTEGER` | NO | `` |
+| 0 | `transposition_link_count` | `INTEGER` | NO | `` |
+
+#### Foreign keys
+
+| ID | Order | From | To table | To column | On update | On delete | Match |
+| ---: | ---: | --- | --- | --- | --- | --- | --- |
+| 0 | 0 | `accepted_manifest_hash` | `opening_source_manifest` | `manifest_hash` | NO ACTION | NO ACTION | NONE |
+
+#### Canonical SQL
+
+```sql
+CREATE TABLE opening_relationship_state ( accepted_manifest_hash TEXT PRIMARY KEY, accepted_schema_version INTEGER NOT NULL, record_count INTEGER NOT NULL CHECK (record_count >= 0), position_count INTEGER NOT NULL CHECK (position_count >= 0), membership_count INTEGER NOT NULL CHECK (membership_count >= 0), parent_link_count INTEGER NOT NULL CHECK (parent_link_count >= 0), transposition_link_count INTEGER NOT NULL CHECK (transposition_link_count >= 0), FOREIGN KEY (accepted_manifest_hash) REFERENCES opening_source_manifest(manifest_hash) ) WITHOUT ROWID
+```
+
+### Table: `opening_source_file`
+<a id="table-opening_source_file"></a>
+
+#### Columns
+
+| PK order | Name | Type | Nullable | Default |
+| ---: | --- | --- | --- | --- |
+| 1 | `manifest_hash` | `TEXT` | NO | `` |
+| 2 | `source_file` | `TEXT` | NO | `` |
+| 0 | `source_file_hash` | `TEXT` | NO | `` |
+| 0 | `record_count` | `INTEGER` | NO | `` |
+
+#### Foreign keys
+
+| ID | Order | From | To table | To column | On update | On delete | Match |
+| ---: | ---: | --- | --- | --- | --- | --- | --- |
+| 0 | 0 | `manifest_hash` | `opening_source_manifest` | `manifest_hash` | NO ACTION | NO ACTION | NONE |
+
+#### Canonical SQL
+
+```sql
+CREATE TABLE opening_source_file ( manifest_hash TEXT NOT NULL, source_file TEXT NOT NULL, source_file_hash TEXT NOT NULL, record_count INTEGER NOT NULL CHECK (record_count >= 0), PRIMARY KEY (manifest_hash, source_file), FOREIGN KEY (manifest_hash) REFERENCES opening_source_manifest(manifest_hash) )
+```
+
+### Table: `opening_source_manifest`
+<a id="table-opening_source_manifest"></a>
+
+#### Columns
+
+| PK order | Name | Type | Nullable | Default |
+| ---: | --- | --- | --- | --- |
+| 1 | `manifest_hash` | `TEXT` | YES | `` |
+| 0 | `source_dataset` | `TEXT` | NO | `` |
+| 0 | `file_count` | `INTEGER` | NO | `` |
+| 0 | `record_count` | `INTEGER` | NO | `` |
+| 0 | `created_at` | `TEXT` | NO | `` |
+
+#### Foreign keys
+
+None declared.
+
+#### Canonical SQL
+
+```sql
+CREATE TABLE opening_source_manifest ( manifest_hash TEXT PRIMARY KEY, source_dataset TEXT NOT NULL, file_count INTEGER NOT NULL CHECK (file_count = 5), record_count INTEGER NOT NULL CHECK (record_count >= 0), created_at TEXT NOT NULL )
+```
+
+### Table: `opening_transposition_link`
+<a id="table-opening_transposition_link"></a>
+
+#### Columns
+
+| PK order | Name | Type | Nullable | Default |
+| ---: | --- | --- | --- | --- |
+| 1 | `manifest_hash` | `TEXT` | NO | `` |
+| 2 | `placement` | `TEXT` | NO | `` |
+| 3 | `side_to_move` | `TEXT` | NO | `` |
+| 4 | `castling` | `TEXT` | NO | `` |
+| 5 | `en_passant` | `TEXT` | NO | `` |
+| 6 | `source_file_a` | `TEXT` | NO | `` |
+| 7 | `source_row_ordinal_a` | `INTEGER` | NO | `` |
+| 8 | `ply_a` | `INTEGER` | NO | `` |
+| 0 | `uci_prefix_a` | `TEXT` | NO | `` |
+| 9 | `source_file_b` | `TEXT` | NO | `` |
+| 10 | `source_row_ordinal_b` | `INTEGER` | NO | `` |
+| 11 | `ply_b` | `INTEGER` | NO | `` |
+| 0 | `uci_prefix_b` | `TEXT` | NO | `` |
+
+#### Foreign keys
+
+| ID | Order | From | To table | To column | On update | On delete | Match |
+| ---: | ---: | --- | --- | --- | --- | --- | --- |
+| 0 | 0 | `manifest_hash` | `opening_position_membership` | `manifest_hash` | NO ACTION | NO ACTION | NONE |
+| 0 | 1 | `source_file_b` | `opening_position_membership` | `source_file` | NO ACTION | NO ACTION | NONE |
+| 0 | 2 | `source_row_ordinal_b` | `opening_position_membership` | `source_row_ordinal` | NO ACTION | NO ACTION | NONE |
+| 0 | 3 | `ply_b` | `opening_position_membership` | `ply` | NO ACTION | NO ACTION | NONE |
+| 1 | 0 | `manifest_hash` | `opening_position_membership` | `manifest_hash` | NO ACTION | NO ACTION | NONE |
+| 1 | 1 | `source_file_a` | `opening_position_membership` | `source_file` | NO ACTION | NO ACTION | NONE |
+| 1 | 2 | `source_row_ordinal_a` | `opening_position_membership` | `source_row_ordinal` | NO ACTION | NO ACTION | NONE |
+| 1 | 3 | `ply_a` | `opening_position_membership` | `ply` | NO ACTION | NO ACTION | NONE |
+| 2 | 0 | `manifest_hash` | `opening_relationship_position` | `manifest_hash` | NO ACTION | NO ACTION | NONE |
+| 2 | 1 | `placement` | `opening_relationship_position` | `placement` | NO ACTION | NO ACTION | NONE |
+| 2 | 2 | `side_to_move` | `opening_relationship_position` | `side_to_move` | NO ACTION | NO ACTION | NONE |
+| 2 | 3 | `castling` | `opening_relationship_position` | `castling` | NO ACTION | NO ACTION | NONE |
+| 2 | 4 | `en_passant` | `opening_relationship_position` | `en_passant` | NO ACTION | NO ACTION | NONE |
+
+#### Canonical SQL
+
+```sql
+CREATE TABLE opening_transposition_link ( manifest_hash TEXT NOT NULL, placement TEXT NOT NULL, side_to_move TEXT NOT NULL, castling TEXT NOT NULL, en_passant TEXT NOT NULL, source_file_a TEXT NOT NULL, source_row_ordinal_a INTEGER NOT NULL, ply_a INTEGER NOT NULL CHECK (ply_a > 0), uci_prefix_a TEXT NOT NULL, source_file_b TEXT NOT NULL, source_row_ordinal_b INTEGER NOT NULL, ply_b INTEGER NOT NULL CHECK (ply_b > 0), uci_prefix_b TEXT NOT NULL, PRIMARY KEY ( manifest_hash, placement, side_to_move, castling, en_passant, source_file_a, source_row_ordinal_a, ply_a, source_file_b, source_row_ordinal_b, ply_b ), CHECK ( source_file_a < source_file_b OR ( source_file_a = source_file_b AND source_row_ordinal_a < source_row_ordinal_b ) ), CHECK (uci_prefix_a <> uci_prefix_b), FOREIGN KEY ( manifest_hash, placement, side_to_move, castling, en_passant ) REFERENCES opening_relationship_position( manifest_hash, placement, side_to_move, castling, en_passant ), FOREIGN KEY (manifest_hash, source_file_a, source_row_ordinal_a, ply_a) REFERENCES opening_position_membership( manifest_hash, source_file, source_row_ordinal, ply ), FOREIGN KEY (manifest_hash, source_file_b, source_row_ordinal_b, ply_b) REFERENCES opening_position_membership( manifest_hash, source_file, source_row_ordinal, ply ) ) WITHOUT ROWID
+```
+
+### Table: `players`
+<a id="table-players"></a>
+
+#### Columns
+
+| PK order | Name | Type | Nullable | Default |
+| ---: | --- | --- | --- | --- |
+| 1 | `uuid` | `TEXT` | YES | `` |
+| 0 | `username` | `TEXT` | NO | `` |
+| 0 | `profile_url` | `TEXT` | YES | `` |
+
+#### Foreign keys
+
+None declared.
+
+#### Canonical SQL
+
+```sql
+CREATE TABLE players ( uuid TEXT PRIMARY KEY, username TEXT NOT NULL, profile_url TEXT, UNIQUE (username, uuid) )
+```
+
+### Table: `position_occurrence`
+<a id="table-position_occurrence"></a>
+
+#### Columns
+
+| PK order | Name | Type | Nullable | Default |
+| ---: | --- | --- | --- | --- |
+| 1 | `occurrence_id` | `INTEGER` | YES | `` |
+| 0 | `game_uuid` | `TEXT` | NO | `` |
+| 0 | `ply` | `INTEGER` | NO | `` |
+| 0 | `state_id` | `INTEGER` | NO | `` |
+| 0 | `san` | `TEXT` | YES | `` |
+| 0 | `uci` | `TEXT` | YES | `` |
+| 0 | `halfmove_clock` | `INTEGER` | NO | `` |
+| 0 | `fullmove_number` | `INTEGER` | NO | `` |
+
+#### Foreign keys
+
+| ID | Order | From | To table | To column | On update | On delete | Match |
+| ---: | ---: | --- | --- | --- | --- | --- | --- |
+| 0 | 0 | `state_id` | `position_state` | `state_id` | NO ACTION | NO ACTION | NONE |
+| 1 | 0 | `game_uuid` | `games` | `uuid` | NO ACTION | NO ACTION | NONE |
+
+#### Canonical SQL
+
+```sql
+CREATE TABLE position_occurrence ( occurrence_id INTEGER PRIMARY KEY, game_uuid TEXT NOT NULL, ply INTEGER NOT NULL, state_id INTEGER NOT NULL, san TEXT NULL, uci TEXT NULL, halfmove_clock INTEGER NOT NULL, fullmove_number INTEGER NOT NULL, UNIQUE (game_uuid, ply), FOREIGN KEY (game_uuid) REFERENCES games(uuid), FOREIGN KEY (state_id) REFERENCES position_state(state_id) )
+```
+
+### Table: `position_state`
+<a id="table-position_state"></a>
+
+#### Columns
+
+| PK order | Name | Type | Nullable | Default |
+| ---: | --- | --- | --- | --- |
+| 1 | `state_id` | `INTEGER` | YES | `` |
+| 0 | `placement` | `TEXT` | YES | `` |
+| 0 | `side_to_move` | `TEXT` | YES | `` |
+| 0 | `castling` | `TEXT` | YES | `` |
+| 0 | `en_passant` | `TEXT` | YES | `` |
+
+#### Foreign keys
+
+None declared.
+
+#### Canonical SQL
+
+```sql
+CREATE TABLE position_state ( state_id INTEGER PRIMARY KEY, placement TEXT, side_to_move TEXT, castling TEXT, en_passant TEXT, UNIQUE (placement, side_to_move, castling, en_passant) )
+```
+
+### Index: `evaluation_queue_fifo`
+<a id="index-evaluation_queue_fifo"></a>
+
+- **Table:** `evaluation_queue`
+- **Unique:** no
+- **Columns:** `state`, `position`
+- **Partial:** no
+- **Origin:** `c`
+
+#### Canonical SQL
+
+```sql
+CREATE INDEX evaluation_queue_fifo ON evaluation_queue (state, position)
+```
+
+### Index: `one_current_month`
+<a id="index-one_current_month"></a>
+
+- **Table:** `fetch_state`
+- **Unique:** yes
+- **Columns:** `username`
+- **Partial:** yes
+- **Origin:** `c`
+
+#### Canonical SQL
+
+```sql
+CREATE UNIQUE INDEX one_current_month ON fetch_state (username) WHERE is_current = 1
+```
+
+### Index: `opening_catalog_endpoint_idx`
+<a id="index-opening_catalog_endpoint_idx"></a>
+
+- **Table:** `opening_catalog`
+- **Unique:** no
+- **Columns:** `endpoint_placement`, `endpoint_side_to_move`, `endpoint_castling`, `endpoint_en_passant`
+- **Partial:** no
+- **Origin:** `c`
+
+#### Canonical SQL
+
+```sql
+CREATE INDEX opening_catalog_endpoint_idx ON opening_catalog( endpoint_placement, endpoint_side_to_move, endpoint_castling, endpoint_en_passant )
+```
+
+### Index: `opening_classification_anchor_position_idx`
+<a id="index-opening_classification_anchor_position_idx"></a>
+
+- **Table:** `opening_classification_anchor`
+- **Unique:** no
+- **Columns:** `manifest_hash`, `anchor_placement`, `anchor_side_to_move`, `anchor_castling`, `anchor_en_passant`
+- **Partial:** no
+- **Origin:** `c`
+
+#### Canonical SQL
+
+```sql
+CREATE INDEX opening_classification_anchor_position_idx ON opening_classification_anchor( manifest_hash, anchor_placement, anchor_side_to_move, anchor_castling, anchor_en_passant )
+```
+
+### Index: `opening_classification_route_game_idx`
+<a id="index-opening_classification_route_game_idx"></a>
+
+- **Table:** `opening_classification_route`
+- **Unique:** no
+- **Columns:** `manifest_hash`, `corpus_id`, `game_uuid`, `route_ply`
+- **Partial:** no
+- **Origin:** `c`
+
+#### Canonical SQL
+
+```sql
+CREATE INDEX opening_classification_route_game_idx ON opening_classification_route(manifest_hash, corpus_id, game_uuid, route_ply)
+```
+
+### Index: `opening_import_run_manifest_idx`
+<a id="index-opening_import_run_manifest_idx"></a>
+
+- **Table:** `opening_import_run`
+- **Unique:** no
+- **Columns:** `manifest_hash`
+- **Partial:** no
+- **Origin:** `c`
+
+#### Canonical SQL
+
+```sql
+CREATE INDEX opening_import_run_manifest_idx ON opening_import_run(manifest_hash)
+```
+
+### Index: `opening_parent_link_parent_idx`
+<a id="index-opening_parent_link_parent_idx"></a>
+
+- **Table:** `opening_parent_link`
+- **Unique:** no
+- **Columns:** `manifest_hash`, `parent_source_file`, `parent_source_row_ordinal`
+- **Partial:** no
+- **Origin:** `c`
+
+#### Canonical SQL
+
+```sql
+CREATE INDEX opening_parent_link_parent_idx ON opening_parent_link(manifest_hash, parent_source_file, parent_source_row_ordinal)
+```
+
+### Index: `opening_position_membership_position_idx`
+<a id="index-opening_position_membership_position_idx"></a>
+
+- **Table:** `opening_position_membership`
+- **Unique:** no
+- **Columns:** `manifest_hash`, `placement`, `side_to_move`, `castling`, `en_passant`
+- **Partial:** no
+- **Origin:** `c`
+
+#### Canonical SQL
+
+```sql
+CREATE INDEX opening_position_membership_position_idx ON opening_position_membership( manifest_hash, placement, side_to_move, castling, en_passant )
+```
+
+### Index: `opening_preferred_move_lookup`
+<a id="index-opening_preferred_move_lookup"></a>
+
+- **Table:** `opening_preferred_move_event`
+- **Unique:** no
+- **Columns:** `player_uuid`, `placement`, `side_to_move`, `castling`, `en_passant`, `effective_at`, `recorded_at`, `event_id`
+- **Partial:** no
+- **Origin:** `c`
+
+#### Canonical SQL
+
+```sql
+CREATE INDEX opening_preferred_move_lookup ON opening_preferred_move_event( player_uuid, placement, side_to_move, castling, en_passant, effective_at, recorded_at, event_id )
+```
+
+### Index: `opening_preferred_move_requirement_lookup`
+<a id="index-opening_preferred_move_requirement_lookup"></a>
+
+- **Table:** `opening_preferred_move_requirement_event`
+- **Unique:** no
+- **Columns:** `player_uuid`, `placement`, `side_to_move`, `castling`, `en_passant`, `effective_at`, `recorded_at`, `event_id`
+- **Partial:** no
+- **Origin:** `c`
+
+#### Canonical SQL
+
+```sql
+CREATE INDEX opening_preferred_move_requirement_lookup ON opening_preferred_move_requirement_event( player_uuid, placement, side_to_move, castling, en_passant, effective_at, recorded_at, event_id )
+```
+
+### Index: `opening_recurrence_branch_event_parent_idx`
+<a id="index-opening_recurrence_branch_event_parent_idx"></a>
+
+- **Table:** `opening_recurrence_branch_event`
+- **Unique:** no
+- **Columns:** `manifest_hash`, `corpus_id`, `parent_placement`, `parent_side_to_move`, `parent_castling`, `parent_en_passant`
+- **Partial:** no
+- **Origin:** `c`
+
+#### Canonical SQL
+
+```sql
+CREATE INDEX opening_recurrence_branch_event_parent_idx ON opening_recurrence_branch_event(manifest_hash, corpus_id, parent_placement, parent_side_to_move, parent_castling, parent_en_passant)
+```
+
+### Index: `opening_recurrence_occurrence_position_idx`
+<a id="index-opening_recurrence_occurrence_position_idx"></a>
+
+- **Table:** `opening_recurrence_occurrence`
+- **Unique:** no
+- **Columns:** `manifest_hash`, `corpus_id`, `placement`, `side_to_move`, `castling`, `en_passant`
+- **Partial:** no
+- **Origin:** `c`
+
+#### Canonical SQL
+
+```sql
+CREATE INDEX opening_recurrence_occurrence_position_idx ON opening_recurrence_occurrence(manifest_hash, corpus_id, placement, side_to_move, castling, en_passant)
+```
+
+### Index: `opening_recurrence_route_event_position_idx`
+<a id="index-opening_recurrence_route_event_position_idx"></a>
+
+- **Table:** `opening_recurrence_route_event`
+- **Unique:** no
+- **Columns:** `manifest_hash`, `corpus_id`, `placement`, `side_to_move`, `castling`, `en_passant`
+- **Partial:** no
+- **Origin:** `c`
+
+#### Canonical SQL
+
+```sql
+CREATE INDEX opening_recurrence_route_event_position_idx ON opening_recurrence_route_event(manifest_hash, corpus_id, placement, side_to_move, castling, en_passant)
+```
+
+### Index: `opening_transposition_link_position_idx`
+<a id="index-opening_transposition_link_position_idx"></a>
+
+- **Table:** `opening_transposition_link`
+- **Unique:** no
+- **Columns:** `manifest_hash`, `placement`, `side_to_move`, `castling`, `en_passant`
+- **Partial:** no
+- **Origin:** `c`
+
+#### Canonical SQL
+
+```sql
+CREATE INDEX opening_transposition_link_position_idx ON opening_transposition_link( manifest_hash, placement, side_to_move, castling, en_passant )
+```
+
+### Index: `position_occurrence_state_idx`
+<a id="index-position_occurrence_state_idx"></a>
+
+- **Table:** `position_occurrence`
+- **Unique:** no
+- **Columns:** `state_id`
+- **Partial:** no
+- **Origin:** `c`
+
+#### Canonical SQL
+
+```sql
 CREATE INDEX position_occurrence_state_idx ON position_occurrence(state_id)
+```
 
-CREATE TABLE corpus (
-            corpus_id INTEGER PRIMARY KEY,
-            subject_player_uuid TEXT NOT NULL UNIQUE,
-            FOREIGN KEY (subject_player_uuid) REFERENCES players(uuid)
-        )
+### Trigger: `analysis_batch_run_no_delete`
+<a id="trigger-analysis_batch_run_no_delete"></a>
 
-CREATE TABLE corpus_game (
-            corpus_id INTEGER NOT NULL,
-            game_uuid TEXT NOT NULL,
-            rules TEXT NOT NULL CHECK (rules = 'chess'),
-            fingerprint TEXT NOT NULL,
-            PRIMARY KEY (corpus_id, game_uuid),
-            FOREIGN KEY (corpus_id) REFERENCES corpus(corpus_id),
-            FOREIGN KEY (game_uuid) REFERENCES games(uuid)
-        )
+- **Table:** `analysis_batch_run`
 
-CREATE TABLE corpus_run (
-            run_id INTEGER PRIMARY KEY,
-            corpus_id INTEGER NOT NULL,
-            status TEXT NOT NULL CHECK (status IN ('running', 'success', 'failed', 'interrupted')),
-            started_at TEXT,
-            finished_at TEXT NULL,
-            accepted_games INTEGER NOT NULL DEFAULT 0,
-            excluded_games INTEGER NOT NULL DEFAULT 0,
-            new_games INTEGER NOT NULL DEFAULT 0,
-            changed_games INTEGER NOT NULL DEFAULT 0,
-            removed_games INTEGER NOT NULL DEFAULT 0,
-            unchanged_games INTEGER NOT NULL DEFAULT 0,
-            ordered_positions INTEGER NOT NULL DEFAULT 0,
-            unique_states INTEGER NOT NULL,
-            validation TEXT NOT NULL,
-            details TEXT NULL,
-            FOREIGN KEY (corpus_id) REFERENCES corpus(corpus_id)
-        )
+#### Canonical SQL
 
-CREATE TABLE corpus_schema (
-            id INTEGER PRIMARY KEY CHECK (id = 1),
-            version INTEGER NOT NULL,
-            applied_at TEXT NOT NULL
-        )
+```sql
+CREATE TRIGGER analysis_batch_run_no_delete BEFORE DELETE ON analysis_batch_run BEGIN SELECT RAISE(ABORT, 'analysis batch summaries are append-only'); END
+```
 
-CREATE TABLE fetch_state (
-            username TEXT NOT NULL, year INTEGER NOT NULL, month INTEGER NOT NULL,
-            etag TEXT, last_fetched TEXT, is_current INTEGER NOT NULL,
-            PRIMARY KEY (username, year, month)
-        )
+### Trigger: `analysis_batch_run_no_update`
+<a id="trigger-analysis_batch_run_no_update"></a>
 
-CREATE TABLE games (
-            uuid TEXT PRIMARY KEY, url TEXT NOT NULL, pgn TEXT NOT NULL,
-            time_control TEXT NOT NULL, end_time INTEGER NOT NULL, rated INTEGER,
-            tcn TEXT, initial_setup TEXT, fen TEXT, time_class TEXT, rules TEXT, eco TEXT,
-            white_player_uuid TEXT NOT NULL, black_player_uuid TEXT NOT NULL,
-            white_rating INTEGER, black_rating INTEGER, white_result TEXT, black_result TEXT,
-            white_accuracy REAL, black_accuracy REAL, tournament TEXT, match TEXT,
-            year INTEGER NOT NULL, month INTEGER NOT NULL,
-            FOREIGN KEY (white_player_uuid) REFERENCES players(uuid),
-            FOREIGN KEY (black_player_uuid) REFERENCES players(uuid),
-            UNIQUE (year, month, uuid)
-        )
+- **Table:** `analysis_batch_run`
 
-CREATE TABLE players (
-            uuid TEXT PRIMARY KEY, username TEXT NOT NULL, profile_url TEXT,
-            UNIQUE (username, uuid)
-        )
+#### Canonical SQL
 
-CREATE TABLE position_occurrence (
-            occurrence_id INTEGER PRIMARY KEY,
-            game_uuid TEXT NOT NULL,
-            ply INTEGER NOT NULL,
-            state_id INTEGER NOT NULL,
-            san TEXT NULL,
-            uci TEXT NULL,
-            halfmove_clock INTEGER NOT NULL,
-            fullmove_number INTEGER NOT NULL,
-            UNIQUE (game_uuid, ply),
-            FOREIGN KEY (game_uuid) REFERENCES games(uuid),
-            FOREIGN KEY (state_id) REFERENCES position_state(state_id)
-        )
+```sql
+CREATE TRIGGER analysis_batch_run_no_update BEFORE UPDATE ON analysis_batch_run BEGIN SELECT RAISE(ABORT, 'analysis batch summaries are append-only'); END
+```
 
-CREATE TABLE position_state (
-            state_id INTEGER PRIMARY KEY,
-            placement TEXT,
-            side_to_move TEXT,
-            castling TEXT,
-            en_passant TEXT,
-            UNIQUE (placement, side_to_move, castling, en_passant)
-        )
+### Trigger: `analysis_failure_no_delete`
+<a id="trigger-analysis_failure_no_delete"></a>
+
+- **Table:** `analysis_position_failure`
+
+#### Canonical SQL
+
+```sql
+CREATE TRIGGER analysis_failure_no_delete BEFORE DELETE ON analysis_position_failure BEGIN SELECT RAISE(ABORT, 'analysis failures are append-only'); END
+```
+
+### Trigger: `analysis_failure_no_update`
+<a id="trigger-analysis_failure_no_update"></a>
+
+- **Table:** `analysis_position_failure`
+
+#### Canonical SQL
+
+```sql
+CREATE TRIGGER analysis_failure_no_update BEFORE UPDATE ON analysis_position_failure BEGIN SELECT RAISE(ABORT, 'analysis failures are append-only'); END
+```
+
+### Trigger: `opening_preferred_move_no_delete`
+<a id="trigger-opening_preferred_move_no_delete"></a>
+
+- **Table:** `opening_preferred_move_event`
+
+#### Canonical SQL
+
+```sql
+CREATE TRIGGER opening_preferred_move_no_delete BEFORE DELETE ON opening_preferred_move_event BEGIN SELECT RAISE(ABORT, 'preferred-move history is append-only'); END
+```
+
+### Trigger: `opening_preferred_move_no_update`
+<a id="trigger-opening_preferred_move_no_update"></a>
+
+- **Table:** `opening_preferred_move_event`
+
+#### Canonical SQL
+
+```sql
+CREATE TRIGGER opening_preferred_move_no_update BEFORE UPDATE ON opening_preferred_move_event BEGIN SELECT RAISE(ABORT, 'preferred-move history is append-only'); END
+```
+
+### Trigger: `opening_preferred_move_requirement_no_delete`
+<a id="trigger-opening_preferred_move_requirement_no_delete"></a>
+
+- **Table:** `opening_preferred_move_requirement_event`
+
+#### Canonical SQL
+
+```sql
+CREATE TRIGGER opening_preferred_move_requirement_no_delete BEFORE DELETE ON opening_preferred_move_requirement_event BEGIN SELECT RAISE(ABORT, 'preferred-move requirement history is append-only'); END
+```
+
+### Trigger: `opening_preferred_move_requirement_no_update`
+<a id="trigger-opening_preferred_move_requirement_no_update"></a>
+
+- **Table:** `opening_preferred_move_requirement_event`
+
+#### Canonical SQL
+
+```sql
+CREATE TRIGGER opening_preferred_move_requirement_no_update BEFORE UPDATE ON opening_preferred_move_requirement_event BEGIN SELECT RAISE(ABORT, 'preferred-move requirement history is append-only'); END
+```

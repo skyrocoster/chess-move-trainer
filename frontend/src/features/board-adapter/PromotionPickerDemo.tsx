@@ -1,6 +1,19 @@
 import { Chess, type Square } from "chess.js";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { Chessboard, type PieceDropHandlerArgs } from "react-chessboard";
+import {
+  cloneElement,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ReactElement,
+  type SVGProps,
+} from "react";
+import {
+  Chessboard,
+  defaultPieces,
+  type PieceDropHandlerArgs,
+  type PieceRenderObject,
+} from "react-chessboard";
 
 import {
   PromotionPicker,
@@ -13,6 +26,32 @@ import styles from "./PromotionPicker.module.css";
 
 const PROMOTION_FEN_WHITE = "k7/4P3/8/8/8/8/8/4K3 w - - 0 1";
 const PROMOTION_FEN_BLACK = "4k3/8/8/8/8/8/4p3/K7 b - - 0 1";
+
+const PIECE_NAMES: Record<string, string> = {
+  wP: "White pawn",
+  wR: "White rook",
+  wN: "White knight",
+  wB: "White bishop",
+  wQ: "White queen",
+  wK: "White king",
+  bP: "Black pawn",
+  bR: "Black rook",
+  bN: "Black knight",
+  bB: "Black bishop",
+  bQ: "Black queen",
+  bK: "Black king",
+};
+
+const accessiblePieces = Object.fromEntries(
+  Object.entries(defaultPieces).map(([pieceType, renderPiece]) => [
+    pieceType,
+    (props?: { fill?: string; square?: string; svgStyle?: React.CSSProperties }) => {
+      const piece = renderPiece(props) as ReactElement<SVGProps<SVGSVGElement>>;
+      const name = `${PIECE_NAMES[pieceType]}${props?.square ? ` on ${props.square}` : ""}`;
+      return cloneElement(piece, { "aria-label": name, role: "img" });
+    },
+  ]),
+) as PieceRenderObject;
 
 function isPromotionTarget(pieceColor: PromotionColor, square: Square) {
   return pieceColor === "w" ? square.endsWith("8") : square.endsWith("1");
@@ -42,12 +81,18 @@ export type PromotionPickerDemoProps = {
   color?: PromotionColor;
   presentation?: PromotionPresentation;
   initiallyPending?: boolean;
+  onCommit?: (commit: PromotionCommit) => void;
+  onReject?: (reason: "illegal" | "stale") => void;
+  onCancel?: () => void;
 };
 
 export function PromotionPickerDemo({
   color = "w",
   presentation = "auto",
   initiallyPending = false,
+  onCommit,
+  onReject,
+  onCancel,
 }: PromotionPickerDemoProps) {
   const initialFen = color === "w" ? PROMOTION_FEN_WHITE : PROMOTION_FEN_BLACK;
   const chessRef = useRef<Chess | null>(null);
@@ -61,19 +106,27 @@ export function PromotionPickerDemo({
   const boardRootRef = useRef<HTMLDivElement | null>(null);
   const initiallyPendingOpenedRef = useRef(false);
 
-  const handleCommit = useCallback((commit: PromotionCommit) => {
-    setFen(commit.fen);
-    setLastSan(commit.move.san);
-    setNotice(`Committed ${commit.move.san}.`);
-  }, []);
+  const handleCommit = useCallback(
+    (commit: PromotionCommit) => {
+      setFen(commit.fen);
+      setLastSan(commit.move.san);
+      setNotice(`Committed ${commit.move.san}.`);
+      onCommit?.(commit);
+    },
+    [onCommit],
+  );
 
-  const handleReject = useCallback((reason: "illegal" | "stale") => {
-    setNotice(
-      reason === "stale"
-        ? "Promotion rejected because the source position is stale."
-        : "Promotion rejected because the move is illegal.",
-    );
-  }, []);
+  const handleReject = useCallback(
+    (reason: "illegal" | "stale") => {
+      setNotice(
+        reason === "stale"
+          ? "Promotion rejected because the source position is stale."
+          : "Promotion rejected because the move is illegal.",
+      );
+      onReject?.(reason);
+    },
+    [onReject],
+  );
 
   const controller = usePromotionController({
     chess,
@@ -146,6 +199,7 @@ export function PromotionPickerDemo({
     id: "promotion-picker-board",
     onPieceDrag: () => undefined,
     onPieceDragCancel: () => undefined,
+    pieces: accessiblePieces,
     position: fen,
     showAnimations: false,
     showNotation: true,
@@ -176,7 +230,10 @@ export function PromotionPickerDemo({
         anchorElement={anchorElement}
         presentation={presentation}
         onSelect={selectPromotion}
-        onCancel={cancelPromotion}
+        onCancel={() => {
+          cancelPromotion();
+          onCancel?.();
+        }}
       />
     </section>
   );

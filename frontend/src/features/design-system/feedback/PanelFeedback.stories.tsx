@@ -6,7 +6,7 @@ import { PanelFeedback } from "./PanelFeedback";
 import styles from "./PanelFeedback.module.css";
 
 const meta = {
-  title: "Feedback/PanelMatrix",
+  title: "Design System/Feedback/Panel",
   component: PanelFeedback,
   parameters: {
     layout: "fullscreen",

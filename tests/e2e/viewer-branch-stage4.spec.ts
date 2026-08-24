@@ -2,11 +2,11 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
 
 const STORYBOOK_URL = "http://127.0.0.1:6006";
 const STORY_IDS = {
-  branch: "viewer-mp-08-viewer-workspace--temporary-branch-from-initial-ply",
-  castling: "viewer-mp-08-viewer-workspace--temporary-branch-castling",
-  enPassant: "viewer-mp-08-viewer-workspace--temporary-branch-en-passant",
-  promotion: "viewer-mp-08-viewer-workspace--temporary-branch-promotion",
-  terminal: "viewer-mp-08-viewer-workspace--temporary-branch-terminal",
+  branch: "application-viewer-workspace--branch-from-initial-position",
+  castling: "application-viewer-workspace--branch-castling",
+  enPassant: "application-viewer-workspace--branch-en-passant",
+  promotion: "application-viewer-workspace--branch-promotion",
+  terminal: "application-viewer-workspace--branch-terminal",
 } as const;
 
 const STARTING_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";

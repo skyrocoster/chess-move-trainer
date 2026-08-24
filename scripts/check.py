@@ -1,19 +1,31 @@
 """Run the repository's complete local quality suite.
 
 The default mode is read-only. ``--fix`` explicitly runs deterministic formatters
-before the same verification suite. Workflow configuration is checked in-process;
-the retired lifecycle checkers are not invoked.
+and regenerates the database schema artifact before the same verification suite.
+Workflow configuration is checked in-process; the retired lifecycle checkers are
+not invoked.
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import os
 import subprocess
 import sys
+import tempfile
+import time
+import urllib.error
+import urllib.request
 from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from data.database import dump_schema  # noqa: E402
 
 
 @dataclass
@@ -23,7 +35,12 @@ class Step:
     cwd: str | None = None
 
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
+SCHEMA_FIX_COMMAND = r".venv\Scripts\python.exe scripts\check.py --fix"
+STORYBOOK_WINDOWS_TEARDOWN_RETURN_CODE = 0xC0000409
+STORYBOOK_WINDOWS_TEARDOWN_ASSERTION = (
+    "Assertion failed: !(handle->flags & UV_HANDLE_CLOSING), "
+    r"file c:\ws\deps\uv\src\win\async.c, line 76"
+)
 
 FIX_STEPS: list[Step] = [
     Step("Ruff lint fix", [sys.executable, "-m", "ruff", "check", "--fix", "."]),
@@ -41,6 +58,7 @@ VERIFY: list[Step] = [
     Step("ESLint check", ["npm.cmd", "run", "lint", "--prefix", "frontend"]),
     Step("Prettier check", [r"frontend\node_modules\.bin\prettier.cmd", "--check", "frontend"]),
     Step("Frontend build", ["npm.cmd", "run", "build", "--prefix", "frontend"]),
+    Step("Storybook build", ["npm.cmd", "run", "build-storybook", "--prefix", "frontend"]),
     Step(
         "Source size check",
         [sys.executable, "scripts/check_size.py", "--source-max", "500", "--test-max", "700"],
@@ -119,6 +137,8 @@ def run_step(step: Step, show_success: bool) -> bool:
             check=False,
             capture_output=True,
             text=True,
+            encoding="utf-8",
+            errors="replace",
         )
     except FileNotFoundError as exc:
         print(f"--- {step.name} failed (missing executable) ---", file=sys.stderr)
@@ -130,6 +150,18 @@ def run_step(step: Step, show_success: bool) -> bool:
             print(f"Passed: {step.name}")
         return True
 
+    is_documented_storybook_teardown = (
+        os.name == "nt"
+        and step.name == "Storybook build"
+        and result.returncode == STORYBOOK_WINDOWS_TEARDOWN_RETURN_CODE
+        and "Storybook build completed successfully" in result.stdout
+        and result.stderr.strip() == STORYBOOK_WINDOWS_TEARDOWN_ASSERTION
+    )
+    if is_documented_storybook_teardown:
+        if show_success:
+            print(f"Passed: {step.name} (ignored documented Windows libuv teardown assertion)")
+        return True
+
     print(f"--- {step.name} failed ---", file=sys.stderr)
     out = result.stdout.strip()
     err = result.stderr.strip()
@@ -137,6 +169,128 @@ def run_step(step: Step, show_success: bool) -> bool:
         print(out, file=sys.stderr)
     if err:
         print(err, file=sys.stderr)
+    return False
+
+
+def _stop_process_tree(process: subprocess.Popen[str]) -> None:
+    """Stop the Storybook process group and every child it started."""
+
+    if process.poll() is not None:
+        return
+
+    if os.name == "nt":
+        subprocess.run(
+            ["taskkill", "/PID", str(process.pid), "/T", "/F"],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+    else:
+        process.terminate()
+
+    try:
+        process.wait(timeout=10)
+    except subprocess.TimeoutExpired:
+        process.kill()
+        process.wait(timeout=10)
+
+
+def _storybook_is_ready(process: subprocess.Popen[str], timeout: float) -> bool:
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        if process.poll() is not None:
+            return False
+        try:
+            with urllib.request.urlopen("http://127.0.0.1:6006/index.json", timeout=2) as response:
+                if response.status == 200:
+                    return True
+        except (OSError, urllib.error.URLError):
+            pass
+        time.sleep(0.5)
+    return False
+
+
+def run_storybook_validation() -> bool:
+    """Run Storybook interaction and configured accessibility validation."""
+
+    command = ["npm.cmd", "run", "storybook", "--prefix", "frontend", "--", "--ci"]
+    creationflags = subprocess.CREATE_NEW_PROCESS_GROUP if os.name == "nt" else 0
+
+    with tempfile.TemporaryFile(mode="w+", encoding="utf-8") as server_log:
+        try:
+            process = subprocess.Popen(
+                command,
+                cwd=REPO_ROOT,
+                stdout=server_log,
+                stderr=subprocess.STDOUT,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                creationflags=creationflags,
+            )
+        except FileNotFoundError as exc:
+            print("--- Storybook validation failed (missing executable) ---", file=sys.stderr)
+            print(str(exc), file=sys.stderr)
+            return False
+
+        try:
+            if not _storybook_is_ready(process, timeout=120):
+                print("--- Storybook server failed to become ready ---", file=sys.stderr)
+                server_log.seek(0)
+                log = server_log.read().strip()
+                if log:
+                    print(log, file=sys.stderr)
+                return False
+
+            step = Step(
+                "Storybook interaction and accessibility tests",
+                [
+                    "npm.cmd",
+                    "run",
+                    "test-storybook",
+                    "--prefix",
+                    "frontend",
+                    "--",
+                    "--url",
+                    "http://127.0.0.1:6006",
+                ],
+            )
+            return run_step(step, show_success=True)
+        finally:
+            _stop_process_tree(process)
+
+
+def regenerate_schema() -> bool:
+    """Regenerate the schema artifact for the explicit ``--fix`` path."""
+
+    try:
+        dump_schema.write_schema(dump_schema.OUT_PATH)
+    except OSError as exc:
+        print("--- Database schema regeneration failed ---", file=sys.stderr)
+        print(str(exc), file=sys.stderr)
+        return False
+    print(f"Regenerated database schema: {dump_schema.OUT_PATH}")
+    return True
+
+
+def check_schema_freshness() -> bool:
+    """Compare the artifact with a fresh in-memory render without writing."""
+
+    fresh_render = dump_schema.render_schema()
+    try:
+        is_current = dump_schema.OUT_PATH.read_text(encoding="utf-8") == fresh_render
+    except FileNotFoundError:
+        is_current = False
+
+    if is_current:
+        print(f"Passed: Database schema freshness ({dump_schema.OUT_PATH})")
+        return True
+
+    print(
+        f"Database schema is missing or stale: {dump_schema.OUT_PATH}. "
+        f"Run {SCHEMA_FIX_COMMAND} to regenerate it.",
+        file=sys.stderr,
+    )
     return False
 
 
@@ -213,7 +367,10 @@ def main(argv: Iterable[str] | None = None) -> int:
     parser.add_argument(
         "--fix",
         action="store_true",
-        help="run deterministic formatters before verification; default mode is read-only",
+        help=(
+            "run deterministic formatters and regenerate the schema before verification; "
+            "default mode is read-only"
+        ),
     )
     args = parser.parse_args(list(argv) if argv is not None else None)
     failed = False
@@ -223,15 +380,21 @@ def main(argv: Iterable[str] | None = None) -> int:
         for step in FIX_STEPS:
             if not run_step(step, show_success=False):
                 failed = True
+        if not regenerate_schema():
+            failed = True
     else:
         print("== Read-only mode (no formatters or generated files) ==", flush=True)
 
     print("== Verify phase ==", flush=True)
+    if not check_schema_freshness():
+        failed = True
     if not check_workflow_contract():
         failed = True
     for step in VERIFY:
         if not run_step(step, show_success=True):
             failed = True
+    if not run_storybook_validation():
+        failed = True
 
     return 1 if failed else 0
 

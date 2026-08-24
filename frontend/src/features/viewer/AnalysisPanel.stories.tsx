@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { expect, fn, userEvent, within } from "storybook/test";
 
 import "../../styles/cmt-tokens.css";
 import "../../styles/cmt-typescale.css";
@@ -15,7 +16,7 @@ import styles from "./Stage1Story.module.css";
 const FEN = STAGE1_GAME.positions[0].fen;
 
 const meta = {
-  title: "Viewer/MP-10/Analysis Panel",
+  title: "Application/Viewer/Analysis Panel",
   component: AnalysisPanel,
   parameters: { layout: "fullscreen" },
   args: { fen: FEN },
@@ -88,59 +89,93 @@ function observation(
 
 function clientFor(value: EvaluationObservation): AnalysisClient {
   return {
-    observe: async () => ({ status: "success", data: value }),
-    enqueue: async () => ({
+    observe: fn(async () => ({ status: "success" as const, data: value })),
+    enqueue: fn(async (_fen, action) => ({
       status: "success",
       data: {
         fen: FEN,
-        action: "analyze" as const,
+        action,
         outcome: "queued",
         eligibility: value.eligibility,
         status: status("queued"),
       },
-    }),
-    status: async () => ({
-      status: "success",
-      data: { fen: FEN, state: "queued" as const, completed_at: null, error_code: null },
-    }),
+    })),
+    status: fn(async () => ({
+      status: "success" as const,
+      data: {
+        fen: FEN,
+        state: "queued" as const,
+        completed_at: null,
+        error_code: null,
+      },
+    })),
   };
 }
 
 const frame = (children: React.ReactNode) => <main className={styles.frame}>{children}</main>;
-const panel = (value: EvaluationObservation, pollIntervalMs = 60000) =>
-  frame(<AnalysisPanel fen={FEN} client={clientFor(value)} pollIntervalMs={pollIntervalMs} />);
+const panel = (args: React.ComponentProps<typeof AnalysisPanel>, pollIntervalMs = 60000) =>
+  frame(<AnalysisPanel {...args} pollIntervalMs={pollIntervalMs} />);
 
 export const Eligible: Story = {
   name: "Eligible - auto-loaded",
-  render: () => panel(observation("eligible", result)),
+  args: { client: clientFor(observation("eligible", result)) },
+  render: (args) => panel(args),
 };
 
 export const Missing: Story = {
   name: "Missing - Analyze required",
-  render: () => panel(observation("missing")),
+  args: { client: clientFor(observation("missing")) },
+  render: (args) => panel(args),
+  play: async ({ args, canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(await canvas.findByRole("button", { name: "Analyze position" }));
+    await expect(args.client?.enqueue).toHaveBeenCalledTimes(1);
+    await expect(args.client?.enqueue).toHaveBeenCalledWith(
+      FEN,
+      "analyze",
+      expect.any(AbortSignal),
+    );
+  },
 };
 
 export const Stale: Story = {
   name: "Stale - Update required",
-  render: () => panel(observation("stale", result)),
+  args: { client: clientFor(observation("stale", result)) },
+  render: (args) => panel(args),
+  play: async ({ args, canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(await canvas.findByRole("button", { name: "Update analysis" }));
+    await expect(args.client?.enqueue).toHaveBeenCalledTimes(1);
+    await expect(args.client?.enqueue).toHaveBeenCalledWith(FEN, "update", expect.any(AbortSignal));
+  },
 };
 
 export const Queued: Story = {
   name: "Queued - observed automatically",
-  render: () => panel(observation("missing", null, status("queued"))),
+  args: { client: clientFor(observation("missing", null, status("queued"))) },
+  render: (args) => panel(args),
 };
 
 export const Running: Story = {
   name: "Running - observed automatically",
-  render: () => panel(observation("missing", null, status("running"))),
+  args: { client: clientFor(observation("missing", null, status("running"))) },
+  render: (args) => panel(args),
 };
 
 export const Completed: Story = {
   name: "Completed - five ranked lines",
-  render: () => panel(observation("eligible", result, status("done"))),
+  args: { client: clientFor(observation("eligible", result, status("done"))) },
+  render: (args) => panel(args),
 };
 
 export const Failed: Story = {
   name: "Failed - Retry required",
-  render: () => panel(observation("missing", null, status("failed"))),
+  args: { client: clientFor(observation("missing", null, status("failed"))) },
+  render: (args) => panel(args),
+  play: async ({ args, canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(await canvas.findByRole("button", { name: "Retry analysis" }));
+    await expect(args.client?.enqueue).toHaveBeenCalledTimes(1);
+    await expect(args.client?.enqueue).toHaveBeenCalledWith(FEN, "retry", expect.any(AbortSignal));
+  },
 };

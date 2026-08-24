@@ -5,7 +5,7 @@ import { FEEDBACK_VARIANTS } from "./feedbackTypes";
 import type { FeedbackSeverity } from "./feedbackTypes";
 
 const meta = {
-  title: "Feedback/InlineMatrix",
+  title: "Design System/Feedback/Inline",
   component: InlineFeedback,
   parameters: {
     layout: "fullscreen",

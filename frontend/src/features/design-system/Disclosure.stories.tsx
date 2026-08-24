@@ -1,12 +1,13 @@
 import "../../styles/cmt-tokens.css";
 import "../../styles/cmt-typescale.css";
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { expect, fn, userEvent, within } from "storybook/test";
 import type { ReactNode } from "react";
 
 import { Disclosure } from "./Disclosure";
 
 const meta = {
-  title: "DesignSystem/Disclosure",
+  title: "Design System/Components/Disclosure",
   component: Disclosure,
   args: {
     summary: "Disclosure",
@@ -43,14 +44,33 @@ const LONG_CONTENT = Array.from(
 );
 
 export const CollapsedByDefault: Story = {
-  render: () =>
+  args: { onOpenChange: fn() },
+  render: (args) =>
     shell(
-      <Disclosure summary="Position picker">
+      <Disclosure {...args}>
         <p style={{ margin: "var(--cmt-spacing-16)" }}>
           The collapsible body. Closed until the summary is activated.
         </p>
       </Disclosure>,
     ),
+  play: async ({ args, canvasElement }) => {
+    const canvas = within(canvasElement);
+    const trigger = canvas.getByRole("button", { name: "Disclosure" });
+
+    await expect(trigger).toHaveAttribute("aria-expanded", "false");
+    await userEvent.click(trigger);
+    await expect(trigger).toHaveAttribute("aria-expanded", "true");
+    await expect(
+      canvas.getByText("The collapsible body. Closed until the summary is activated."),
+    ).toBeVisible();
+    await expect(args.onOpenChange).toHaveBeenCalledTimes(1);
+    await expect(args.onOpenChange).toHaveBeenLastCalledWith(true);
+
+    await userEvent.click(trigger);
+    await expect(trigger).toHaveAttribute("aria-expanded", "false");
+    await expect(args.onOpenChange).toHaveBeenCalledTimes(2);
+    await expect(args.onOpenChange).toHaveBeenLastCalledWith(false);
+  },
 };
 
 export const OpenByDefault: Story = {
