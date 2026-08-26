@@ -24,22 +24,24 @@ describe("BoardControl", () => {
     expect(next.querySelector("svg")).toHaveClass("lucide-chevron-right");
   });
 
-  it("enforces initial and final one-ply boundaries", () => {
-    const { rerender } = render(<BoardControl currentPly={0} finalPly={3} />);
+  it("enforces explicit initial and final direction capabilities", () => {
+    const { rerender } = render(<BoardControl hasGame canGoPrevious={false} canGoNext />);
 
     expect(screen.getByRole("button", { name: "Previous" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Next" })).toBeEnabled();
 
-    rerender(<BoardControl currentPly={3} finalPly={3} />);
+    rerender(<BoardControl hasGame canGoPrevious canGoNext={false} />);
     expect(screen.getByRole("button", { name: "Previous" })).toBeEnabled();
     expect(screen.getByRole("button", { name: "Next" })).toBeDisabled();
   });
 
-  it("calls one native action for each enabled direction and disables during loading", async () => {
+  it("calls one native action for each enabled direction capability", async () => {
     const onPrevious = vi.fn();
     const onNext = vi.fn();
     const user = userEvent.setup();
-    render(<BoardControl currentPly={1} finalPly={3} onPrevious={onPrevious} onNext={onNext} />);
+    render(
+      <BoardControl hasGame canGoPrevious canGoNext onPrevious={onPrevious} onNext={onNext} />,
+    );
 
     await user.click(screen.getByRole("button", { name: "Previous" }));
     await user.click(screen.getByRole("button", { name: "Next" }));
@@ -47,13 +49,13 @@ describe("BoardControl", () => {
     expect(onNext).toHaveBeenCalledOnce();
 
     cleanup();
-    render(<BoardControl currentPly={1} finalPly={3} loading />);
+    render(<BoardControl hasGame canGoPrevious={false} canGoNext={false} />);
     expect(screen.getByRole("button", { name: "Previous" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Next" })).toBeDisabled();
   });
 
-  it("gates captured-game traversal while a temporary branch is active", () => {
-    render(<BoardControl currentPly={1} finalPly={3} branchActive />);
+  it("gates captured-game traversal when both direction capabilities are unavailable", () => {
+    render(<BoardControl hasGame canGoPrevious={false} canGoNext={false} />);
 
     expect(screen.getByRole("button", { name: "Previous" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Next" })).toBeDisabled();

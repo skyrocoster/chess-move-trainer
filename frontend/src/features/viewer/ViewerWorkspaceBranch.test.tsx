@@ -1,92 +1,49 @@
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { useEffect, useRef, useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import type { InteractiveBoardMoveIntent } from "../board-adapter/InteractiveBoardAdapter";
 import type { AnalysisClient } from "./analysisApi";
 import ViewerWorkspace from "./ViewerWorkspace";
 import type { GameLookup } from "./positionApi";
+import type { BranchSnapshot } from "./temporaryBranchModel";
 import { VIEWER_GAME, VIEWER_GAME_UUID } from "./viewerFixtures";
 
 const BRANCH_FEN = VIEWER_GAME.positions[1].fen;
 
 vi.mock("../board-adapter/InteractiveBoardAdapter", () => ({
   InteractiveBoardAdapter: ({
-    viewKey,
-    originFen,
-    originPly,
-    resetToken = 0,
-    onBranchChange,
+    branchSnapshot,
+    onMoveIntent,
+    onReset,
     label,
   }: {
-    viewKey: string;
-    originFen: string;
-    originPly: number;
-    resetToken?: number;
-    onBranchChange?: (snapshot: {
-      viewKey: string;
-      resetToken: number;
-      originFen: string;
-      currentFen: string;
-      originPly: number;
-      moves: readonly { color: "w"; from: string; to: string; san: string }[];
-      active: boolean;
-    }) => void;
+    branchSnapshot: BranchSnapshot;
+    onMoveIntent: (intent: InteractiveBoardMoveIntent) => boolean;
+    onReset: () => void;
     label: string;
   }) => {
-    const [active, setActive] = useState(false);
-    const previousResetToken = useRef(resetToken);
-    useEffect(() => {
-      if (previousResetToken.current === resetToken) {
-        return;
-      }
-      previousResetToken.current = resetToken;
-      setActive(false);
-      onBranchChange?.({
-        viewKey,
-        resetToken,
-        originFen,
-        currentFen: originFen,
-        originPly,
-        moves: [],
-        active: false,
-      });
-    }, [onBranchChange, originFen, originPly, resetToken, viewKey]);
-
-    function startBranch() {
-      setActive(true);
-      onBranchChange?.({
-        viewKey,
-        resetToken,
-        originFen,
-        currentFen: BRANCH_FEN,
-        originPly,
-        moves: [{ color: "w", from: "e2", to: "e4", san: "e4" }],
-        active: true,
-      });
-    }
-
-    function resetBranch() {
-      setActive(false);
-      onBranchChange?.({
-        viewKey,
-        resetToken,
-        originFen,
-        currentFen: originFen,
-        originPly,
-        moves: [],
-        active: false,
-      });
-    }
-
     return (
       <section data-testid="interactive-board-adapter">
         <div role="img" aria-label={label} data-testid="interactive-board" />
-        <p data-testid="branch-san">{active ? "1. e4" : "No branch moves yet"}</p>
-        <button type="button" data-testid="branch-test-move" onClick={startBranch}>
+        <p data-testid="branch-san">
+          {branchSnapshot.moves.length > 0 ? "1. e4" : "No branch moves yet"}
+        </p>
+        <button
+          type="button"
+          data-testid="branch-test-move"
+          onClick={() =>
+            onMoveIntent({
+              sourceSquare: "e2",
+              targetSquare: "e4",
+              sourceElement: null,
+              anchorElement: null,
+            })
+          }
+        >
           Start test branch
         </button>
-        <button type="button" onClick={resetBranch}>
+        <button type="button" onClick={onReset}>
           Reset branch
         </button>
       </section>

@@ -1,8 +1,5 @@
 import { Disclosure } from "../design-system/Disclosure";
-import { AnalysisPanel } from "./AnalysisPanel";
-import type { AnalysisClient } from "./analysisApi";
-import type { AnalysisState } from "./analysisState";
-import type { Fen } from "./chessPrimitives";
+import type { ReactNode } from "react";
 import type { Game, GamePosition } from "./gameModel";
 import { safeSourceUrl } from "./stage1SourceSafety";
 import styles from "./GameContext.module.css";
@@ -10,10 +7,7 @@ import styles from "./GameContext.module.css";
 export type GameContextProps = {
   game?: Game | null;
   position?: GamePosition;
-  analysisClient?: AnalysisClient;
-  analysisPollIntervalMs?: number;
-  analysisState?: AnalysisState;
-  analysisFen?: Fen;
+  children?: ReactNode;
 };
 
 function SourceAttribution({ sourceUrl }: { sourceUrl: string | null }) {
@@ -27,14 +21,7 @@ function SourceAttribution({ sourceUrl }: { sourceUrl: string | null }) {
   );
 }
 
-export function GameContext({
-  game,
-  position,
-  analysisClient,
-  analysisPollIntervalMs,
-  analysisState,
-  analysisFen,
-}: GameContextProps) {
+export function GameContext({ game, position, children }: GameContextProps) {
   const currentPosition = game && position ? position : null;
   const finalPly = game?.positions.at(-1)?.ply;
 
@@ -63,14 +50,7 @@ export function GameContext({
                 </dd>
               </div>
             </dl>
-            {analysisClient ? (
-              <AnalysisPanel
-                fen={analysisFen ?? currentPosition.fen}
-                client={analysisClient}
-                pollIntervalMs={analysisPollIntervalMs}
-                analysisState={analysisState}
-              />
-            ) : null}
+            {children}
           </>
         )}
       </div>

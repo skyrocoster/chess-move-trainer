@@ -8,12 +8,12 @@ Wraps `react-chessboard` with application-specific modes and the promotion-piece
 
 ## Components
 
-| Component | Mode |
-|-----------|------|
-| `BoardAdapter` | Read-only board display (no user moves) |
-| `InteractiveBoardAdapter` | Interactive board where the user can make moves |
-| `PromotionPicker` | Modal for selecting promotion piece (queen, rook, bishop, knight) |
-| `PromotionPickerDemo` | Standalone demo/preview of the promotion picker |
+| Component                 | Mode                                                              |
+| ------------------------- | ----------------------------------------------------------------- |
+| `BoardAdapter`            | Read-only board display (no user moves)                           |
+| `InteractiveBoardAdapter` | Interactive board where the user can make moves                   |
+| `PromotionPicker`         | Modal for selecting promotion piece (queen, rook, bishop, knight) |
+| `PromotionPickerDemo`     | Standalone demo/preview of the promotion picker                   |
 
 ## Pattern
 

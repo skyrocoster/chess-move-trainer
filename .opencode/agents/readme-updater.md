@@ -1,7 +1,9 @@
 ---
 description: Thin-README steward — writes or updates persistent signpost READMEs after structural changes.
 mode: subagent
-model: opencode/mimo-v2.5-free
+model: opencode-go/deepseek-v4-flash
+variant: medium
+#model: opencode/mimo-v2.5-free
 #variant: max
 permission:
   read: allow
@@ -52,3 +54,5 @@ Only persistent, structural information that rarely changes through normal code 
 ## Output
 
 Return a concise summary of what was written or changed, including the exact file path.
+
+Do not run `git status` or `git diff`. The instruction and named directory define the scope.

@@ -1,16 +1,24 @@
-import { useCallback, useRef, useState } from "react";
+import { Chess, type Square } from "chess.js";
+import { useCallback, useMemo, useRef, useState } from "react";
 
 import { BoardAdapter, STARTING_FEN, type BoardOrientation } from "../board-adapter/BoardAdapter";
-import { InteractiveBoardAdapter } from "../board-adapter/InteractiveBoardAdapter";
+import {
+  InteractiveBoardAdapter,
+  type InteractiveBoardMoveIntent,
+} from "../board-adapter/InteractiveBoardAdapter";
 import { BoardControl } from "./BoardControl";
 import { EvalBar } from "./EvalBar";
+import { AnalysisPanel } from "./AnalysisPanel";
 import { GameContext } from "./GameContext";
 import { GameLoader, type GameLoaderStatus, type GameLoaderValues } from "./GameLoader";
 import { defaultAnalysisClient, type AnalysisClient } from "./analysisApi";
 import { useAnalysisState } from "./analysisState";
+import { analysisPanelDisplay } from "./analysisFormatting";
+import { evaluationDisplay } from "./evalBarDisplay";
+import { type PromotionColor, usePromotionController } from "../board-adapter/PromotionPicker";
 import type { Game } from "./gameModel";
 import { fetchGame, type GameLookup } from "./positionApi";
-import type { BranchSnapshot } from "./temporaryBranchModel";
+import type { BranchMove, BranchSnapshot } from "./temporaryBranchModel";
 import styles from "./ViewerWorkspace.module.css";
 
 const BOARD_LABEL = "Chess board: standard starting position, White at the bottom";
@@ -20,6 +28,38 @@ const START_BOARD = {
   orientation: "white" as BoardOrientation,
   label: BOARD_LABEL,
 };
+
+const DEFAULT_BRANCH_NOTICE = "Make a legal move to start a temporary branch.";
+
+function isPromotionTarget(color: PromotionColor, square: Square) {
+  return color === "w" ? square.endsWith("8") : square.endsWith("1");
+}
+
+function historyMoves(chess: Chess): BranchMove[] {
+  return chess.history({ verbose: true }).map((move) => ({
+    color: move.color,
+    from: move.from,
+    to: move.to,
+    san: move.san,
+    ...(move.promotion ? { promotion: move.promotion } : {}),
+  }));
+}
+
+function terminalDescription(chess: Chess) {
+  if (chess.isCheckmate()) {
+    return "Checkmate";
+  }
+  if (chess.isStalemate()) {
+    return "Stalemate";
+  }
+  if (chess.isInsufficientMaterial()) {
+    return "Draw by insufficient material";
+  }
+  if (chess.isDrawByFiftyMoves()) {
+    return "Draw by fifty-move rule";
+  }
+  return null;
+}
 
 function announcementFor(game: Game, index: number): string {
   const position = game.positions[index];
@@ -46,27 +86,168 @@ export default function ViewerWorkspace({
   const [announcement, setAnnouncement] = useState("");
   const [branchSnapshot, setBranchSnapshot] = useState<BranchSnapshot | null>(null);
   const [branchResetToken, setBranchResetToken] = useState(0);
+  const [branchNotice, setBranchNotice] = useState(DEFAULT_BRANCH_NOTICE);
+  const [promotionColor, setPromotionColor] = useState<PromotionColor>("w");
   const requestId = useRef(0);
   const controller = useRef<AbortController | null>(null);
 
   const loading = status === "loading";
   const currentPosition = game?.positions[currentIndex];
   const finalPly = game?.positions.at(-1)?.ply;
+  const hasGame = currentPosition !== undefined && finalPly !== undefined;
   const viewKey = game && currentPosition ? `${game.game_uuid}:${currentPosition.ply}` : "empty";
+  const branchOriginFen = currentPosition?.fen ?? START_BOARD.fen;
+  const branchChess = useMemo(
+    () => new Chess(branchOriginFen),
+    [branchOriginFen, branchResetToken, viewKey],
+  );
+  const emptyBranchSnapshot =
+    game && currentPosition
+      ? {
+          viewKey,
+          resetToken: branchResetToken,
+          originFen: currentPosition.fen,
+          currentFen: currentPosition.fen,
+          originPly: currentPosition.ply,
+          moves: [],
+          active: false,
+        }
+      : null;
   const branchForView =
     branchSnapshot?.viewKey === viewKey && branchSnapshot.resetToken === branchResetToken
       ? branchSnapshot
-      : null;
+      : emptyBranchSnapshot;
   const analysisFen = branchForView?.currentFen ?? currentPosition?.fen ?? null;
   const analysisState = useAnalysisState(analysisFen, analysisClient, analysisPollIntervalMs);
+  const analysisDisplay = analysisPanelDisplay(analysisState);
+  const evalBarDisplay = evaluationDisplay(analysisState);
+  const canGoPrevious = hasGame && !loading && !branchForView?.active && currentPosition?.ply !== 0;
+  const canGoNext =
+    hasGame && !loading && !branchForView?.active && currentPosition?.ply !== finalPly;
 
-  const handleBranchChange = useCallback((snapshot: BranchSnapshot) => {
-    setBranchSnapshot(snapshot);
-  }, []);
+  const createBranchSnapshot = useCallback(
+    (active: boolean): BranchSnapshot | null => {
+      if (!currentPosition) {
+        return null;
+      }
+
+      return {
+        viewKey,
+        resetToken: branchResetToken,
+        originFen: currentPosition.fen,
+        currentFen: branchChess.fen(),
+        originPly: currentPosition.ply,
+        moves: historyMoves(branchChess),
+        active,
+      };
+    },
+    [branchChess, branchResetToken, currentPosition, viewKey],
+  );
+
+  const handlePromotionCommit = useCallback(
+    (commit: { move: { san: string } }) => {
+      setBranchSnapshot(createBranchSnapshot(true));
+      setPromotionColor(branchChess.turn());
+      setBranchNotice(`Branch move committed: ${commit.move.san}.`);
+    },
+    [branchChess, createBranchSnapshot],
+  );
+
+  const handlePromotionReject = useCallback(
+    (reason: "illegal" | "stale") => {
+      const moves = historyMoves(branchChess);
+      setBranchSnapshot(createBranchSnapshot(moves.length > 0));
+      setPromotionColor(branchChess.turn());
+      setBranchNotice(
+        reason === "stale"
+          ? "Promotion rejected because the displayed branch position is stale."
+          : "Promotion rejected because the move is illegal.",
+      );
+    },
+    [branchChess, createBranchSnapshot],
+  );
+
+  const promotionController = usePromotionController({
+    chess: branchChess,
+    onCommit: handlePromotionCommit,
+    onReject: handlePromotionReject,
+  });
+  const {
+    pending: promotionPending,
+    sourceElement: promotionSourceElement,
+    anchorElement: promotionAnchorElement,
+    requestPromotion,
+    selectPromotion,
+    cancelPromotion,
+  } = promotionController;
+
+  const handleMoveIntent = useCallback(
+    (intent: InteractiveBoardMoveIntent) => {
+      const piece = branchChess.get(intent.sourceSquare);
+      if (piece?.type === "p" && isPromotionTarget(piece.color, intent.targetSquare)) {
+        const opened = requestPromotion(
+          intent.sourceSquare,
+          intent.targetSquare,
+          intent.sourceElement,
+          intent.anchorElement,
+        );
+        if (opened) {
+          setBranchSnapshot(createBranchSnapshot(true));
+          setPromotionColor(piece.color);
+          setBranchNotice("Choose a promotion piece for the temporary branch.");
+        }
+        return false;
+      }
+
+      try {
+        const move = branchChess.move({
+          from: intent.sourceSquare,
+          to: intent.targetSquare,
+        });
+        setBranchSnapshot(createBranchSnapshot(true));
+        setBranchNotice(`Branch move committed: ${move.san}.`);
+        return true;
+      } catch {
+        setBranchNotice("Move rejected because it is illegal.");
+        return false;
+      }
+    },
+    [branchChess, createBranchSnapshot, requestPromotion],
+  );
+
+  const handlePromotionCancel = useCallback(() => {
+    cancelPromotion();
+    const moves = historyMoves(branchChess);
+    setBranchSnapshot(createBranchSnapshot(moves.length > 0));
+    setPromotionColor(branchChess.turn());
+    setBranchNotice("Promotion cancelled; the captured position is unchanged.");
+  }, [branchChess, cancelPromotion, createBranchSnapshot]);
+
+  const handleBranchUndo = useCallback(() => {
+    cancelPromotion();
+    if (!branchChess.undo()) {
+      return;
+    }
+    const moves = historyMoves(branchChess);
+    setBranchSnapshot(createBranchSnapshot(moves.length > 0));
+    setPromotionColor(branchChess.turn());
+    setBranchNotice("Undid the latest temporary branch move.");
+  }, [branchChess, cancelPromotion, createBranchSnapshot]);
+
+  const handleBranchReset = useCallback(() => {
+    cancelPromotion();
+    branchChess.load(branchOriginFen);
+    setBranchSnapshot(createBranchSnapshot(false));
+    setPromotionColor(branchChess.turn());
+    setBranchNotice("Temporary branch reset to its captured-game ply.");
+  }, [branchChess, branchOriginFen, cancelPromotion, createBranchSnapshot]);
 
   function discardBranch() {
+    cancelPromotion();
     setBranchSnapshot(null);
     setBranchResetToken((token) => token + 1);
+    setPromotionColor(branchChess.turn());
+    setBranchNotice(DEFAULT_BRANCH_NOTICE);
   }
 
   function invalidateRequest() {
@@ -140,6 +321,7 @@ export default function ViewerWorkspace({
       return;
     }
     const nextIndex = currentIndex - 1;
+    setBranchNotice(DEFAULT_BRANCH_NOTICE);
     setCurrentIndex(nextIndex);
     setAnnouncement(announcementFor(game, nextIndex));
   }
@@ -153,12 +335,14 @@ export default function ViewerWorkspace({
       return;
     }
     const nextIndex = currentIndex + 1;
+    setBranchNotice(DEFAULT_BRANCH_NOTICE);
     setCurrentIndex(nextIndex);
     setAnnouncement(announcementFor(game, nextIndex));
   }
 
   const boardFen = analysisFen ?? START_BOARD.fen;
   const boardOrientation = game?.subject_color ?? START_BOARD.orientation;
+  const branchTerminal = terminalDescription(branchChess);
   const boardLabel =
     branchForView && currentPosition
       ? `Chess board: temporary branch from game ${game.game_uuid}, captured ply ${currentPosition.ply}, ${
@@ -191,13 +375,20 @@ export default function ViewerWorkspace({
           {game && currentPosition ? (
             <InteractiveBoardAdapter
               key={`${viewKey}:${branchResetToken}`}
-              viewKey={viewKey}
-              originFen={currentPosition.fen}
-              originPly={currentPosition.ply}
+              branchSnapshot={branchForView!}
               orientation={boardOrientation}
               label={boardLabel}
-              resetToken={branchResetToken}
-              onBranchChange={handleBranchChange}
+              notice={branchNotice}
+              terminal={branchTerminal}
+              promotionPending={promotionPending}
+              promotionColor={promotionColor}
+              promotionSourceElement={promotionSourceElement}
+              promotionAnchorElement={promotionAnchorElement}
+              onMoveIntent={handleMoveIntent}
+              onPromotionSelect={selectPromotion}
+              onPromotionCancel={handlePromotionCancel}
+              onUndo={handleBranchUndo}
+              onReset={handleBranchReset}
             />
           ) : (
             <BoardAdapter
@@ -210,29 +401,34 @@ export default function ViewerWorkspace({
         </div>
 
         <div className={styles.evalBar}>
-          <EvalBar orientation={boardOrientation} analysisState={analysisState} />
+          <EvalBar
+            orientation={boardOrientation}
+            state={evalBarDisplay.state}
+            value={evalBarDisplay.value}
+            accessibleValue={evalBarDisplay.accessibleValue}
+          />
         </div>
 
         <div className={styles.controls}>
           <BoardControl
-            currentPly={currentPosition?.ply}
-            finalPly={finalPly}
-            loading={loading}
-            branchActive={branchForView?.active ?? false}
+            hasGame={hasGame}
+            canGoPrevious={canGoPrevious}
+            canGoNext={canGoNext}
             onPrevious={handlePrevious}
             onNext={handleNext}
           />
         </div>
 
         <div className={styles.context}>
-          <GameContext
-            game={game}
-            position={currentPosition}
-            analysisClient={analysisClient}
-            analysisPollIntervalMs={analysisPollIntervalMs}
-            analysisState={analysisState}
-            analysisFen={analysisFen ?? undefined}
-          />
+          <GameContext game={game} position={currentPosition}>
+            <AnalysisPanel
+              display={analysisDisplay}
+              onAnalyze={() => analysisState.handleAction("analyze")}
+              onUpdate={() => analysisState.handleAction("update")}
+              onRetry={() => analysisState.handleAction("retry")}
+              onRetryObservation={analysisState.retryObservation}
+            />
+          </GameContext>
         </div>
 
         <p className={styles.announcement} role="status" aria-live="polite" aria-atomic="true">

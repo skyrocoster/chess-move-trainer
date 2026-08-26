@@ -9,10 +9,12 @@ This supporting skill captures evidence; the parent `validate` skill decides the
 edit repository files or reuse a browser profile from implementation.
 
 Require the startup command when needed, target URL, exact user steps, expected observations, setup and cleanup,
-and artifact location. Reject an open-ended request to explore the UI.
+and artifact location. If required information is missing, return `INFRA-FAIL` without searching for it. Reject an
+open-ended request to explore the UI.
 
-Run only the supplied scenario with the configured Playwright tools. Capture relevant assertions, console errors,
-failed network requests, and requested screenshots. Clean up started services and temporary data.
+Run the supplied scenario once with the configured Playwright tools. Capture only the requested assertions and
+artifacts, plus scenario-breaking console or network failures observed during those steps. Do not explore other
+pages, states, responsive sizes, or edge cases. Clean up anything started by the scenario and return immediately.
 
 ```text
 RESULT: PASS | PRODUCT-FAIL | INFRA-FAIL

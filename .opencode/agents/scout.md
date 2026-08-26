@@ -1,6 +1,8 @@
 ---
 description: Cheap read-only Scout for bounded repository facts with exact path and symbol evidence.
 mode: subagent
+#model: opencode-go/deepseek-v4-flash
+#variant: medium
 model: opencode/mimo-v2.5-free
 #variant: max
 permission:
@@ -34,3 +36,4 @@ ISSUE: none | <blocker>
 
 Do not diagnose, infer intent, recommend a route, make decisions, question the user, edit, or delegate. Never
 modify a database or read unrelated `Scratch` content.
+Do not run `git status` or `git diff` unless the factual question explicitly asks about Git state.

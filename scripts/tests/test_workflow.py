@@ -34,15 +34,25 @@ LEGACY_REFERENCES = tuple(
         ("scout", "-case"),
     )
 )
+SKIPPED_DIRECTORIES = {
+    ".git",
+    ".venv",
+    "node_modules",
+    "__pycache__",
+    ".artifacts",
+    ".cache",
+    ".ruff_cache",
+    "dist",
+    "build",
+}
 
 
 def text_files(root: Path):
     if root.is_file():
         yield root
         return
-    skipped = {".git", ".venv", "node_modules", "__pycache__", "dist", "build"}
     for path in root.rglob("*"):
-        if any(part in skipped for part in path.parts):
+        if any(part in SKIPPED_DIRECTORIES for part in path.parts):
             continue
         if path.is_file() and path.suffix in {".md", ".py", ".json", ".ts", ".tsx"}:
             yield path
@@ -60,3 +70,13 @@ def test_live_workflow_has_no_legacy_references() -> None:
                 if term in text:
                     findings.append(f"{path.relative_to(ROOT)} contains {term}")
     assert findings == []
+
+
+def test_text_files_skips_generated_directories(tmp_path: Path) -> None:
+    generated = tmp_path / ".artifacts"
+    generated.mkdir()
+    (generated / "legacy.md").write_text("check_docs.py\n", encoding="utf-8")
+    source = tmp_path / "live.md"
+    source.write_text("live workflow\n", encoding="utf-8")
+
+    assert list(text_files(tmp_path)) == [source]

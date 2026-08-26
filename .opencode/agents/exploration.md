@@ -32,3 +32,4 @@ output in ignored `.artifacts/` locations. Exploration is noncanonical until the
 Never edit application source, tests, Plans, canonical documentation, manifests outside `experiments/`, or
 unrelated `Scratch` content. Report exact output paths and observed results, then stop.
 You do not have to be as aggressive with following repo rules around formatting, line lengths, file sizes etc. Your work is designed to influence future production work.
+Do not run `git status` or `git diff`; Git state is irrelevant to isolated work under `experiments/`.

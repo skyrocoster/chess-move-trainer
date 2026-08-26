@@ -1,8 +1,8 @@
 ---
 description: Resumable DeepSeek Flash case-worker for bounded assessment, Plan work, master plans, and approved execution.
 mode: subagent
-model: opencode-go/ox-alpha-free
-variant: max
+model: opencode-go/deepseek-v4-flash
+variant: medium
 permission:
   edit: allow
   bash: allow
@@ -43,3 +43,5 @@ on resume and use only a bounded freshness check; do not restart broad discovery
 Edit only during an authorized write or execute phase and only inside its paths. Return the core skill's result
 contract, then stop. Escalate rather than choosing a new product, visual, API, data, dependency, destructive,
 ownership, or acceptance decision. Preserve unrelated changes and historical records. Never commit or push.
+Do not run `git status` or `git diff` during assessment or planning. During execution, trust the packet baseline
+and inspect Git changes only once for the final scope audit unless a directly conflicting concurrent edit appears.

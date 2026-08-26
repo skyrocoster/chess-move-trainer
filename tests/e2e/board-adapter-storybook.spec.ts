@@ -76,7 +76,7 @@ async function checkA11y(page: Page) {
 }
 
 test.describe("Board Adapter Storybook surface", () => {
-  test("exercises all seven stories, static behavior, sizing, axe, and forced colors", async ({
+  test("exercises starting, rich, and black stories, static behavior, axe, and forced colors", async ({
     page,
   }) => {
     await page.emulateMedia({ forcedColors: "active" });
@@ -152,6 +152,12 @@ test.describe("Board Adapter Storybook surface", () => {
       "Orientation: Black at the bottom.",
     );
     await checkA11y(page);
+  });
+
+  test("exercises hidden, constrained, and invalid stories, sizing, axe, and forced colors", async ({
+    page,
+  }) => {
+    await page.emulateMedia({ forcedColors: "active" });
 
     await openStory(page, STORY_IDS.hidden);
     await expectStaticGraphic(page, "Starting position without coordinates");
@@ -184,6 +190,12 @@ test.describe("Board Adapter Storybook surface", () => {
     await expect(page.getByRole("img")).toHaveCount(0);
     await expect(page.getByRole("status")).toBeVisible();
     await checkA11y(page);
+  });
+
+  test("exercises the expanded position description story, axe, and forced colors", async ({
+    page,
+  }) => {
+    await page.emulateMedia({ forcedColors: "active" });
 
     await openStory(page, STORY_IDS.expanded);
     const expandedGraphic = await expectStaticGraphic(

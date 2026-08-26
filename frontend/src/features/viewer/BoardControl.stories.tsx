@@ -24,15 +24,35 @@ const constrained = (children: React.ReactNode) => (
 
 export const Empty: Story = {
   render: () => frame(<BoardControl />),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const toolbar = canvas.getByRole("toolbar", { name: "Board controls" });
+    await expect(within(toolbar).getByText("Previous", { exact: true })).toBeVisible();
+    await expect(within(toolbar).getByText("Next", { exact: true })).toBeVisible();
+    await expect(canvas.getByRole("button", { name: "Previous" })).toBeDisabled();
+    await expect(canvas.getByRole("button", { name: "Next" })).toBeDisabled();
+    await expect(canvas.getByText("No game loaded")).toBeVisible();
+  },
 };
 
 export const InitialBoundary: Story = {
-  args: { currentPly: 0, finalPly: 3 },
+  args: { hasGame: true, canGoPrevious: false, canGoNext: true },
   render: (args) => frame(<BoardControl {...args} />),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByRole("button", { name: "Previous" })).toBeDisabled();
+    await expect(canvas.getByRole("button", { name: "Next" })).toBeEnabled();
+  },
 };
 
 export const Intermediate: Story = {
-  args: { currentPly: 1, finalPly: 3, onPrevious: fn(), onNext: fn() },
+  args: {
+    hasGame: true,
+    canGoPrevious: true,
+    canGoNext: true,
+    onPrevious: fn(),
+    onNext: fn(),
+  },
   render: (args) =>
     frame(
       <BoardControl
@@ -56,17 +76,39 @@ export const Intermediate: Story = {
 };
 
 export const FinalBoundary: Story = {
-  args: { currentPly: 3, finalPly: 3 },
+  args: { hasGame: true, canGoPrevious: true, canGoNext: false },
   render: (args) => frame(<BoardControl {...args} />),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByRole("button", { name: "Previous" })).toBeEnabled();
+    await expect(canvas.getByRole("button", { name: "Next" })).toBeDisabled();
+  },
 };
 
 export const Loading: Story = {
-  args: { currentPly: 1, finalPly: 3, loading: true },
+  args: { hasGame: true, canGoPrevious: false, canGoNext: false },
   render: (args) => frame(<BoardControl {...args} />),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByRole("button", { name: "Previous" })).toBeDisabled();
+    await expect(canvas.getByRole("button", { name: "Next" })).toBeDisabled();
+  },
+};
+
+export const TemporaryBranch: Story = {
+  name: "Temporary branch - navigation gated",
+  args: { hasGame: true, canGoPrevious: false, canGoNext: false },
+  render: (args) => frame(<BoardControl {...args} />),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.queryByText("No game loaded")).not.toBeInTheDocument();
+    await expect(canvas.getByRole("button", { name: "Previous" })).toBeDisabled();
+    await expect(canvas.getByRole("button", { name: "Next" })).toBeDisabled();
+  },
 };
 
 export const Constrained: Story = {
-  args: { currentPly: 1, finalPly: 3 },
+  args: { hasGame: true, canGoPrevious: true, canGoNext: true },
   render: (args) => constrained(<BoardControl {...args} />),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -76,7 +118,13 @@ export const Constrained: Story = {
 };
 
 export const KeyboardToolbar: Story = {
-  args: { currentPly: 1, finalPly: 3, onPrevious: fn(), onNext: fn() },
+  args: {
+    hasGame: true,
+    canGoPrevious: true,
+    canGoNext: true,
+    onPrevious: fn(),
+    onNext: fn(),
+  },
   render: (args) =>
     frame(
       <BoardControl

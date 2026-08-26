@@ -697,7 +697,7 @@ def test_progress_tty_contains_required_fields() -> None:
 def test_direct_script_report_uses_public_cli(tmp_path: Path) -> None:
     db_path = tmp_path / "direct-script.db"
     sqlite3.connect(db_path).close()
-    script = Path(__file__).resolve().parents[1] / "scripts" / "chess_com" / "extract_corpus.py"
+    script = Path(__file__).resolve().parents[2] / "scripts" / "chess_com" / "extract_corpus.py"
 
     result = subprocess.run(
         [sys.executable, str(script), "--db", str(db_path), "--report"],

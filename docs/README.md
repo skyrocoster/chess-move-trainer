@@ -47,11 +47,3 @@ Unrelated user-owned material under `Scratch/` remains in place.
 Add canonical references for the adopting project's architecture, product behavior, data, design, and
 testing only when those contracts exist. Link them here and configure their validation deliberately; this
 skeleton does not prescribe an application layout or technology stack.
-
-<!-- initializer:upstream:start -->
-## Optional upstream source
-
-Optional upstream source: [https://github.com/skyrocoster/coordinatorConfig](https://github.com/skyrocoster/coordinatorConfig).
-Future improvements may be merged manually; this initializer does not synchronize repositories or mutate
-Git remotes.
-<!-- initializer:upstream:end -->

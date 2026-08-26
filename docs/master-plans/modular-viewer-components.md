@@ -55,11 +55,11 @@ without becoming a universal viewer, session, game, opening, or tree framework.
 - **MVC-02:** [Completed MVC-02 Game loader Plan/result](../plans/done/mvc-02-game-loader/mvc-02-game-loader.md).
 - **MVC-03:** [Completed MVC-03 Static board Plan/result](../plans/done/mvc-03-static-board/mvc-03-static-board.md).
 - **MVC-04:** [Completed MVC-04 Promotion picker Plan/result](../plans/done/mvc-04-promotion-picker/mvc-04-promotion-picker.md).
-- **MVC-05:** Focused Plan/result link reserved for later selection and acceptance.
-- **MVC-06:** Focused Plan/result link reserved for later selection and acceptance.
-- **MVC-07:** Focused Plan/result link reserved for later selection and acceptance.
-- **MVC-08:** Focused Plan/result link reserved for later selection and acceptance.
-- **MVC-09:** Focused Plan/result link reserved for later selection and acceptance.
+- **MVC-05:** [Completed MVC-05 Interactive branch board Plan/result](../plans/done/mvc-05-interactive-branch-board/mvc-05-interactive-branch-board.md).
+- **MVC-06:** [Completed MVC-06 Navigation controls Plan/result](../plans/done/mvc-06-navigation-controls/mvc-06-navigation-controls.md).
+- **MVC-07:** [Completed MVC-07 Evaluation bar Plan/result](../plans/done/mvc-07-evaluation-bar/mvc-07-evaluation-bar.md).
+- **MVC-08:** [Completed MVC-08 Analysis panel Plan/result](../plans/done/mvc-08-analysis-panel/mvc-08-analysis-panel.md).
+- **MVC-09:** [Completed MVC-09 Game context Plan/result](../plans/done/mvc-09-game-context/mvc-09-game-context.md).
 - **MVC-10:** Focused Plan/result link reserved for later selection and acceptance.
 
 ## Directional acceptance and evidence

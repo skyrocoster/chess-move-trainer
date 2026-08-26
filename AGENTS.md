@@ -20,6 +20,7 @@ service. Do not use these ports for unrelated services while using the launcher.
 ## Windows shell
 
 The agent's preferred shell is Git Bash. Use PowerShell for commands documented for Windows users.
+Git Bash commands must use forward slashes (e.g. `.venv/Scripts/python.exe`), not backslashes.
 PowerShell commands must use backslash paths, `$(...)` for subexpressions, ASCII punctuation, and no
 `&&` or `||` operators. If a shell command fails, report the exact command and failure.
 
@@ -27,8 +28,8 @@ PowerShell commands must use backslash paths, `$(...)` for subexpressions, ASCII
 
 - `powershell -ExecutionPolicy Bypass -File .\setup.ps1` installs pinned Python, npm, and Playwright dependencies.
 - `powershell -ExecutionPolicy Bypass -File .\dev.ps1 backend|frontend|all` starts services.
-- `.venv\Scripts\python.exe scripts\check.py` runs the complete read-only local check suite.
-- `.venv\Scripts\python.exe scripts\check.py --fix` runs deterministic formatters, then the same checks.
+- `.venv/Scripts/python.exe scripts/check.py` runs the complete read-only local check suite.
+- `.venv/Scripts/python.exe scripts/check.py --fix` runs deterministic formatters, then the same checks.
 - Python dependencies are pinned in `requirements.txt` and configured in `pyproject.toml`; npm uses
   `frontend\package-lock.json`.
 
@@ -57,8 +58,10 @@ Do not read or alter unrelated Scratch paths.
 
 ## Working modes
 
+These modes are when you are working as the coordinator or the coordinators subagents. If you in a regular build mode, you do not need to follow this workflow.
+
 - **Coordinator workflow:** repository-dependent work enters through `.opencode/agents/coordinator.md`.
-  The coordinator owns routing, scope, workflow records, acceptance, and repair-loop interruption.
+  The coordinator owns routing, scope, workflow records, acceptance, and repair-loop interruption. If you are not set to this agent, do not assume the role.
 - **Grilling:** substantial research or decisions may produce one freely structured synthesis under
   `docs/grilling-docs/`; there is no mandatory grilling or document chain.
 - **Plan:** nontrivial implementation uses one focused Plan as an implementation instrument. It records
@@ -97,5 +100,4 @@ validated, and continued.
 ## Workflow assets
 
 `.opencode/` contains the coordinator, cheap Scout, selectable Flash/Luna case-workers, one Quality Agent,
-one Exploration Agent, browser-proof guidance, and planning skills. The live workflow uses only these role-based
-planning, execution, quality, and exploration surfaces.
+one Exploration Agent, browser-proof guidance, and planning skills.

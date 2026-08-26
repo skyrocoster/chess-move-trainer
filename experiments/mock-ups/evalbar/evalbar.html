@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Evaluation Bar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --board-dark:#141019;
+    --ivory:#efe6d6;
+    --gold:#c9a227;
+    --hair:rgba(239,230,214,0.09);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--board-dark);
+    color:var(--ivory);
+    font-family:'IBM Plex Mono', monospace;
+    min-height:100vh;
+    padding:56px 20px;
+    display:flex;
+    justify-content:center;
+  }
+
+  /* page context only — board is unchanged, this is just a stand-in
+     so the eval bar reads at the right proportions and shares an edge */
+  .stage{
+    display:flex;
+    align-items:stretch;
+    gap:0;
+  }
+  .board-placeholder{
+    width:480px;
+    height:480px;
+    border-radius:6px 0 0 6px;
+    background:
+      repeating-conic-gradient(#c9a26a 0% 25%, #8a5a34 0% 50%) 0 0 / 60px 60px;
+    border:1px solid var(--hair);
+    flex-shrink:0;
+  }
+
+  /* ==========================================================
+     EVAL BAR COMPONENT — extractable unit
+     Scoped under .eval-gauge / .eval-gauge__*. Drive entirely from
+     the --eval-pct custom property (0–100, White's share of the
+     bar; 50 = neutral) and the text in .eval-gauge__readout.
+     Sits flush against the board: no left border/radius of its own,
+     stretches to the board's height via the flex parent, so the two
+     read as one object rather than a widget beside a widget.
+     ========================================================== */
+  .eval-gauge{
+    --gauge-white: var(--ivory, #efe6d6);
+    --gauge-black: #211a24;
+    --gauge-border: var(--hair, rgba(239,230,214,0.09));
+    --gauge-accent: var(--gold, #c9a227);
+    --eval-pct: 50;
+
+    position:relative;
+    width:30px;
+    height:0; /* set in px by JS to match the board exactly — see script below */
+    border-radius:0 6px 6px 0;
+    border:1px solid var(--gauge-border);
+    border-left:none;
+    background:var(--gauge-black);
+    overflow:hidden;
+    box-shadow:inset -2px 0 6px rgba(0,0,0,0.4);
+    flex-shrink:0;
+  }
+  .eval-gauge__fill{
+    position:absolute;
+    left:0; right:0; bottom:0;
+    height:calc(var(--eval-pct) * 1%);
+    background:var(--gauge-white);
+    transition:height 0.5s cubic-bezier(0.22,0.61,0.36,1);
+  }
+  .eval-gauge__midline{
+    position:absolute;
+    left:0; right:0; top:50%;
+    height:1px;
+    background:rgba(201,162,39,0.45);
+    transform:translateY(-0.5px);
+  }
+  .eval-gauge__readout{
+    position:absolute;
+    left:50%; top:50%;
+    transform:translate(-50%,-50%);
+    font-size:10px;
+    font-weight:600;
+    color:var(--board-dark);
+    background:var(--gauge-accent);
+    border-radius:8px;
+    padding:2px 5px;
+    font-variant-numeric:tabular-nums;
+    white-space:nowrap;
+    box-shadow:0 1px 3px rgba(0,0,0,0.4);
+  }
+  /* ========================== /EVAL BAR COMPONENT ========================== */
+
+</style>
+</head>
+<body>
+
+<div class="stage">
+  <div class="board-placeholder" data-board></div>
+
+  <!-- ===================== EVAL BAR COMPONENT ===================== -->
+  <div class="eval-gauge" style="--eval-pct: 50;" role="meter" aria-valuemin="-1" aria-valuemax="1" aria-valuenow="0" aria-valuetext="Neutral, 0.00" aria-label="Evaluation">
+    <div class="eval-gauge__fill"></div>
+    <div class="eval-gauge__midline"></div>
+    <div class="eval-gauge__readout">0.00</div>
+  </div>
+  <!-- =================== /EVAL BAR COMPONENT ======================= -->
+</div>
+
+<script>
+  // Height sync — extract this alongside the component above.
+  // Don't rely on flex/grid stretch to match the board's height: your
+  // real board may not live in a container you control, may be
+  // responsive, or may include chrome (coordinate labels, padding)
+  // that changes its true rendered height. Instead, measure the real
+  // board element directly and pin the bar to it in pixels, updating
+  // live via ResizeObserver so it stays correct on resize.
+  (function syncEvalBarHeight(){
+    const board = document.querySelector('[data-board]');
+    const bar = document.querySelector('.eval-gauge');
+    if (!board || !bar) return;
+
+    const apply = () => {
+      bar.style.height = board.getBoundingClientRect().height + 'px';
+    };
+
+    apply();
+    new ResizeObserver(apply).observe(board);
+    window.addEventListener('load', apply);
+  })();
+</script>
+</body>
+</html>

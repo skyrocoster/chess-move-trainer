@@ -1,13 +1,5 @@
-import { Chess, type Square } from "chess.js";
-import {
-  cloneElement,
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  type ReactElement,
-  type SVGProps,
-} from "react";
+import type { Square } from "chess.js";
+import { cloneElement, useCallback, useRef, type ReactElement, type SVGProps } from "react";
 import {
   Chessboard,
   defaultPieces,
@@ -18,25 +10,38 @@ import {
 import { Button } from "../design-system/Button";
 import {
   PromotionPicker,
+  type PendingPromotion,
   type PromotionColor,
-  type PromotionCommit,
-  usePromotionController,
+  type PromotionPiece,
 } from "./PromotionPicker";
 import styles from "./InteractiveBoardAdapter.module.css";
 import type { BoardOrientation } from "./BoardAdapter";
-import type { Fen, Ply } from "../viewer/chessPrimitives";
 import type { BranchMove, BranchSnapshot } from "../viewer/temporaryBranchModel";
 
 export type { BranchMove, BranchSnapshot } from "../viewer/temporaryBranchModel";
 
 export type InteractiveBoardAdapterProps = {
-  viewKey: string;
-  originFen: Fen;
-  originPly: Ply;
+  branchSnapshot: BranchSnapshot;
   orientation?: BoardOrientation;
   label: string;
-  resetToken?: number;
-  onBranchChange?: (snapshot: BranchSnapshot) => void;
+  notice: string;
+  terminal: string | null;
+  promotionPending: PendingPromotion | null;
+  promotionColor: PromotionColor;
+  promotionSourceElement: HTMLElement | null;
+  promotionAnchorElement: HTMLElement | null;
+  onMoveIntent: (intent: InteractiveBoardMoveIntent) => boolean;
+  onPromotionSelect: (promotion: PromotionPiece) => void;
+  onPromotionCancel: () => void;
+  onUndo: () => void;
+  onReset: () => void;
+};
+
+export type InteractiveBoardMoveIntent = {
+  sourceSquare: Square;
+  targetSquare: Square;
+  sourceElement: HTMLElement | null;
+  anchorElement: HTMLElement | null;
 };
 
 const PIECE_NAMES: Record<string, string> = {
@@ -65,10 +70,6 @@ const accessiblePieces = Object.fromEntries(
   ]),
 ) as PieceRenderObject;
 
-function isPromotionTarget(color: PromotionColor, square: Square) {
-  return color === "w" ? square.endsWith("8") : square.endsWith("1");
-}
-
 function findSourceElement(boardRoot: HTMLElement | null, sourceSquare: Square) {
   const activeElement = document.activeElement;
   const activeSource =
@@ -89,16 +90,6 @@ function findSquareElement(boardRoot: HTMLElement | null, square: Square) {
   return boardRoot?.querySelector<HTMLElement>(`[data-square="${square}"]`) ?? null;
 }
 
-function historyMoves(chess: Chess): BranchMove[] {
-  return chess.history({ verbose: true }).map((move) => ({
-    color: move.color,
-    from: move.from,
-    to: move.to,
-    san: move.san,
-    ...(move.promotion ? { promotion: move.promotion } : {}),
-  }));
-}
-
 function branchSan(originFen: string, moves: readonly BranchMove[]) {
   const fields = originFen.split(" ");
   let moveNumber = Number(fields[5]) || 1;
@@ -117,121 +108,23 @@ function branchSan(originFen: string, moves: readonly BranchMove[]) {
     .join(" ");
 }
 
-function terminalDescription(chess: Chess) {
-  if (chess.isCheckmate()) {
-    return "Checkmate";
-  }
-  if (chess.isStalemate()) {
-    return "Stalemate";
-  }
-  if (chess.isInsufficientMaterial()) {
-    return "Draw by insufficient material";
-  }
-  if (chess.isDrawByFiftyMoves()) {
-    return "Draw by fifty-move rule";
-  }
-  return null;
-}
-
 export function InteractiveBoardAdapter({
-  viewKey,
-  originFen,
-  originPly,
+  branchSnapshot,
   orientation = "white",
   label,
-  resetToken = 0,
-  onBranchChange,
+  notice,
+  terminal,
+  promotionPending,
+  promotionColor,
+  promotionSourceElement,
+  promotionAnchorElement,
+  onMoveIntent,
+  onPromotionSelect,
+  onPromotionCancel,
+  onUndo,
+  onReset,
 }: InteractiveBoardAdapterProps) {
   const boardRootRef = useRef<HTMLDivElement | null>(null);
-  const chessRef = useRef<Chess | null>(null);
-  if (!chessRef.current) {
-    chessRef.current = new Chess(originFen);
-  }
-  const chess = chessRef.current;
-  const [currentFen, setCurrentFen] = useState(originFen);
-  const [moves, setMoves] = useState<BranchMove[]>([]);
-  const [promotionColor, setPromotionColor] = useState<PromotionColor | null>(null);
-  const [notice, setNotice] = useState("Make a legal move to start a temporary branch.");
-  const lastResetToken = useRef(resetToken);
-  const lastOriginFen = useRef(originFen);
-
-  const syncFromChess = useCallback(() => {
-    setCurrentFen(chess.fen());
-    setMoves(historyMoves(chess));
-  }, [chess]);
-
-  const handleCommit = useCallback(
-    (commit: PromotionCommit) => {
-      setCurrentFen(commit.fen);
-      setMoves(historyMoves(chess));
-      setPromotionColor(null);
-      setNotice(`Branch move committed: ${commit.move.san}.`);
-    },
-    [chess],
-  );
-
-  const handleReject = useCallback((reason: "illegal" | "stale") => {
-    setPromotionColor(null);
-    setNotice(
-      reason === "stale"
-        ? "Promotion rejected because the displayed branch position is stale."
-        : "Promotion rejected because the move is illegal.",
-    );
-  }, []);
-
-  const controller = usePromotionController({
-    chess,
-    onCommit: handleCommit,
-    onReject: handleReject,
-  });
-  const {
-    pending,
-    sourceElement,
-    anchorElement,
-    requestPromotion,
-    selectPromotion,
-    cancelPromotion,
-  } = controller;
-
-  const resetBranch = useCallback(
-    (message: string) => {
-      cancelPromotion();
-      chess.load(originFen);
-      setCurrentFen(originFen);
-      setMoves([]);
-      setPromotionColor(null);
-      setNotice(message);
-    },
-    [cancelPromotion, chess, originFen],
-  );
-
-  useEffect(() => {
-    if (lastOriginFen.current === originFen) {
-      return;
-    }
-    lastOriginFen.current = originFen;
-    resetBranch("Branch discarded because the displayed captured ply changed.");
-  }, [originFen, resetBranch]);
-
-  useEffect(() => {
-    if (lastResetToken.current === resetToken) {
-      return;
-    }
-    lastResetToken.current = resetToken;
-    resetBranch("Branch discarded before the game or viewer was reset.");
-  }, [resetBranch, resetToken]);
-
-  useEffect(() => {
-    onBranchChange?.({
-      viewKey,
-      resetToken,
-      originFen,
-      currentFen,
-      originPly,
-      moves,
-      active: moves.length > 0 || pending !== null,
-    });
-  }, [pending, currentFen, moves, onBranchChange, originFen, originPly, resetToken, viewKey]);
 
   const handlePieceDrop = useCallback(
     ({ sourceSquare, targetSquare }: PieceDropHandlerArgs) => {
@@ -241,47 +134,16 @@ export function InteractiveBoardAdapter({
 
       const source = sourceSquare as Square;
       const target = targetSquare as Square;
-      const piece = chess.get(source);
-      if (piece?.type === "p" && isPromotionTarget(piece.color, target)) {
-        const opened = requestPromotion(
-          source,
-          target,
-          findSourceElement(boardRootRef.current, source),
-          findSquareElement(boardRootRef.current, target),
-        );
-        if (opened) {
-          setPromotionColor(piece.color);
-          setNotice("Choose a promotion piece for the temporary branch.");
-        }
-        return false;
-      }
-
-      try {
-        const move = chess.move({ from: source, to: target });
-        syncFromChess();
-        setNotice(`Branch move committed: ${move.san}.`);
-        return true;
-      } catch {
-        setNotice("Move rejected because it is illegal.");
-        return false;
-      }
+      return onMoveIntent({
+        sourceSquare: source,
+        targetSquare: target,
+        sourceElement: findSourceElement(boardRootRef.current, source),
+        anchorElement: findSquareElement(boardRootRef.current, target),
+      });
     },
-    [chess, requestPromotion, syncFromChess],
+    [onMoveIntent],
   );
-
-  const handleUndo = useCallback(() => {
-    cancelPromotion();
-    if (!chess.undo()) {
-      return;
-    }
-    syncFromChess();
-    setPromotionColor(null);
-    setNotice("Undid the latest temporary branch move.");
-  }, [cancelPromotion, chess, syncFromChess]);
-
-  const active = moves.length > 0 || pending !== null;
-  const san = branchSan(originFen, moves);
-  const terminal = terminalDescription(chess);
+  const san = branchSan(branchSnapshot.originFen, branchSnapshot.moves);
   const options = {
     allowDragging: true,
     allowDrawingArrows: false,
@@ -292,7 +154,7 @@ export function InteractiveBoardAdapter({
     onPieceDragCancel: () => undefined,
     onPieceDrop: handlePieceDrop,
     pieces: accessiblePieces,
-    position: currentFen,
+    position: branchSnapshot.currentFen,
     showAnimations: false,
     showNotation: true,
   } as const;
@@ -311,16 +173,16 @@ export function InteractiveBoardAdapter({
       <div className={styles.branchPanel} aria-label="Temporary branch">
         <div className={styles.branchHeading}>
           <strong>Temporary branch</strong>
-          <span>From captured ply {originPly}</span>
+          <span>From captured ply {branchSnapshot.originPly}</span>
         </div>
         <div className={styles.fenFields} aria-label="Temporary branch FEN">
           <p className={styles.fenField}>
             <span>Branch origin FEN</span>
-            <code data-testid="branch-origin-fen">{originFen}</code>
+            <code data-testid="branch-origin-fen">{branchSnapshot.originFen}</code>
           </p>
           <p className={styles.fenField}>
             <span>Current branch FEN</span>
-            <code data-testid="branch-current-fen">{currentFen}</code>
+            <code data-testid="branch-current-fen">{branchSnapshot.currentFen}</code>
           </p>
         </div>
         <p className={styles.san} data-testid="branch-san" aria-label="Temporary branch SAN">
@@ -332,15 +194,15 @@ export function InteractiveBoardAdapter({
           </p>
         ) : null}
         <div className={styles.actions} aria-label="Temporary branch actions">
-          <Button size="sm" variant="secondary" onClick={handleUndo} disabled={moves.length === 0}>
-            Undo
-          </Button>
           <Button
             size="sm"
             variant="secondary"
-            onClick={() => resetBranch("Temporary branch reset to its captured-game ply.")}
-            disabled={!active}
+            onClick={onUndo}
+            disabled={branchSnapshot.moves.length === 0}
           >
+            Undo
+          </Button>
+          <Button size="sm" variant="secondary" onClick={onReset} disabled={!branchSnapshot.active}>
             Reset
           </Button>
         </div>
@@ -349,16 +211,12 @@ export function InteractiveBoardAdapter({
         </p>
       </div>
       <PromotionPicker
-        pending={pending}
-        color={promotionColor ?? chess.turn()}
-        sourceElement={sourceElement}
-        anchorElement={anchorElement}
-        onSelect={selectPromotion}
-        onCancel={() => {
-          cancelPromotion();
-          setPromotionColor(null);
-          setNotice("Promotion cancelled; the captured position is unchanged.");
-        }}
+        pending={promotionPending}
+        color={promotionColor}
+        sourceElement={promotionSourceElement}
+        anchorElement={promotionAnchorElement}
+        onSelect={onPromotionSelect}
+        onCancel={onPromotionCancel}
       />
     </section>
   );

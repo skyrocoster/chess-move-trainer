@@ -4,25 +4,22 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import styles from "./BoardControl.module.css";
 
 export type BoardControlProps = {
-  currentPly?: number;
-  finalPly?: number;
-  loading?: boolean;
-  branchActive?: boolean;
+  hasGame?: boolean;
+  canGoPrevious?: boolean;
+  canGoNext?: boolean;
   onPrevious?: () => void;
   onNext?: () => void;
 };
 
 export function BoardControl({
-  currentPly,
-  finalPly,
-  loading = false,
-  branchActive = false,
+  hasGame = false,
+  canGoPrevious = false,
+  canGoNext = false,
   onPrevious,
   onNext,
 }: BoardControlProps) {
-  const hasGame = currentPly !== undefined && finalPly !== undefined;
-  const previousDisabled = loading || branchActive || !hasGame || currentPly === 0;
-  const nextDisabled = loading || branchActive || !hasGame || currentPly === finalPly;
+  const previousDisabled = !hasGame || !canGoPrevious;
+  const nextDisabled = !hasGame || !canGoNext;
 
   return (
     <div className={styles.container}>

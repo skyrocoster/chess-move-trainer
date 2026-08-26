@@ -1,0 +1,316 @@
+<!--
+  ACCESSIBILITY NOTE — read before touching this panel
+
+  This "Position description" panel exists to give screen-reader users a
+  linear, spoken description of the board state (the source text is
+  explicitly "Occupied squares in stable FEN order" — authored for
+  listening, not scanning).
+
+  That means this file renders the SAME data twice, on purpose:
+
+  1. .sr-only paragraph (aria-live="polite")
+     The real, authoritative description. Full sentence, verbatim,
+     in stable FEN order. This is what assistive tech actually reads.
+     aria-live="polite" means a move update gets announced without
+     stealing focus.
+
+  2. The visible grid (piece squares grouped by type, wrapped in
+     aria-hidden="true")
+     A sighted-user convenience only. It reorders squares by piece
+     type instead of FEN order, which is fine to look at but would be
+     the WRONG thing for a screen reader to read — hence aria-hidden,
+     so it's invisible to assistive tech and never double-announced.
+
+  Production TODO: the sr-only sentence below is hand-typed to match
+  a screenshot for this mockup. Before shipping, generate it from the
+  same source that produces the FEN/piece list, so the spoken
+  description and the visual grid can never drift out of sync with
+  each other or with the real board state. A mismatch between them
+  would be worse than not redesigning this panel at all.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Position Description</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --board-dark:#141019;
+    --board-panel:#1d1723;
+    --board-panel-raised:#241d2c;
+    --ivory:#efe6d6;
+    --ivory-dim:#a89e8e;
+    --gold:#c9a227;
+    --gold-dim:#8a742a;
+    --oxblood:#a8433a;
+    --sage:#7c9a6b;
+    --hair:rgba(239,230,214,0.09);
+    --radius:10px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(1200px 600px at 15% -10%, rgba(201,162,39,0.07), transparent 60%),
+      var(--board-dark);
+    color:var(--ivory);
+    font-family:'IBM Plex Mono', monospace;
+    min-height:100vh;
+    padding:56px 20px 80px;
+    display:flex;
+    justify-content:center;
+  }
+  .sheet{ width:100%; max-width:600px; }
+
+  /* ---------- collapsible panel ---------- */
+  details.panel{
+    background:var(--board-panel);
+    border:1px solid var(--hair);
+    border-radius:var(--radius);
+    overflow:hidden;
+  }
+  details.panel > summary{
+    list-style:none;
+    cursor:pointer;
+    padding:16px 20px;
+    display:flex;
+    align-items:center;
+    gap:10px;
+    user-select:none;
+  }
+  details.panel > summary::-webkit-details-marker{ display:none; }
+  details.panel > summary:focus-visible{
+    outline:2px solid var(--gold);
+    outline-offset:-2px;
+  }
+  .chevron{
+    color:var(--gold);
+    font-size:11px;
+    transition:transform 0.18s ease;
+    flex-shrink:0;
+  }
+  details.panel[open] .chevron{ transform:rotate(90deg); }
+  summary h1{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    font-size:15.5px;
+    margin:0;
+    color:var(--gold);
+    letter-spacing:0.01em;
+  }
+
+  .panel-body{
+    padding:2px 20px 20px;
+  }
+
+  /* meta strip: orientation / side to move */
+  .meta-strip{
+    display:flex;
+    gap:22px;
+    flex-wrap:wrap;
+    padding:12px 0 18px;
+    border-bottom:1px solid var(--hair);
+    margin-bottom:18px;
+  }
+  .meta-item .k{
+    font-size:10px;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    color:var(--ivory-dim);
+    margin-bottom:3px;
+  }
+  .meta-item .v{
+    font-size:13px;
+    color:var(--ivory);
+  }
+  .meta-item .v.accent{ color:var(--gold); }
+
+  /* two-column side groups */
+  .sides{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:20px;
+    margin-bottom:20px;
+  }
+  .side-col .side-title{
+    font-family:'Fraunces', serif;
+    font-size:12.5px;
+    font-weight:600;
+    display:flex;
+    align-items:center;
+    gap:7px;
+    margin-bottom:12px;
+  }
+  .side-swatch{
+    width:9px; height:9px;
+    border-radius:2px;
+    flex-shrink:0;
+  }
+  .side-col.white .side-swatch{ background:var(--ivory); }
+  .side-col.black .side-swatch{ background:var(--oxblood); }
+
+  .piece-row{
+    display:flex;
+    align-items:baseline;
+    gap:10px;
+    padding:6px 0;
+    border-top:1px solid var(--hair);
+  }
+  .piece-row:first-of-type{ border-top:none; }
+  .piece-name{
+    font-size:11px;
+    color:var(--ivory-dim);
+    width:52px;
+    flex-shrink:0;
+  }
+  .squares{
+    display:flex;
+    flex-wrap:wrap;
+    gap:5px;
+  }
+  .sq{
+    font-size:11px;
+    color:var(--ivory);
+    background:rgba(0,0,0,0.24);
+    border:1px solid var(--hair);
+    border-radius:4px;
+    padding:2px 6px;
+    font-variant-numeric:tabular-nums;
+  }
+
+  /* visually hidden but available to screen readers */
+  .sr-only{
+    position:absolute;
+    width:1px; height:1px;
+    padding:0; margin:-1px;
+    overflow:hidden;
+    clip:rect(0,0,0,0);
+    white-space:nowrap;
+    border:0;
+  }
+
+  /* footer facts strip */
+  .facts{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    padding-top:16px;
+    border-top:1px solid var(--hair);
+  }
+  .fact{
+    font-size:11px;
+    color:var(--ivory-dim);
+    background:var(--board-panel-raised);
+    border:1px solid var(--hair);
+    border-radius:6px;
+    padding:6px 10px;
+    display:flex;
+    align-items:center;
+    gap:6px;
+  }
+  .fact b{ color:var(--ivory); font-weight:500; }
+  .fact.castle-w b{ color:var(--sage); }
+  .fact.castle-b b{ color:var(--sage); }
+
+  @media (max-width:480px){
+    .sides{ grid-template-columns:1fr; gap:16px; }
+    body{ padding:36px 14px 60px; }
+  }
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <details class="panel" open>
+    <summary>
+      <span class="chevron">&#9656;</span>
+      <h1>Position description</h1>
+    </summary>
+
+    <div class="panel-body">
+
+      <!--
+        Screen-reader source of truth: the full sentence, in the app's
+        stable FEN order, exactly as the underlying description was
+        authored. This is what assistive tech actually reads — it is
+        NOT decorative. Keep it word-for-word in sync with whatever
+        generates the FEN-order description server/client-side.
+        aria-live="polite" so a move update is announced without
+        moving focus.
+      -->
+      <p class="sr-only" aria-live="polite">
+        Orientation: White at the bottom. Side to move: Black. Occupied squares in stable FEN order:
+        black rook at a8, black knight at b8, black queen at d8, black king at e8, black rook at h8,
+        black bishop at b7, black pawn at c7, black bishop at e7, black pawn at f7, black pawn at g7,
+        black pawn at a6, black pawn at b6, black pawn at d6, black knight at f6, black pawn at h6,
+        white pawn at e4, white bishop at f4, white knight at c3, white pawn at d3, white knight at f3,
+        white pawn at g3, white pawn at a2, white pawn at b2, white pawn at c2, white queen at d2,
+        white pawn at f2, white bishop at g2, white pawn at h2, white rook at a1, white king at e1,
+        white rook at h1. Castling rights: White may castle kingside and queenside; Black may castle
+        kingside and queenside. En-passant target: e3. Halfmove clock: 0. Fullmove number: 8.
+      </p>
+
+      <!-- Everything below is the sighted-user view: a scannable regrouping
+           of the same data. Hidden from assistive tech so it isn't announced
+           twice and so screen readers don't get the reordered (by piece type,
+           not FEN order) version. -->
+      <div aria-hidden="true">
+
+      <div class="meta-strip">
+        <div class="meta-item">
+          <div class="k">Orientation</div>
+          <div class="v">White at the bottom</div>
+        </div>
+        <div class="meta-item">
+          <div class="k">Side to move</div>
+          <div class="v accent">Black</div>
+        </div>
+      </div>
+
+      <div class="sides">
+        <div class="side-col white">
+          <div class="side-title"><span class="side-swatch"></span>White</div>
+          <div class="piece-row"><span class="piece-name">King</span><span class="squares"><span class="sq">e1</span></span></div>
+          <div class="piece-row"><span class="piece-name">Queen</span><span class="squares"><span class="sq">d2</span></span></div>
+          <div class="piece-row"><span class="piece-name">Rooks</span><span class="squares"><span class="sq">a1</span><span class="sq">h1</span></span></div>
+          <div class="piece-row"><span class="piece-name">Bishops</span><span class="squares"><span class="sq">f4</span><span class="sq">g2</span></span></div>
+          <div class="piece-row"><span class="piece-name">Knights</span><span class="squares"><span class="sq">c3</span><span class="sq">f3</span></span></div>
+          <div class="piece-row"><span class="piece-name">Pawns</span><span class="squares">
+            <span class="sq">a2</span><span class="sq">b2</span><span class="sq">c2</span><span class="sq">d3</span>
+            <span class="sq">e4</span><span class="sq">f2</span><span class="sq">g3</span><span class="sq">h2</span>
+          </span></div>
+        </div>
+
+        <div class="side-col black">
+          <div class="side-title"><span class="side-swatch"></span>Black</div>
+          <div class="piece-row"><span class="piece-name">King</span><span class="squares"><span class="sq">e8</span></span></div>
+          <div class="piece-row"><span class="piece-name">Queen</span><span class="squares"><span class="sq">d8</span></span></div>
+          <div class="piece-row"><span class="piece-name">Rooks</span><span class="squares"><span class="sq">a8</span><span class="sq">h8</span></span></div>
+          <div class="piece-row"><span class="piece-name">Bishops</span><span class="squares"><span class="sq">b7</span><span class="sq">e7</span></span></div>
+          <div class="piece-row"><span class="piece-name">Knights</span><span class="squares"><span class="sq">b8</span><span class="sq">f6</span></span></div>
+          <div class="piece-row"><span class="piece-name">Pawns</span><span class="squares">
+            <span class="sq">a6</span><span class="sq">b6</span><span class="sq">c7</span><span class="sq">d6</span>
+            <span class="sq">e6</span><span class="sq">f7</span><span class="sq">g7</span><span class="sq">h6</span>
+          </span></div>
+        </div>
+      </div>
+
+      <div class="facts">
+        <span class="fact castle-w">Castling · White <b>K + Q</b></span>
+        <span class="fact castle-b">Castling · Black <b>K + Q</b></span>
+        <span class="fact">En passant <b>e3</b></span>
+        <span class="fact">Halfmove clock <b>0</b></span>
+        <span class="fact">Fullmove <b>8</b></span>
+      </div>
+
+      </div><!-- /aria-hidden decorative view -->
+
+    </div>
+  </details>
+
+</div>
+</body>
+</html>

@@ -74,9 +74,9 @@ function noAnalysisClient(): AnalysisClient {
   };
 }
 
-function completedAnalysisClient(): AnalysisClient {
-  const result: EvaluationResult = {
-    fen: VIEWER_GAME.positions[0].fen,
+function completedResult(fen: string): EvaluationResult {
+  return {
+    fen,
     profile_id: "mp09-balanced-nodes-v2-200000",
     candidates: [
       {
@@ -97,7 +97,10 @@ function completedAnalysisClient(): AnalysisClient {
     completed_at: "2026-08-21T00:00:01+00:00",
     wall_time_ms: 100,
   };
-  const completedStatus: EvaluationStatus = {
+}
+
+function completedStatus(): EvaluationStatus {
+  return {
     state: "done",
     position: 0,
     attempts: 1,
@@ -106,12 +109,15 @@ function completedAnalysisClient(): AnalysisClient {
     completed_at: "2026-08-21T00:00:01+00:00",
     error_code: null,
   };
+}
+
+function completedAnalysisClient(): AnalysisClient {
   const observe = vi.fn(async (fen: string) => {
     const data: EvaluationObservation = {
       fen,
       eligibility: "eligible",
-      result: { ...result, fen },
-      status: completedStatus,
+      result: completedResult(fen),
+      status: completedStatus(),
       terminal: false,
     };
     return { status: "success" as const, data };
@@ -121,6 +127,63 @@ function completedAnalysisClient(): AnalysisClient {
     enqueue: vi.fn(),
     status: vi.fn(),
   };
+}
+
+function retryingAnalysisClient(): AnalysisClient {
+  const observe = vi.fn<AnalysisClient["observe"]>(async (fen) => ({
+    status: "success",
+    data: { fen, eligibility: "missing", result: null, status: null, terminal: false },
+  }));
+  observe.mockResolvedValueOnce({ status: "evaluation_unavailable" });
+  return { observe, enqueue: vi.fn(), status: vi.fn() };
+}
+
+function pollingAnalysisClient(): AnalysisClient {
+  const observe = vi.fn<AnalysisClient["observe"]>();
+  observe.mockImplementationOnce(async (fen) => ({
+    status: "success",
+    data: {
+      fen,
+      eligibility: "missing",
+      result: null,
+      status: {
+        state: "queued",
+        position: 0,
+        attempts: 1,
+        enqueued_at: "2026-08-21T00:00:00+00:00",
+        started_at: null,
+        completed_at: null,
+        error_code: null,
+      },
+      terminal: false,
+    },
+  }));
+  observe.mockImplementation(async (fen) => ({
+    status: "success",
+    data: {
+      fen,
+      eligibility: "eligible",
+      result: completedResult(fen),
+      status: completedStatus(),
+      terminal: false,
+    },
+  }));
+
+  const status = vi.fn<AnalysisClient["status"]>();
+  status.mockImplementationOnce(async (fen) => ({
+    status: "success",
+    data: { fen, state: "running", completed_at: null, error_code: null },
+  }));
+  status.mockImplementationOnce(async (fen) => ({
+    status: "success",
+    data: {
+      fen,
+      state: "done",
+      completed_at: "2026-08-21T00:00:01+00:00",
+      error_code: null,
+    },
+  }));
+  return { observe, enqueue: vi.fn(), status };
 }
 
 function renderViewer(props: ComponentProps<typeof ViewerWorkspace> = {}) {
@@ -296,6 +359,46 @@ describe("ViewerWorkspace", () => {
     );
   });
 
+  it("retries an observation only from the deliberate observation-retry action", async () => {
+    const lookup = successfulLookup();
+    const analysisClient = retryingAnalysisClient();
+    const user = userEvent.setup();
+    render(<ViewerWorkspace lookup={lookup} analysisClient={analysisClient} />);
+
+    await fillAndSubmit(user);
+
+    expect(await screen.findByText("Evaluation unavailable")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Retry observation" })).toBeVisible();
+    expect(analysisClient.observe).toHaveBeenCalledOnce();
+    expect(analysisClient.enqueue).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole("button", { name: "Retry observation" }));
+
+    expect(await screen.findByText("Analysis available on request")).toBeVisible();
+    expect(analysisClient.observe).toHaveBeenCalledTimes(2);
+    expect(analysisClient.enqueue).not.toHaveBeenCalled();
+  });
+
+  it("keeps queue polling in the page-owned analysis workflow until completion", async () => {
+    const lookup = successfulLookup();
+    const analysisClient = pollingAnalysisClient();
+    const user = userEvent.setup();
+    render(
+      <ViewerWorkspace
+        lookup={lookup}
+        analysisClient={analysisClient}
+        analysisPollIntervalMs={1}
+      />,
+    );
+
+    await fillAndSubmit(user);
+
+    expect(await screen.findByText("Analysis complete")).toBeVisible();
+    expect(analysisClient.observe).toHaveBeenCalledTimes(2);
+    expect(analysisClient.status).toHaveBeenCalledTimes(2);
+    expect(analysisClient.enqueue).not.toHaveBeenCalled();
+  });
+
   it("shares one completed observation with the panel and the beside-board eval bar", async () => {
     const lookup = successfulLookup();
     const analysisClient = completedAnalysisClient();
@@ -304,12 +407,29 @@ describe("ViewerWorkspace", () => {
 
     await fillAndSubmit(user);
 
-    expect(await screen.findByText("Analysis complete")).toBeVisible();
+    const analysisStatus = await screen.findByText("Analysis complete");
+    const contextButton = screen.getByRole("button", { name: "Game Context" });
+    const sourceLink = screen.getByRole("link", { name: "Chess.com game" });
+    const contentId = contextButton.getAttribute("aria-controls");
+
+    expect(analysisStatus).toBeVisible();
     expect(screen.getByText("best-line evaluation +0.34.")).toBeVisible();
     expect(screen.getByRole("meter", { name: "Evaluation" })).toHaveAttribute(
       "data-state",
       "best-line",
     );
+    expect(contextButton).toHaveAttribute("aria-expanded", "true");
+    expect(sourceLink.compareDocumentPosition(analysisStatus)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
+    if (!contentId) {
+      throw new Error("Game Context disclosure did not expose its controlled content");
+    }
+    const disclosureContent = document.getElementById(contentId);
+    if (!disclosureContent) {
+      throw new Error(`Game Context disclosure content ${contentId} was not found`);
+    }
+    expect(disclosureContent).toContainElement(analysisStatus);
     expect(analysisClient.observe).toHaveBeenCalledOnce();
     expect(analysisClient.status).not.toHaveBeenCalled();
   });

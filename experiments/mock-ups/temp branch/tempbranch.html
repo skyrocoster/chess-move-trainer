@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Branch Panel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --board-dark:#141019;
+    --board-panel:#1d1723;
+    --board-panel-raised:#241d2c;
+    --ivory:#efe6d6;
+    --ivory-dim:#a89e8e;
+    --gold:#c9a227;
+    --gold-dim:#8a742a;
+    --oxblood:#a8433a;
+    --sage:#7c9a6b;
+    --hair:rgba(239,230,214,0.09);
+    --radius:10px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(1200px 600px at 15% -10%, rgba(201,162,39,0.07), transparent 60%),
+      var(--board-dark);
+    color:var(--ivory);
+    font-family:'IBM Plex Mono', monospace;
+    min-height:100vh;
+    padding:56px 20px 80px;
+    display:flex;
+    justify-content:center;
+  }
+  .sheet{ width:100%; max-width:560px; }
+
+  .panel{
+    background:var(--board-panel);
+    border:1px solid var(--hair);
+    border-radius:var(--radius);
+    padding:22px 24px 24px;
+  }
+  .panel-top{
+    display:flex;
+    align-items:baseline;
+    gap:8px;
+    margin-bottom:18px;
+  }
+  .panel-top h1{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    font-size:17px;
+    margin:0;
+    color:var(--ivory);
+  }
+  .panel-top .from{
+    font-size:12px;
+    color:var(--ivory-dim);
+  }
+
+  .field{ margin-bottom:16px; }
+  .field-label{
+    font-size:10.5px;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    color:var(--ivory-dim);
+    margin-bottom:5px;
+  }
+  .fen-row{
+    display:flex;
+    align-items:stretch;
+    gap:8px;
+  }
+  .fen{
+    font-size:12px;
+    color:var(--ivory);
+    background:rgba(0,0,0,0.22);
+    border:1px solid var(--hair);
+    border-radius:6px;
+    padding:8px 10px;
+    word-break:break-all;
+    line-height:1.5;
+    flex:1;
+    min-width:0;
+  }
+  .fen.current{ border-color:rgba(201,162,39,0.25); }
+
+  .copy-btn{
+    flex-shrink:0;
+    width:32px;
+    background:rgba(0,0,0,0.22);
+    border:1px solid var(--hair);
+    border-radius:6px;
+    color:var(--ivory-dim);
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:0;
+    transition:border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+  }
+  .copy-btn:hover{
+    border-color:var(--gold-dim);
+    color:var(--ivory);
+    background:rgba(0,0,0,0.32);
+  }
+  .copy-btn:focus-visible{
+    outline:2px solid var(--gold);
+    outline-offset:2px;
+  }
+  .copy-btn svg{ width:14px; height:14px; }
+  .copy-btn.copied{
+    color:var(--sage);
+    border-color:rgba(124,154,107,0.35);
+  }
+
+  .buttons{
+    display:flex;
+    gap:10px;
+    margin:18px 0 16px;
+  }
+  button.branch-btn{
+    font-family:'IBM Plex Mono', monospace;
+    background:var(--board-panel-raised);
+    color:var(--ivory);
+    border:1px solid rgba(239,230,214,0.14);
+    border-radius:7px;
+    padding:9px 16px;
+    font-size:12.5px;
+    letter-spacing:0.02em;
+    cursor:pointer;
+    transition:border-color 0.15s ease, background 0.15s ease;
+  }
+  button.branch-btn:hover{ border-color:var(--gold-dim); background:#2a2233; }
+  button.branch-btn:focus-visible{ outline:2px solid var(--gold); outline-offset:2px; }
+  button.branch-btn.reset{ color:var(--ivory-dim); }
+
+  .status{
+    font-size:12px;
+    color:var(--sage);
+    display:flex;
+    align-items:center;
+    gap:7px;
+    padding-top:14px;
+    border-top:1px solid var(--hair);
+  }
+  .status::before{
+    content:"";
+    width:6px; height:6px;
+    border-radius:50%;
+    background:var(--sage);
+    box-shadow:0 0 0 3px rgba(124,154,107,0.15);
+    flex-shrink:0;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    button.branch-btn{ transition:none; }
+  }
+
+  /* ==========================================================
+     SAN MOVE COMPONENT — extractable unit
+     Everything between the two "SAN COMPONENT" markers below
+     (the <div class="san-move">…</div> block, plus this single
+     <style> block) is self-contained: it only reads CSS custom
+     properties, all scoped under .san-move / .san-move__*, and
+     has no dependency on the rest of this page's markup or JS.
+     Copy the HTML block and this <style> block together and it
+     will render identically in another project. Fraunces / IBM
+     Plex Mono are loaded page-wide above; if the host page
+     doesn't already load them, add the same <link> tags or swap
+     the font-family fallbacks.
+     ========================================================== */
+  .san-move{
+    --san-bg: var(--board-panel-raised, #241d2c);
+    --san-border: var(--hair, rgba(239,230,214,0.09));
+    --san-fg: var(--ivory, #efe6d6);
+    --san-dim: var(--ivory-dim, #a89e8e);
+    --san-accent: var(--gold, #c9a227);
+
+    background:var(--san-bg);
+    border:1px solid var(--san-border);
+    border-radius:8px;
+    padding:14px 16px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+  }
+  .san-move__label{
+    font-family:'Fraunces', serif;
+    font-size:10.5px;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    color:var(--san-dim);
+  }
+  .san-move__notation{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:18px;
+    font-weight:500;
+    color:var(--san-fg);
+    letter-spacing:0.01em;
+  }
+  .san-move__notation .num{
+    color:var(--san-accent);
+    margin-right:4px;
+  }
+  .san-move__ply{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:10.5px;
+    color:var(--san-dim);
+    background:rgba(0,0,0,0.25);
+    border:1px solid var(--san-border);
+    border-radius:5px;
+    padding:3px 7px;
+    white-space:nowrap;
+  }
+  /* ========================== /SAN COMPONENT ========================== */
+
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <div class="panel">
+    <div class="panel-top">
+      <h1>Temporary branch</h1>
+      <span class="from">from captured ply 0</span>
+    </div>
+
+    <div class="field">
+      <div class="field-label">Branch origin FEN</div>
+      <div class="fen-row">
+        <div class="fen" data-fen-text>rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1</div>
+        <button class="copy-btn" type="button" data-copy-btn aria-label="Copy branch origin FEN">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="field">
+      <div class="field-label">Current branch FEN</div>
+      <div class="fen-row">
+        <div class="fen current" data-fen-text>rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1</div>
+        <button class="copy-btn" type="button" data-copy-btn aria-label="Copy current branch FEN">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- ===================== SAN COMPONENT ===================== -->
+    <div class="san-move">
+      <div>
+        <div class="san-move__label">Move</div>
+        <div class="san-move__notation"><span class="num">1.</span>e3</div>
+      </div>
+      <div class="san-move__ply">ply 1</div>
+    </div>
+    <!-- =================== /SAN COMPONENT ======================= -->
+
+    <div class="buttons">
+      <button class="branch-btn">Undo</button>
+      <button class="branch-btn reset">Reset</button>
+    </div>
+
+    <div class="status">Branch move committed: e3.</div>
+  </div>
+
+</div>
+
+<script>
+  // Copy-to-clipboard for FEN fields. Self-contained: reads the sibling
+  // .fen text from data-fen-text and swaps the button icon to a checkmark
+  // briefly on success. Falls back to a hidden-textarea copy if the
+  // Clipboard API is unavailable (e.g. non-secure context).
+  const CHECK_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+
+  document.querySelectorAll('[data-copy-btn]').forEach((btn) => {
+    const originalIcon = btn.innerHTML;
+    btn.addEventListener('click', async () => {
+      const row = btn.closest('.fen-row');
+      const text = row.querySelector('[data-fen-text]').textContent.trim();
+
+      try {
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(text);
+        } else {
+          const ta = document.createElement('textarea');
+          ta.value = text;
+          ta.style.position = 'fixed';
+          ta.style.opacity = '0';
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand('copy');
+          document.body.removeChild(ta);
+        }
+      } catch (err) {
+        console.error('Copy failed:', err);
+        return;
+      }
+
+      btn.classList.add('copied');
+      btn.innerHTML = CHECK_ICON;
+      setTimeout(() => {
+        btn.classList.remove('copied');
+        btn.innerHTML = originalIcon;
+      }, 1400);
+    });
+  });
+</script>
+</body>
+</html>

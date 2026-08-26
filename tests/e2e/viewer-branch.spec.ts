@@ -21,6 +21,10 @@ function center(box: { x: number; y: number; width: number; height: number }) {
   return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
 }
 
+async function expectDropTarget(target: Locator) {
+  await expect(target).toHaveCSS("box-shadow", /0px 0px 0px 1px/);
+}
+
 async function dragWithMouse(page: Page, source: Locator, target: Locator) {
   const sourceBox = await source.boundingBox();
   const targetBox = await target.boundingBox();
@@ -91,9 +95,9 @@ async function dragWithTouchOnBoard(
 
   await page.getByTestId(boardTestId).waitFor();
   await dispatchTouch("touchstart", center(sourceBox!), false);
-  await page.waitForTimeout(50);
+  await expect(source).toHaveAttribute("aria-pressed", "true");
   await dispatchTouch("touchmove", center(targetBox!), false);
-  await page.waitForTimeout(50);
+  await expectDropTarget(target);
   await dispatchTouch("touchend", center(targetBox!), true);
 }
 
@@ -186,9 +190,10 @@ test.describe("MP-11 Stage 2 application-owned promotion picker", () => {
     const keyboardPiece = piece(page, "e7");
     await keyboardPiece.focus();
     await page.keyboard.press("Enter");
-    await page.waitForTimeout(100);
+    await expect(keyboardPiece).toHaveAttribute("aria-pressed", "true");
     await page.keyboard.press("ArrowUp");
     await page.keyboard.press("ArrowUp");
+    await expectDropTarget(page.locator('[data-square="e8"]'));
     await page.keyboard.press("Enter");
     await expect(
       page.getByRole("dialog", { name: "Choose a promotion piece" }),

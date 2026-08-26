@@ -54,7 +54,7 @@ FORBIDDEN_COLUMNS = {
 
 
 def _recurrence_fixture_module() -> ModuleType:
-    path = Path(__file__).with_name("test_opening_recurrence.py")
+    path = Path(__file__).with_name("test_recurrence.py")
     spec = importlib.util.spec_from_file_location("_s5_recurrence_fixture", path)
     if spec is None or spec.loader is None:
         raise RuntimeError("opening recurrence fixture could not be loaded")

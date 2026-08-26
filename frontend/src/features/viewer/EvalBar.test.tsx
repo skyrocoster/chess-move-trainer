@@ -5,81 +5,45 @@ import matchers from "@chialab/vitest-axe";
 import type {} from "@chialab/vitest-axe/matchers";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { EvalBar } from "./EvalBar";
-import type { EvaluationObservation, EvaluationResult, EvaluationStatus } from "./analysisApi";
-import type { AnalysisState } from "./analysisState";
+import { EvalBar, type EvalBarProps } from "./EvalBar";
 
 expect.extend(matchers);
 
-const FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-
-function status(state: EvaluationStatus["state"]): EvaluationStatus {
-  return {
-    state,
-    position: 0,
-    attempts: 1,
-    enqueued_at: "2026-08-21T00:00:00+00:00",
-    started_at: state === "queued" ? null : "2026-08-21T00:00:00+00:00",
-    completed_at: state === "done" || state === "failed" ? "2026-08-21T00:00:01+00:00" : null,
-    error_code: state === "failed" ? "engine_failure" : null,
-  };
-}
-
-const bestLine: EvaluationResult = {
-  fen: FEN,
-  profile_id: "mp09-balanced-nodes-v2-200000",
-  candidates: [
-    {
-      rank: 1,
-      score_kind: "cp",
-      score_value: 34,
-      wdl_wins: 420,
-      wdl_draws: 300,
-      wdl_losses: 280,
-      pv_uci: ["e2e4"],
-      depth: 20,
-      seldepth: 24,
-      nodes: 200000,
-      engine_time_ms: 100,
-    },
-  ],
-  terminal_kind: null,
-  completed_at: "2026-08-21T00:00:01+00:00",
-  wall_time_ms: 100,
-};
-
-function observation(
-  eligibility: EvaluationObservation["eligibility"],
-  result: EvaluationResult | null = null,
-  currentStatus: EvaluationStatus | null = null,
-): EvaluationObservation {
-  return { fen: FEN, eligibility, result, status: currentStatus, terminal: false };
-}
-
-function state(value: EvaluationObservation | null, error: string | null = null): AnalysisState {
-  return {
-    observation: value,
-    loading: false,
-    error,
-    actionError: null,
-    actionPending: false,
-    handleAction: async () => undefined,
-    retryObservation: () => undefined,
-  };
-}
-
 afterEach(() => cleanup());
+
+type ExpectedDisplay = Pick<EvalBarProps, "orientation" | "state" | "value" | "accessibleValue">;
+
+function expectDisplay(expected: ExpectedDisplay) {
+  const meter = screen.getByRole("meter", { name: "Evaluation" });
+
+  expect(meter).toHaveAttribute("data-state", expected.state);
+  expect(meter).toHaveAttribute("data-orientation", expected.orientation);
+  expect(meter).toHaveAttribute("aria-valuemin", "0");
+  expect(meter).toHaveAttribute("aria-valuemax", "100");
+  expect(meter).toHaveAttribute("aria-valuenow", String(expected.value));
+  expect(meter).toHaveAttribute("aria-valuetext", expected.accessibleValue);
+  expect(screen.getByText(expected.accessibleValue, { exact: true })).toBeVisible();
+
+  return meter;
+}
 
 describe("EvalBar", () => {
   it("always reserves a neutral accessible meter before analysis", async () => {
     const user = userEvent.setup();
-    const { container } = render(<EvalBar orientation="white" analysisState={state(null)} />);
-    const meter = screen.getByRole("meter", { name: "Evaluation" });
-
-    expect(meter).toHaveAttribute("data-state", "neutral");
-    expect(meter).toHaveAttribute("data-orientation", "white");
-    expect(meter).toHaveAttribute("aria-valuetext", "No analysis yet; evaluation neutral.");
-    expect(screen.getByText("No analysis yet; evaluation neutral.")).toBeVisible();
+    const { container } = render(
+      <EvalBar
+        orientation="white"
+        state="neutral"
+        value={50}
+        accessibleValue="No analysis yet; evaluation neutral."
+      />,
+    );
+    const meter = expectDisplay({
+      orientation: "white",
+      state: "neutral",
+      value: 50,
+      accessibleValue: "No analysis yet; evaluation neutral.",
+    });
 
     await user.tab();
     expect(document.activeElement).not.toBe(meter);
@@ -87,36 +51,108 @@ describe("EvalBar", () => {
   });
 
   it.each([
-    ["queued", "Analysis queued; evaluation pending."],
-    ["running", "Analysis running; evaluation pending."],
-  ] as const)("shows the %s pending state without inventing an evaluation", (queueState, value) => {
+    ["unavailable", "Evaluation unavailable; evaluation neutral."],
+    ["stale without a retained candidate", "No analysis yet; evaluation neutral."],
+    ["failed without a retained candidate", "Analysis failed; evaluation neutral."],
+  ] as const)("preserves the %s neutral fallback", (_sourceState, accessibleValue) => {
+    render(
+      <EvalBar orientation="white" state="neutral" value={50} accessibleValue={accessibleValue} />,
+    );
+    expectDisplay({ orientation: "white", state: "neutral", value: 50, accessibleValue });
+  });
+
+  it.each([
+    ["queued", "white", "Analysis queued; evaluation pending."],
+    ["running", "black", "Analysis running; evaluation pending."],
+  ] as const)(
+    "shows the %s pending state without inventing an evaluation",
+    (_queueState, orientation, accessibleValue) => {
+      render(
+        <EvalBar
+          orientation={orientation}
+          state="pending"
+          value={50}
+          accessibleValue={accessibleValue}
+        />,
+      );
+      expectDisplay({ orientation, state: "pending", value: 50, accessibleValue });
+    },
+  );
+
+  it.each([
+    ["CP", 51.7, "best-line evaluation +0.34."],
+    ["negative CP", 48.3, "best-line evaluation -0.34."],
+    ["positive mate", 100, "best-line evaluation +M3."],
+    ["negative mate", 0, "best-line evaluation -M2."],
+    ["mate given", 100, "best-line evaluation +M."],
+  ] as const)("shows the completed %s display value", (_scoreKind, value, accessibleValue) => {
     render(
       <EvalBar
         orientation="black"
-        analysisState={state(observation("missing", null, status(queueState)))}
+        state="best-line"
+        value={value}
+        accessibleValue={accessibleValue}
       />,
     );
-    const meter = screen.getByRole("meter", { name: "Evaluation" });
-
-    expect(meter).toHaveAttribute("data-state", "pending");
-    expect(meter).toHaveAttribute("data-orientation", "black");
-    expect(meter).toHaveAttribute("aria-valuetext", value);
-    expect(screen.getByText(value)).toBeVisible();
+    expectDisplay({ orientation: "black", state: "best-line", value, accessibleValue });
   });
 
-  it("shows the completed White-relative best-line evaluation and flips with Black orientation", async () => {
+  it.each([
+    ["stale", "Stale best-line evaluation +0.34."],
+    ["failed", "Stale best-line evaluation +0.34."],
+  ] as const)("retains the candidate display for %s analysis", (_sourceState, accessibleValue) => {
+    render(
+      <EvalBar
+        orientation="white"
+        state="best-line"
+        value={51.7}
+        accessibleValue={accessibleValue}
+      />,
+    );
+    expectDisplay({ orientation: "white", state: "best-line", value: 51.7, accessibleValue });
+  });
+
+  it.each([
+    ["minimum", -25, 0],
+    ["maximum", 125, 100],
+  ] as const)(
+    "keeps the controlled meter's %s value within its range",
+    (_bound, value, clampedValue) => {
+      render(
+        <EvalBar
+          orientation="white"
+          state="best-line"
+          value={value}
+          accessibleValue="best-line evaluation at a controlled range boundary."
+        />,
+      );
+      const meter = expectDisplay({
+        orientation: "white",
+        state: "best-line",
+        value: clampedValue,
+        accessibleValue: "best-line evaluation at a controlled range boundary.",
+      });
+
+      expect(meter).toHaveAttribute("aria-valuenow", String(clampedValue));
+    },
+  );
+
+  it("has no focused accessibility violations for a pending display", async () => {
     const { container } = render(
       <EvalBar
         orientation="black"
-        analysisState={state(observation("eligible", bestLine, status("done")))}
+        state="pending"
+        value={50}
+        accessibleValue="Analysis running; evaluation pending."
       />,
     );
-    const meter = screen.getByRole("meter", { name: "Evaluation" });
 
-    expect(meter).toHaveAttribute("data-state", "best-line");
-    expect(meter).toHaveAttribute("data-orientation", "black");
-    expect(meter).toHaveAttribute("aria-valuetext", "best-line evaluation +0.34.");
-    expect(screen.getByText("best-line evaluation +0.34.")).toBeVisible();
+    expectDisplay({
+      orientation: "black",
+      state: "pending",
+      value: 50,
+      accessibleValue: "Analysis running; evaluation pending.",
+    });
     expect(await axe.run({ include: [container] })).toHaveNoViolations();
   });
 });

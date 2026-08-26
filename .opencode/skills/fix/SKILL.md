@@ -6,9 +6,13 @@ description: "Use during PHASE: FIX to apply one exact coordinator-authorized re
 # Fix
 
 Require the failed validation evidence, exact paths, intended semantics, failed check, and one deterministic repair.
-Reject an open-ended diagnosis or any request to widen scope.
+If a required field is missing, return `BLOCKED` without investigating. Reject an open-ended diagnosis or any
+request to widen scope.
 
-Apply the smallest named repair, rerun only the failed focused check once, audit the changed paths, and stop.
+Apply the named deterministic repair without exploring alternatives. Rerun only the failed focused check once,
+confirm once that only the authorized paths changed, and return immediately. Do not inspect Git state before the
+repair or recheck it afterward. If the repair or check fails, report that result without further diagnosis or
+another edit.
 
 ```text
 RESULT: REPAIRED | FAILED | BLOCKED
@@ -20,4 +24,4 @@ NEXT: fresh Quality validation | coordinator review
 ```
 
 A fix never validates itself. Do not run another repair cycle, edit historical records, create workflow
-artifacts, commit, or push.
+artifacts, run additional checks, commit, or push.
