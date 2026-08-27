@@ -6,13 +6,13 @@ const STORYBOOK_TEST_FILES = new Set([
   "responsive-shell-storybook.spec.ts",
   "viewer-branch.spec.ts",
   "viewer-branch-stage4.spec.ts",
-  "viewer-live-position.spec.ts",
   "viewer-storybook.spec.ts",
 ]);
 
 const APP_TEST_FILES = new Set([
   "responsive-shell.spec.ts",
   "status.spec.ts",
+  "viewer-live-position.spec.ts",
   "viewer.spec.ts",
 ]);
 

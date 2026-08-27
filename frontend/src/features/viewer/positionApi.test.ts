@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { fetchGame, fetchPosition } from "./positionApi";
+import { fetchGame } from "./positionApi";
 import { VIEWER_GAME, VIEWER_GAME_UUID } from "./viewerFixtures";
 
 function jsonResponse(body: unknown, status = 200): Response {
@@ -69,38 +69,5 @@ describe("fetchGame", () => {
     await expect(fetchGame(VIEWER_GAME_UUID)).resolves.toEqual({
       status: code === "other" ? "unexpected_failure" : code,
     });
-  });
-});
-
-describe("fetchPosition", () => {
-  it("preserves the exact legacy single-position success contract", async () => {
-    const body = {
-      game_uuid: VIEWER_GAME_UUID,
-      ply: 1,
-      fen: VIEWER_GAME.positions[1].fen,
-      subject_color: "white",
-    };
-    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(body));
-    vi.stubGlobal("fetch", fetchMock);
-
-    await expect(fetchPosition(VIEWER_GAME_UUID, 1)).resolves.toEqual({
-      status: "success",
-      ...body,
-    });
-    expect(fetchMock).toHaveBeenCalledWith(
-      `http://localhost:5666/api/games/${VIEWER_GAME_UUID}/positions/1`,
-      { signal: undefined },
-    );
-  });
-
-  it.each([
-    [404, "position_not_found"],
-    [503, "corpus_unavailable"],
-    [500, "stored_position_invalid"],
-    [500, "unexpected_failure"],
-  ] as const)("preserves typed legacy failure %s/%s", async (status, code) => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({ code }, status)));
-
-    await expect(fetchPosition(VIEWER_GAME_UUID, 1)).resolves.toEqual({ status: code });
   });
 });

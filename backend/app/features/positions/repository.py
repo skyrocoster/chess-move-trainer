@@ -24,20 +24,8 @@ class CorpusUnavailableError(Exception):
     """The corpus cannot be opened or does not have the supported schema."""
 
 
-class StoredPositionInvalidError(Exception):
-    """The corpus occurrence does not satisfy the stored-position contract."""
-
-
 class GameUnavailableError(Exception):
     """The accepted game's stored occurrences do not form a valid complete game."""
-
-
-@dataclass(frozen=True)
-class StoredPosition:
-    game_uuid: UUID
-    ply: int
-    fen: str
-    subject_color: str
 
 
 @dataclass(frozen=True)
@@ -79,39 +67,6 @@ class PositionRepository:
 
     def __init__(self, connection: sqlite3.Connection) -> None:
         self._connection = connection
-
-    def get_position(self, game_uuid: UUID, ply: int) -> StoredPosition:
-        self._check_schema()
-        try:
-            row = self._connection.execute(
-                """
-                SELECT o.game_uuid, o.ply, o.halfmove_clock, o.fullmove_number,
-                       s.placement, s.side_to_move, s.castling, s.en_passant,
-                       g.white_player_uuid, g.black_player_uuid,
-                       c.subject_player_uuid
-                FROM position_occurrence AS o
-                JOIN position_state AS s ON s.state_id = o.state_id
-                JOIN corpus_game AS cg ON cg.game_uuid = o.game_uuid
-                JOIN corpus AS c ON c.corpus_id = cg.corpus_id
-                JOIN games AS g ON g.uuid = o.game_uuid
-                WHERE o.game_uuid = :game_uuid
-                  AND o.ply = :ply
-                  AND c.subject_player_uuid = :s
-                LIMIT 1
-                """,
-                {
-                    "game_uuid": str(game_uuid),
-                    "ply": ply,
-                    "s": SUBJECT_PLAYER_UUID,
-                },
-            ).fetchone()
-        except sqlite3.Error as error:
-            raise CorpusUnavailableError from error
-
-        if row is None:
-            raise PositionNotFoundError
-
-        return self._build_position(row, game_uuid, ply)
 
     def get_game(self, game_uuid: UUID, initial_ply: int = 0) -> StoredGame:
         self._check_schema()
@@ -258,55 +213,6 @@ class PositionRepository:
             raise CorpusUnavailableError from error
         if version != 1:
             raise CorpusUnavailableError
-
-    @staticmethod
-    def _build_position(row: sqlite3.Row, game_uuid: UUID, ply: int) -> StoredPosition:
-        subject_is_white = row["white_player_uuid"] == SUBJECT_PLAYER_UUID
-        subject_is_black = row["black_player_uuid"] == SUBJECT_PLAYER_UUID
-        if subject_is_white == subject_is_black:
-            raise StoredPositionInvalidError
-        subject_color = "white" if subject_is_white else "black"
-
-        text_fields = tuple(
-            row[field] for field in ("placement", "side_to_move", "castling", "en_passant")
-        )
-        halfmove_clock = row["halfmove_clock"]
-        fullmove_number = row["fullmove_number"]
-        if (
-            not all(isinstance(value, str) for value in text_fields)
-            or isinstance(halfmove_clock, bool)
-            or not isinstance(halfmove_clock, int)
-            or isinstance(fullmove_number, bool)
-            or not isinstance(fullmove_number, int)
-            or halfmove_clock < 0
-            or fullmove_number < 1
-        ):
-            raise StoredPositionInvalidError
-
-        fen = " ".join((*text_fields, str(halfmove_clock), str(fullmove_number)))
-        if len(fen.split()) != 6:
-            raise StoredPositionInvalidError
-        try:
-            board = chess.Board(fen)
-        except (TypeError, ValueError) as error:
-            raise StoredPositionInvalidError from error
-        if not board.is_valid():
-            raise StoredPositionInvalidError
-
-        return StoredPosition(
-            game_uuid=game_uuid,
-            ply=ply,
-            fen=fen,
-            subject_color=subject_color,
-        )
-
-
-def fetch_position(game_uuid: UUID, ply: int) -> StoredPosition:
-    connection = open_read_only_connection()
-    try:
-        return PositionRepository(connection).get_position(game_uuid, ply)
-    finally:
-        connection.close()
 
 
 def fetch_game(game_uuid: UUID, initial_ply: int = 0) -> StoredGame:

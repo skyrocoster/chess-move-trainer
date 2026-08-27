@@ -2,7 +2,6 @@ import { expect, test, type Page } from "@playwright/test";
 
 const GAME_UUID = "0007925c-5a8d-11f0-9740-f690a301000f";
 const SOURCE_URL = "https://www.chess.com/game/live/140399891142";
-const STARTING_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 const START_BOARD_LABEL =
   "Chess board: standard starting position, White at the bottom";
 
@@ -114,7 +113,7 @@ test("loads an explicit useful initial Ply and maps typed game and position fail
   ).toBeVisible();
 });
 
-test("keeps the root status page and old single-position endpoint regression", async ({
+test("keeps the root status page and proves the per-ply URL is unavailable", async ({
   page,
 }) => {
   await page.goto("/");
@@ -126,11 +125,5 @@ test("keeps the root status page and old single-position endpoint regression", a
   const response = await page.request.get(
     `http://localhost:5666/api/games/${GAME_UUID}/positions/0`,
   );
-  expect(response.status()).toBe(200);
-  expect(await response.json()).toEqual({
-    game_uuid: GAME_UUID,
-    ply: 0,
-    fen: STARTING_FEN,
-    subject_color: "black",
-  });
+  expect(response.status()).toBe(404);
 });
