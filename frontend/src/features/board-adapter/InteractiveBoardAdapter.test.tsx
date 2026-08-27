@@ -246,6 +246,7 @@ describe("InteractiveBoardAdapter", () => {
     renderAdapter();
 
     expect(screen.getByRole("group", { name: "Interactive analysis board" })).toBeInTheDocument();
+    expect(screen.getByTestId("interactive-board")).toHaveAttribute("data-board-visual");
     expect(
       screen.queryByRole("img", { name: "Interactive analysis board" }),
     ).not.toBeInTheDocument();

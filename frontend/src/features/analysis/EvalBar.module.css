@@ -1,57 +1,62 @@
 .bar {
   box-sizing: border-box;
-  display: grid;
-  grid-template-rows: auto minmax(12rem, 1fr) auto;
-  align-items: stretch;
-  gap: var(--cmt-spacing-4);
-  min-inline-size: 2.75rem;
-  min-block-size: 12rem;
-  padding-block: var(--cmt-spacing-4);
+  position: relative;
+  flex: 0 0 30px;
+  inline-size: 30px;
+  block-size: 100%;
+  min-block-size: 0;
   color: var(--md-sys-color-on-surface);
-}
-
-.label,
-.value {
-  overflow-wrap: anywhere;
-  font: var(--md-sys-typescale-label-small);
-  text-align: center;
 }
 
 .label {
-  color: var(--md-sys-color-on-surface-variant);
-}
-
-.value {
-  color: var(--md-sys-color-on-surface);
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }
 
 .track {
+  position: absolute;
+  inset: 0;
   box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  align-items: stretch;
-  inline-size: 1.25rem;
-  min-block-size: 8rem;
-  margin-inline: auto;
   overflow: hidden;
-  border: 1px solid var(--md-sys-color-outline);
-  border-radius: 999px;
-  background: var(--md-sys-color-surface-container-highest);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-inline-start: none;
+  border-radius: 0 var(--cmt-radius-default) var(--cmt-radius-default) 0;
+  background: var(--md-sys-color-background);
+  box-shadow:
+    var(--cmt-elevation-e1),
+    inset -2px 0 6px var(--md-sys-color-shadow);
 }
 
 .indicator {
-  flex: none;
+  position: absolute;
+  inset-inline: 0;
+  inset-block-end: 0;
+  block-size: 0;
   min-block-size: 0;
-  border-radius: inherit;
-  background: var(--md-sys-color-primary);
+  background: var(--md-sys-color-on-background);
   transition:
-    height 180ms ease,
+    block-size 180ms ease,
     background-color 180ms ease;
 }
 
-.bar[data-orientation="black"] .track {
-  justify-content: flex-start;
+.bar[data-orientation="black"] .indicator {
+  inset-block-start: 0;
+  inset-block-end: auto;
+}
+
+.midline {
+  position: absolute;
+  z-index: 1;
+  inset-inline: 0;
+  inset-block-start: 50%;
+  block-size: 1px;
+  background: var(--md-sys-color-outline);
+  transform: translateY(-50%);
 }
 
 .bar[data-state="neutral"] .indicator {
@@ -65,22 +70,57 @@
 }
 
 .bar[data-state="best-line"] .indicator {
+  background: var(--md-sys-color-on-background);
+}
+
+.value {
+  position: absolute;
+  z-index: 2;
+  inset-block-start: 50%;
+  inset-inline-start: 50%;
+  box-sizing: border-box;
+  padding-inline: var(--cmt-spacing-4);
+  color: var(--md-sys-color-on-primary);
   background: var(--md-sys-color-primary);
+  border-radius: var(--cmt-radius-4);
+  font: var(--md-sys-typescale-label-small);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  white-space: nowrap;
+  transform: translate(-50%, -50%) scale(0.6);
+  box-shadow: var(--cmt-elevation-e1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .indicator {
+    transition: none;
+  }
 }
 
 @media (forced-colors: active) {
   .bar,
-  .label,
-  .value {
+  .label {
     color: CanvasText;
   }
 
   .track {
     border-color: CanvasText;
     background: Canvas;
+    box-shadow: none;
   }
 
-  .indicator {
+  .bar[data-state] .indicator {
     background: Highlight;
+    opacity: 1;
+  }
+
+  .midline {
+    background: CanvasText;
+  }
+
+  .value {
+    color: HighlightText;
+    background: Highlight;
+    box-shadow: none;
   }
 }

@@ -3,9 +3,10 @@ import { formatScore } from "./analysisFormatting";
 import type { AnalysisState } from "./analysisState";
 import type { EvalBarDisplayState } from "../analysis/EvalBar";
 
-type EvalBarDisplay = {
+export type EvalBarDisplay = {
   state: EvalBarDisplayState;
   value: number;
+  shortValue: string;
   accessibleValue: string;
 };
 
@@ -24,6 +25,10 @@ function meterValue(candidate: EvaluationCandidate | null): number {
   return Math.max(0, Math.min(100, 50 + (candidate.score_value / CP_METER_RANGE) * 50));
 }
 
+function shortValue(candidate: EvaluationCandidate | null): string {
+  return candidate ? formatScore(candidate) : "0.00";
+}
+
 export function evaluationDisplay(analysisState: AnalysisState): EvalBarDisplay {
   const observation = analysisState.observation;
   const queueState = observation?.status?.state;
@@ -33,6 +38,7 @@ export function evaluationDisplay(analysisState: AnalysisState): EvalBarDisplay 
     return {
       state: "pending",
       value: meterValue(candidate),
+      shortValue: shortValue(candidate),
       accessibleValue:
         queueState === "queued"
           ? "Analysis queued; evaluation pending."
@@ -45,6 +51,7 @@ export function evaluationDisplay(analysisState: AnalysisState): EvalBarDisplay 
     return {
       state: "best-line",
       value: meterValue(candidate),
+      shortValue: shortValue(candidate),
       accessibleValue: `${stale ? "Stale " : ""}best-line evaluation ${formatScore(candidate)}.`,
     };
   }
@@ -53,6 +60,7 @@ export function evaluationDisplay(analysisState: AnalysisState): EvalBarDisplay 
     return {
       state: "neutral",
       value: meterValue(null),
+      shortValue: shortValue(null),
       accessibleValue: "Analysis failed; evaluation neutral.",
     };
   }
@@ -61,6 +69,7 @@ export function evaluationDisplay(analysisState: AnalysisState): EvalBarDisplay 
     return {
       state: "neutral",
       value: meterValue(null),
+      shortValue: shortValue(null),
       accessibleValue: "Evaluation unavailable; evaluation neutral.",
     };
   }
@@ -68,6 +77,7 @@ export function evaluationDisplay(analysisState: AnalysisState): EvalBarDisplay 
   return {
     state: "neutral",
     value: meterValue(null),
+    shortValue: shortValue(null),
     accessibleValue: "No analysis yet; evaluation neutral.",
   };
 }

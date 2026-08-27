@@ -1,0 +1,33 @@
+.stage {
+  grid-area: board;
+  display: flex;
+  align-items: flex-start;
+  min-inline-size: 0;
+  margin-inline-end: var(--cmt-spacing-24);
+}
+
+.board {
+  flex: 1 1 0;
+  min-inline-size: 0;
+}
+
+.evalBar {
+  box-sizing: border-box;
+  display: flex;
+  flex: 0 0 30px;
+  align-self: start;
+  inline-size: 30px;
+  min-inline-size: 30px;
+}
+
+.evalBar > * {
+  flex: 0 0 30px;
+  inline-size: 30px;
+  min-inline-size: 30px;
+}
+
+@container (max-width: 40rem) {
+  .stage {
+    margin-inline-end: 0;
+  }
+}

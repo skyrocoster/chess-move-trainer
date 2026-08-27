@@ -7,8 +7,8 @@ import {
   type InteractiveBoardMoveIntent,
 } from "../board-adapter/InteractiveBoardAdapter";
 import { BoardControl } from "./BoardControl";
-import { EvalBar } from "../analysis/EvalBar";
 import { AnalysisPanel } from "../analysis/AnalysisPanel";
+import { BoardEvalStage } from "./BoardEvalStage";
 import { GameContext } from "./GameContext";
 import { GameLoader, type GameLoaderStatus, type GameLoaderValues } from "./GameLoader";
 import { defaultAnalysisClient, type AnalysisClient } from "./analysisApi";
@@ -373,7 +373,7 @@ export default function ViewerWorkspace({
           />
         </div>
 
-        <div className={styles.board}>
+        <BoardEvalStage orientation={boardOrientation} display={evalBarDisplay}>
           {game && currentPosition ? (
             <InteractiveBoardAdapter
               key={`${viewKey}:${branchResetToken}`}
@@ -400,16 +400,7 @@ export default function ViewerWorkspace({
               label={boardLabel}
             />
           )}
-        </div>
-
-        <div className={styles.evalBar}>
-          <EvalBar
-            orientation={boardOrientation}
-            state={evalBarDisplay.state}
-            value={evalBarDisplay.value}
-            accessibleValue={evalBarDisplay.accessibleValue}
-          />
-        </div>
+        </BoardEvalStage>
 
         <div className={styles.controls}>
           <BoardControl

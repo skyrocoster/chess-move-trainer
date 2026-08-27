@@ -195,11 +195,14 @@ describe("ViewerWorkspace", () => {
     renderViewer();
 
     expect(screen.getByRole("heading", { level: 1, name: "Position viewer" })).toBeVisible();
-    expect(screen.getByRole("img", { name: BOARD_LABEL })).toBeVisible();
-    expect(screen.getByRole("meter", { name: "Evaluation" })).toHaveAttribute(
-      "aria-valuetext",
-      "No analysis yet; evaluation neutral.",
-    );
+    const stage = screen.getByTestId("board-eval-stage");
+    const board = screen.getByRole("img", { name: BOARD_LABEL });
+    const meter = screen.getByRole("meter", { name: "Evaluation" });
+    expect(stage).toHaveAttribute("data-board-staged", "true");
+    expect(stage).toContainElement(board);
+    expect(stage).toContainElement(meter);
+    expect(board).toBeVisible();
+    expect(meter).toHaveAttribute("aria-valuetext", "No analysis yet; evaluation neutral.");
     expect(screen.getAllByText("No game loaded")).toHaveLength(2);
     expect(screen.getByRole("button", { name: "Previous" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Next" })).toBeDisabled();
@@ -416,13 +419,16 @@ describe("ViewerWorkspace", () => {
     const contextButton = screen.getByRole("button", { name: "Game Context" });
     const sourceLink = screen.getByRole("link", { name: "Chess.com game" });
     const contentId = contextButton.getAttribute("aria-controls");
+    const stage = screen.getByTestId("board-eval-stage");
+    const board = screen.getByRole("group", { name: /ply 0, White at the bottom/ });
 
     expect(analysisStatus).toBeVisible();
-    expect(screen.getByText("best-line evaluation +0.34.")).toBeVisible();
-    expect(screen.getByRole("meter", { name: "Evaluation" })).toHaveAttribute(
-      "data-state",
-      "best-line",
-    );
+    expect(stage).toContainElement(board);
+    expect(board).toHaveAttribute("data-board-visual");
+    const meter = screen.getByRole("meter", { name: "Evaluation" });
+    expect(meter).toHaveTextContent("+0.34");
+    expect(meter).toHaveAttribute("data-state", "best-line");
+    expect(meter).toHaveAttribute("aria-valuetext", "best-line evaluation +0.34.");
     expect(contextButton).toHaveAttribute("aria-expanded", "true");
     expect(sourceLink.compareDocumentPosition(analysisStatus)).toBe(
       Node.DOCUMENT_POSITION_FOLLOWING,
@@ -443,6 +449,11 @@ describe("ViewerWorkspace", () => {
     expect(rawStyles).toMatch(/container-type:\s*inline-size/);
     expect(rawStyles).toMatch(/@container\s*\(max-width:\s*40rem\)/);
     expect(rawStyles).not.toMatch(/@media\s*\(\s*(?:max-width|min-width)\s*:/);
+    expect(rawStyles).toMatch(/"board board context"/);
+    expect(rawStyles).toMatch(/grid-template-columns:\s*minmax\(0, 1fr\) 30px minmax\(0, 1fr\)/);
+    expect(rawStyles).toMatch(/"board board"/);
+    expect(rawStyles).not.toMatch(/"board eval context"/);
+    expect(rawStyles).not.toMatch(/2\.75rem/);
 
     const { container } = renderViewer({ lookup: successfulLookup() });
     expect(await axe.run({ include: [container] })).toHaveNoViolations();

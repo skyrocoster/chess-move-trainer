@@ -47,6 +47,7 @@ describe("BoardAdapter", () => {
     const { container } = renderStartingPosition();
     const graphic = screen.getByRole("img", { name: "Starting position" });
 
+    expect(graphic).toHaveAttribute("data-board-visual");
     expect(graphic).toHaveAttribute("aria-describedby");
     expect(graphic.querySelectorAll("[data-square] span").length).toBeGreaterThan(0);
     expect(graphic.querySelectorAll('[role="button"]')).toHaveLength(0);

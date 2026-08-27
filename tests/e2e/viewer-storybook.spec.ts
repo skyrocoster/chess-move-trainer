@@ -9,6 +9,18 @@ const STORY_IDS = {
   wide: "application-viewer-workspace--wide",
   constrained: "application-viewer-workspace--constrained",
   loadingWide: "application-viewer-workspace--loading-wide",
+  blackSubject: "application-viewer-workspace--black-subject",
+} as const;
+
+const EVAL_STORY_IDS = {
+  neutral: "application-analysis-evaluation-bar--neutral",
+  queued: "application-analysis-evaluation-bar--queued",
+  bestLine: "application-analysis-evaluation-bar--best-line",
+  negativeCp: "application-analysis-evaluation-bar--completed-negative-cp",
+  positiveMate: "application-analysis-evaluation-bar--completed-positive-mate",
+  negativeMate: "application-analysis-evaluation-bar--completed-negative-mate",
+  stale: "application-analysis-evaluation-bar--stale-with-retained-candidate",
+  failed: "application-analysis-evaluation-bar--failed-with-retained-candidate",
 } as const;
 
 const WORKSPACE_ROOT = '[class*="workspace"]';
@@ -26,6 +38,99 @@ async function checkA11y(page: Page) {
     ])
     .analyze();
   expect(results.violations).toEqual([]);
+}
+
+type StageExpectation = {
+  orientation: "white" | "black";
+  state: "neutral" | "pending" | "best-line";
+  value: number;
+  shortValue: string;
+  accessibleValue: string;
+};
+
+async function expectStageGeometry(page: Page, expected: StageExpectation) {
+  const stage = page.getByTestId("board-eval-stage");
+  const board = stage.locator("[data-board-visual]").first();
+  const railShell = page.getByTestId("board-eval-rail-shell");
+  const meter = page.getByRole("meter", { name: "Evaluation" });
+  const track = meter.locator('[class*="track"]');
+  const indicator = meter.locator('[class*="indicator"]');
+
+  await expect(stage).toBeVisible();
+  await expect(board).toBeVisible();
+  await expect(railShell).toBeVisible();
+  await expect(meter).toHaveAttribute("data-orientation", expected.orientation);
+  await expect(meter).toHaveAttribute("data-state", expected.state);
+  await expect(meter).toHaveAttribute("aria-valuemin", "0");
+  await expect(meter).toHaveAttribute("aria-valuemax", "100");
+  await expect(meter).toHaveAttribute("aria-valuenow", String(expected.value));
+  await expect(meter).toHaveAttribute(
+    "aria-valuetext",
+    expected.accessibleValue,
+  );
+  await expect(meter).toContainText(expected.shortValue);
+
+  const boardBox = await board.boundingBox();
+  const railBox = await railShell.boundingBox();
+  const trackBox = await track.boundingBox();
+  const indicatorBox = await indicator.boundingBox();
+  const toolbarBox = await page
+    .getByRole("toolbar", { name: "Board controls" })
+    .boundingBox();
+
+  expect(boardBox).not.toBeNull();
+  expect(railBox).not.toBeNull();
+  expect(trackBox).not.toBeNull();
+  expect(indicatorBox).not.toBeNull();
+  expect(toolbarBox).not.toBeNull();
+  if (!boardBox || !railBox || !trackBox || !indicatorBox || !toolbarBox) {
+    throw new Error("The canonical board/evaluation geometry did not render.");
+  }
+
+  expect(Math.abs(boardBox.y - railBox.y)).toBeLessThanOrEqual(1);
+  expect(Math.abs(boardBox.height - railBox.height)).toBeLessThanOrEqual(1);
+  expect(railBox.width).toBe(30);
+  expect(
+    Math.abs(railBox.x - (boardBox.x + boardBox.width)),
+  ).toBeLessThanOrEqual(0.01);
+  expect(Math.abs(toolbarBox.x - boardBox.x)).toBeLessThanOrEqual(1);
+  expect(Math.abs(toolbarBox.width - boardBox.width)).toBeLessThanOrEqual(1);
+  expect(toolbarBox.y).toBeGreaterThanOrEqual(boardBox.y + boardBox.height - 1);
+
+  const overflow = await stage.evaluate((element) => ({
+    clientWidth: element.clientWidth,
+    scrollWidth: element.scrollWidth,
+  }));
+  expect(overflow.scrollWidth).toBeLessThanOrEqual(overflow.clientWidth);
+
+  const trackTopDistance = indicatorBox.y - trackBox.y;
+  const trackBottomDistance =
+    trackBox.y + trackBox.height - (indicatorBox.y + indicatorBox.height);
+  if (expected.orientation === "white") {
+    expect(trackBottomDistance).toBeLessThanOrEqual(1);
+    expect(trackTopDistance).toBeGreaterThan(1);
+  } else {
+    expect(trackTopDistance).toBeLessThanOrEqual(1);
+    expect(trackBottomDistance).toBeGreaterThan(1);
+  }
+}
+
+async function expectEvalStory(
+  page: Page,
+  storyId: string,
+  expected: StageExpectation,
+) {
+  await page.goto(`${STORYBOOK_URL}/iframe.html?id=${storyId}&viewMode=story`);
+  const meter = page.getByRole("meter", { name: "Evaluation" });
+  await expect(meter).toBeVisible();
+  await expect(meter).toHaveAttribute("data-orientation", expected.orientation);
+  await expect(meter).toHaveAttribute("data-state", expected.state);
+  await expect(meter).toHaveAttribute("aria-valuenow", String(expected.value));
+  await expect(meter).toHaveAttribute(
+    "aria-valuetext",
+    expected.accessibleValue,
+  );
+  await expect(meter).toContainText(expected.shortValue);
 }
 
 async function expectNoWorkspaceLandmarkAttributes(
@@ -109,6 +214,17 @@ test.describe("Viewer Workspace Storybook surface", () => {
     await expectNoWorkspaceLandmarkAttributes(page, workspaceRoot);
     await expectNoWorkspaceLandmarkAttributes(page, contextPanel);
 
+    await expectStageGeometry(page, {
+      orientation: "white",
+      state: "neutral",
+      value: 50,
+      shortValue: "0.00",
+      accessibleValue: "No analysis yet; evaluation neutral.",
+    });
+    await expect(
+      page.getByTestId("board-eval-rail-shell").locator('[class*="track"]'),
+    ).toHaveCSS("box-shadow", "none");
+
     await checkA11y(page);
 
     // Constrained story: container-query reflow of the approved viewer surface.
@@ -129,16 +245,27 @@ test.describe("Viewer Workspace Storybook surface", () => {
       ).toBeVisible();
       const boardBoxAtSize = await board.boundingBox();
       const wrapperBox = await wrapper.boundingBox();
+      const stageBoxAtSize = await page
+        .getByTestId("board-eval-stage")
+        .boundingBox();
       expect(boardBoxAtSize).not.toBeNull();
       expect(wrapperBox).not.toBeNull();
+      expect(stageBoxAtSize).not.toBeNull();
       expect(boardBoxAtSize?.width ?? 0).toBeLessThanOrEqual(size);
       expect(
         Math.abs(
-          (boardBoxAtSize?.x ?? 0) +
-            (boardBoxAtSize?.width ?? 0) / 2 -
+          (stageBoxAtSize?.x ?? 0) +
+            (stageBoxAtSize?.width ?? 0) / 2 -
             ((wrapperBox?.x ?? 0) + (wrapperBox?.width ?? 0) / 2),
         ),
       ).toBeLessThanOrEqual(2);
+      await expectStageGeometry(page, {
+        orientation: "white",
+        state: "neutral",
+        value: 50,
+        shortValue: "0.00",
+        accessibleValue: "No analysis yet; evaluation neutral.",
+      });
       await expect(wrapper).toHaveJSProperty("scrollWidth", size);
     }
 
@@ -252,5 +379,95 @@ test.describe("Viewer Workspace Storybook surface", () => {
     await expect(
       loadingToolbar.getByRole("button", { name: "Next" }),
     ).toBeDisabled();
+  });
+
+  test("proves representative rail states, Black fill direction, meter semantics, and reduced motion", async ({
+    page,
+  }) => {
+    await expectEvalStory(page, EVAL_STORY_IDS.neutral, {
+      orientation: "white",
+      state: "neutral",
+      value: 50,
+      shortValue: "0.00",
+      accessibleValue: "No analysis yet; evaluation neutral.",
+    });
+    await expectEvalStory(page, EVAL_STORY_IDS.queued, {
+      orientation: "white",
+      state: "pending",
+      value: 50,
+      shortValue: "0.00",
+      accessibleValue: "Analysis queued; evaluation pending.",
+    });
+    await expectEvalStory(page, EVAL_STORY_IDS.bestLine, {
+      orientation: "black",
+      state: "best-line",
+      value: 51.7,
+      shortValue: "+0.34",
+      accessibleValue: "best-line evaluation +0.34.",
+    });
+    await expectEvalStory(page, EVAL_STORY_IDS.negativeCp, {
+      orientation: "white",
+      state: "best-line",
+      value: 48.3,
+      shortValue: "-0.34",
+      accessibleValue: "best-line evaluation -0.34.",
+    });
+    await expectEvalStory(page, EVAL_STORY_IDS.positiveMate, {
+      orientation: "white",
+      state: "best-line",
+      value: 100,
+      shortValue: "+M3",
+      accessibleValue: "best-line evaluation +M3.",
+    });
+    await expectEvalStory(page, EVAL_STORY_IDS.negativeMate, {
+      orientation: "black",
+      state: "best-line",
+      value: 0,
+      shortValue: "-M2",
+      accessibleValue: "best-line evaluation -M2.",
+    });
+    await expectEvalStory(page, EVAL_STORY_IDS.stale, {
+      orientation: "white",
+      state: "best-line",
+      value: 51.7,
+      shortValue: "+0.34",
+      accessibleValue: "Stale best-line evaluation +0.34.",
+    });
+    await expectEvalStory(page, EVAL_STORY_IDS.failed, {
+      orientation: "black",
+      state: "best-line",
+      value: 51.7,
+      shortValue: "+0.34",
+      accessibleValue: "Stale best-line evaluation +0.34.",
+    });
+
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.goto(
+      `${STORYBOOK_URL}/iframe.html?id=${EVAL_STORY_IDS.bestLine}&viewMode=story`,
+    );
+    await expect(page.getByRole("meter", { name: "Evaluation" })).toBeVisible();
+    await expect(
+      page
+        .getByRole("meter", { name: "Evaluation" })
+        .locator('[class*="indicator"]'),
+    ).toHaveCSS("transition-property", "none");
+
+    for (const width of [1280, 320, 480, 640]) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto(
+        `${STORYBOOK_URL}/iframe.html?id=${STORY_IDS.blackSubject}&viewMode=story`,
+      );
+      await expect(
+        page.getByRole("group", { name: /ply 0, Black at the bottom/ }),
+      ).toBeVisible();
+      await expectStageGeometry(page, {
+        orientation: "black",
+        state: "neutral",
+        value: 50,
+        shortValue: "0.00",
+        accessibleValue: "No analysis yet; evaluation neutral.",
+      });
+    }
+    await checkA11y(page);
   });
 });

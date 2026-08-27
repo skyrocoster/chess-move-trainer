@@ -164,6 +164,7 @@ export function InteractiveBoardAdapter({
       <div
         ref={boardRootRef}
         className={styles.board}
+        data-board-visual
         data-testid="interactive-board"
         role="group"
         aria-label={label}

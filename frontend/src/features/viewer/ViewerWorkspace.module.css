@@ -10,9 +10,9 @@
   grid-template-areas:
     "heading heading heading"
     "loader loader loader"
-    "board eval context"
+    "board board context"
     "controls . context";
-  grid-template-columns: minmax(0, 1fr) 2.75rem minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) 30px minmax(0, 1fr);
   gap: var(--cmt-spacing-24);
   max-inline-size: 66rem;
   min-inline-size: 0;
@@ -33,17 +33,6 @@
 
 .loader {
   grid-area: loader;
-  min-inline-size: 0;
-}
-
-.board {
-  grid-area: board;
-  min-inline-size: 0;
-}
-
-.evalBar {
-  grid-area: eval;
-  align-self: start;
   min-inline-size: 0;
 }
 
@@ -70,12 +59,13 @@
 @container (max-width: 40rem) {
   .workspace {
     grid-template-areas:
-      "heading heading heading"
-      "loader loader loader"
-      ". board eval"
-      ". controls ."
-      "context context context";
-    grid-template-columns: 2.75rem minmax(0, 1fr) 2.75rem;
+      "heading heading"
+      "loader loader"
+      "board board"
+      "controls ."
+      "context context";
+    grid-template-columns: minmax(0, 1fr) 30px;
+    column-gap: 0;
   }
 }
 

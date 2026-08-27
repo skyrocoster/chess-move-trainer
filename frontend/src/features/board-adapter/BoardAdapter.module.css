@@ -19,6 +19,10 @@
   overflow: hidden;
 }
 
+[data-board-staged] .boardGraphic {
+  border-radius: var(--cmt-radius-default) 0 0 var(--cmt-radius-default);
+}
+
 .packageBoard {
   block-size: 100%;
   inline-size: 100%;

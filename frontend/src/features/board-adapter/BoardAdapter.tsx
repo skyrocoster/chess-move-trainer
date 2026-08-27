@@ -194,6 +194,7 @@ function BoardRender({
     <div className={styles.adapter}>
       <div
         className={styles.boardGraphic}
+        data-board-visual
         role="img"
         aria-label={label}
         aria-describedby={descriptionId}

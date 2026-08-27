@@ -24,7 +24,12 @@ describe("GameContext", () => {
     expect(screen.getByText("No game loaded")).toBeVisible();
   });
 
-  it.each([0, 1, 2, 3])("preserves exact Ply and SAN copy at position %i", (index) => {
+  it.each([
+    [0, "Initial position"],
+    [1, "1. e4"],
+    [2, "1... e5"],
+    [3, "2. Nf3"],
+  ] as const)("preserves exact Ply and standard notation at position %i", (index, notation) => {
     const position = VIEWER_GAME.positions[index];
     if (!position) {
       throw new Error(`Missing viewer fixture position at index ${index}`);
@@ -33,7 +38,17 @@ describe("GameContext", () => {
     render(<GameContext game={VIEWER_GAME} position={position} />);
 
     expect(screen.getByText(`Ply ${position.ply} of 3`, { exact: true })).toBeVisible();
-    expect(screen.getByText(position.san ?? "Initial position", { exact: true })).toBeVisible();
+    const lastMove =
+      position.ply > 0
+        ? screen.getByLabelText(notation)
+        : screen.getByText(notation, { exact: true });
+    expect(lastMove).toBeVisible();
+    expect(lastMove).toHaveTextContent(notation);
+    if (position.ply > 0) {
+      expect(lastMove).toHaveAttribute("aria-label", notation);
+    } else {
+      expect(lastMove).not.toHaveAttribute("aria-label");
+    }
     expect(screen.queryByText(VIEWER_GAME.game_uuid)).not.toBeInTheDocument();
   });
 
@@ -49,6 +64,7 @@ describe("GameContext", () => {
       expect(sourceLink).toHaveAttribute("href", VIEWER_GAME.source_url);
       expect(sourceLink).toHaveAttribute("target", "_blank");
       expect(sourceLink).toHaveAttribute("rel", "noopener noreferrer");
+      expect(sourceLink.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
       expect(screen.queryByText("Source unavailable")).not.toBeInTheDocument();
     } else {
       expect(screen.getByText("Source unavailable")).toBeVisible();

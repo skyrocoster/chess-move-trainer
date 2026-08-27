@@ -10,7 +10,13 @@ const meta = {
   component: EvalBar,
   decorators: [
     (Story) => (
-      <div style={{ background: "var(--md-sys-color-background)" }}>
+      <div
+        style={{
+          inlineSize: "30px",
+          blockSize: "320px",
+          background: "var(--md-sys-color-background)",
+        }}
+      >
         <Story />
       </div>
     ),
@@ -21,7 +27,10 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-type ExpectedDisplay = Pick<EvalBarProps, "orientation" | "state" | "value" | "accessibleValue">;
+type ExpectedDisplay = Pick<
+  EvalBarProps,
+  "orientation" | "state" | "value" | "shortValue" | "accessibleValue"
+>;
 
 function expectDisplay(canvasElement: HTMLElement, expected: ExpectedDisplay) {
   const canvas = within(canvasElement);
@@ -33,7 +42,7 @@ function expectDisplay(canvasElement: HTMLElement, expected: ExpectedDisplay) {
   expect(meter).toHaveAttribute("aria-valuemax", "100");
   expect(meter).toHaveAttribute("aria-valuenow", String(expected.value));
   expect(meter).toHaveAttribute("aria-valuetext", expected.accessibleValue);
-  expect(canvas.getByText(expected.accessibleValue, { exact: true })).toBeVisible();
+  expect(canvas.getByText(expected.shortValue, { exact: true })).toBeVisible();
 
   return meter;
 }
@@ -44,6 +53,7 @@ export const Neutral: Story = {
     orientation: "white",
     state: "neutral",
     value: 50,
+    shortValue: "0.00",
     accessibleValue: "No analysis yet; evaluation neutral.",
   },
   play: async ({ canvasElement }) => {
@@ -51,6 +61,7 @@ export const Neutral: Story = {
       orientation: "white",
       state: "neutral",
       value: 50,
+      shortValue: "0.00",
       accessibleValue: "No analysis yet; evaluation neutral.",
     });
     await userEvent.tab();
@@ -64,6 +75,7 @@ export const Unavailable: Story = {
     orientation: "white",
     state: "neutral",
     value: 50,
+    shortValue: "0.00",
     accessibleValue: "Evaluation unavailable; evaluation neutral.",
   },
   play: async ({ canvasElement }) => {
@@ -71,6 +83,7 @@ export const Unavailable: Story = {
       orientation: "white",
       state: "neutral",
       value: 50,
+      shortValue: "0.00",
       accessibleValue: "Evaluation unavailable; evaluation neutral.",
     });
   },
@@ -82,6 +95,7 @@ export const Queued: Story = {
     orientation: "white",
     state: "pending",
     value: 50,
+    shortValue: "0.00",
     accessibleValue: "Analysis queued; evaluation pending.",
   },
   play: async ({ canvasElement }) => {
@@ -89,6 +103,7 @@ export const Queued: Story = {
       orientation: "white",
       state: "pending",
       value: 50,
+      shortValue: "0.00",
       accessibleValue: "Analysis queued; evaluation pending.",
     });
   },
@@ -100,6 +115,7 @@ export const Running: Story = {
     orientation: "black",
     state: "pending",
     value: 50,
+    shortValue: "0.00",
     accessibleValue: "Analysis running; evaluation pending.",
   },
   play: async ({ canvasElement }) => {
@@ -107,6 +123,7 @@ export const Running: Story = {
       orientation: "black",
       state: "pending",
       value: 50,
+      shortValue: "0.00",
       accessibleValue: "Analysis running; evaluation pending.",
     });
   },
@@ -118,6 +135,7 @@ export const BestLine: Story = {
     orientation: "black",
     state: "best-line",
     value: 51.7,
+    shortValue: "+0.34",
     accessibleValue: "best-line evaluation +0.34.",
   },
   play: async ({ canvasElement }) => {
@@ -125,6 +143,7 @@ export const BestLine: Story = {
       orientation: "black",
       state: "best-line",
       value: 51.7,
+      shortValue: "+0.34",
       accessibleValue: "best-line evaluation +0.34.",
     });
   },
@@ -136,6 +155,7 @@ export const CompletedNegativeCp: Story = {
     orientation: "white",
     state: "best-line",
     value: 48.3,
+    shortValue: "-0.34",
     accessibleValue: "best-line evaluation -0.34.",
   },
   play: async ({ canvasElement }) => {
@@ -143,6 +163,7 @@ export const CompletedNegativeCp: Story = {
       orientation: "white",
       state: "best-line",
       value: 48.3,
+      shortValue: "-0.34",
       accessibleValue: "best-line evaluation -0.34.",
     });
   },
@@ -154,6 +175,7 @@ export const CompletedPositiveMate: Story = {
     orientation: "white",
     state: "best-line",
     value: 100,
+    shortValue: "+M3",
     accessibleValue: "best-line evaluation +M3.",
   },
   play: async ({ canvasElement }) => {
@@ -161,6 +183,7 @@ export const CompletedPositiveMate: Story = {
       orientation: "white",
       state: "best-line",
       value: 100,
+      shortValue: "+M3",
       accessibleValue: "best-line evaluation +M3.",
     });
   },
@@ -172,6 +195,7 @@ export const CompletedNegativeMate: Story = {
     orientation: "black",
     state: "best-line",
     value: 0,
+    shortValue: "-M2",
     accessibleValue: "best-line evaluation -M2.",
   },
   play: async ({ canvasElement }) => {
@@ -179,6 +203,7 @@ export const CompletedNegativeMate: Story = {
       orientation: "black",
       state: "best-line",
       value: 0,
+      shortValue: "-M2",
       accessibleValue: "best-line evaluation -M2.",
     });
   },
@@ -190,6 +215,7 @@ export const CompletedMateGiven: Story = {
     orientation: "white",
     state: "best-line",
     value: 100,
+    shortValue: "+M",
     accessibleValue: "best-line evaluation +M.",
   },
   play: async ({ canvasElement }) => {
@@ -197,6 +223,7 @@ export const CompletedMateGiven: Story = {
       orientation: "white",
       state: "best-line",
       value: 100,
+      shortValue: "+M",
       accessibleValue: "best-line evaluation +M.",
     });
   },
@@ -208,6 +235,7 @@ export const StaleWithRetainedCandidate: Story = {
     orientation: "white",
     state: "best-line",
     value: 51.7,
+    shortValue: "+0.34",
     accessibleValue: "Stale best-line evaluation +0.34.",
   },
   play: async ({ canvasElement }) => {
@@ -215,6 +243,7 @@ export const StaleWithRetainedCandidate: Story = {
       orientation: "white",
       state: "best-line",
       value: 51.7,
+      shortValue: "+0.34",
       accessibleValue: "Stale best-line evaluation +0.34.",
     });
   },
@@ -226,6 +255,7 @@ export const StaleWithoutRetainedCandidate: Story = {
     orientation: "white",
     state: "neutral",
     value: 50,
+    shortValue: "0.00",
     accessibleValue: "No analysis yet; evaluation neutral.",
   },
   play: async ({ canvasElement }) => {
@@ -233,6 +263,7 @@ export const StaleWithoutRetainedCandidate: Story = {
       orientation: "white",
       state: "neutral",
       value: 50,
+      shortValue: "0.00",
       accessibleValue: "No analysis yet; evaluation neutral.",
     });
   },
@@ -244,6 +275,7 @@ export const FailedWithRetainedCandidate: Story = {
     orientation: "black",
     state: "best-line",
     value: 51.7,
+    shortValue: "+0.34",
     accessibleValue: "Stale best-line evaluation +0.34.",
   },
   play: async ({ canvasElement }) => {
@@ -251,6 +283,7 @@ export const FailedWithRetainedCandidate: Story = {
       orientation: "black",
       state: "best-line",
       value: 51.7,
+      shortValue: "+0.34",
       accessibleValue: "Stale best-line evaluation +0.34.",
     });
   },
@@ -262,6 +295,7 @@ export const FailedWithoutRetainedCandidate: Story = {
     orientation: "black",
     state: "neutral",
     value: 50,
+    shortValue: "0.00",
     accessibleValue: "Analysis failed; evaluation neutral.",
   },
   play: async ({ canvasElement }) => {
@@ -269,6 +303,7 @@ export const FailedWithoutRetainedCandidate: Story = {
       orientation: "black",
       state: "neutral",
       value: 50,
+      shortValue: "0.00",
       accessibleValue: "Analysis failed; evaluation neutral.",
     });
   },
@@ -280,6 +315,7 @@ export const ClampedMinimum: Story = {
     orientation: "white",
     state: "best-line",
     value: 0,
+    shortValue: "-20.00",
     accessibleValue: "best-line evaluation -20.00.",
   },
   play: async ({ canvasElement }) => {
@@ -287,6 +323,7 @@ export const ClampedMinimum: Story = {
       orientation: "white",
       state: "best-line",
       value: 0,
+      shortValue: "-20.00",
       accessibleValue: "best-line evaluation -20.00.",
     });
   },
@@ -298,6 +335,7 @@ export const ClampedMaximum: Story = {
     orientation: "black",
     state: "best-line",
     value: 100,
+    shortValue: "+20.00",
     accessibleValue: "best-line evaluation +20.00.",
   },
   play: async ({ canvasElement }) => {
@@ -305,6 +343,7 @@ export const ClampedMaximum: Story = {
       orientation: "black",
       state: "best-line",
       value: 100,
+      shortValue: "+20.00",
       accessibleValue: "best-line evaluation +20.00.",
     });
   },

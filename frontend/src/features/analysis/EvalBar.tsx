@@ -9,10 +9,13 @@ export type EvalBarProps = {
   orientation: BoardOrientation;
   state: EvalBarDisplayState;
   value: number;
+  shortValue: string;
   accessibleValue: string;
 };
 
-export function EvalBar({ orientation, state, value, accessibleValue }: EvalBarProps) {
+export function EvalBar({ orientation, state, value, shortValue, accessibleValue }: EvalBarProps) {
+  const clampedValue = Math.max(0, Math.min(100, value));
+
   return (
     <Meter.Root
       className={styles.bar}
@@ -20,17 +23,18 @@ export function EvalBar({ orientation, state, value, accessibleValue }: EvalBarP
       data-state={state}
       min={0}
       max={100}
-      value={value}
+      value={clampedValue}
       aria-valuetext={accessibleValue}
     >
       <Meter.Label className={styles.label}>Evaluation</Meter.Label>
       <Meter.Track className={styles.track}>
         <Meter.Indicator
           className={styles.indicator}
-          style={{ width: "100%", height: `${value}%` }}
+          style={{ width: "100%", height: `${clampedValue}%` }}
         />
+        <span className={styles.midline} aria-hidden="true" />
       </Meter.Track>
-      <Meter.Value className={styles.value}>{() => accessibleValue}</Meter.Value>
+      <Meter.Value className={styles.value}>{() => shortValue}</Meter.Value>
     </Meter.Root>
   );
 }

@@ -71,6 +71,12 @@ const composedPlay: NonNullable<Story["play"]> = async ({ canvasElement }) => {
   await expect(canvas.getByTestId("analysis-child")).toBeVisible();
 };
 
+const expectNotation = async (canvasElement: HTMLElement, ply: string, notation: string) => {
+  const canvas = within(canvasElement);
+  await expect(canvas.getByText(`Ply ${ply} of 3`, { exact: true })).toBeVisible();
+  await expect(canvas.getByLabelText(notation)).toHaveTextContent(notation);
+};
+
 export const Empty: Story = {
   render: () => frame(<GameContext />),
   play: emptyPlay,
@@ -87,17 +93,37 @@ export const InitialPosition: Story = {
     await expect(sourceLink).toHaveAttribute("href", VIEWER_GAME.source_url);
     await expect(sourceLink).toHaveAttribute("target", "_blank");
     await expect(sourceLink).toHaveAttribute("rel", "noopener noreferrer");
+    await expect(sourceLink.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
   },
+};
+
+export const SafeSource: Story = {
+  name: "Source - safe Chess.com link",
+  args: { game: VIEWER_GAME, position: VIEWER_GAME.positions[1] },
+  render: (args) => frame(<GameContext {...args} />),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByRole("link", { name: "Chess.com game" })).toBeVisible();
+    await expect(canvas.getByText("Ply 1 of 3", { exact: true })).toBeVisible();
+  },
+};
+
+export const WhiteMove: Story = {
+  args: { game: VIEWER_GAME, position: VIEWER_GAME.positions[1] },
+  render: (args) => frame(<GameContext {...args} />),
+  play: async ({ canvasElement }) => expectNotation(canvasElement, "1", "1. e4"),
+};
+
+export const BlackMove: Story = {
+  args: { game: VIEWER_GAME, position: VIEWER_GAME.positions[2] },
+  render: (args) => frame(<GameContext {...args} />),
+  play: async ({ canvasElement }) => expectNotation(canvasElement, "2", "1... e5"),
 };
 
 export const IntermediatePosition: Story = {
   args: { game: VIEWER_GAME, position: VIEWER_GAME.positions[2] },
   render: (args) => frame(<GameContext {...args} />),
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    await expect(canvas.getByText("Ply 2 of 3", { exact: true })).toBeVisible();
-    await expect(canvas.getByText("e5", { exact: true })).toBeVisible();
-  },
+  play: async ({ canvasElement }) => expectNotation(canvasElement, "2", "1... e5"),
 };
 
 export const FinalPosition: Story = {
@@ -109,9 +135,7 @@ export const FinalPosition: Story = {
       throw new Error("Viewer fixture has no final position");
     }
     await expect(canvas.getByText("Ply 3 of 3", { exact: true })).toBeVisible();
-    await expect(
-      canvas.getByText(finalPosition.san ?? "Initial position", { exact: true }),
-    ).toBeVisible();
+    await expect(canvas.getByLabelText("2. Nf3")).toHaveTextContent("2. Nf3");
   },
 };
 
@@ -179,5 +203,20 @@ export const Accessibility: Story = {
       "true",
     );
     await expect(canvas.getByText("Ply 1 of 3", { exact: true })).toBeVisible();
+    await expect(canvas.getByLabelText("1. e4")).toHaveTextContent("1. e4");
+  },
+};
+
+export const ForcedColorsAndReducedMotion: Story = {
+  name: "Media emulation - forced colors and reduced motion",
+  args: { game: VIEWER_GAME, position: VIEWER_GAME.positions[2] },
+  render: (args) => constrained(<GameContext {...args} />),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Review this constrained state with forced colors and prefers-reduced-motion emulation enabled in the browser.",
+      },
+    },
   },
 };

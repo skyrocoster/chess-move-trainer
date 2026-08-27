@@ -1,3 +1,5 @@
+import { ExternalLink } from "lucide-react";
+
 import { Disclosure } from "../design-system/Disclosure";
 import type { ReactNode } from "react";
 import type { Game, GamePosition } from "./gameModel";
@@ -13,8 +15,9 @@ export type GameContextProps = {
 function SourceAttribution({ sourceUrl }: { sourceUrl: string | null }) {
   const safeUrl = safeSourceUrl(sourceUrl);
   return safeUrl ? (
-    <a href={safeUrl} target="_blank" rel="noopener noreferrer">
-      Chess.com game
+    <a className={styles.sourceLink} href={safeUrl} target="_blank" rel="noopener noreferrer">
+      <span>Chess.com game</span>
+      <ExternalLink className={styles.externalIcon} aria-hidden="true" size={16} />
     </a>
   ) : (
     <span>Source unavailable</span>
@@ -24,9 +27,21 @@ function SourceAttribution({ sourceUrl }: { sourceUrl: string | null }) {
 export function GameContext({ game, position, children }: GameContextProps) {
   const currentPosition = game && position ? position : null;
   const finalPly = game?.positions.at(-1)?.ply;
+  const numberedMove =
+    currentPosition && currentPosition.ply > 0 && currentPosition.san != null
+      ? (() => {
+          const moveNumber = Math.floor((currentPosition.ply + 1) / 2);
+          const movePrefix = `${moveNumber}${currentPosition.ply % 2 === 1 ? "." : "..."}`;
+          return {
+            notation: `${movePrefix} ${currentPosition.san}`,
+            prefix: movePrefix,
+            san: currentPosition.san,
+          };
+        })()
+      : null;
 
   return (
-    <Disclosure summary="Game Context" defaultOpen>
+    <Disclosure className={styles.disclosure} summary="Game Context" defaultOpen>
       <div className={styles.panel}>
         {!game || !currentPosition || finalPly === undefined ? (
           <p className={styles.empty}>No game loaded</p>
@@ -41,7 +56,16 @@ export function GameContext({ game, position, children }: GameContextProps) {
               </div>
               <div>
                 <dt>Last move</dt>
-                <dd>{currentPosition.san ?? "Initial position"}</dd>
+                <dd>
+                  {numberedMove ? (
+                    <span className={styles.sanMove} aria-label={numberedMove.notation}>
+                      <span className={styles.sanNumber}>{numberedMove.prefix}</span>{" "}
+                      <span>{numberedMove.san}</span>
+                    </span>
+                  ) : (
+                    (currentPosition.san ?? "Initial position")
+                  )}
+                </dd>
               </div>
               <div>
                 <dt>Source</dt>

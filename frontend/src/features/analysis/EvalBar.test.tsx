@@ -11,7 +11,10 @@ expect.extend(matchers);
 
 afterEach(() => cleanup());
 
-type ExpectedDisplay = Pick<EvalBarProps, "orientation" | "state" | "value" | "accessibleValue">;
+type ExpectedDisplay = Pick<
+  EvalBarProps,
+  "orientation" | "state" | "value" | "shortValue" | "accessibleValue"
+>;
 
 function expectDisplay(expected: ExpectedDisplay) {
   const meter = screen.getByRole("meter", { name: "Evaluation" });
@@ -22,7 +25,13 @@ function expectDisplay(expected: ExpectedDisplay) {
   expect(meter).toHaveAttribute("aria-valuemax", "100");
   expect(meter).toHaveAttribute("aria-valuenow", String(expected.value));
   expect(meter).toHaveAttribute("aria-valuetext", expected.accessibleValue);
-  expect(screen.getByText(expected.accessibleValue, { exact: true })).toBeVisible();
+  expect(screen.getByText(expected.shortValue, { exact: true })).toBeVisible();
+  expect(meter.querySelector('[class*="track"]')).toBeInTheDocument();
+  expect(meter.querySelector('[class*="indicator"]')).toHaveStyle({
+    width: "100%",
+    height: `${expected.value}%`,
+  });
+  expect(meter.querySelector('[class*="midline"]')).toHaveAttribute("aria-hidden", "true");
 
   return meter;
 }
@@ -35,6 +44,7 @@ describe("EvalBar", () => {
         orientation="white"
         state="neutral"
         value={50}
+        shortValue="0.00"
         accessibleValue="No analysis yet; evaluation neutral."
       />,
     );
@@ -42,6 +52,7 @@ describe("EvalBar", () => {
       orientation: "white",
       state: "neutral",
       value: 50,
+      shortValue: "0.00",
       accessibleValue: "No analysis yet; evaluation neutral.",
     });
 
@@ -56,9 +67,21 @@ describe("EvalBar", () => {
     ["failed without a retained candidate", "Analysis failed; evaluation neutral."],
   ] as const)("preserves the %s neutral fallback", (_sourceState, accessibleValue) => {
     render(
-      <EvalBar orientation="white" state="neutral" value={50} accessibleValue={accessibleValue} />,
+      <EvalBar
+        orientation="white"
+        state="neutral"
+        value={50}
+        shortValue="0.00"
+        accessibleValue={accessibleValue}
+      />,
     );
-    expectDisplay({ orientation: "white", state: "neutral", value: 50, accessibleValue });
+    expectDisplay({
+      orientation: "white",
+      state: "neutral",
+      value: 50,
+      shortValue: "0.00",
+      accessibleValue,
+    });
   });
 
   it.each([
@@ -72,45 +95,72 @@ describe("EvalBar", () => {
           orientation={orientation}
           state="pending"
           value={50}
+          shortValue="0.00"
           accessibleValue={accessibleValue}
         />,
       );
-      expectDisplay({ orientation, state: "pending", value: 50, accessibleValue });
+      expectDisplay({
+        orientation,
+        state: "pending",
+        value: 50,
+        shortValue: "0.00",
+        accessibleValue,
+      });
     },
   );
 
   it.each([
-    ["CP", 51.7, "best-line evaluation +0.34."],
-    ["negative CP", 48.3, "best-line evaluation -0.34."],
-    ["positive mate", 100, "best-line evaluation +M3."],
-    ["negative mate", 0, "best-line evaluation -M2."],
-    ["mate given", 100, "best-line evaluation +M."],
-  ] as const)("shows the completed %s display value", (_scoreKind, value, accessibleValue) => {
-    render(
-      <EvalBar
-        orientation="black"
-        state="best-line"
-        value={value}
-        accessibleValue={accessibleValue}
-      />,
-    );
-    expectDisplay({ orientation: "black", state: "best-line", value, accessibleValue });
-  });
+    ["CP", 51.7, "+0.34", "best-line evaluation +0.34."],
+    ["negative CP", 48.3, "-0.34", "best-line evaluation -0.34."],
+    ["positive mate", 100, "+M3", "best-line evaluation +M3."],
+    ["negative mate", 0, "-M2", "best-line evaluation -M2."],
+    ["mate given", 100, "+M", "best-line evaluation +M."],
+  ] as const)(
+    "shows the completed %s display value",
+    (_scoreKind, value, shortValue, accessibleValue) => {
+      render(
+        <EvalBar
+          orientation="black"
+          state="best-line"
+          value={value}
+          shortValue={shortValue}
+          accessibleValue={accessibleValue}
+        />,
+      );
+      expectDisplay({
+        orientation: "black",
+        state: "best-line",
+        value,
+        shortValue,
+        accessibleValue,
+      });
+    },
+  );
 
   it.each([
-    ["stale", "Stale best-line evaluation +0.34."],
-    ["failed", "Stale best-line evaluation +0.34."],
-  ] as const)("retains the candidate display for %s analysis", (_sourceState, accessibleValue) => {
-    render(
-      <EvalBar
-        orientation="white"
-        state="best-line"
-        value={51.7}
-        accessibleValue={accessibleValue}
-      />,
-    );
-    expectDisplay({ orientation: "white", state: "best-line", value: 51.7, accessibleValue });
-  });
+    ["stale", "+0.34", "Stale best-line evaluation +0.34."],
+    ["failed", "+0.34", "Stale best-line evaluation +0.34."],
+  ] as const)(
+    "retains the candidate display for %s analysis",
+    (_sourceState, shortValue, accessibleValue) => {
+      render(
+        <EvalBar
+          orientation="white"
+          state="best-line"
+          value={51.7}
+          shortValue={shortValue}
+          accessibleValue={accessibleValue}
+        />,
+      );
+      expectDisplay({
+        orientation: "white",
+        state: "best-line",
+        value: 51.7,
+        shortValue,
+        accessibleValue,
+      });
+    },
+  );
 
   it.each([
     ["minimum", -25, 0],
@@ -123,6 +173,7 @@ describe("EvalBar", () => {
           orientation="white"
           state="best-line"
           value={value}
+          shortValue="controlled"
           accessibleValue="best-line evaluation at a controlled range boundary."
         />,
       );
@@ -130,6 +181,7 @@ describe("EvalBar", () => {
         orientation: "white",
         state: "best-line",
         value: clampedValue,
+        shortValue: "controlled",
         accessibleValue: "best-line evaluation at a controlled range boundary.",
       });
 
@@ -143,6 +195,7 @@ describe("EvalBar", () => {
         orientation="black"
         state="pending"
         value={50}
+        shortValue="0.00"
         accessibleValue="Analysis running; evaluation pending."
       />,
     );
@@ -151,6 +204,7 @@ describe("EvalBar", () => {
       orientation: "black",
       state: "pending",
       value: 50,
+      shortValue: "0.00",
       accessibleValue: "Analysis running; evaluation pending.",
     });
     expect(await axe.run({ include: [container] })).toHaveNoViolations();

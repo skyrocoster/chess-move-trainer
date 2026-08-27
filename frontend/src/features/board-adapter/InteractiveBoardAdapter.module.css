@@ -8,11 +8,17 @@
 }
 
 .board {
+  box-sizing: border-box;
   aspect-ratio: 1;
   inline-size: 100%;
   max-inline-size: 40rem;
   min-inline-size: 0;
   overflow: hidden;
+}
+
+[data-board-staged] .board {
+  border: 1px solid var(--md-sys-color-outline);
+  border-radius: var(--cmt-radius-default) 0 0 var(--cmt-radius-default);
 }
 
 .branchPanel {
