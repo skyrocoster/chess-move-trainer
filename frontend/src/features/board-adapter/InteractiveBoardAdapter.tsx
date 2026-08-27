@@ -16,9 +16,9 @@ import {
 } from "./PromotionPicker";
 import styles from "./InteractiveBoardAdapter.module.css";
 import type { BoardOrientation } from "./BoardAdapter";
-import type { BranchMove, BranchSnapshot } from "../viewer/temporaryBranchModel";
+import type { BranchMove, BranchSnapshot } from "./branchModel";
 
-export type { BranchMove, BranchSnapshot } from "../viewer/temporaryBranchModel";
+export type { BranchMove, BranchSnapshot } from "./branchModel";
 
 export type InteractiveBoardAdapterProps = {
   branchSnapshot: BranchSnapshot;

@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from enum import StrEnum
 from types import MappingProxyType
-from typing import Mapping
+from typing import Mapping, NewType
 
 import chess
 
@@ -17,6 +17,7 @@ from .errors import AnalysisValidationError
 PROFILE_CONTRACT_VERSION = 1
 MAX_CANDIDATES = 5
 SCORE_KINDS = {"cp", "mate", "mate_given"}
+PositionKey = NewType("PositionKey", str)
 
 
 class ResultEligibility(StrEnum):
@@ -39,6 +40,13 @@ def canonical_fen(value: str) -> str:
     if not board.is_valid() or board.fen(en_passant="fen") != value:
         raise AnalysisValidationError("FEN is not canonical or is not a valid position")
     return value
+
+
+def position_key_from_fen(value: str) -> PositionKey:
+    """Return the internal four-field identity for a valid canonical six-field FEN."""
+
+    fields = canonical_fen(value).split(" ")
+    return PositionKey(" ".join(fields[:4]))
 
 
 def _canonical_json(value: object) -> str:
@@ -155,6 +163,12 @@ class AnalysisResult:
     completed_at: str
     wall_time_ms: int
     terminal_kind: str | None = None
+
+    @property
+    def position_key(self) -> PositionKey:
+        """Return the internal identity without changing the public six-field FEN."""
+
+        return position_key_from_fen(self.fen)
 
     def __post_init__(self) -> None:
         fen = canonical_fen(self.fen)

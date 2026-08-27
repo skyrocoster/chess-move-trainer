@@ -24,6 +24,7 @@ from backend.app.features.analysis import (
     AnalysisValidationError,
     ResultEligibility,
     canonical_fen,
+    position_key_from_fen,
 )
 from backend.app.features.analysis.runner import AnalysisEngine
 from backend.app.features.analysis.schema import require_analysis_schema
@@ -134,19 +135,21 @@ def read_result(
     """Read and fully validate a persisted result; never computes."""
 
     require_analysis_schema(connection)
+    selected = _canonical(fen)
+    position_key = position_key_from_fen(selected)
     row = connection.execute(
         "SELECT schema_version, profile_id, settings_json, settings_fingerprint, "
         "engine_binary_sha256, engine_name, engine_version, terminal_kind, candidate_count, "
-        "completed_at, wall_time_ms FROM analysis_result WHERE fen = ?",
-        (fen,),
+        "completed_at, wall_time_ms FROM analysis_result WHERE position_key = ?",
+        (position_key,),
     ).fetchone()
     if row is None:
         return None
     candidate_rows = connection.execute(
         "SELECT rank, score_kind, score_value, wdl_wins, wdl_draws, wdl_losses, "
         "pv_uci_json, depth, seldepth, nodes, engine_time_ms "
-        "FROM analysis_candidate WHERE fen = ? ORDER BY rank",
-        (fen,),
+        "FROM analysis_candidate WHERE position_key = ? ORDER BY rank",
+        (position_key,),
     ).fetchall()
     candidates = tuple(
         AnalysisCandidate(
@@ -165,7 +168,7 @@ def read_result(
         for candidate in candidate_rows
     )
     return AnalysisResult(
-        fen=fen,
+        fen=selected,
         profile=profile,
         candidates=candidates,
         terminal_kind=None if row[7] is None else str(row[7]),
@@ -249,9 +252,11 @@ def _evaluate_one(
     except Exception as error:
         registry.discard_current()
         raise _WorkerFailure(_worker_error_code(error), str(error)[:500]) from error
-    if result.fen != fen:
+    if result.position_key != item.position_key:
         registry.discard_current()
-        raise _WorkerFailure("invalid_result", "engine returned a result for a different exact FEN")
+        raise _WorkerFailure(
+            "invalid_result", "engine returned a result for a different PositionKey"
+        )
     if result.profile.fingerprint != profile.fingerprint:
         registry.discard_current()
         raise _WorkerFailure(

@@ -17,6 +17,7 @@ from backend.app.features.analysis import (
     AnalysisRunLock,
     InterruptController,
     initialize_analysis_schema,
+    position_key_from_fen,
     run_selected_games,
     select_positions,
 )
@@ -173,6 +174,27 @@ def test_selection_includes_ply_zero_and_deduplicates_exact_fens(tmp_path: Path)
     assert report.positions[0].fen == START_FEN
     assert report.missing_positions == 4
     assert len(report.positions[0].occurrences) == 2
+
+
+def test_selection_groups_counter_variants_by_position_key(tmp_path: Path) -> None:
+    database = tmp_path / "selected.db"
+    _database(database)
+    connection = sqlite3.connect(database)
+    try:
+        connection.execute(
+            "INSERT INTO position_occurrence VALUES (4, ?, 3, 1, 17, 42)",
+            (GAME_ONE,),
+        )
+        connection.commit()
+        report = select_positions(connection, [GAME_ONE], _profile())
+    finally:
+        connection.close()
+
+    assert len(report.positions) == 3
+    assert report.positions[0].fen == START_FEN
+    assert report.positions[0].position_key == position_key_from_fen(START_FEN)
+    assert len(report.positions[0].occurrences) == 2
+    assert report.missing_positions == 3
 
 
 def test_selection_rejects_unaccepted_game_without_mutation(tmp_path: Path) -> None:

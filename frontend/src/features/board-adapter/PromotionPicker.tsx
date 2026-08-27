@@ -53,7 +53,8 @@ const PROMOTION_OPTIONS: Array<{
   { piece: "n", name: "knight", glyph: { w: "♘", b: "♞" } },
 ];
 
-function isPromotionTarget(pieceColor: PromotionColor, square: Square) {
+// eslint-disable-next-line react-refresh/only-export-components
+export function isPromotionTarget(pieceColor: PromotionColor, square: Square) {
   return pieceColor === "w" ? square.endsWith("8") : square.endsWith("1");
 }
 

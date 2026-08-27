@@ -4,10 +4,13 @@ import {
   enqueueEvaluation,
   fetchEvaluation,
   fetchEvaluationStatus,
+  positionKeyFromFen,
   validateAnalysisFen,
 } from "./analysisApi";
 
 const FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+const COUNTER_VARIANT_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 17 42";
+const DISTINCT_POSITION_FEN = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1";
 const CANDIDATE = {
   rank: 1,
   score_kind: "cp",
@@ -61,6 +64,11 @@ function observation(overrides: Record<string, unknown> = {}) {
 afterEach(() => vi.unstubAllGlobals());
 
 describe("analysisApi", () => {
+  it("derives PositionKey from identity fields only", () => {
+    expect(positionKeyFromFen(FEN)).toBe(positionKeyFromFen(COUNTER_VARIANT_FEN));
+    expect(positionKeyFromFen(FEN)).not.toBe(positionKeyFromFen(DISTINCT_POSITION_FEN));
+  });
+
   it("strictly validates the canonical FEN boundary and size bound", () => {
     expect(validateAnalysisFen(FEN)).toBeNull();
     expect(validateAnalysisFen(` ${FEN}`)).toBe("invalid_fen");
@@ -89,6 +97,16 @@ describe("analysisApi", () => {
     );
 
     await expect(fetchEvaluation(FEN)).resolves.toEqual({ status: "unexpected_failure" });
+  });
+
+  it("accepts counter-only six-field response variants for one identity", async () => {
+    const body = observation({
+      fen: COUNTER_VARIANT_FEN,
+      result: { ...RESULT, fen: COUNTER_VARIANT_FEN },
+    });
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(body)));
+
+    await expect(fetchEvaluation(FEN)).resolves.toEqual({ status: "success", data: body });
   });
 
   it.each([

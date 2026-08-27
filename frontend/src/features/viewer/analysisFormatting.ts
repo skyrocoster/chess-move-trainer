@@ -1,39 +1,52 @@
 import { Chess } from "chess.js";
 
+import type {
+  AnalysisPanelDisplay,
+  AnalysisPanelWdl,
+  AnalysisPanelWdlValue,
+} from "../analysis/AnalysisPanel";
 import type { EvaluationCandidate, EvaluationResult } from "./analysisApi";
 import type { AnalysisState } from "./analysisState";
 import type { Fen } from "./chessPrimitives";
 
-export type AnalysisPanelLine = {
-  rank: number;
-  score: string;
-  pv: string;
-  wdl: string;
-};
+export type {
+  AnalysisPanelDisplay,
+  AnalysisPanelLine,
+  AnalysisPanelResultMetadata,
+  AnalysisPanelWdl,
+  AnalysisPanelWdlValue,
+} from "../analysis/AnalysisPanel";
 
-export type AnalysisPanelDisplay = {
-  stateLabel: string;
-  error: string | null;
-  actionError: string | null;
-  message: { text: string; alert: boolean } | null;
-  result: { stale: boolean; lines: AnalysisPanelLine[] } | null;
-  actions: {
-    analyze: boolean;
-    update: boolean;
-    retry: boolean;
-    observationRetry: boolean;
-    pending: boolean;
-  };
+export type AnalysisPanelDisplayOptions = {
+  displayedPly?: number;
 };
 
 function formatPercentage(value: number): string {
-  return `${(value / 10).toFixed(1)}%`;
+  return `${value.toFixed(1)}%`;
 }
 
-function formatWdl(candidate: EvaluationCandidate): string {
-  return `W ${formatPercentage(candidate.wdl_wins)} / D ${formatPercentage(
-    candidate.wdl_draws,
-  )} / L ${formatPercentage(candidate.wdl_losses)}`;
+function formatAccessiblePercentage(value: AnalysisPanelWdlValue): string {
+  return `${Number.isInteger(value.percentage) ? value.percentage : value.percentage.toFixed(1)} percent`;
+}
+
+function wdlValue(permille: number): AnalysisPanelWdlValue {
+  const percentage = permille / 10;
+  return { percentage, label: formatPercentage(percentage) };
+}
+
+function formatWdl(candidate: EvaluationCandidate): AnalysisPanelWdl {
+  const wins = wdlValue(candidate.wdl_wins);
+  const draws = wdlValue(candidate.wdl_draws);
+  const losses = wdlValue(candidate.wdl_losses);
+
+  return {
+    wins,
+    draws,
+    losses,
+    accessibleLabel: `Win ${formatAccessiblePercentage(wins)}, draw ${formatAccessiblePercentage(
+      draws,
+    )}, loss ${formatAccessiblePercentage(losses)}`,
+  };
 }
 
 function moveFromUci(uci: string) {
@@ -80,7 +93,10 @@ export function formatScore(candidate: EvaluationCandidate): string {
   return `${candidate.score_value >= 0 ? "+M" : "-M"}${Math.abs(candidate.score_value)}`;
 }
 
-export function analysisPanelDisplay(analysisState: AnalysisState): AnalysisPanelDisplay {
+export function analysisPanelDisplay(
+  analysisState: AnalysisState,
+  options: AnalysisPanelDisplayOptions = {},
+): AnalysisPanelDisplay {
   const { observation, loading, error, actionError, actionPending } = analysisState;
   const status = observation?.status?.state;
   const result = observation?.result;
@@ -135,6 +151,11 @@ export function analysisPanelDisplay(analysisState: AnalysisState): AnalysisPane
     result: result
       ? {
           stale,
+          metadata: {
+            displayedPly: options.displayedPly ?? null,
+            depth: result.candidates[0]?.depth ?? null,
+            candidateCount: result.candidates.length,
+          },
           lines: result.candidates.slice(0, 5).map((candidate) => ({
             rank: candidate.rank,
             score: formatScore(candidate),

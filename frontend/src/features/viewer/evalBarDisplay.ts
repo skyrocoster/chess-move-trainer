@@ -1,7 +1,7 @@
 import type { EvaluationCandidate } from "./analysisApi";
 import { formatScore } from "./analysisFormatting";
 import type { AnalysisState } from "./analysisState";
-import type { EvalBarDisplayState } from "./EvalBar";
+import type { EvalBarDisplayState } from "../analysis/EvalBar";
 
 type EvalBarDisplay = {
   state: EvalBarDisplayState;

@@ -203,11 +203,12 @@ class ManagedStockfish:
         if not self._use_lock.acquire(blocking=False):
             raise EngineLifecycleError("engine instance cannot be shared across workers")
         try:
-            board = chess.Board(canonical_fen(fen))
+            selected_fen = canonical_fen(fen)
+            board = chess.Board(selected_fen)
             outcome = board.outcome(claim_draw=True)
             if outcome is not None:
                 return AnalysisResult(
-                    fen=fen,
+                    fen=selected_fen,
                     profile=self._profile,
                     candidates=(),
                     terminal_kind=outcome.termination.name.lower(),

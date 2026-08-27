@@ -1,4 +1,4 @@
-import { Chess, type Square } from "chess.js";
+import { Chess } from "chess.js";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { expect, fn, userEvent, waitFor, within } from "storybook/test";
 import type { Meta, StoryObj } from "@storybook/react-vite";
@@ -10,11 +10,12 @@ import {
   type InteractiveBoardMoveIntent,
 } from "./InteractiveBoardAdapter";
 import {
+  isPromotionTarget,
   type PromotionColor,
   type PromotionCommit,
   usePromotionController,
 } from "./PromotionPicker";
-import type { BranchSnapshot } from "../viewer/temporaryBranchModel";
+import type { BranchSnapshot } from "./branchModel";
 import styles from "./PromotionPicker.module.css";
 
 const STARTING_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
@@ -28,10 +29,6 @@ type StoryHarnessProps = {
   label: string;
   onBranchChange?: (snapshot: BranchSnapshot) => void;
 };
-
-function isPromotionTarget(color: PromotionColor, square: Square) {
-  return color === "w" ? square.endsWith("8") : square.endsWith("1");
-}
 
 function terminalDescription(chess: Chess) {
   if (chess.isCheckmate()) {

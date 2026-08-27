@@ -14,8 +14,10 @@ from .models import (
     AnalysisCandidate,
     AnalysisProfile,
     AnalysisResult,
+    PositionKey,
     ResultEligibility,
     canonical_fen,
+    position_key_from_fen,
 )
 from .preflight import (
     CorpusPreflight,
@@ -34,7 +36,12 @@ from .runner import (
     run_batch,
     run_selected_games,
 )
-from .schema import ANALYSIS_SCHEMA_VERSION, initialize_analysis_schema, require_analysis_schema
+from .schema import (
+    ANALYSIS_SCHEMA_VERSION,
+    initialize_analysis_schema,
+    migrate_position_key_schema,
+    require_analysis_schema,
+)
 from .selection import (
     GameSelectionError,
     SelectedOccurrence,
@@ -64,14 +71,17 @@ __all__ = [
     "InterruptController",
     "MAX_WORKERS",
     "ProjectionBasis",
+    "PositionKey",
     "ResultEligibility",
     "SelectedOccurrence",
     "SelectedPosition",
     "SelectionReport",
     "StockfishSetupError",
     "canonical_fen",
+    "position_key_from_fen",
     "build_preflight",
     "initialize_analysis_schema",
+    "migrate_position_key_schema",
     "load_projection_basis",
     "require_analysis_schema",
     "run_batch",

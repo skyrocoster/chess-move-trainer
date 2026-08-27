@@ -13,7 +13,7 @@ def test_schema_cli_initializes_and_reports_only_explicitly(tmp_path: Path) -> N
     sqlite3.connect(database).close()
 
     assert analyze_positions.main(["--db", str(database), "--init-schema"]) == 0
-    assert analyze_positions.report_schema(database) == 1
+    assert analyze_positions.report_schema(database) == 2
 
 
 def test_schema_cli_report_refuses_missing_database_without_creating_it(tmp_path: Path) -> None:

@@ -5,13 +5,16 @@ import sqlite3
 import pytest
 
 from backend.app.features.analysis import (
+    ANALYSIS_SCHEMA_VERSION,
     AnalysisCandidate,
     AnalysisProfile,
     AnalysisResult,
     AnalysisSchemaError,
     AnalysisValidationError,
+    PositionKey,
     canonical_fen,
     initialize_analysis_schema,
+    position_key_from_fen,
     require_analysis_schema,
 )
 
@@ -31,7 +34,7 @@ def test_schema_requires_explicit_initialization_and_is_independent(connection) 
     initialize_analysis_schema(connection)
     initialize_analysis_schema(connection)
 
-    assert require_analysis_schema(connection) == 1
+    assert require_analysis_schema(connection) == ANALYSIS_SCHEMA_VERSION
     assert connection.execute("SELECT version FROM corpus_schema WHERE id=1").fetchone() == (1,)
     foreign_tables = {
         row[0] for row in connection.execute("PRAGMA foreign_key_list(analysis_result)").fetchall()
@@ -44,13 +47,13 @@ def test_incompatible_schema_is_refused_without_repair(connection) -> None:
         "CREATE TABLE analysis_schema "
         "(id INTEGER PRIMARY KEY, version INTEGER NOT NULL, applied_at TEXT NOT NULL)"
     )
-    connection.execute("INSERT INTO analysis_schema VALUES (1, 2, 'old')")
+    connection.execute("INSERT INTO analysis_schema VALUES (1, 99, 'old')")
     connection.commit()
 
-    with pytest.raises(AnalysisSchemaError, match="version 2"):
+    with pytest.raises(AnalysisSchemaError, match="version 99"):
         initialize_analysis_schema(connection)
 
-    assert connection.execute("SELECT version FROM analysis_schema").fetchone() == (2,)
+    assert connection.execute("SELECT version FROM analysis_schema").fetchone() == (99,)
     assert (
         connection.execute(
             "SELECT 1 FROM sqlite_master WHERE type='table' AND name='analysis_result'"
@@ -158,6 +161,20 @@ def test_typed_score_wdl_and_canonical_fen_validation() -> None:
         canonical_fen("8/8/8/8/8/8/8/8 w - -")
     with pytest.raises(AnalysisValidationError, match="canonical"):
         canonical_fen(" rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
+
+
+def test_position_key_normalizes_only_counters_and_requires_public_six_fields() -> None:
+    first = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+    second = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 17 42"
+
+    assert canonical_fen(first) == first
+    assert canonical_fen(second) == second
+    key = position_key_from_fen(first)
+    assert key == position_key_from_fen(second)
+    assert key == "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -"
+    assert PositionKey(key) == key
+    with pytest.raises(AnalysisValidationError, match="six-field"):
+        position_key_from_fen("8/8/8/8/8/8/8/8 w - -")
 
 
 def test_run_and_failure_records_are_append_only(connection) -> None:

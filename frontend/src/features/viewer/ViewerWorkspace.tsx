@@ -1,4 +1,4 @@
-import { Chess, type Square } from "chess.js";
+import { Chess } from "chess.js";
 import { useCallback, useMemo, useRef, useState } from "react";
 
 import { BoardAdapter, STARTING_FEN, type BoardOrientation } from "../board-adapter/BoardAdapter";
@@ -7,18 +7,22 @@ import {
   type InteractiveBoardMoveIntent,
 } from "../board-adapter/InteractiveBoardAdapter";
 import { BoardControl } from "./BoardControl";
-import { EvalBar } from "./EvalBar";
-import { AnalysisPanel } from "./AnalysisPanel";
+import { EvalBar } from "../analysis/EvalBar";
+import { AnalysisPanel } from "../analysis/AnalysisPanel";
 import { GameContext } from "./GameContext";
 import { GameLoader, type GameLoaderStatus, type GameLoaderValues } from "./GameLoader";
 import { defaultAnalysisClient, type AnalysisClient } from "./analysisApi";
 import { useAnalysisState } from "./analysisState";
 import { analysisPanelDisplay } from "./analysisFormatting";
 import { evaluationDisplay } from "./evalBarDisplay";
-import { type PromotionColor, usePromotionController } from "../board-adapter/PromotionPicker";
+import {
+  isPromotionTarget,
+  type PromotionColor,
+  usePromotionController,
+} from "../board-adapter/PromotionPicker";
+import type { BranchMove, BranchSnapshot } from "../board-adapter/branchModel";
 import type { Game } from "./gameModel";
 import { fetchGame, type GameLookup } from "./positionApi";
-import type { BranchMove, BranchSnapshot } from "./temporaryBranchModel";
 import styles from "./ViewerWorkspace.module.css";
 
 const BOARD_LABEL = "Chess board: standard starting position, White at the bottom";
@@ -30,10 +34,6 @@ const START_BOARD = {
 };
 
 const DEFAULT_BRANCH_NOTICE = "Make a legal move to start a temporary branch.";
-
-function isPromotionTarget(color: PromotionColor, square: Square) {
-  return color === "w" ? square.endsWith("8") : square.endsWith("1");
-}
 
 function historyMoves(chess: Chess): BranchMove[] {
   return chess.history({ verbose: true }).map((move) => ({
@@ -119,7 +119,9 @@ export default function ViewerWorkspace({
       : emptyBranchSnapshot;
   const analysisFen = branchForView?.currentFen ?? currentPosition?.fen ?? null;
   const analysisState = useAnalysisState(analysisFen, analysisClient, analysisPollIntervalMs);
-  const analysisDisplay = analysisPanelDisplay(analysisState);
+  const analysisDisplay = analysisPanelDisplay(analysisState, {
+    displayedPly: currentPosition?.ply,
+  });
   const evalBarDisplay = evaluationDisplay(analysisState);
   const canGoPrevious = hasGame && !loading && !branchForView?.active && currentPosition?.ply !== 0;
   const canGoNext =

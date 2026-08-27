@@ -1,11 +1,14 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect, fn, userEvent, within } from "storybook/test";
 
-import { PromotionPickerDemo, type PromotionPickerDemoProps } from "./PromotionPickerDemo";
+import {
+  StoryHarnessPromotionPicker,
+  type StoryHarnessPromotionPickerProps,
+} from "./StoryHarnessPromotionPicker";
 
 const meta = {
   title: "Documentation/Demos/Promotion Picker",
-  component: PromotionPickerDemo,
+  component: StoryHarnessPromotionPicker,
   decorators: [
     (Story) => (
       <div style={{ background: "var(--md-sys-color-background)" }}>
@@ -22,13 +25,13 @@ const meta = {
       },
     },
   },
-} satisfies Meta<typeof PromotionPickerDemo>;
+} satisfies Meta<typeof StoryHarnessPromotionPicker>;
 
 export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-const defaultArgs: PromotionPickerDemoProps = {
+const defaultArgs: StoryHarnessPromotionPickerProps = {
   color: "w",
   initiallyPending: true,
 };

@@ -8,7 +8,14 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 
 from .errors import AnalysisBusyError
-from .models import AnalysisProfile, AnalysisResult, ResultEligibility, canonical_fen
+from .models import (
+    AnalysisProfile,
+    AnalysisResult,
+    PositionKey,
+    ResultEligibility,
+    canonical_fen,
+    position_key_from_fen,
+)
 from .schema import ANALYSIS_SCHEMA_VERSION, require_analysis_schema
 
 
@@ -19,7 +26,8 @@ class AnalysisRepository:
     def eligibility(self, fen: str, profile: AnalysisProfile) -> ResultEligibility:
         require_analysis_schema(self._connection)
         selected_fen = canonical_fen(fen)
-        row = self._fetch_eligibility_rows((selected_fen,)).get(selected_fen)
+        selected_key = position_key_from_fen(selected_fen)
+        row = self._fetch_eligibility_rows((selected_key,)).get(selected_key)
         return self._eligibility_from_row(row, profile)
 
     def eligibilities(
@@ -29,25 +37,32 @@ class AnalysisRepository:
 
         require_analysis_schema(self._connection)
         selected_fens = tuple(canonical_fen(fen) for fen in fens)
-        rows = self._fetch_eligibility_rows(selected_fens)
-        return {fen: self._eligibility_from_row(rows.get(fen), profile) for fen in selected_fens}
+        selected_keys = tuple(position_key_from_fen(fen) for fen in selected_fens)
+        rows = self._fetch_eligibility_rows(selected_keys)
+        return {
+            fen: self._eligibility_from_row(rows.get(key), profile)
+            for fen, key in zip(selected_fens, selected_keys)
+        }
 
-    def _fetch_eligibility_rows(self, fens: Sequence[str]) -> dict[str, tuple[object, ...]]:
-        found: dict[str, tuple[object, ...]] = {}
+    def _fetch_eligibility_rows(
+        self, position_keys: Sequence[PositionKey]
+    ) -> dict[PositionKey, tuple[object, ...]]:
+        found: dict[PositionKey, tuple[object, ...]] = {}
         columns = (
-            "fen, schema_version, profile_id, settings_json, settings_fingerprint, "
+            "position_key, schema_version, profile_id, settings_json, settings_fingerprint, "
             "engine_binary_sha256, engine_name, engine_version"
         )
-        for start in range(0, len(fens), 500):
-            chunk = tuple(fens[start : start + 500])
+        for start in range(0, len(position_keys), 500):
+            chunk = tuple(position_keys[start : start + 500])
             if not chunk:
                 continue
             placeholders = ",".join("?" for _ in chunk)
             found.update(
                 {
-                    str(row[0]): tuple(row[1:])
+                    PositionKey(str(row[0])): tuple(row[1:])
                     for row in self._connection.execute(
-                        f"SELECT {columns} FROM analysis_result WHERE fen IN ({placeholders})",
+                        f"SELECT {columns} FROM analysis_result "
+                        f"WHERE position_key IN ({placeholders})",
                         chunk,
                     ).fetchall()
                 }
@@ -77,6 +92,8 @@ class AnalysisRepository:
 
         require_analysis_schema(self._connection)
         values = (
+            result.position_key,
+            result.fen,
             ANALYSIS_SCHEMA_VERSION,
             result.profile.profile_id,
             result.profile.settings_json,
@@ -88,36 +105,39 @@ class AnalysisRepository:
             len(result.candidates),
             result.completed_at,
             result.wall_time_ms,
-            result.fen,
         )
         try:
             _begin_immediate(self._connection)
             updated = self._connection.execute(
                 "UPDATE analysis_result SET schema_version=?, profile_id=?, settings_json=?, "
                 "settings_fingerprint=?, engine_binary_sha256=?, engine_name=?, engine_version=?, "
-                "terminal_kind=?, candidate_count=?, completed_at=?, wall_time_ms=? WHERE fen=?",
-                values,
+                "terminal_kind=?, candidate_count=?, completed_at=?, wall_time_ms=?, fen=? "
+                "WHERE position_key=?",
+                values[2:] + (result.fen, result.position_key),
             ).rowcount
             if not updated:
                 self._connection.execute(
                     "INSERT INTO analysis_result "
-                    "(schema_version, profile_id, settings_json, settings_fingerprint, "
+                    "(position_key, fen, schema_version, profile_id, settings_json,\n"
+                    "settings_fingerprint, "
                     "engine_binary_sha256, engine_name, engine_version, terminal_kind, "
-                    "candidate_count, completed_at, wall_time_ms, fen) "
-                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    "candidate_count, completed_at, wall_time_ms) "
+                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                     values,
                 )
             else:
                 self._connection.execute(
-                    "DELETE FROM analysis_candidate WHERE fen = ?", (result.fen,)
+                    "DELETE FROM analysis_candidate WHERE position_key = ?", (result.position_key,)
                 )
             self._connection.executemany(
                 "INSERT INTO analysis_candidate "
-                "(fen, rank, score_kind, score_value, wdl_wins, wdl_draws, wdl_losses, "
+                "(position_key, fen, rank, score_kind, score_value, wdl_wins, wdl_draws,\n"
+                "wdl_losses, "
                 "pv_uci_json, depth, seldepth, nodes, engine_time_ms) "
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 [
                     (
+                        result.position_key,
                         result.fen,
                         candidate.rank,
                         candidate.score_kind,

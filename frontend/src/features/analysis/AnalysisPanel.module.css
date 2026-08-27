@@ -1,0 +1,542 @@
+.panel {
+  container: analysis-panel / inline-size;
+  display: grid;
+  gap: var(--cmt-spacing-16);
+  min-inline-size: 0;
+  padding: var(--cmt-spacing-16);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--cmt-radius-12);
+  background: var(--md-sys-color-surface-container);
+  box-shadow: var(--cmt-elevation-e1);
+}
+
+.header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: var(--cmt-spacing-12);
+  min-inline-size: 0;
+}
+
+.panelTitle {
+  display: grid;
+  gap: var(--cmt-spacing-4);
+  min-inline-size: 0;
+}
+
+.eyebrow,
+.meta,
+.sectionNote,
+.scoreLabel,
+.lineRank,
+.lineWdl,
+.state,
+.updateHelp {
+  margin: 0;
+  font: var(--md-sys-typescale-label-medium);
+  letter-spacing: 0.025rem;
+}
+
+.eyebrow {
+  color: var(--md-sys-color-primary);
+  font-weight: 500;
+  letter-spacing: 0.03125rem;
+  text-transform: uppercase;
+}
+
+.panelTitle h2,
+.bestLine h3,
+.ledger h3,
+.panel p,
+.panel figure,
+.panel dl,
+.panel ol {
+  margin: 0;
+}
+
+.panelTitle h2 {
+  color: var(--md-sys-color-on-surface);
+  font: var(--md-sys-typescale-title-large);
+}
+
+.meta,
+.sectionNote,
+.updateHelp {
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.state {
+  align-self: center;
+  color: var(--md-sys-color-primary);
+  text-align: end;
+}
+
+.message,
+.alertMessage,
+.observationError,
+.actionError,
+.staleMessage,
+.emptyResult {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font: var(--md-sys-typescale-body-medium);
+}
+
+.message {
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.alertMessage,
+.observationError,
+.actionError {
+  padding: var(--cmt-spacing-12);
+  border: 1px solid var(--cmt-error-accent);
+  border-inline-start-width: var(--cmt-spacing-4);
+  border-radius: var(--cmt-radius-default);
+  background: var(--md-sys-color-error-container);
+  color: var(--md-sys-color-on-error-container);
+}
+
+.staleMessage {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--cmt-spacing-8);
+  padding: var(--cmt-spacing-12);
+  border: 1px solid var(--cmt-warning-accent);
+  border-inline-start-width: var(--cmt-spacing-4);
+  border-radius: var(--cmt-radius-default);
+  background: var(--cmt-warning-container);
+  color: var(--cmt-warning-on-container);
+}
+
+.messageIcon {
+  inline-size: 1.25rem;
+  flex: 0 0 1.25rem;
+  color: currentColor;
+  font-weight: 700;
+  line-height: 1.25rem;
+  text-align: center;
+}
+
+.result {
+  display: grid;
+  gap: var(--cmt-spacing-16);
+  min-inline-size: 0;
+}
+
+.bestLine {
+  display: grid;
+  gap: var(--cmt-spacing-16);
+  min-inline-size: 0;
+  padding: var(--cmt-spacing-16);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-inline-start: var(--cmt-spacing-4) solid var(--md-sys-color-primary);
+  border-radius: var(--cmt-radius-default);
+  background: var(--md-sys-color-surface-container-high);
+}
+
+.bestLineHeader,
+.sectionHeading,
+.actionRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--cmt-spacing-12);
+  min-inline-size: 0;
+}
+
+.bestLineLabel,
+.sectionHeading h3 {
+  color: var(--md-sys-color-on-surface);
+  font: var(--md-sys-typescale-title-medium);
+}
+
+.bestLineScore {
+  flex: 0 0 auto;
+  color: var(--md-sys-color-primary);
+  font: var(--md-sys-typescale-headline-small);
+  font-variant-numeric: tabular-nums;
+}
+
+.bestLineMoves {
+  color: var(--md-sys-color-on-surface);
+  font: var(--md-sys-typescale-body-large);
+  font-weight: 500;
+  letter-spacing: 0.03125rem;
+  overflow-wrap: anywhere;
+}
+
+.wdlFigure {
+  display: grid;
+  gap: var(--cmt-spacing-8);
+  min-inline-size: 0;
+}
+
+.wdlCaption {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--cmt-spacing-8);
+  color: var(--md-sys-color-on-surface-variant);
+  font: var(--md-sys-typescale-label-medium);
+}
+
+.wdlTrack,
+.miniTrack {
+  display: flex;
+  overflow: hidden;
+  border: 1px solid var(--md-sys-color-outline);
+  border-radius: var(--cmt-radius-4);
+  background: var(--md-sys-color-surface-container-highest);
+}
+
+.wdlTrack {
+  block-size: 12px;
+}
+
+.miniTrack {
+  block-size: 6px;
+  border-color: var(--md-sys-color-outline-variant);
+}
+
+.wdlTrack > span,
+.miniTrack > span {
+  display: block;
+  min-inline-size: 0;
+  block-size: 100%;
+}
+
+.wdlWin {
+  background: var(--cmt-success-accent);
+}
+
+.wdlDraw {
+  background: var(--cmt-warning-accent);
+}
+
+.wdlLoss {
+  background: var(--cmt-error-accent);
+}
+
+.wdlLegend {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--cmt-spacing-8);
+  color: var(--md-sys-color-on-surface-variant);
+  font: var(--md-sys-typescale-label-medium);
+}
+
+.wdlLegend > div {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: var(--cmt-spacing-4);
+  min-inline-size: 0;
+}
+
+.wdlLegend > div + div {
+  padding-inline-start: var(--cmt-spacing-8);
+  border-inline-start: 1px solid var(--md-sys-color-outline-variant);
+}
+
+.wdlLegend dt,
+.wdlLegend dd {
+  margin: 0;
+}
+
+.wdlLegend dd {
+  color: var(--md-sys-color-on-surface);
+  font-weight: 500;
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}
+
+.legendDot {
+  display: inline-block;
+  inline-size: 8px;
+  block-size: 8px;
+  border-radius: 2px;
+}
+
+.ledger {
+  display: grid;
+  gap: var(--cmt-spacing-8);
+  min-inline-size: 0;
+}
+
+.sectionHeading {
+  padding-inline: var(--cmt-spacing-4);
+}
+
+.sectionNote {
+  text-align: end;
+}
+
+.lineList {
+  display: grid;
+  min-inline-size: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.line {
+  display: grid;
+  grid-template-columns: 2rem minmax(0, 1fr) auto;
+  align-items: start;
+  gap: var(--cmt-spacing-12);
+  min-inline-size: 0;
+  padding: var(--cmt-spacing-12) var(--cmt-spacing-4);
+  border-block-start: 1px solid var(--md-sys-color-outline-variant);
+}
+
+.line:last-child {
+  border-block-end: 1px solid var(--md-sys-color-outline-variant);
+}
+
+.line:hover {
+  background: var(--md-sys-color-surface-container-high);
+}
+
+.lineRank {
+  padding-block-start: 2px;
+  color: var(--md-sys-color-on-surface-variant);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+.line:first-child .lineRank {
+  color: var(--md-sys-color-primary);
+}
+
+.lineBody {
+  display: grid;
+  gap: var(--cmt-spacing-8);
+  min-inline-size: 0;
+}
+
+.linePv {
+  color: var(--md-sys-color-on-surface);
+  font: var(--md-sys-typescale-body-medium);
+  font-weight: 500;
+  letter-spacing: 0.015625rem;
+  overflow-wrap: anywhere;
+}
+
+.lineEval {
+  color: var(--md-sys-color-on-surface);
+  font: var(--md-sys-typescale-title-medium);
+  font-variant-numeric: tabular-nums;
+  text-align: end;
+}
+
+.line:first-child .lineEval {
+  color: var(--md-sys-color-primary);
+  font: var(--md-sys-typescale-title-large);
+}
+
+.scoreLabel {
+  display: block;
+  color: var(--md-sys-color-on-surface-variant);
+  font: var(--md-sys-typescale-label-small);
+  letter-spacing: 0.03125rem;
+  text-transform: uppercase;
+}
+
+.lineWdl {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--cmt-spacing-4) var(--cmt-spacing-8);
+  color: var(--md-sys-color-on-surface-variant);
+  font: var(--md-sys-typescale-label-small);
+  overflow-wrap: anywhere;
+}
+
+.lineWdl > span {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--cmt-spacing-4);
+  min-inline-size: 0;
+}
+
+.lineWdl > span + span {
+  padding-inline-start: var(--cmt-spacing-8);
+  border-inline-start: 1px solid var(--md-sys-color-outline-variant);
+}
+
+.lineWdl strong {
+  color: var(--md-sys-color-on-surface);
+  font-weight: 500;
+}
+
+.emptyResult {
+  padding: var(--cmt-spacing-12);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--cmt-radius-default);
+  background: var(--md-sys-color-surface-container-high);
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.actionRow {
+  align-items: center;
+  margin-block-start: var(--cmt-spacing-4);
+  padding-block-start: var(--cmt-spacing-4);
+}
+
+.updateHelp {
+  max-inline-size: 24rem;
+  overflow-wrap: anywhere;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--cmt-spacing-8);
+}
+
+.buttonIcon {
+  inline-size: 1.25rem;
+  font-size: 1.25rem;
+  line-height: 1rem;
+  text-align: center;
+}
+
+@container analysis-panel (max-width: 32rem) {
+  .header {
+    grid-template-columns: 1fr;
+    gap: var(--cmt-spacing-8);
+  }
+
+  .state {
+    justify-self: start;
+    text-align: start;
+  }
+
+  .bestLineHeader {
+    align-items: start;
+  }
+
+  .line {
+    grid-template-columns: 1.75rem minmax(0, 1fr) auto;
+    gap: var(--cmt-spacing-8);
+  }
+
+  .lineWdl {
+    display: none;
+  }
+
+  .actionRow {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .updateHelp {
+    max-inline-size: none;
+  }
+
+  .actions {
+    flex-direction: column;
+  }
+
+  .actions > * {
+    inline-size: 100%;
+  }
+}
+
+@container analysis-panel (max-width: 23rem) {
+  .panel,
+  .bestLine {
+    padding: var(--cmt-spacing-12);
+  }
+
+  .wdlLegend {
+    grid-template-columns: 1fr;
+    gap: var(--cmt-spacing-4);
+  }
+
+  .wdlLegend > div {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .wdlLegend > div + div {
+    padding-block-start: var(--cmt-spacing-4);
+    padding-inline-start: 0;
+    border-block-start: 1px solid var(--md-sys-color-outline-variant);
+    border-inline-start: 0;
+  }
+
+  .wdlLegend dd {
+    text-align: start;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panel,
+  .panel * {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
+@media (forced-colors: active) {
+  .panel,
+  .bestLine,
+  .line,
+  .wdlTrack,
+  .miniTrack,
+  .emptyResult {
+    border-color: CanvasText;
+    background: Canvas;
+    box-shadow: none;
+  }
+
+  .eyebrow,
+  .panelTitle h2,
+  .bestLineLabel,
+  .sectionHeading h3,
+  .bestLineMoves,
+  .linePv,
+  .lineEval,
+  .wdlLegend dd,
+  .lineWdl strong {
+    color: CanvasText;
+  }
+
+  .state,
+  .meta,
+  .sectionNote,
+  .message,
+  .wdlCaption,
+  .wdlLegend,
+  .lineRank,
+  .scoreLabel,
+  .lineWdl,
+  .updateHelp,
+  .emptyResult {
+    color: CanvasText;
+  }
+
+  .bestLineScore,
+  .line:first-child .lineRank,
+  .line:first-child .lineEval {
+    color: Highlight;
+  }
+
+  .staleMessage,
+  .alertMessage,
+  .observationError,
+  .actionError {
+    border-color: CanvasText;
+    background: Canvas;
+    color: CanvasText;
+  }
+
+  .wdlTrack > span,
+  .miniTrack > span,
+  .legendDot {
+    background: Highlight;
+  }
+}

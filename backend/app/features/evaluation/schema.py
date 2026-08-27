@@ -7,11 +7,13 @@ import sqlite3
 from .errors import EvaluationSchemaError
 from .models import QUEUE_STATES
 
-EVALUATION_SCHEMA_VERSION = 1
+EVALUATION_SCHEMA_VERSION = 2
+_LEGACY_EVALUATION_SCHEMA_VERSION = 1
 EVALUATION_TABLES = {"evaluation_schema", "evaluation_queue"}
 REQUIRED_COLUMNS = {
     "evaluation_schema": {"id", "version", "applied_at"},
     "evaluation_queue": {
+        "position_key",
         "fen",
         "state",
         "position",
@@ -23,6 +25,10 @@ REQUIRED_COLUMNS = {
         "last_error_code",
         "last_error_details",
     },
+}
+_LEGACY_REQUIRED_COLUMNS = {
+    **REQUIRED_COLUMNS,
+    "evaluation_queue": REQUIRED_COLUMNS["evaluation_queue"] - {"position_key"},
 }
 _STATES_SQL = ", ".join(f"'{state}'" for state in QUEUE_STATES)
 
@@ -75,6 +81,59 @@ def require_evaluation_schema(connection: sqlite3.Connection) -> int:
     return EVALUATION_SCHEMA_VERSION
 
 
+def _require_legacy_evaluation_schema(connection: sqlite3.Connection) -> None:
+    """Validate the v1 shape accepted by the one-time position-key transition."""
+
+    existing = _existing_tables(connection)
+    if existing != EVALUATION_TABLES:
+        raise EvaluationSchemaError("legacy evaluation schema tables are incomplete or unexpected")
+    try:
+        row = connection.execute("SELECT version FROM evaluation_schema WHERE id = 1").fetchone()
+    except sqlite3.Error as error:
+        raise EvaluationSchemaError(
+            "legacy evaluation schema version table is incompatible"
+        ) from error
+    if row is None or row[0] != _LEGACY_EVALUATION_SCHEMA_VERSION:
+        found = "missing" if row is None else repr(row[0])
+        raise EvaluationSchemaError(
+            f"incompatible legacy evaluation schema version {found}; expected 1"
+        )
+    for table, expected_columns in _LEGACY_REQUIRED_COLUMNS.items():
+        columns = {str(row[1]) for row in connection.execute(f"PRAGMA table_info({table})")}
+        if columns != expected_columns:
+            raise EvaluationSchemaError(f"legacy evaluation schema table {table} is incompatible")
+    indexes = {
+        str(row[0])
+        for row in connection.execute(
+            "SELECT name FROM sqlite_master WHERE type='index' AND name LIKE 'evaluation_%'"
+        )
+    }
+    if indexes != {"evaluation_queue_fifo"}:
+        raise EvaluationSchemaError("legacy evaluation schema indexes are incomplete or unexpected")
+
+
+def _position_key_queue_table() -> str:
+    return f"""
+        CREATE TABLE evaluation_queue (
+            position_key TEXT PRIMARY KEY NOT NULL,
+            fen TEXT NOT NULL,
+            state TEXT NOT NULL CHECK (state IN ({_STATES_SQL})),
+            position INTEGER NOT NULL,
+            attempts INTEGER NOT NULL CHECK (attempts >= 0),
+            schema_version INTEGER NOT NULL,
+            enqueued_at TEXT NOT NULL,
+            started_at TEXT NULL,
+            finished_at TEXT NULL,
+            last_error_code TEXT NULL,
+            last_error_details TEXT NULL
+        )
+    """
+
+
+def _position_key_queue_index() -> str:
+    return "CREATE INDEX evaluation_queue_fifo ON evaluation_queue (state, position)"
+
+
 def initialize_evaluation_schema(connection: sqlite3.Connection) -> None:
     """Create the evaluation queue namespace only through this explicit operation."""
 
@@ -92,23 +151,8 @@ def initialize_evaluation_schema(connection: sqlite3.Connection) -> None:
             applied_at TEXT NOT NULL
         )
         """,
-        f"""
-        CREATE TABLE evaluation_queue (
-            fen TEXT PRIMARY KEY,
-            state TEXT NOT NULL CHECK (state IN ({_STATES_SQL})),
-            position INTEGER NOT NULL,
-            attempts INTEGER NOT NULL CHECK (attempts >= 0),
-            schema_version INTEGER NOT NULL,
-            enqueued_at TEXT NOT NULL,
-            started_at TEXT NULL,
-            finished_at TEXT NULL,
-            last_error_code TEXT NULL,
-            last_error_details TEXT NULL
-        )
-        """,
-        """
-        CREATE INDEX evaluation_queue_fifo ON evaluation_queue (state, position)
-        """,
+        _position_key_queue_table(),
+        _position_key_queue_index(),
     )
     try:
         connection.execute("BEGIN")

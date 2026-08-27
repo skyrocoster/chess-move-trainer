@@ -1,4 +1,4 @@
-"""Read-only accepted-game selection and exact-FEN eligibility inspection."""
+"""Read-only accepted-game selection and PositionKey eligibility inspection."""
 
 from __future__ import annotations
 
@@ -9,7 +9,13 @@ from uuid import UUID
 import chess
 
 from .errors import AnalysisValidationError
-from .models import AnalysisProfile, ResultEligibility, canonical_fen
+from .models import (
+    AnalysisProfile,
+    PositionKey,
+    ResultEligibility,
+    canonical_fen,
+    position_key_from_fen,
+)
 from .repository import AnalysisRepository
 from .schema import require_analysis_schema
 
@@ -32,6 +38,10 @@ class SelectedOccurrence:
 class SelectedPosition:
     fen: str
     occurrences: tuple[SelectedOccurrence, ...]
+
+    @property
+    def position_key(self) -> PositionKey:
+        return position_key_from_fen(self.fen)
 
     @property
     def first_occurrence(self) -> SelectedOccurrence:
@@ -146,7 +156,7 @@ def select_positions(
     game_uuids: list[str] | tuple[str, ...],
     profile: AnalysisProfile,
 ) -> SelectionReport:
-    """Build one exact-FEN queue from every ply of explicit accepted games."""
+    """Build one PositionKey queue from every ply of explicit accepted games."""
 
     require_analysis_schema(connection)
     if profile.node_budget != QUALIFIED_NODE_BUDGET:
@@ -166,7 +176,7 @@ def select_positions(
 def select_all_positions(
     connection: sqlite3.Connection, profile: AnalysisProfile
 ) -> SelectionReport:
-    """Build the opening-first exact-FEN queue for the complete accepted subject corpus."""
+    """Build the opening-first PositionKey queue for the complete accepted subject corpus."""
 
     require_analysis_schema(connection)
     if profile.node_budget != QUALIFIED_NODE_BUDGET:
@@ -199,21 +209,20 @@ def _select_positions(
     normalized: tuple[str, ...],
     profile: AnalysisProfile,
 ) -> SelectionReport:
-    by_fen: dict[str, list[SelectedOccurrence]] = {}
+    by_position_key: dict[PositionKey, list[SelectedOccurrence]] = {}
     for game_uuid in normalized:
         for occurrence in _game_occurrences(connection, game_uuid):
-            by_fen.setdefault(occurrence.fen, []).append(occurrence)
+            key = position_key_from_fen(occurrence.fen)
+            by_position_key.setdefault(key, []).append(occurrence)
 
-    positions = tuple(
-        SelectedPosition(
-            fen,
-            tuple(sorted(occurrences, key=lambda item: (item.ply, item.game_uuid))),
-        )
-        for fen, occurrences in sorted(
-            by_fen.items(),
-            key=lambda item: (min(entry.ply for entry in item[1]), item[0]),
-        )
-    )
+    selected_positions: list[SelectedPosition] = []
+    for _position_key, occurrences in sorted(
+        by_position_key.items(),
+        key=lambda item: (min(entry.ply for entry in item[1]), item[0]),
+    ):
+        sorted_occurrences = tuple(sorted(occurrences, key=lambda item: (item.ply, item.game_uuid)))
+        selected_positions.append(SelectedPosition(sorted_occurrences[0].fen, sorted_occurrences))
+    positions = tuple(selected_positions)
     repository = AnalysisRepository(connection)
     states = repository.eligibilities(tuple(position.fen for position in positions), profile)
     already_done = sum(state is ResultEligibility.ELIGIBLE for state in states.values())

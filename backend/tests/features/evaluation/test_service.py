@@ -33,6 +33,8 @@ from .conftest import (
     result_for,
 )
 
+COUNTER_VARIANT_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 17 42"
+
 
 class FakeEngine:
     def __init__(self, *, fail: bool = False) -> None:
@@ -100,6 +102,20 @@ def test_inspect_eligible_returns_result_without_computation(
     assert result.result.fen == START_FEN
     assert len(result.result.candidates) == 5
     assert all(engine.calls == [] for engine in engines)
+
+
+def test_inspect_uses_position_key_for_counter_variant_result(
+    connection: sqlite3.Connection, profile
+) -> None:
+    initialized(connection)
+    AnalysisRepository(connection).publish(result_for(profile, START_FEN))
+
+    result = inspect(connection, COUNTER_VARIANT_FEN, profile)
+
+    assert result.eligibility is ResultEligibility.ELIGIBLE
+    assert result.result is not None
+    assert result.result.fen == COUNTER_VARIANT_FEN
+    assert result.item is None
 
 
 def test_inspect_stale_keeps_result_readable(connection: sqlite3.Connection, profile) -> None:

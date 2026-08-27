@@ -5,6 +5,7 @@ import sqlite3
 from datetime import UTC, datetime
 
 from backend.app.features.analysis import (
+    ANALYSIS_SCHEMA_VERSION,
     AnalysisProfile,
     AnalysisRepository,
     AnalysisResult,
@@ -95,7 +96,7 @@ def test_extraction_coexistence_preserves_analysis_schema_and_orphaned_fen(conne
     connection.commit()
     extract_corpus.run_extraction(connection, output=io.StringIO())
 
-    assert require_analysis_schema(connection) == 1
+    assert require_analysis_schema(connection) == ANALYSIS_SCHEMA_VERSION
     assert connection.execute(
         "SELECT completed_at FROM analysis_result WHERE fen=?", (TERMINAL_FEN,)
     ).fetchone() == (datetime(2026, 8, 20, 12, 0, tzinfo=UTC).isoformat(),)

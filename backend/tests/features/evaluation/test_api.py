@@ -14,6 +14,7 @@ from backend.app.main import app
 from .conftest import FOOLS_MATE_FEN, START_FEN, initialized, result_for
 
 ANALYSIS_ONLY_FEN = "rnbqkbnr/pp1ppppp/8/2p5/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2"
+COUNTER_VARIANT_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 17 42"
 
 
 @pytest.fixture
@@ -149,6 +150,19 @@ def test_eligible_observation_returns_exact_typed_result_without_computation(
         "engine_time_ms",
     }
     assert database.read_bytes() == before
+
+
+def test_counter_variant_observation_uses_one_internal_identity(api_context, profile) -> None:
+    client, database = api_context
+    with _database_connection(database) as connection:
+        AnalysisRepository(connection).publish(result_for(profile, START_FEN))
+
+    response = _observe(client, COUNTER_VARIANT_FEN)
+
+    assert response.status_code == 200
+    assert response.json()["fen"] == COUNTER_VARIANT_FEN
+    assert response.json()["eligibility"] == "eligible"
+    assert response.json()["result"]["fen"] == COUNTER_VARIANT_FEN
 
 
 def test_missing_observation_is_read_only_and_terminal_classification_is_instant(

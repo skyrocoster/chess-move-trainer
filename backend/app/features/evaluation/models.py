@@ -4,7 +4,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from backend.app.features.analysis import AnalysisResult, ResultEligibility
+from backend.app.features.analysis import (
+    AnalysisResult,
+    PositionKey,
+    ResultEligibility,
+    position_key_from_fen,
+)
 
 QUEUE_STATES = ("queued", "running", "done", "failed")
 
@@ -20,6 +25,12 @@ class EvaluationQueueItem:
     finished_at: str | None
     last_error_code: str | None
     last_error_details: str | None
+
+    @property
+    def position_key(self) -> PositionKey:
+        """Return the internal queue identity while retaining the public six-field FEN."""
+
+        return position_key_from_fen(self.fen)
 
 
 @dataclass(frozen=True)

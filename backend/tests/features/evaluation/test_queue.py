@@ -5,6 +5,7 @@ import sqlite3
 import chess
 import pytest
 
+from backend.app.features.analysis import position_key_from_fen
 from backend.app.features.evaluation import (
     EvaluationQueueError,
     EvaluationValidationError,
@@ -22,6 +23,7 @@ from .conftest import START_FEN, initialized
 
 SECOND_FEN = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1"
 THIRD_FEN = "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2"
+COUNTER_VARIANT_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 17 42"
 
 
 def test_enqueue_inserts_fifo_positions(connection: sqlite3.Connection) -> None:
@@ -43,18 +45,34 @@ def test_enqueue_dedupes_queued_and_running(connection: sqlite3.Connection) -> N
     initialized(connection)
 
     _, first = enqueue(connection, START_FEN)
-    outcome, again = enqueue(connection, START_FEN)
+    outcome, again = enqueue(connection, COUNTER_VARIANT_FEN)
     assert outcome == "already_queued"
     assert again == first
 
     claimed = claim_next(connection)
     assert claimed is not None
-    outcome, running_again = enqueue(connection, START_FEN)
+    outcome, running_again = enqueue(connection, COUNTER_VARIANT_FEN)
     assert outcome == "already_running"
     assert running_again == claimed
 
     rows = connection.execute("SELECT COUNT(*) FROM evaluation_queue").fetchone()
     assert rows == (1,)
+
+
+def test_counter_only_fens_share_queue_identity(connection: sqlite3.Connection) -> None:
+    initialized(connection)
+
+    _, first = enqueue(connection, START_FEN)
+    claimed = claim_next(connection)
+    assert claimed is not None
+    outcome, same_position = enqueue(connection, COUNTER_VARIANT_FEN)
+
+    assert outcome == "already_running"
+    assert same_position == claimed
+    assert first.position_key == same_position.position_key
+    assert same_position.position_key == position_key_from_fen(START_FEN)
+    assert observe(connection, COUNTER_VARIANT_FEN) == same_position
+    assert connection.execute("SELECT COUNT(*) FROM evaluation_queue").fetchone() == (1,)
 
 
 def test_claim_is_fifo_and_marks_running(connection: sqlite3.Connection) -> None:

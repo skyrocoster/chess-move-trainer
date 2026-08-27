@@ -11,6 +11,7 @@ export type EvaluationEligibility = "missing" | "eligible" | "stale";
 export type EvaluationQueueState = "queued" | "running" | "done" | "failed";
 export type EvaluationAction = "analyze" | "update" | "retry";
 export type EvaluationScoreKind = "cp" | "mate" | "mate_given";
+export type PositionKey = string;
 export type EvaluationErrorCode =
   | "evaluation_unavailable"
   | "invalid_fen"
@@ -113,6 +114,14 @@ function isCanonicalFen(value: unknown): value is Fen {
   return validateFen(value).ok;
 }
 
+export function positionKeyFromFen(fen: Fen): PositionKey {
+  return fen.split(" ").slice(0, 4).join(" ");
+}
+
+function samePositionFen(value: unknown, fen: Fen): value is Fen {
+  return isCanonicalFen(value) && positionKeyFromFen(value) === positionKeyFromFen(fen);
+}
+
 export function validateAnalysisFen(value: unknown): EvaluationErrorCode | null {
   if (typeof value === "string" && value.length > MAX_FEN_LENGTH) {
     return "request_too_large";
@@ -194,7 +203,7 @@ function isResult(value: unknown, fen: Fen): value is EvaluationResult {
       "completed_at",
       "wall_time_ms",
     ]) ||
-    value.fen !== fen ||
+    !samePositionFen(value.fen, fen) ||
     typeof value.profile_id !== "string" ||
     value.profile_id.length === 0 ||
     !Array.isArray(value.candidates) ||
@@ -235,7 +244,7 @@ function isObservation(value: unknown, fen: Fen): value is EvaluationObservation
   return (
     isRecord(value) &&
     hasExactKeys(value, ["fen", "eligibility", "result", "status", "terminal"]) &&
-    value.fen === fen &&
+    samePositionFen(value.fen, fen) &&
     isEligibility(value.eligibility) &&
     (value.result === null || isResult(value.result, fen)) &&
     (value.status === null || isEvaluationStatus(value.status)) &&
@@ -247,7 +256,7 @@ function isEnqueue(value: unknown, fen: Fen): value is EvaluationEnqueue {
   return (
     isRecord(value) &&
     hasExactKeys(value, ["fen", "action", "outcome", "eligibility", "status"]) &&
-    value.fen === fen &&
+    samePositionFen(value.fen, fen) &&
     isAction(value.action) &&
     typeof value.outcome === "string" &&
     value.outcome.length > 0 &&
@@ -260,7 +269,7 @@ function isPoll(value: unknown, fen: Fen): value is EvaluationPoll {
   return (
     isRecord(value) &&
     hasExactKeys(value, ["fen", "state", "completed_at", "error_code"]) &&
-    value.fen === fen &&
+    samePositionFen(value.fen, fen) &&
     (value.state === null || isQueueState(value.state)) &&
     isStringOrNull(value.completed_at) &&
     isStringOrNull(value.error_code)

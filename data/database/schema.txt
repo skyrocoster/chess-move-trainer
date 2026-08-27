@@ -135,7 +135,8 @@ CREATE TABLE analysis_batch_run ( run_id INTEGER PRIMARY KEY, status TEXT NOT NU
 
 | PK order | Name | Type | Nullable | Default |
 | ---: | --- | --- | --- | --- |
-| 1 | `fen` | `TEXT` | NO | `` |
+| 1 | `position_key` | `TEXT` | NO | `` |
+| 0 | `fen` | `TEXT` | NO | `` |
 | 2 | `rank` | `INTEGER` | NO | `` |
 | 0 | `score_kind` | `TEXT` | NO | `` |
 | 0 | `score_value` | `INTEGER` | NO | `` |
@@ -152,12 +153,12 @@ CREATE TABLE analysis_batch_run ( run_id INTEGER PRIMARY KEY, status TEXT NOT NU
 
 | ID | Order | From | To table | To column | On update | On delete | Match |
 | ---: | ---: | --- | --- | --- | --- | --- | --- |
-| 0 | 0 | `fen` | `analysis_result` | `fen` | NO ACTION | CASCADE | NONE |
+| 0 | 0 | `position_key` | `analysis_result` | `position_key` | NO ACTION | CASCADE | NONE |
 
 #### Canonical SQL
 
 ```sql
-CREATE TABLE analysis_candidate ( fen TEXT NOT NULL, rank INTEGER NOT NULL CHECK (rank BETWEEN 1 AND 5), score_kind TEXT NOT NULL CHECK (score_kind IN ('cp', 'mate', 'mate_given')), score_value INTEGER NOT NULL, wdl_wins INTEGER NOT NULL, wdl_draws INTEGER NOT NULL, wdl_losses INTEGER NOT NULL, pv_uci_json TEXT NOT NULL, depth INTEGER NOT NULL, seldepth INTEGER NOT NULL, nodes INTEGER NOT NULL, engine_time_ms INTEGER NOT NULL, PRIMARY KEY (fen, rank), FOREIGN KEY (fen) REFERENCES analysis_result(fen) ON DELETE CASCADE )
+CREATE TABLE analysis_candidate ( position_key TEXT NOT NULL, fen TEXT NOT NULL, rank INTEGER NOT NULL CHECK (rank BETWEEN 1 AND 5), score_kind TEXT NOT NULL CHECK (score_kind IN ('cp', 'mate', 'mate_given')), score_value INTEGER NOT NULL, wdl_wins INTEGER NOT NULL, wdl_draws INTEGER NOT NULL, wdl_losses INTEGER NOT NULL, pv_uci_json TEXT NOT NULL, depth INTEGER NOT NULL, seldepth INTEGER NOT NULL, nodes INTEGER NOT NULL, engine_time_ms INTEGER NOT NULL, PRIMARY KEY (position_key, rank), FOREIGN KEY (position_key) REFERENCES analysis_result(position_key) ON DELETE CASCADE )
 ```
 
 ### Table: `analysis_position_failure`
@@ -195,7 +196,8 @@ CREATE TABLE analysis_position_failure ( failure_id INTEGER PRIMARY KEY, run_id 
 
 | PK order | Name | Type | Nullable | Default |
 | ---: | --- | --- | --- | --- |
-| 1 | `fen` | `TEXT` | YES | `` |
+| 1 | `position_key` | `TEXT` | NO | `` |
+| 0 | `fen` | `TEXT` | NO | `` |
 | 0 | `schema_version` | `INTEGER` | NO | `` |
 | 0 | `profile_id` | `TEXT` | NO | `` |
 | 0 | `settings_json` | `TEXT` | NO | `` |
@@ -215,7 +217,7 @@ None declared.
 #### Canonical SQL
 
 ```sql
-CREATE TABLE analysis_result ( fen TEXT PRIMARY KEY, schema_version INTEGER NOT NULL, profile_id TEXT NOT NULL, settings_json TEXT NOT NULL, settings_fingerprint TEXT NOT NULL, engine_binary_sha256 TEXT NOT NULL, engine_name TEXT NOT NULL, engine_version TEXT NOT NULL, terminal_kind TEXT NULL, candidate_count INTEGER NOT NULL CHECK (candidate_count BETWEEN 0 AND 5), completed_at TEXT NOT NULL, wall_time_ms INTEGER NOT NULL CHECK (wall_time_ms >= 0) )
+CREATE TABLE analysis_result ( position_key TEXT PRIMARY KEY NOT NULL, fen TEXT NOT NULL, schema_version INTEGER NOT NULL, profile_id TEXT NOT NULL, settings_json TEXT NOT NULL, settings_fingerprint TEXT NOT NULL, engine_binary_sha256 TEXT NOT NULL, engine_name TEXT NOT NULL, engine_version TEXT NOT NULL, terminal_kind TEXT NULL, candidate_count INTEGER NOT NULL CHECK (candidate_count BETWEEN 0 AND 5), completed_at TEXT NOT NULL, wall_time_ms INTEGER NOT NULL CHECK (wall_time_ms >= 0) )
 ```
 
 ### Table: `analysis_schema`
@@ -349,7 +351,8 @@ CREATE TABLE corpus_schema ( id INTEGER PRIMARY KEY CHECK (id = 1), version INTE
 
 | PK order | Name | Type | Nullable | Default |
 | ---: | --- | --- | --- | --- |
-| 1 | `fen` | `TEXT` | YES | `` |
+| 1 | `position_key` | `TEXT` | NO | `` |
+| 0 | `fen` | `TEXT` | NO | `` |
 | 0 | `state` | `TEXT` | NO | `` |
 | 0 | `position` | `INTEGER` | NO | `` |
 | 0 | `attempts` | `INTEGER` | NO | `` |
@@ -367,7 +370,7 @@ None declared.
 #### Canonical SQL
 
 ```sql
-CREATE TABLE evaluation_queue ( fen TEXT PRIMARY KEY, state TEXT NOT NULL CHECK (state IN ('queued', 'running', 'done', 'failed')), position INTEGER NOT NULL, attempts INTEGER NOT NULL CHECK (attempts >= 0), schema_version INTEGER NOT NULL, enqueued_at TEXT NOT NULL, started_at TEXT NULL, finished_at TEXT NULL, last_error_code TEXT NULL, last_error_details TEXT NULL )
+CREATE TABLE evaluation_queue ( position_key TEXT PRIMARY KEY NOT NULL, fen TEXT NOT NULL, state TEXT NOT NULL CHECK (state IN ('queued', 'running', 'done', 'failed')), position INTEGER NOT NULL, attempts INTEGER NOT NULL CHECK (attempts >= 0), schema_version INTEGER NOT NULL, enqueued_at TEXT NOT NULL, started_at TEXT NULL, finished_at TEXT NULL, last_error_code TEXT NULL, last_error_details TEXT NULL )
 ```
 
 ### Table: `evaluation_schema`

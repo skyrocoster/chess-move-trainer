@@ -6,6 +6,7 @@ import {
   type EvaluationAction,
   type EvaluationObservation,
   defaultAnalysisClient,
+  positionKeyFromFen,
 } from "./analysisApi";
 import type { Fen } from "./chessPrimitives";
 
@@ -59,7 +60,10 @@ export function useAnalysisState(
     let active = true;
     let timer: ReturnType<typeof setTimeout> | null = null;
     let pollAttempts = 0;
-    const samePosition = fen !== null && previousFen.current === fen;
+    const samePosition =
+      fen !== null &&
+      previousFen.current !== null &&
+      positionKeyFromFen(previousFen.current) === positionKeyFromFen(fen);
     previousFen.current = fen;
 
     if (!samePosition) {

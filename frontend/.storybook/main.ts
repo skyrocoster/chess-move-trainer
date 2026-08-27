@@ -4,6 +4,7 @@ const config: StorybookConfig = {
   stories: [
     "../src/features/design-system/**/*.stories.@(ts|tsx)",
     "../src/features/app-shell/**/*.stories.@(ts|tsx)",
+    "../src/features/analysis/**/*.stories.@(ts|tsx)",
     "../src/features/board-adapter/**/*.stories.@(ts|tsx)",
     "../src/features/viewer/**/*.stories.@(ts|tsx)",
   ],

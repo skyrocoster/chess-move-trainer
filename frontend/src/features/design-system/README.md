@@ -14,15 +14,21 @@ Material Design-based component library used across the frontend.
 | `Disclosure` | Expandable/collapsible content section                         |
 | `feedback/`  | Feedback display components: `Inline`, `Panel`, `Page`, `Core` |
 
-## Visual specimens
+## Storybook support components
 
-| File                  | Purpose                                                |
-| --------------------- | ------------------------------------------------------ |
-| `TokenOverview`       | Displays all design tokens                             |
-| `TypescaleSpecimen`   | Displays the type scale                                |
-| `FoundationSpecimen`  | Displays foundation styles                             |
-| `AccessibilityReview` | Automated accessibility checks against components      |
-| `CombinedComposition` | Composed specimen showing multiple components together |
+| File                               | Purpose                                                |
+| ---------------------------------- | ------------------------------------------------------ |
+| `StorySpecimenTokenOverview`       | Displays all design tokens                             |
+| `StorySpecimenTypescale`           | Displays the type scale                                |
+| `StorySpecimenFoundation`          | Displays foundation styles                             |
+| `StorySpecimenAccessibilityReview` | Automated accessibility checks against components      |
+| `StorySpecimenCombinedComposition` | Composed specimen showing multiple components together |
+
+`StorySpecimen*` identifies Storybook-only visual/reference surfaces for production-ready
+components or tokens. `StoryHarness*` identifies Storybook-only interactive wiring around
+production-ready components. These support components must not be imported by production
+application code. Storybook is for production-ready components/tokens; prototypes and pending
+designs belong under `experiments/`.
 
 ## Tokens
 

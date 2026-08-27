@@ -3,10 +3,10 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { InteractiveBoardMoveIntent } from "../board-adapter/InteractiveBoardAdapter";
+import type { BranchSnapshot } from "../board-adapter/branchModel";
 import type { AnalysisClient } from "./analysisApi";
 import ViewerWorkspace from "./ViewerWorkspace";
 import type { GameLookup } from "./positionApi";
-import type { BranchSnapshot } from "./temporaryBranchModel";
 import { VIEWER_GAME, VIEWER_GAME_UUID } from "./viewerFixtures";
 
 const BRANCH_FEN = VIEWER_GAME.positions[1].fen;

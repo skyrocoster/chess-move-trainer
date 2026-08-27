@@ -4,21 +4,23 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Evaluation Bar</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root{
-    --board-dark:#141019;
-    --ivory:#efe6d6;
-    --gold:#c9a227;
-    --hair:rgba(239,230,214,0.09);
+    /* Repo design tokens — Material 3 dark theme from cmt-tokens.css / dark.css */
+    --board-dark:#121318;
+    --ivory:#e4e1e9;
+    --gold:#bac3ff;
+    --hair:#46464f;
+    --surface-bright:#39393f;
+    --outline:#90909a;
+    --shadow:#000000;
   }
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;}
   body{
     background:var(--board-dark);
     color:var(--ivory);
-    font-family:'IBM Plex Mono', monospace;
+    font-family:system-ui, sans-serif;
     min-height:100vh;
     padding:56px 20px;
     display:flex;
@@ -35,9 +37,9 @@
   .board-placeholder{
     width:480px;
     height:480px;
-    border-radius:6px 0 0 6px;
+    border-radius:4px 0 0 4px;
     background:
-      repeating-conic-gradient(#c9a26a 0% 25%, #8a5a34 0% 50%) 0 0 / 60px 60px;
+      repeating-conic-gradient(var(--surface-bright) 0% 25%, var(--hair) 0% 50%) 0 0 / 60px 60px;
     border:1px solid var(--hair);
     flex-shrink:0;
   }
@@ -51,22 +53,22 @@
      stretches to the board's height via the flex parent, so the two
      read as one object rather than a widget beside a widget.
      ========================================================== */
-  .eval-gauge{
-    --gauge-white: var(--ivory, #efe6d6);
-    --gauge-black: #211a24;
-    --gauge-border: var(--hair, rgba(239,230,214,0.09));
-    --gauge-accent: var(--gold, #c9a227);
+   .eval-gauge{
+    --gauge-white: var(--ivory);
+    --gauge-black: var(--board-dark);
+    --gauge-border: var(--hair);
+    --gauge-accent: var(--gold);
     --eval-pct: 50;
 
     position:relative;
     width:30px;
     height:0; /* set in px by JS to match the board exactly — see script below */
-    border-radius:0 6px 6px 0;
+    border-radius:0 4px 4px 0;
     border:1px solid var(--gauge-border);
     border-left:none;
     background:var(--gauge-black);
     overflow:hidden;
-    box-shadow:inset -2px 0 6px rgba(0,0,0,0.4);
+    box-shadow:inset -2px 0 6px var(--shadow);
     flex-shrink:0;
   }
   .eval-gauge__fill{
@@ -80,7 +82,7 @@
     position:absolute;
     left:0; right:0; top:50%;
     height:1px;
-    background:rgba(201,162,39,0.45);
+    background:var(--outline);
     transform:translateY(-0.5px);
   }
   .eval-gauge__readout{
@@ -88,14 +90,14 @@
     left:50%; top:50%;
     transform:translate(-50%,-50%);
     font-size:10px;
-    font-weight:600;
+    font-weight:500;
     color:var(--board-dark);
     background:var(--gauge-accent);
     border-radius:8px;
     padding:2px 5px;
     font-variant-numeric:tabular-nums;
     white-space:nowrap;
-    box-shadow:0 1px 3px rgba(0,0,0,0.4);
+    box-shadow:0 1px 3px var(--shadow);
   }
   /* ========================== /EVAL BAR COMPONENT ========================== */
 

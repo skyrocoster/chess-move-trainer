@@ -12,6 +12,7 @@ from backend.app.features.analysis import (
     AnalysisResult,
     ResultEligibility,
     initialize_analysis_schema,
+    position_key_from_fen,
 )
 
 START_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
@@ -55,12 +56,12 @@ def test_persistence_and_profile_eligibility(connection, profile) -> None:
 
     assert repository.eligibility(START_FEN, profile) is ResultEligibility.ELIGIBLE
     assert connection.execute(
-        "SELECT candidate_count, completed_at FROM analysis_result WHERE fen=?",
-        (START_FEN,),
+        "SELECT candidate_count, completed_at FROM analysis_result WHERE position_key=?",
+        (position_key_from_fen(START_FEN),),
     ).fetchone() == (5, first_time)
     assert connection.execute(
-        "SELECT score_kind, pv_uci_json FROM analysis_candidate WHERE fen=? ORDER BY rank",
-        (START_FEN,),
+        "SELECT score_kind, pv_uci_json FROM analysis_candidate WHERE position_key=? ORDER BY rank",
+        (position_key_from_fen(START_FEN),),
     ).fetchall()[0] == ("cp", '["e2e4"]')
 
     stale = AnalysisProfile(
@@ -82,11 +83,13 @@ def test_atomic_stale_replacement_rolls_back_to_old_parent_and_candidates(
     old_time = datetime(2026, 8, 20, 12, 0, tzinfo=UTC).isoformat()
     repository.publish(complete_result(profile, completed_at=old_time))
     before_parent = connection.execute(
-        "SELECT profile_id, completed_at FROM analysis_result WHERE fen=?", (START_FEN,)
+        "SELECT profile_id, completed_at FROM analysis_result WHERE position_key=?",
+        (position_key_from_fen(START_FEN),),
     ).fetchone()
     before_candidates = connection.execute(
-        "SELECT rank, score_value, pv_uci_json FROM analysis_candidate WHERE fen=? ORDER BY rank",
-        (START_FEN,),
+        "SELECT rank, score_value, pv_uci_json FROM analysis_candidate "
+        "WHERE position_key=? ORDER BY rank",
+        (position_key_from_fen(START_FEN),),
     ).fetchall()
 
     replacement_profile = AnalysisProfile(
@@ -112,15 +115,16 @@ def test_atomic_stale_replacement_rolls_back_to_old_parent_and_candidates(
 
     assert (
         connection.execute(
-            "SELECT profile_id, completed_at FROM analysis_result WHERE fen=?", (START_FEN,)
+            "SELECT profile_id, completed_at FROM analysis_result WHERE position_key=?",
+            (position_key_from_fen(START_FEN),),
         ).fetchone()
         == before_parent
     )
     assert (
         connection.execute(
             "SELECT rank, score_value, pv_uci_json FROM analysis_candidate "
-            "WHERE fen=? ORDER BY rank",
-            (START_FEN,),
+            "WHERE position_key=? ORDER BY rank",
+            (position_key_from_fen(START_FEN),),
         ).fetchall()
         == before_candidates
     )

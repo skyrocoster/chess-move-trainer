@@ -1,4 +1,4 @@
-import { Chess, type Square } from "chess.js";
+import { Chess } from "chess.js";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { useCallback, useMemo, useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -8,11 +8,12 @@ import {
   type InteractiveBoardMoveIntent,
 } from "./InteractiveBoardAdapter";
 import {
+  isPromotionTarget,
   type PromotionColor,
   type PromotionCommit,
   usePromotionController,
 } from "./PromotionPicker";
-import type { BranchSnapshot } from "../viewer/temporaryBranchModel";
+import type { BranchSnapshot } from "./branchModel";
 
 vi.mock("react-chessboard", () => ({
   defaultPieces: Object.fromEntries(
@@ -68,10 +69,6 @@ const PROMOTION_FEN = "k7/4P3/8/8/8/8/8/4K3 w - - 0 1";
 const CASTLING_FEN = "r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1";
 const EN_PASSANT_FEN = "4k3/3p4/8/4P3/8/8/8/4K3 b - - 0 1";
 const TERMINAL_ORIGIN_FEN = "7k/5Q2/p5K1/8/8/8/8/8 b - - 0 1";
-
-function isPromotionTarget(color: PromotionColor, square: Square) {
-  return color === "w" ? square.endsWith("8") : square.endsWith("1");
-}
 
 function terminalDescription(chess: Chess) {
   if (chess.isCheckmate()) {
