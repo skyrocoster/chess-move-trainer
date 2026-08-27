@@ -213,6 +213,10 @@ describe("ViewerWorkspace", () => {
     await fillAndSubmit(user);
 
     expect(await screen.findByText("Ply 0 of 3")).toBeVisible();
+    const announcement = screen.getByText("Ply 0 of 3: Initial position", { exact: true });
+    expect(announcement).toHaveAttribute("role", "status");
+    expect(announcement).toHaveAttribute("aria-live", "polite");
+    expect(announcement).toHaveAttribute("aria-atomic", "true");
     expect(screen.getByText("Initial position")).toBeVisible();
     expect(screen.getByRole("group", { name: /ply 0, Black at the bottom/ })).toBeVisible();
     expect(screen.getByRole("link", { name: "Chess.com game" })).toHaveAttribute(
@@ -235,6 +239,7 @@ describe("ViewerWorkspace", () => {
     await user.click(next);
     expect(screen.getByText("Ply 2 of 3")).toBeVisible();
     expect(screen.getByText("e5")).toBeVisible();
+    expect(screen.getByText("Ply 2 of 3: e5", { exact: true })).toBeInTheDocument();
     expect(screen.getByLabelText(/Ply/)).toHaveValue("1");
     expect(lookup).toHaveBeenCalledOnce();
     expect(document.activeElement).toBe(next);

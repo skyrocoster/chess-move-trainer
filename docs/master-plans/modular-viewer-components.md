@@ -60,7 +60,7 @@ without becoming a universal viewer, session, game, opening, or tree framework.
 - **MVC-07:** [Completed MVC-07 Evaluation bar Plan/result](../plans/done/mvc-07-evaluation-bar/mvc-07-evaluation-bar.md).
 - **MVC-08:** [Completed MVC-08 Analysis panel Plan/result](../plans/done/mvc-08-analysis-panel/mvc-08-analysis-panel.md).
 - **MVC-09:** [Completed MVC-09 Game context Plan/result](../plans/done/mvc-09-game-context/mvc-09-game-context.md).
-- **MVC-10:** Focused Plan/result link reserved for later selection and acceptance.
+- **MVC-10:** [Completed MVC-10 Page composition lock Plan/result](../plans/done/mvc-10-page-composition-lock/mvc-10-page-composition-lock.md).
 
 ## Directional acceptance and evidence
 

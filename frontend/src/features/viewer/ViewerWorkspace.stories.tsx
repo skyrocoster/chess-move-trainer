@@ -127,6 +127,9 @@ const initialPlay: NonNullable<Story["play"]> = async ({ canvasElement }) => {
   const sourceLink = canvas.getByRole("link", { name: "Chess.com game" });
   const analysis = await canvas.findByText("Analysis available on request");
   await expect(canvas.getByText("Ply 0 of 3")).toBeVisible();
+  await expect(
+    canvas.getByText("Ply 0 of 3: Initial position", { exact: true }),
+  ).toBeInTheDocument();
   await expect(canvas.getByText("Initial position")).toBeVisible();
   await expect(canvas.getByRole("button", { name: "Previous" })).toBeDisabled();
   await expect(canvas.getByRole("button", { name: "Next" })).toBeEnabled();
@@ -147,6 +150,7 @@ const intermediatePlay: NonNullable<Story["play"]> = async ({ canvasElement }) =
   await expect(canvas.getByRole("button", { name: "Next" })).toBeEnabled();
   await userEvent.click(canvas.getByRole("button", { name: "Next" }));
   await expect(canvas.getByText("Ply 2 of 3")).toBeVisible();
+  await expect(canvas.getByText("Ply 2 of 3: e5", { exact: true })).toBeInTheDocument();
 };
 
 const finalPlay: NonNullable<Story["play"]> = async ({ canvasElement }) => {
