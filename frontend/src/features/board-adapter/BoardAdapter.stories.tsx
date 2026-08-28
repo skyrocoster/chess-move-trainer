@@ -169,10 +169,11 @@ export const ExpandedPositionDescription: Story = {
     await trigger.focus();
     await userEvent.keyboard("{Enter}");
     await expect(trigger).toHaveAttribute("aria-expanded", "true");
-    const descriptionPanel = canvasElement.querySelector('[aria-label="Position description"]');
-    if (!descriptionPanel) {
+    const summary = canvasElement.querySelector("[data-position-summary]");
+    if (!summary) {
       throw new Error("The expanded position description is missing.");
     }
-    await expect(descriptionPanel).toHaveTextContent("Side to move: Black.");
+    await expect(summary).toHaveTextContent("Side to move");
+    await expect(summary).toHaveTextContent("Black");
   },
 };

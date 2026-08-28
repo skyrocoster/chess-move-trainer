@@ -10,8 +10,9 @@ experiment under `experiments/prototypes/<topic>/`; use the experiments workspac
 manifests. Keep small reusable inputs in `experiments/fixtures/` and downloads or generated output in the topic's
 ignored `.artifacts/` directory.
 
-Do not import application code or modify product source. Run the experiment and report observation separately
-from conclusion.
+Do not import application code or modify product source. Run the experiment via the `bash` tool with an explicit
+finite timeout in milliseconds (missing, zero, or non-finite timeouts are forbidden because commands can hang)
+and report observation separately from conclusion.
 
 ```text
 RESULT: CONFIRMED | DISPROVED | INCONCLUSIVE | BLOCKED

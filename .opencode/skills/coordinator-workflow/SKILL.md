@@ -42,9 +42,11 @@ untransferred reasoning makes a short resume safer.
 ## 3. Execute
 
 Every execute packet must name the outcome, exact paths or bounded Plan area, known facts, ordered actions,
-proof commands, acceptance, exclusions, support skills if any, and escalation boundaries. For a Plan, execute one
-stage at a time with `PHASE: EXECUTE PLAN STAGE`; stages never run in parallel. The coordinator may split an
-oversized stage only when the Plan outcome and acceptance remain unchanged.
+proof commands — each with an explicit finite `bash` tool timeout in milliseconds (missing, zero, or non-finite
+timeouts are forbidden because commands can hang) — acceptance, exclusions, support skills if any, and
+escalation boundaries. For a Plan, execute one stage at a time with `PHASE: EXECUTE PLAN STAGE`; stages never
+run in parallel. The coordinator may split an oversized stage only when the Plan outcome and acceptance remain
+unchanged.
 
 Review the returned proof and diff scope. Do not silently expand behavior. User edits at a visual breakpoint are
 authoritative: bound them, preserve them, and continue from the resulting state.

@@ -9,10 +9,11 @@ Require the failed validation evidence, exact paths, intended semantics, failed 
 If a required field is missing, return `BLOCKED` without investigating. Reject an open-ended diagnosis or any
 request to widen scope.
 
-Apply the named deterministic repair without exploring alternatives. Rerun only the failed focused check once,
-confirm once that only the authorized paths changed, and return immediately. Do not inspect Git state before the
-repair or recheck it afterward. If the repair or check fails, report that result without further diagnosis or
-another edit.
+Apply the named deterministic repair without exploring alternatives. Rerun only the failed focused check once via
+the `bash` tool with an explicit finite timeout in milliseconds (missing, zero, or non-finite timeouts are
+forbidden because commands can hang), confirm once that only the authorized paths changed, and return
+immediately. Do not inspect Git state before the repair or recheck it afterward. If the repair or check fails,
+report that result without further diagnosis or another edit.
 
 ```text
 RESULT: REPAIRED | FAILED | BLOCKED

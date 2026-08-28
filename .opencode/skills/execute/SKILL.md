@@ -13,7 +13,9 @@ ordered actions, proof commands, acceptance, exclusions, support skills if any, 
 2. For a bug, capture a meaningful red regression when it is cheap and deterministic; never manufacture a brittle
    source-text failure.
 3. Make the smallest approved change. Do not refactor, polish, or repair adjacent behavior.
-4. Run every focused proof command. Use full-suite or browser proof only when the packet requires it.
+4. Run every focused proof command via the `bash` tool with an explicit finite timeout in milliseconds
+   (missing, zero, or non-finite timeouts are forbidden because commands can hang). Use full-suite or browser
+   proof only when the packet requires it.
 5. Perform one final changed-path and semantic scope audit against the packet. Do not repeatedly run `git status`
    or `git diff`. On a failed check, make at most one deterministic, in-scope repair and rerun that check once;
    never weaken proof.

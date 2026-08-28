@@ -45,6 +45,8 @@ end-to-end tests. Ruff, ESLint, and Prettier are required. Handwritten Python, T
 is limited to 500 lines per file; handwritten tests are limited to 700 lines. Generated manifests,
 lockfiles, and narrowly enumerated configuration files are excluded by `scripts/check_size.py`.
 
+MANDATORY SAFETY: every test must have an explicit finite command-level timeout and finite tool-level timeout. Never run unbounded processes. 
+
 ## Start here
 
 1. Open the [documentation router](docs/README.md).

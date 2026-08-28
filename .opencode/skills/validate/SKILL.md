@@ -11,8 +11,10 @@ or requests to infer approval.
 
 1. In one Git inspection, compare changed path names and only the relevant changed hunks with the approved scope.
    Do not inspect adjacent files, unrelated changes, or recheck Git state later.
-2. Run each supplied focused check once, in order, and the full suite only when explicitly requested. Stop on the
-   first definitive required failure unless another supplied check is necessary to classify it.
+2. Run each supplied focused check once via the `bash` tool with an explicit finite timeout in milliseconds
+   (missing, zero, or non-finite timeouts are forbidden because commands can hang), in order, and the full suite
+   only when explicitly requested. Stop on the first definitive required failure unless another supplied check is
+   necessary to classify it.
 3. Invoke `browser-validation-invoke` only when an exact browser scenario is supplied.
 4. Compare the resulting evidence only with explicit acceptance, report unrelated failures separately, and return.
 

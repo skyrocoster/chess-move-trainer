@@ -37,3 +37,5 @@ structural change that would make existing READMEs stale. These changes do not n
 
 Preserve unrelated worktree changes and completed historical records. Never commit or push. Use
 `.venv\Scripts\python.exe scripts\check.py` for full closeout and `--fix` only when explicitly authorized.
+Never invoke the `bash` tool without an explicit finite timeout in milliseconds; missing, zero, or non-finite
+timeouts are forbidden because commands can hang.

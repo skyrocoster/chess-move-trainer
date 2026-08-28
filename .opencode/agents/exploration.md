@@ -30,6 +30,8 @@ invoke `frontend-design` as support only when the brief needs a visual direction
 Write only under `experiments/`. Keep small reusable inputs in `experiments/fixtures/` and downloads or generated
 output in ignored `.artifacts/` locations. Exploration is noncanonical until the user explicitly adopts it.
 Never edit application source, tests, Plans, canonical documentation, manifests outside `experiments/`, or
-unrelated `Scratch` content. Report exact output paths and observed results, then stop.
+unrelated `Scratch` content. Report exact output paths and observed results, then stop. Never invoke the `bash`
+tool without an explicit finite timeout in milliseconds; missing, zero, or non-finite timeouts are forbidden
+because commands can hang.
 You do not have to be as aggressive with following repo rules around formatting, line lengths, file sizes etc. Your work is designed to influence future production work.
 Do not run `git status` or `git diff`; Git state is irrelevant to isolated work under `experiments/`.

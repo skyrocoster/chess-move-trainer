@@ -1,6 +1,6 @@
 # Position description redesign - one grouped summary with one authoritative narration
 
-> **Status:** pending - implementation dispatch waits for a non-conflicting baseline with the active EvalBar Plan
+> **Status:** done - Stages 1-4 accepted; implementation proof and full read-only closeout accepted with explicit final user validation waiver
 
 - **Read trigger:** Read before every sequential stage, at the Stage 2 visual/accessibility breakpoint, after any
   context rollover, and before final closeout.
@@ -40,10 +40,10 @@ position model, so the visible and spoken descriptions cannot drift or be announ
 
 ## Stages
 
-1. **pending - Shared position model and accessibility layer.** Enrich the existing model and establish the single
+1. **accepted - Shared position model and accessibility layer.** Enrich the existing model and establish the single
    authoritative spoken/visible data boundary without changing the public adapter or board contract.
 
-   - **Ordered actions:**
+    - **Ordered actions:**
      1. Re-read this Plan, the adapted prototype, MVC-03's accepted adapter contract, the named BoardAdapter source and
         tests, and the active EvalBar Plan. Confirm the BoardAdapter paths are not being changed concurrently; stop if
         the coordinator baseline conflicts.
@@ -59,7 +59,7 @@ position model, so the visible and spoken descriptions cannot drift or be announ
      5. Extend `BoardAdapter.test.tsx` for model parity, exact stable narration, grouped data, orientation/turn/facts,
         unique association, one live/spoken layer, hidden/inert visible content, disclosure persistence, controlled
         updates, strict invalid-FEN handling, non-interactivity, and axe coverage.
-   - **Focused proof:**
+    - **Focused proof:**
      `npm.cmd run test --prefix frontend -- --run src/features/board-adapter/BoardAdapter.test.tsx`
 
      `npm.cmd run build --prefix frontend`
@@ -67,13 +67,14 @@ position model, so the visible and spoken descriptions cannot drift or be announ
      board semantics, if empty inventory behavior needs new product copy, or if the model requires a new ownership or
      public API decision.
 
-2. **pending - Canonical visual presentation.** Implement the grouped presentation with repository styling and prove
-   it at the required visual/accessibility breakpoint before expanding browser evidence.
+2. **accepted - proof passing; human breakpoint approved - Canonical visual presentation.** Implement
+   the grouped presentation with repository styling and prove it at the required visual/accessibility breakpoint
+   before expanding browser evidence.
 
    - **Ordered actions:**
      1. Add a local consumer presentation around the existing `Disclosure`; do not modify the shared primitive. Keep the
         trigger name `Position description`, derive its side-to-move state from the model, and preserve the closed
-        default and existing bounded disclosure behavior.
+         default and existing bounded adapter behavior.
      2. Implement the prototype-inspired metadata strip, side columns, ordered piece rows, square tokens, and fact
         chips in `BoardAdapter.module.css`. Use existing `--md-sys-*`, `--cmt-spacing-*`, `--cmt-radius-*`, focus, and
         typescale roles; do not copy prototype CSS literals or introduce a new design-system primitive.
@@ -90,15 +91,17 @@ position model, so the visible and spoken descriptions cannot drift or be announ
      `npm.cmd run build --prefix frontend`
 
      `npm.cmd run lint --prefix frontend`
-   - **Breakpoint:** Human visual and accessibility review is required before Stage 3. At wide and 320px/480px/640px
-     constrained sizes, confirm the grouped hierarchy is legible and scan-friendly, the summary remains usable when
-     collapsed/expanded, no horizontal overflow occurs, and the existing board/fallback appearance is unchanged.
-     Confirm with the accessibility tree or assistive technology that exactly one linear spoken/live description is
-     exposed, the visible reordered body is hidden/inert, the board retains one stable `aria-describedby`, and keyboard
-     disclosure focus remains correct. Review forced-colors and reduced-motion contexts. User edits at this breakpoint
-     are authoritative and must remain within this outcome; incorporate and revalidate them before continuing.
+    - **Breakpoint:** Human visual and accessibility review was required before Stage 3. The first review found that an
+      internal scrollbar did not fit the repository presentation. The approved correction removes the disclosure's
+      internal height limit and vertical scrolling while retaining wrapping and the needed no-horizontal-overflow
+      safeguard. Human review approved the corrected presentation at wide and 320px/480px/640px constrained sizes:
+      the grouped hierarchy is legible and scan-friendly, the summary grows naturally when expanded, no horizontal
+      overflow occurs, and the existing board/fallback appearance is unchanged. The accessibility review confirmed
+      exactly one linear spoken/live description, a hidden/inert visible reordered body, one stable
+      `aria-describedby`, correct keyboard disclosure focus, and the forced-colors/reduced-motion contexts. User edits
+      at this breakpoint were authoritative, remained within this outcome, and were incorporated before continuing.
 
-3. **pending - Storybook and browser evidence.** Lock the canonical states and prove responsive, accessibility, and
+3. **accepted - proof passing - Storybook and browser evidence.** Lock the canonical states and prove responsive, accessibility, and
    no-duplication behavior against the real Storybook iframe.
 
    - **Ordered actions:**
@@ -122,23 +125,21 @@ position model, so the visible and spoken descriptions cannot drift or be announ
      accessibility contract, new visual direction, relaxed responsive acceptance, a new dependency, or an interactive
      adapter change.
 
-4. **pending - Regression, read-only closeout, and scope audit.** Independently validate the complete in-scope result
-   and close the Plan only after final human acceptance and truthful scope review.
+4. **accepted - Regression, read-only closeout, and scope audit.** Implementation proof, full read-only closeout, final
+   user acceptance, and truthful scope review are complete.
 
-   - **Ordered actions:**
-     1. Run the focused BoardAdapter tests together with the existing viewer regression; confirm static viewer wiring,
-        loaded interactive behavior, board labels, navigation, analysis, and announcements were not changed.
-     2. Run frontend build, lint, read-only Prettier, Storybook build/interactions, targeted Board Adapter Playwright,
-        source-size validation, and the complete read-only repository check without `--fix`.
-     3. Request fresh independent Quality validation of the model parity, one spoken layer, visible hidden/inert
-        presentation, disclosure behavior, responsive rendering, forced-colors/reduced-motion behavior, and preserved
-        static-board contract. Repair only a coordinator-authorized in-scope defect; after one failed repair, return to
-        the coordinator.
-     4. Perform one final Git scope audit against the coordinator baseline and `git diff --check`. Confirm only the
-        approved implementation/test/browser areas changed; preserve the prototype, all active/completed Plans,
-        unrelated worktree changes, interactive adapter, viewer workflow, and historical records.
-     5. After acceptance, record truthful progress and move this Plan to `docs/plans/done/position-description-redesign/`
-        according to repository convention. Do not modify README or other records.
+    - **Ordered actions:**
+      1. Completed the focused BoardAdapter tests together with the existing viewer regression; static viewer wiring,
+         loaded interactive behavior, board labels, navigation, analysis, and announcements were unchanged.
+      2. Completed frontend build, lint, read-only Prettier, Storybook build/interactions, targeted Board Adapter
+         Playwright, source-size validation, and the complete read-only repository check without `--fix`.
+      3. The user explicitly waived another independent Quality validation run and accepted the completed
+         implementation proof as validated. No fresh Quality run is claimed.
+      4. Performed one final Git scope audit against the coordinator baseline and `git diff --check`. Confirmed only the
+         approved implementation/test/browser areas changed; preserved the prototype, all active/completed Plans,
+         unrelated worktree changes, interactive adapter, viewer workflow, and historical records.
+      5. Recorded truthful progress and moved this Plan to `docs/plans/done/position-description-redesign/` according to
+         repository convention. The README and other records were not modified.
    - **Focused proof:**
      `npm.cmd run test --prefix frontend -- --run src/features/board-adapter/BoardAdapter.test.tsx src/features/viewer/ViewerWorkspace.test.tsx`
 
@@ -157,8 +158,9 @@ position model, so the visible and spoken descriptions cannot drift or be announ
      `./.venv/Scripts/python.exe scripts/check.py`
 
      `git diff --check`
-   - **Breakpoint:** Fresh independent Quality validation and final human acceptance of the visible responsive summary
-     and assistive-technology layer are required before archival. No `--fix`, commit, or push is authorized.
+    - **Breakpoint:** The user explicitly waived another independent Quality validation run and gave final acceptance of
+      the visible responsive summary and assistive-technology layer based on the completed implementation proof. No fresh
+      Quality run is claimed. No `--fix`, commit, or push was authorized.
    - **Escalate if:** Final proof needs scope expansion, acceptance relaxation, historical-record edits, README
      maintenance, or repair of an unrelated failure.
 
@@ -167,12 +169,25 @@ outcome, decisions, and breakpoints remain unchanged.
 
 ## Progress and decisions
 
-- **Stage 1:** pending - proof: not started; breakpoint: none expected.
-- **Stage 2:** pending - proof: not started; breakpoint: human visual and accessibility review at wide and constrained
-  sizes.
-- **Stage 3:** pending - proof: not started; breakpoint: none expected after Stage 2 acceptance.
-- **Stage 4:** pending - proof: not started; breakpoint: fresh independent Quality validation and final human
-  acceptance before archival.
+- **Stage 1:** accepted - one chess.js-derived position model now feeds the stable narration and grouped hidden/inert
+  disclosure body without changing the public adapter or board contract. Focused BoardAdapter Vitest passed (11/11),
+  the frontend build passed, formatting and source-size checks passed, and no breakpoint appeared.
+- **Stage 2:** accepted - focused component proof, build, lint, formatting, source-size, and diff checks pass. User
+  breakpoint feedback about the internal scrollbar was incorporated by removing the disclosure height limit and
+  vertical scrolling while retaining wrapping and no-horizontal-overflow protection. Human visual and accessibility
+  review approved the corrected natural-growth presentation at wide and constrained sizes, including the one spoken
+  layer, hidden/inert visual body, stable association, keyboard focus, forced-colors, and reduced-motion behavior.
+- **Stage 3:** accepted - the existing seven canonical stories remain locked: starting, rich, Black orientation,
+  hidden coordinates, constrained sizing, invalid FEN, and expanded description. Storybook build passed; Storybook
+  interaction proof passed (21 suites, 126 tests); targeted Board Adapter Playwright passed (3/3 tests). The browser
+  proof covers grouped metadata/inventories/facts, exact model-derived rich narration, one live/description node,
+  hidden/inert static content, stable ID association, keyboard Enter/Space disclosure behavior, orientation, static
+  non-interactivity, invalid fallback, axe, 320px/480px/640px no-overflow sizing, natural expanded growth without an
+  internal scrollbar, forced colors, and reduced motion. No breakpoint appeared.
+- **Stage 4:** accepted - full read-only closeout proof passed: focused BoardAdapter and ViewerWorkspace regression,
+  frontend build/lint/format/source-size checks, Storybook build and interactions, targeted Board Adapter Playwright,
+  complete read-only repository check, and diff check. The user explicitly accepted the result and waived another
+  independent Quality validation run; no fresh Quality run is claimed.
 - **Decisions:** The adapted HTML is noncanonical visual/accessibility guidance; its standalone implementation is not
   copied. One `BoardAdapter` position model feeds both the stable linear narration and the reordered visible summary.
   The visible body is `aria-hidden`/`inert`, the spoken layer remains outside the disclosure, and the disclosure remains
@@ -189,8 +204,9 @@ outcome, decisions, and breakpoints remain unchanged.
   320px/480px/640px layouts, no overflow, forced colors, reduced motion, fallback, and duplicate-announcement guard.
 - Viewer regression proves the static BoardAdapter integration and all existing loaded interactive/viewer behavior stay
   unchanged.
-- Closeout runs frontend build/lint, read-only Prettier, Storybook, targeted browser proof, the complete read-only
-  `scripts/check.py` suite, and one final Git scope audit. Unrelated baseline failures remain report-only.
+- Closeout proof records frontend build/lint, read-only Prettier, Storybook, targeted browser proof, the complete
+  read-only `scripts/check.py` suite, and one final Git scope audit. The user accepted the result and waived another
+  independent Quality validation run; no fresh Quality run is claimed. Unrelated baseline failures remain report-only.
 
 ## Acceptance
 
@@ -204,8 +220,9 @@ outcome, decisions, and breakpoints remain unchanged.
 - Spoken and visible output update together from one position model. Strict untrimmed FEN validation, unavailable
   fallback, public props, orientation/coordinates, package isolation, static board semantics, and unique IDs remain
   unchanged.
-- Focused tests, Storybook, axe, targeted browser proof, frontend checks, fresh Quality validation, and the complete
-  read-only repository check pass. Unrelated worktree changes and historical records remain intact.
+- Focused tests, Storybook, axe, targeted browser proof, frontend checks, and the complete read-only repository check
+  pass. The user accepted the result and waived another independent Quality validation run; no fresh Quality run is
+  claimed. Unrelated worktree changes and historical records remain intact.
 - No README change is made unless a genuinely new public architecture or structural convention is introduced; that
   need is an escalation, not an assumption.
 

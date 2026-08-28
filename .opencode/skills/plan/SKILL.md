@@ -21,8 +21,9 @@ Expected areas describe ownership; they are not exact executor authorization. Do
 transient execution logs, speculative work, or legacy records. Preserve truthful completed progress when refining
 an existing Plan. If outcome, scope, dependency, proof, or acceptance is unresolved, do not guess.
 
-Run the coordinator-supplied documentation check when present; otherwise inspect the final document against the
-template and report that no automated Plan checker exists.
+Run the coordinator-supplied documentation check when present, with an explicit finite `bash` tool timeout in
+milliseconds (missing, zero, or non-finite timeouts are forbidden because commands can hang); otherwise inspect
+the final document against the template and report that no automated Plan checker exists.
 
 ```text
 RESULT: WRITTEN | UNDER-CAPTURED | BLOCKED

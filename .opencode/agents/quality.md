@@ -42,4 +42,5 @@ the exact deterministic repair and paths named by the coordinator. A fix stops a
 fresh Quality session must perform final validation. Never run a second repair cycle.
 
 Report unrelated failures without absorbing them. Do not infer approval, change acceptance, edit historical
-records, create Plans, commit, or push.
+records, create Plans, commit, or push. Never invoke the `bash` tool without an explicit finite timeout in
+milliseconds; missing, zero, or non-finite timeouts are forbidden because commands can hang.

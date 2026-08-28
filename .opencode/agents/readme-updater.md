@@ -55,4 +55,6 @@ Only persistent, structural information that rarely changes through normal code 
 
 Return a concise summary of what was written or changed, including the exact file path.
 
-Do not run `git status` or `git diff`. The instruction and named directory define the scope.
+Do not run `git status` or `git diff`. The instruction and named directory define the scope. Never invoke the
+`bash` tool without an explicit finite timeout in milliseconds; missing, zero, or non-finite timeouts are
+forbidden because commands can hang.

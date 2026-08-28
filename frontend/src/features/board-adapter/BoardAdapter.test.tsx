@@ -61,12 +61,62 @@ describe("BoardAdapter", () => {
     const graphic = screen.getByRole("img", { name: "Rich position" });
     const description = document.getElementById(graphic.getAttribute("aria-describedby") ?? "");
 
+    expect(description?.textContent).toBe(
+      "Orientation: White at the bottom. Side to move: Black. Occupied squares in stable FEN order: black rook at a8, black knight at b8, black queen at d8, black king at e8, black rook at h8, black bishop at b7, black pawn at c7, black bishop at e7, black pawn at f7, black pawn at g7, black pawn at a6, black pawn at b6, black pawn at d6, black pawn at e6, black knight at f6, black pawn at h6, white pawn at e4, white bishop at f4, white knight at c3, white pawn at d3, white knight at f3, white pawn at g3, white pawn at a2, white pawn at b2, white pawn at c2, white queen at d2, white pawn at f2, white bishop at g2, white pawn at h2, white rook at a1, white king at e1, white rook at h1. Castling rights: White may castle kingside and queenside; Black may castle kingside and queenside. En-passant target: e3. Halfmove clock: 0. Fullmove number: 8.",
+    );
     expect(description).toHaveTextContent(
       "Orientation: White at the bottom. Side to move: Black. Occupied squares in stable FEN order: black rook at a8, black knight at b8, black queen at d8, black king at e8, black rook at h8, black bishop at b7, black pawn at c7, black bishop at e7, black pawn at f7, black pawn at g7, black pawn at a6, black pawn at b6, black pawn at d6, black pawn at e6, black knight at f6, black pawn at h6, white pawn at e4, white bishop at f4, white knight at c3, white pawn at d3, white knight at f3, white pawn at g3, white pawn at a2, white pawn at b2, white pawn at c2, white queen at d2, white pawn at f2, white bishop at g2, white pawn at h2, white rook at a1, white king at e1, white rook at h1.",
     );
     expect(description).toHaveTextContent(
       "Castling rights: White may castle kingside and queenside; Black may castle kingside and queenside. En-passant target: e3. Halfmove clock: 0. Fullmove number: 8.",
     );
+  });
+
+  it("renders grouped inventories and facts from the same position model", () => {
+    const { container } = renderStartingPosition({ fen: RICH_FEN, label: "Rich position" });
+    fireEvent.click(screen.getByRole("button", { name: "Position description" }));
+    const summary = container.querySelector("[data-position-summary]");
+    const white = summary?.querySelector('[data-position-side="w"]');
+    const black = summary?.querySelector('[data-position-side="b"]');
+
+    expect(summary).toHaveTextContent(/Orientation\s*White at the bottom/);
+    expect(summary).toHaveTextContent(/Side to move\s*Black/);
+    expect(white).toHaveTextContent(/White\s*King\s*e1\s*Queen\s*d2\s*Rooks\s*a1\s*h1/);
+    expect(black).toHaveTextContent(/Black\s*King\s*e8\s*Queen\s*d8\s*Rooks\s*a8\s*h8/);
+    expect(white?.querySelectorAll("[data-position-piece]")).toHaveLength(6);
+    expect(black?.querySelectorAll("[data-position-piece]")).toHaveLength(6);
+    expect(summary).toHaveTextContent("Castling · White K + Q");
+    expect(summary).toHaveTextContent("Castling · Black K + Q");
+    expect(summary).toHaveTextContent("En-passant target e3");
+    expect(summary).toHaveTextContent("Halfmove clock 0");
+    expect(summary).toHaveTextContent("Fullmove 8");
+  });
+
+  it("keeps one live description and hides the reordered disclosure body", () => {
+    const { container } = renderStartingPosition({ fen: RICH_FEN });
+    fireEvent.click(screen.getByRole("button", { name: "Position description" }));
+    const graphic = screen.getByRole("img", { name: "Starting position" });
+    const descriptionId = graphic.getAttribute("aria-describedby");
+    const spokenLayers = Array.from(container.querySelectorAll('[role="status"]')).filter(
+      (node) => !node.closest('[aria-hidden="true"]'),
+    );
+    const visibleSummary = container.querySelector("[data-position-summary]");
+    const visibleBody = visibleSummary?.parentElement;
+
+    expect(spokenLayers).toHaveLength(1);
+    expect(spokenLayers[0]).toHaveAttribute("id", descriptionId);
+    expect(spokenLayers[0]).toHaveAttribute("aria-live", "polite");
+    expect(spokenLayers[0]).toHaveAttribute("aria-atomic", "true");
+    expect(
+      Array.from(container.querySelectorAll("[aria-live]")).filter(
+        (node) => !node.closest('[aria-hidden="true"]'),
+      ),
+    ).toHaveLength(1);
+    expect(visibleBody).toHaveAttribute("aria-hidden", "true");
+    expect(visibleBody).toHaveAttribute("inert");
+    expect(visibleBody).not.toHaveAttribute("tabindex");
+    expect(visibleBody).not.toHaveAttribute("aria-label");
+    expect(visibleBody?.querySelectorAll("button, a, [tabindex]")).toHaveLength(0);
   });
 
   it("supports Black orientation without changing inventory order", () => {
@@ -99,13 +149,17 @@ describe("BoardAdapter", () => {
       "Orientation: White at the bottom. Side to move: White.",
     );
 
-    rerender(<BoardAdapter fen={STARTING_FEN} label="Updated controlled position" />);
+    rerender(
+      <BoardAdapter fen={STARTING_FEN} orientation="black" label="Updated controlled position" />,
+    );
 
     const updatedGraphic = screen.getByRole("img", { name: "Updated controlled position" });
     expect(updatedGraphic).toHaveAttribute("aria-describedby", descriptionId);
     expect(document.getElementById(descriptionId ?? "")).toHaveTextContent(
-      "Orientation: White at the bottom. Side to move: White.",
+      "Orientation: Black at the bottom. Side to move: White.",
     );
+    fireEvent.click(screen.getByRole("button", { name: "Position description" }));
+    expect(document.querySelector('[data-position-side="b"]')).toHaveTextContent("Black");
   });
 
   it("gives each static instance a unique matching description id", () => {
@@ -143,6 +197,10 @@ describe("BoardAdapter", () => {
     fireEvent.click(trigger);
     expect(trigger).toHaveAttribute("aria-expanded", "true");
     expect(graphic).toHaveAttribute("aria-describedby", descriptionId);
+    expect(screen.getByRole("status")).toBeInTheDocument();
+    fireEvent.click(trigger);
+    expect(trigger).toHaveAttribute("aria-expanded", "false");
+    expect(screen.getByRole("status")).toBeInTheDocument();
   });
 
   it("uses the shared unavailable presentation for invalid and unrenderable positions", () => {

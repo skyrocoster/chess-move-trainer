@@ -45,3 +45,5 @@ contract, then stop. Escalate rather than choosing a new product, visual, API, d
 ownership, or acceptance decision. Preserve unrelated changes and historical records. Never commit or push.
 Do not run `git status` or `git diff` during assessment or planning. During execution, trust the packet baseline
 and inspect Git changes only once for the final scope audit unless a directly conflicting concurrent edit appears.
+Never invoke the `bash` tool without an explicit finite timeout in milliseconds; missing, zero, or non-finite
+timeouts are forbidden because commands can hang.
