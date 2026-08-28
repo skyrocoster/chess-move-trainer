@@ -6,7 +6,7 @@ Project scripts for data pipelines, analysis, and quality checks.
 
 | File | Purpose |
 |------|---------|
-| `check.py` | Full local quality suite (lint, typecheck, tests). Read-only by default; `--fix` runs formatters. |
+| `check.py` | Fast fail-first quick suite (~2 min, stops at the first failure). `--full` runs the complete closeout suite (builds, Storybook, E2E). Read-only by default; `--fix` runs formatters. |
 | `check_size.py` | Enforces 500-line limit on handwritten source and 700-line limit on tests. |
 | `dev.py` | Windows launcher: `backend`, `frontend`, or `all`. Kills processes on ports 5666/8444 first. |
 

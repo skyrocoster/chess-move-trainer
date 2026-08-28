@@ -1,5 +1,13 @@
 import type { Square } from "chess.js";
-import { cloneElement, useCallback, useRef, type ReactElement, type SVGProps } from "react";
+import {
+  cloneElement,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ReactElement,
+  type SVGProps,
+} from "react";
 import {
   Chessboard,
   defaultPieces,
@@ -108,6 +116,8 @@ function branchSan(originFen: string, moves: readonly BranchMove[]) {
     .join(" ");
 }
 
+const COPY_FEEDBACK_DURATION_MS = 2000;
+
 export function InteractiveBoardAdapter({
   branchSnapshot,
   orientation = "white",
@@ -125,6 +135,17 @@ export function InteractiveBoardAdapter({
   onReset,
 }: InteractiveBoardAdapterProps) {
   const boardRootRef = useRef<HTMLDivElement | null>(null);
+  const copyFeedbackTimerRef = useRef<number | null>(null);
+  const [copyFeedback, setCopyFeedback] = useState<string | null>(null);
+
+  useEffect(
+    () => () => {
+      if (copyFeedbackTimerRef.current !== null) {
+        window.clearTimeout(copyFeedbackTimerRef.current);
+      }
+    },
+    [],
+  );
 
   const handlePieceDrop = useCallback(
     ({ sourceSquare, targetSquare }: PieceDropHandlerArgs) => {
@@ -144,6 +165,27 @@ export function InteractiveBoardAdapter({
     [onMoveIntent],
   );
   const san = branchSan(branchSnapshot.originFen, branchSnapshot.moves);
+  const showCopyFeedback = useCallback((message: string) => {
+    if (copyFeedbackTimerRef.current !== null) {
+      window.clearTimeout(copyFeedbackTimerRef.current);
+    }
+    setCopyFeedback(message);
+    copyFeedbackTimerRef.current = window.setTimeout(() => {
+      copyFeedbackTimerRef.current = null;
+      setCopyFeedback(null);
+    }, COPY_FEEDBACK_DURATION_MS);
+  }, []);
+  const handleCopyFen = useCallback(
+    async (fen: string, field: "branch origin" | "current branch") => {
+      try {
+        await navigator.clipboard.writeText(fen);
+        showCopyFeedback(`Copied ${field} FEN.`);
+      } catch {
+        showCopyFeedback(`Unable to copy ${field} FEN.`);
+      }
+    },
+    [showCopyFeedback],
+  );
   const options = {
     allowDragging: true,
     allowDrawingArrows: false,
@@ -175,16 +217,37 @@ export function InteractiveBoardAdapter({
         <div className={styles.branchHeading}>
           <strong>Temporary branch</strong>
           <span>From captured ply {branchSnapshot.originPly}</span>
+          <span data-testid="branch-current-ply">
+            Current ply {branchSnapshot.originPly + branchSnapshot.moves.length}
+          </span>
         </div>
         <div className={styles.fenFields} aria-label="Temporary branch FEN">
-          <p className={styles.fenField}>
+          <div className={styles.fenField}>
             <span>Branch origin FEN</span>
             <code data-testid="branch-origin-fen">{branchSnapshot.originFen}</code>
-          </p>
-          <p className={styles.fenField}>
+            <Button
+              size="sm"
+              variant="secondary"
+              aria-label="Copy branch origin FEN"
+              data-testid="copy-branch-origin-fen"
+              onClick={() => void handleCopyFen(branchSnapshot.originFen, "branch origin")}
+            >
+              Copy
+            </Button>
+          </div>
+          <div className={styles.fenField}>
             <span>Current branch FEN</span>
             <code data-testid="branch-current-fen">{branchSnapshot.currentFen}</code>
-          </p>
+            <Button
+              size="sm"
+              variant="secondary"
+              aria-label="Copy current branch FEN"
+              data-testid="copy-current-branch-fen"
+              onClick={() => void handleCopyFen(branchSnapshot.currentFen, "current branch")}
+            >
+              Copy
+            </Button>
+          </div>
         </div>
         <p className={styles.san} data-testid="branch-san" aria-label="Temporary branch SAN">
           {san || "No branch moves yet"}
@@ -208,7 +271,7 @@ export function InteractiveBoardAdapter({
           </Button>
         </div>
         <p className={styles.notice} data-testid="branch-status" role="status" aria-live="polite">
-          {notice}
+          {copyFeedback ?? notice}
         </p>
       </div>
       <PromotionPicker

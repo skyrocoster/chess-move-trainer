@@ -22,10 +22,12 @@ describe("App routes", () => {
     expect(screen.getByRole("status")).toHaveTextContent("Checking backend health");
   });
 
-  it("renders the viewer workspace at /viewer", () => {
+  it("renders the viewer workspace at /viewer", async () => {
     renderApp(["/viewer"]);
 
-    expect(screen.getByRole("heading", { name: "Position viewer", level: 1 })).toBeInTheDocument();
+    expect(
+      await screen.findByRole("heading", { name: "Position viewer", level: 1 }),
+    ).toBeInTheDocument();
   });
 
   it("renders the in-shell not-found state for an unmatched route", () => {

@@ -97,10 +97,16 @@ export default function ViewerWorkspace({
   const hasGame = currentPosition !== undefined && finalPly !== undefined;
   const viewKey = game && currentPosition ? `${game.game_uuid}:${currentPosition.ply}` : "empty";
   const branchOriginFen = currentPosition?.fen ?? START_BOARD.fen;
-  const branchChess = useMemo(
-    () => new Chess(branchOriginFen),
-    [branchOriginFen, branchResetToken, viewKey],
-  );
+  // branchChess is mutated in place by the branch handlers, so it must be
+  // recreated whenever the view or the branch reset token changes, even when
+  // the origin FEN is unchanged (e.g., loading a second game from the same
+  // start position). The explicit reads make those intentional invalidation
+  // gates visible to the exhaustive-deps rule.
+  const branchChess = useMemo(() => {
+    void branchResetToken;
+    void viewKey;
+    return new Chess(branchOriginFen);
+  }, [branchOriginFen, branchResetToken, viewKey]);
   const emptyBranchSnapshot =
     game && currentPosition
       ? {

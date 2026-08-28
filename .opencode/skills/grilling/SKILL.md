@@ -19,3 +19,21 @@ choices. It is optional and does not create a mandatory document chain.
 After confirmation, write one free-form synthesis under `docs/grilling-docs/` only when the user asks or future
 work needs durable directional evidence. It is historical evidence, not a Plan or implementation authorization.
 Do not edit completed records or begin implementation.
+
+## Grilling Q&A Template
+
+**What changed**
+- <the decision just settled by the user's previous answer>
+- <any important consequence, constraint, or newly unlocked decision>
+- <omit on the first question>
+
+**Decision**
+<Ask exactly one highest-leverage ready question.>
+
+**Options**
+- **A. <Option name>** — <brief consequence or tradeoff>
+- **B. <Option name>** — <brief consequence or tradeoff>
+- **C. <Option name>** — <brief consequence or tradeoff>
+
+**Recommendation:** **<recommended option>**  
+<Brief explanation of why this option is recommended given the current decision state.>

@@ -1,5 +1,5 @@
 import { Chess } from "chess.js";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { useCallback, useMemo, useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -61,7 +61,11 @@ vi.mock("react-chessboard", () => ({
   ),
 }));
 
-afterEach(() => cleanup());
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
+  vi.useRealTimers();
+});
 
 const STARTING_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 const BLACK_TO_MOVE_FEN = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1";
@@ -295,6 +299,50 @@ describe("InteractiveBoardAdapter", () => {
     expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", STARTING_FEN);
   });
 
+  it("presents exact FEN values with distinct copy controls and bounded feedback", async () => {
+    vi.useFakeTimers();
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal("navigator", { clipboard: { writeText } });
+    renderAdapter();
+
+    expect(screen.getByTestId("branch-origin-fen")).toHaveTextContent(STARTING_FEN);
+    expect(screen.getByTestId("branch-current-fen")).toHaveTextContent(STARTING_FEN);
+    expect(screen.getByTestId("branch-origin-fen").textContent?.split(" ")).toHaveLength(6);
+    expect(screen.getByTestId("branch-current-fen").textContent?.split(" ")).toHaveLength(6);
+    expect(screen.getByRole("button", { name: "Copy branch origin FEN" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Copy current branch FEN" })).toBeInTheDocument();
+    expect(screen.getByTestId("branch-status")).toHaveTextContent(
+      "Make a legal move to start a temporary branch.",
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Copy branch origin FEN" }));
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(writeText).toHaveBeenCalledWith(STARTING_FEN);
+    expect(screen.getByTestId("branch-status")).toHaveTextContent("Copied branch origin FEN.");
+    expect(screen.getByTestId("branch-san")).toHaveTextContent("No branch moves yet");
+    expect(screen.getByRole("button", { name: "Undo" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Reset" })).toBeDisabled();
+
+    act(() => {
+      vi.advanceTimersByTime(2000);
+    });
+    expect(screen.getByTestId("branch-status")).toHaveTextContent(
+      "Make a legal move to start a temporary branch.",
+    );
+
+    writeText.mockRejectedValueOnce(new Error("clipboard unavailable"));
+    fireEvent.click(screen.getByRole("button", { name: "Copy current branch FEN" }));
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(screen.getByTestId("branch-status")).toHaveTextContent(
+      "Unable to copy current branch FEN.",
+    );
+  });
+
   it("formats a separate branch SAN line for the side to move at the origin", () => {
     renderAdapter(BLACK_TO_MOVE_FEN);
 
@@ -405,6 +453,7 @@ describe("InteractiveBoardAdapter", () => {
 
     expect(screen.getByTestId("branch-origin-fen")).toHaveTextContent(BLACK_TO_MOVE_FEN);
     expect(screen.getByTestId("branch-current-fen")).toHaveTextContent(branchSnapshot.currentFen);
+    expect(screen.getByTestId("branch-current-ply")).toHaveTextContent("Current ply 3");
     expect(screen.getByRole("button", { name: "Reset" })).toBeEnabled();
 
     fireEvent.click(screen.getByTestId("move-e7-e5"));

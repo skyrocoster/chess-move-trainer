@@ -4,7 +4,7 @@ if (-not (Get-Command python -ErrorAction SilentlyContinue)) {
     throw "Python 3.12 is required and must be available as 'python'."
 }
 if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
-    throw "Node.js 22 LTS is required and must be available as 'node'."
+    throw "Node.js 24 LTS is required and must be available as 'node'."
 }
 if (-not (Get-Command npm -ErrorAction SilentlyContinue)) {
     throw "npm is required and must be available as 'npm'."

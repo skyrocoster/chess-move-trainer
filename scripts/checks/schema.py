@@ -31,7 +31,6 @@ def check_schema_freshness() -> bool:
     except FileNotFoundError:
         is_current = False
     if is_current:
-        print(f"Passed: Database schema freshness ({dump_schema.OUT_PATH})")
         return True
     print(
         f"Database schema is missing or stale: {dump_schema.OUT_PATH}. "

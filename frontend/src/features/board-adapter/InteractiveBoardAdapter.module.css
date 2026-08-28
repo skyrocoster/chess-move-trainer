@@ -22,8 +22,11 @@
 }
 
 .branchPanel {
+  box-sizing: border-box;
   display: grid;
   gap: var(--cmt-spacing-8);
+  max-inline-size: 100%;
+  min-inline-size: 0;
   padding: var(--cmt-spacing-12);
   background: var(--md-sys-color-surface-container);
   border: 1px solid var(--md-sys-color-outline-variant);
@@ -37,12 +40,14 @@
   align-items: baseline;
   color: var(--md-sys-color-on-surface);
   font: var(--md-sys-typescale-label-large);
+  min-inline-size: 0;
 }
 
 .branchHeading span,
 .notice {
   color: var(--md-sys-color-on-surface-variant);
   font: var(--md-sys-typescale-body-small);
+  overflow-wrap: anywhere;
 }
 
 .fenFields {
@@ -54,19 +59,33 @@
 .fenField {
   display: grid;
   gap: var(--cmt-spacing-4);
+  grid-template-columns: minmax(0, 1fr) auto;
   min-inline-size: 0;
   margin: 0;
   color: var(--md-sys-color-on-surface-variant);
   font: var(--md-sys-typescale-body-small);
 }
 
+.fenField > span {
+  grid-column: 1 / -1;
+}
+
 .fenField code {
   color: var(--md-sys-color-on-surface);
+  display: block;
+  min-inline-size: 0;
   overflow-wrap: anywhere;
+}
+
+.fenField > button {
+  min-block-size: var(--cmt-spacing-48);
+  min-inline-size: var(--cmt-spacing-48);
+  align-self: start;
 }
 
 .san {
   min-block-size: 1.5rem;
+  min-inline-size: 0;
   margin: 0;
   color: var(--md-sys-color-on-surface);
   font: var(--md-sys-typescale-body-medium);
@@ -84,13 +103,16 @@
 }
 
 .terminal {
+  min-inline-size: 0;
   margin: 0;
   color: var(--md-sys-color-on-surface);
   font: var(--md-sys-typescale-label-large);
+  overflow-wrap: anywhere;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .board * {
+  .board *,
+  .branchPanel * {
     animation-duration: 0s !important;
     transition-duration: 0s !important;
   }
@@ -110,5 +132,10 @@
   .branchHeading span,
   .notice {
     color: CanvasText;
+  }
+
+  .fenField > button {
+    border-color: ButtonText;
+    color: ButtonText;
   }
 }

@@ -21,6 +21,7 @@ import styles from "./PromotionPicker.module.css";
 const STARTING_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 const PROMOTION_FEN = "k7/4P3/8/8/8/8/8/4K3 w - - 0 1";
 const ILLEGAL_MOVE_FEN = "4r1k1/8/8/8/8/4N3/4P3/4K3 w - - 0 1";
+const TERMINAL_ORIGIN_FEN = "7k/6Q1/6K1/p7/8/8/8/8 b - - 1 2";
 
 type StoryHarnessProps = {
   viewKey: string;
@@ -215,6 +216,20 @@ const frame = (children: React.ReactNode) => (
   </main>
 );
 
+const constrainedFrame = (children: React.ReactNode) => (
+  <main
+    className={styles.demo}
+    style={{
+      boxSizing: "border-box",
+      inlineSize: "320px",
+      maxInlineSize: "100vw",
+      padding: "var(--cmt-spacing-24)",
+    }}
+  >
+    {children}
+  </main>
+);
+
 async function startWhitePawnBranch(canvasElement: HTMLElement) {
   const pawn = canvasElement.querySelector<HTMLElement>(
     '[data-square="e2"] [aria-roledescription="draggable"]',
@@ -250,6 +265,9 @@ export const EmptyOrigin: Story = {
     await expect(canvas.getByRole("button", { name: "White pawn on e2" })).toBeVisible();
     await expect(canvas.getByTestId("branch-origin-fen")).toHaveTextContent(STARTING_FEN);
     await expect(canvas.getByTestId("branch-current-fen")).toHaveTextContent(STARTING_FEN);
+    await expect(canvas.getByTestId("branch-current-ply")).toHaveTextContent("Current ply 0");
+    await expect(canvas.getByRole("button", { name: "Copy branch origin FEN" })).toBeVisible();
+    await expect(canvas.getByRole("button", { name: "Copy current branch FEN" })).toBeVisible();
     await expect(canvas.getByTestId("branch-san")).toHaveTextContent("No branch moves yet");
     await expect(canvas.getByRole("button", { name: "Undo" })).toBeDisabled();
     await expect(canvas.getByRole("button", { name: "Reset" })).toBeDisabled();
@@ -280,6 +298,9 @@ export const BranchActive: Story = {
     await expect(
       canvasElement.querySelector('[data-testid="branch-current-fen"]'),
     ).toHaveTextContent("rnbqkbnr/pppppppp/8/8/8/4P3/PPPP1PPP/RNBQKBNR b KQkq - 0 1");
+    await expect(
+      canvasElement.querySelector('[data-testid="branch-current-ply"]'),
+    ).toHaveTextContent("Current ply 1");
     await expect(args.onBranchChange).toHaveBeenLastCalledWith(
       expect.objectContaining({
         viewKey: "story:active",
@@ -352,6 +373,23 @@ export const UndoAndReset: Story = {
   },
 };
 
+export const ActionDisabled: Story = {
+  name: "Actions disabled at empty branch",
+  args: {
+    viewKey: "story:action-disabled",
+    originFen: STARTING_FEN,
+    originPly: 0,
+    label: "Interactive analysis board at captured ply 0",
+  },
+  render: (args) => frame(<InteractiveBoardStoryHarness {...args} />),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByTestId("branch-san")).toHaveTextContent("No branch moves yet");
+    await expect(canvas.getByRole("button", { name: "Undo" })).toBeDisabled();
+    await expect(canvas.getByRole("button", { name: "Reset" })).toBeDisabled();
+  },
+};
+
 export const PickerIntegrated: Story = {
   name: "Promotion picker integrated",
   args: {
@@ -393,5 +431,61 @@ export const PickerIntegrated: Story = {
     await expect(canvas.getByTestId("branch-status")).toHaveTextContent(
       "Branch move committed: e8=N.",
     );
+  },
+};
+
+export const TerminalState: Story = {
+  name: "Terminal state",
+  args: {
+    viewKey: "story:terminal",
+    originFen: TERMINAL_ORIGIN_FEN,
+    originPly: 8,
+    label: "Interactive analysis board at captured ply 8",
+  },
+  render: (args) => frame(<InteractiveBoardStoryHarness {...args} />),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByTestId("branch-terminal")).toHaveTextContent(
+      "Terminal result: Checkmate",
+    );
+    await expect(canvas.getByTestId("branch-current-ply")).toHaveTextContent("Current ply 8");
+    await expect(canvas.getByTestId("branch-status")).toHaveTextContent(
+      "Make a legal move to start a temporary branch.",
+    );
+  },
+};
+
+export const CopyFeedback: Story = {
+  name: "Copy feedback",
+  args: {
+    viewKey: "story:copy-feedback",
+    originFen: STARTING_FEN,
+    originPly: 4,
+    label: "Interactive analysis board at captured ply 4",
+  },
+  render: (args) => frame(<InteractiveBoardStoryHarness {...args} />),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole("button", { name: "Copy current branch FEN" }));
+    await waitFor(() => expect(canvas.getByTestId("branch-status")).toHaveTextContent(/copy/i));
+    await expect(canvas.getByTestId("branch-status")).toHaveAttribute("role", "status");
+  },
+};
+
+export const ConstrainedWidth: Story = {
+  name: "Constrained 320px width",
+  args: {
+    viewKey: "story:constrained-width",
+    originFen: STARTING_FEN,
+    originPly: 0,
+    label: "Interactive analysis board at captured ply 0",
+  },
+  render: (args) => constrainedFrame(<InteractiveBoardStoryHarness {...args} />),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByTestId("branch-origin-fen")).toHaveTextContent(STARTING_FEN);
+    await expect(canvas.getByTestId("branch-current-fen")).toHaveTextContent(STARTING_FEN);
+    await expect(canvas.getByRole("button", { name: "Copy branch origin FEN" })).toBeVisible();
+    await expect(canvas.getByRole("button", { name: "Copy current branch FEN" })).toBeVisible();
   },
 };

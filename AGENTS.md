@@ -28,12 +28,19 @@ PowerShell commands must use backslash paths, `$(...)` for subexpressions, ASCII
 
 - `powershell -ExecutionPolicy Bypass -File .\setup.ps1` installs pinned Python, npm, and Playwright dependencies.
 - `powershell -ExecutionPolicy Bypass -File .\dev.ps1 backend|frontend|all` starts services.
-- `.venv/Scripts/python.exe scripts/check.py` runs the complete read-only local check suite.
-- `.venv/Scripts/python.exe scripts/check.py --fix` runs deterministic formatters, then the same checks.
+- `.venv/Scripts/python.exe scripts/check.py` runs the fast fail-first local suite: roughly two minutes,
+  stopping at the first failure with a short excerpt and a native rerun command.
+- `.venv/Scripts/python.exe scripts/check.py --full` runs the complete local closeout suite (builds,
+  Storybook, and E2E).
+- `.venv/Scripts/python.exe scripts/check.py --fix` runs deterministic formatters, then the same checks;
+  `--fix` stays explicit and deterministic.
+- An AI may invoke `scripts/check.py --fix` without asking again only after a read-only check identifies
+  deterministic formatting or lint issues; it must inspect the resulting diff and must not use `--fix` for
+  semantic repair.
 - Python dependencies are pinned in `requirements.txt` and configured in `pyproject.toml`; npm uses
   `frontend\package-lock.json`.
 
-Local Node may exceed the `>=22 <23` engines pin. Ignore that warning and the non-fatal Storybook
+Local Node may exceed the `>=24 <25` engines pin. Ignore that warning and the non-fatal Storybook
 `build-storybook` teardown libuv assertion.
 
 All checks are local. The existing GitHub workflow is documentation-only; do not add application CI.

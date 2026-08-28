@@ -2,7 +2,11 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 
 const STORYBOOK_URL = "http://127.0.0.1:6006";
+const STARTING_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+const AFTER_E4_FEN = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1";
 const STORY_IDS = {
+  boardEmpty: "application-board-interactive-board--empty-origin",
+  boardTerminal: "application-board-interactive-board--terminal-state",
   pickerWide: "documentation-demos-promotion-picker--wide-anchored-picker",
   pickerDrawer: "documentation-demos-promotion-picker--constrained-drawer",
   pickerKeyboard:
@@ -121,6 +125,19 @@ async function openViewerStory(page: Page, storyId: string) {
     page.getByRole("heading", { name: "Position viewer", level: 1 }),
   ).toBeVisible();
   await expect(page.getByText(/^Ply \d+ of \d+$/)).toBeVisible();
+}
+
+async function openInteractiveBoardStory(page: Page, storyId: string) {
+  await page.goto(`${STORYBOOK_URL}/iframe.html?id=${storyId}&viewMode=story`);
+  await expect(page.getByTestId("interactive-board-adapter")).toBeVisible();
+}
+
+async function checkInteractiveBoardA11y(page: Page) {
+  const results = await new AxeBuilder({ page })
+    .disableRules(["landmark-one-main", "page-has-heading-one", "region"])
+    .include('[data-testid="interactive-board-adapter"]')
+    .analyze();
+  expect(results.violations).toEqual([]);
 }
 
 async function checkPromotionA11y(page: Page) {
@@ -268,6 +285,143 @@ test.describe("MP-11 Stage 2 application-owned promotion picker", () => {
 });
 
 test.describe("MP-11 Stage 3 temporary branch mechanics", () => {
+  test("presents and copies exact branch context without changing mechanics", async ({ page }) => {
+    await page.context().grantPermissions(["clipboard-read", "clipboard-write"], {
+      origin: STORYBOOK_URL,
+    });
+    await openInteractiveBoardStory(page, STORY_IDS.boardEmpty);
+
+    await expect(page.getByTestId("branch-origin-fen")).toHaveText(STARTING_FEN);
+    await expect(page.getByTestId("branch-current-fen")).toHaveText(STARTING_FEN);
+    await expect(page.getByTestId("branch-current-ply")).toHaveText("Current ply 0");
+    await expect(page.getByRole("button", { name: "Copy branch origin FEN" })).toHaveCount(1);
+    await expect(page.getByRole("button", { name: "Copy current branch FEN" })).toHaveCount(1);
+    expect(
+      await page.evaluate(() =>
+        ["branch-origin-fen", "branch-current-fen"].every(
+          (testId) => document.querySelector(`[data-testid="${testId}"]`)?.textContent?.split(" ").length === 6,
+        ),
+      ),
+    ).toBe(true);
+
+    await page.getByRole("button", { name: "Copy branch origin FEN" }).click();
+    await expect(page.getByTestId("branch-status")).toHaveText("Copied branch origin FEN.");
+    await expect
+      .poll(() => page.evaluate(() => navigator.clipboard.readText()), { timeout: 5000 })
+      .toBe(STARTING_FEN);
+
+    await dragWithMouse(
+      page,
+      piece(page, "e2"),
+      page.locator('[data-square="e4"]'),
+    );
+    await expect(page.getByTestId("branch-san")).toHaveText("1. e4");
+    await expect(page.getByTestId("branch-current-fen")).toHaveText(AFTER_E4_FEN);
+    await expect(page.getByTestId("branch-current-ply")).toHaveText("Current ply 1");
+    await expect(page.getByRole("button", { name: "Undo" })).toBeEnabled();
+    await expect(page.getByRole("button", { name: "Reset" })).toBeEnabled();
+
+    await page.getByRole("button", { name: "Copy current branch FEN" }).click();
+    await expect(page.getByTestId("branch-status")).toHaveText("Copied current branch FEN.");
+    await expect
+      .poll(() => page.evaluate(() => navigator.clipboard.readText()), { timeout: 5000 })
+      .toBe(AFTER_E4_FEN);
+
+    await page.getByRole("button", { name: "Undo" }).click();
+    await expect(page.getByTestId("branch-san")).toHaveText("No branch moves yet");
+    await expect(page.getByTestId("branch-current-fen")).toHaveText(STARTING_FEN);
+    await expect(page.getByTestId("branch-current-ply")).toHaveText("Current ply 0");
+  });
+
+  test("keeps the panel responsive, wrapped, and below the board at required widths", async ({
+    page,
+  }) => {
+    for (const width of [320, 480, 640]) {
+      await page.setViewportSize({ width, height: 900 });
+      await openInteractiveBoardStory(page, STORY_IDS.boardEmpty);
+      const metrics = await page.evaluate(() => {
+        const adapter = document.querySelector('[data-testid="interactive-board-adapter"]');
+        const board = adapter?.querySelector('[data-testid="interactive-board"]')?.getBoundingClientRect();
+        const panel = adapter?.children[1]?.getBoundingClientRect();
+        const copyButtons = [...document.querySelectorAll('[data-testid^="copy-"]')].map((button) => ({
+          name: button.getAttribute("aria-label"),
+          height: button.getBoundingClientRect().height,
+        }));
+        return {
+          documentOverflow: document.documentElement.scrollWidth > document.documentElement.clientWidth,
+          bodyOverflow: document.body.scrollWidth > document.body.clientWidth,
+          panelBelowBoard: Boolean(board && panel && panel.top >= board.bottom),
+          fenHeights: ["branch-origin-fen", "branch-current-fen"].map(
+            (testId) => document.querySelector(`[data-testid="${testId}"]`)?.getBoundingClientRect().height ?? 0,
+          ),
+          copyButtons,
+          sanWidth: document.querySelector('[data-testid="branch-san"]')?.getBoundingClientRect().width ?? 0,
+          statusWidth: document.querySelector('[data-testid="branch-status"]')?.getBoundingClientRect().width ?? 0,
+        };
+      });
+
+      expect(metrics.documentOverflow, `${width}px document overflow`).toBe(false);
+      expect(metrics.bodyOverflow, `${width}px body overflow`).toBe(false);
+      expect(metrics.panelBelowBoard, `${width}px panel position`).toBe(true);
+      expect(metrics.fenHeights.every((height) => height >= 32), `${width}px FEN wrapping`).toBe(true);
+      expect(metrics.copyButtons).toEqual([
+        { name: "Copy branch origin FEN", height: 48 },
+        { name: "Copy current branch FEN", height: 48 },
+      ]);
+      expect(metrics.sanWidth).toBeGreaterThan(0);
+      expect(metrics.statusWidth).toBeGreaterThan(0);
+    }
+  });
+
+  test("keeps focus, forced colors, reduced motion, and axe accessibility reviewable", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 320, height: 900 });
+    await page.emulateMedia({ forcedColors: "none", reducedMotion: "no-preference" });
+    await openInteractiveBoardStory(page, STORY_IDS.boardEmpty);
+
+    const copyButton = page.getByRole("button", { name: "Copy branch origin FEN" });
+    await copyButton.focus();
+    await expect(copyButton).toBeFocused();
+    const focusStyle = await copyButton.evaluate((button) => {
+      const style = getComputedStyle(button);
+      return { outlineStyle: style.outlineStyle, outlineWidth: style.outlineWidth };
+    });
+    expect(focusStyle.outlineStyle).not.toBe("none");
+    expect(parseFloat(focusStyle.outlineWidth)).toBeGreaterThanOrEqual(2);
+
+    await page.emulateMedia({ forcedColors: "active", reducedMotion: "reduce" });
+    await expect.poll(() => page.evaluate(() => window.matchMedia("(forced-colors: active)").matches)).toBe(true);
+    await expect
+      .poll(() => page.evaluate(() => window.matchMedia("(prefers-reduced-motion: reduce)").matches))
+      .toBe(true);
+    const mediaStyles = await page.evaluate(() => {
+      const panelChild = document.querySelector('[data-testid="interactive-board-adapter"] > :nth-child(2) *');
+      const boardChild = document.querySelector('[data-testid="interactive-board"] *');
+      const panel = document.querySelector('[data-testid="interactive-board-adapter"] > :nth-child(2)');
+      return {
+        panelBackground: panel ? getComputedStyle(panel).backgroundColor : "",
+        panelBorder: panel ? getComputedStyle(panel).borderColor : "",
+        boardAnimation: boardChild ? getComputedStyle(boardChild).animationDuration : "",
+        panelTransition: panelChild ? getComputedStyle(panelChild).transitionDuration : "",
+      };
+    });
+    expect(mediaStyles.panelBackground).not.toBe("");
+    expect(mediaStyles.panelBorder).not.toBe("");
+    expect(mediaStyles.boardAnimation).toBe("0s");
+    expect(mediaStyles.panelTransition).toBe("0s");
+    await checkInteractiveBoardA11y(page);
+  });
+
+  test("renders the terminal panel state with its existing status", async ({ page }) => {
+    await openInteractiveBoardStory(page, STORY_IDS.boardTerminal);
+    await expect(page.getByTestId("branch-terminal")).toHaveText("Terminal result: Checkmate");
+    await expect(page.getByTestId("branch-current-ply")).toHaveText("Current ply 8");
+    await expect(page.getByTestId("branch-status")).toHaveText(
+      "Make a legal move to start a temporary branch.",
+    );
+  });
+
   test("plays from the displayed ply, keeps captured context, gates traversal, and supports Undo", async ({
     page,
   }) => {

@@ -30,16 +30,29 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 const healthy = <StatusView state={{ kind: "success" }} />;
+const constrainedViewport = {
+  viewport: {
+    defaultViewport: "cmt-constrained",
+    options: {
+      "cmt-constrained": {
+        name: "Constrained shell",
+        styles: { width: "412px", height: "915px" },
+      },
+    },
+  },
+};
 
 export const WideHealthy: Story = {
   render: () => <AppShell>{healthy}</AppShell>,
 };
 
 export const ConstrainedClosed: Story = {
+  parameters: constrainedViewport,
   render: () => <AppShell>{healthy}</AppShell>,
 };
 
 export const ConstrainedOpen: Story = {
+  parameters: constrainedViewport,
   render: () => <AppShell>{healthy}</AppShell>,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);

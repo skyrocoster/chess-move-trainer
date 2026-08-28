@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "type": "module",
   "engines": {
-    "node": ">=22 <23"
+    "node": ">=24 <25"
   },
   "scripts": {
     "dev": "vite --host localhost --port 8444",
@@ -12,7 +12,7 @@
     "build-storybook": "storybook build",
     "build": "tsc -b && vite build",
     "test": "vitest",
-    "test-storybook": "test-storybook",
+    "test-storybook": "vitest --project=storybook",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --write . && prettier --check ."
@@ -32,25 +32,28 @@
     "@chialab/vitest-axe": "0.19.1",
     "@eslint/js": "9.19.0",
     "@storybook/addon-a11y": "10.5.8",
+    "@storybook/addon-vitest": "10.5.8",
     "@storybook/react-vite": "10.5.8",
-    "@storybook/test-runner": "0.24.4",
     "@testing-library/jest-dom": "6.6.3",
     "@testing-library/react": "16.1.0",
     "@testing-library/user-event": "14.6.1",
+    "@types/node": "24.13.3",
     "@types/react": "19.0.8",
     "@types/react-dom": "19.0.3",
     "@typescript-eslint/eslint-plugin": "8.22.0",
     "@typescript-eslint/parser": "8.22.0",
     "@vitejs/plugin-react": "4.3.4",
+    "@vitest/browser-playwright": "4.1.5",
     "eslint": "9.19.0",
     "eslint-plugin-react-hooks": "5.0.0",
     "eslint-plugin-react-refresh": "0.4.18",
     "jsdom": "26.0.0",
+    "playwright": "1.62.1",
     "prettier": "3.5.3",
     "storybook": "10.5.8",
     "typescript": "5.7.3",
     "typescript-eslint": "8.22.0",
     "vite": "6.0.11",
-    "vitest": "3.0.5"
+    "vitest": "4.1.5"
   }
 }

@@ -122,5 +122,4 @@ def check_workflow_contract() -> bool:
         print("Workflow contract failures:", file=sys.stderr)
         print("\n".join(f"- {f}" for f in failures), file=sys.stderr)
         return False
-    print("Passed: Workflow contract")
     return True

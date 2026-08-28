@@ -28,6 +28,8 @@ Each feature lives in `src/features/<name>/` and typically contains:
 
 ## Running
 
+Requires Node `>=24 <25` (pinned in `package.json` `engines`).
+
 ```bash
 scripts/dev.py frontend          # starts on port 8444
 # or: npm run dev --prefix frontend
@@ -38,6 +40,9 @@ scripts/dev.py frontend          # starts on port 8444
 ```bash
 npm run storybook --prefix frontend   # port 6006
 ```
+
+The dev server on port 6006 is still required by the Playwright E2E Storybook specs in `tests/e2e/`;
+the Vitest Storybook tests (see below) do not need it.
 
 ## Key config files
 
@@ -50,6 +55,9 @@ npm run storybook --prefix frontend   # port 6006
 ## Tests
 
 ```bash
-npm test --prefix frontend              # Vitest unit/component tests
-npm run test-storybook --prefix frontend # Storybook integration tests
+npm test --prefix frontend                           # all Vitest projects: `unit` (jsdom) + `storybook` (browser)
+npm.cmd run test-storybook --prefix frontend -- --run  # Storybook tests only, in headless Chromium via Vitest browser mode; no separate Storybook server required
 ```
+
+Unit tests are the isolated `unit` Vitest project. Storybook tests run through
+`@storybook/addon-vitest` (Vitest 4 browser mode) and need no running Storybook server.

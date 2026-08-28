@@ -135,7 +135,6 @@ def check_storybook_coverage() -> bool:
 
     # --- report ----------------------------------------------------------
     if not missing and not mismatches and not undiscovered:
-        print("Passed: Storybook coverage")
         return True
 
     sections: list[str] = []

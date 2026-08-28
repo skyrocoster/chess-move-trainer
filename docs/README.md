@@ -33,7 +33,7 @@ the case-worker and coordinator keep exact execution boundaries in the active co
 
 **Frontend tooling**
 
-- TypeScript, Vite, Node `>=22 <23`, CSS Modules, Vitest, React Testing Library, Storybook, Playwright,
+- TypeScript, Vite, Node `>=24 <25`, CSS Modules, Vitest, React Testing Library, Storybook, Playwright,
   axe-core, ESLint, and Prettier
 
 ## Experiments

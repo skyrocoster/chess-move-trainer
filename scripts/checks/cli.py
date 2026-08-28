@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import functools
+import math
+import time
 from collections.abc import Iterable
 
 from scripts.checks.coverage import check_storybook_coverage
@@ -9,22 +12,49 @@ from scripts.checks.schema import check_schema_freshness, regenerate_schema
 from scripts.checks.steps import (
     ALL_TAGS,
     FIX_STEPS,
-    VERIFY,
+    STEP_BY_NAME,
     Step,
+    remove_stale_failure_log,
     run_step,
+    step_timeout,
 )
 from scripts.checks.storybook import run_storybook_validation
 from scripts.checks.workflow import check_workflow_contract
 
+STORYBOOK_VALIDATION_TIMEOUT_SECONDS = 300
+
 EPILOG = """\
 categories:
-  lint        Ruff, ESLint, Prettier checks, source size
+  lint        Ruff, ESLint, Prettier, TypeScript checks, source size
   python      pytest (project + workflow)
-  frontend    Vitest component tests
+  frontend    Vitest component tests (unit project)
   e2e         Playwright end-to-end tests
   build       frontend build, Storybook build
   storybook   Storybook coverage checks
 """
+
+QUICK_NAMES = [
+    "Database schema freshness",
+    "Workflow contract",
+    "Source size check",
+    "Ruff lint check",
+    "Ruff format check",
+    "Prettier check",
+    "ESLint check",
+    "TypeScript type check",
+    "Python tests",
+    "Workflow tests",
+    "Frontend tests",
+]
+
+FULL_NAMES = [
+    *QUICK_NAMES,
+    "Frontend build",
+    "Storybook build",
+    "Storybook coverage",
+    "Storybook validation",
+    "End-to-end tests",
+]
 
 
 def _build_parser():
@@ -32,7 +62,7 @@ def _build_parser():
 
     p = argparse.ArgumentParser(
         prog="check.py",
-        description="Run the repository's complete local quality suite.",
+        description="Run the repository's quality suite (quick by default; --full for everything).",
         epilog=EPILOG,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
@@ -42,8 +72,18 @@ def _build_parser():
         action="store_true",
         help="run formatters and regenerate schema before verification",
     )
-    g.add_argument("--list", action="store_true", help="print all verification steps and exit")
-    g.add_argument("-q", "--quiet", action="store_true", help="suppress passing step output")
+    g.add_argument(
+        "--full", action="store_true", help="run the complete suite (builds, Storybook, E2E)"
+    )
+    g.add_argument("--list", action="store_true", help="print the effective check list and exit")
+    g.add_argument(
+        "--timeout-multiplier",
+        type=float,
+        default=1.0,
+        metavar="FLOAT",
+        help="scale every per-check timeout by FLOAT (must be finite and greater than zero)",
+    )
+    g.add_argument("-q", "--quiet", action="store_true", help="suppress START lines")
     g = p.add_argument_group("step selection")
     g.add_argument(
         "--only", metavar="NAME", help="run only steps whose name matches NAME (case-insensitive)"
@@ -93,43 +133,93 @@ def _filter_steps(
     return result
 
 
-def main(argv: Iterable[str] | None = None) -> int:
-    args = _build_parser().parse_args(list(argv) if argv is not None else None)
-    if args.list:
-        for step in VERIFY:
+def _print_list(full: bool) -> None:
+    names = FULL_NAMES if full else QUICK_NAMES
+    for name in names:
+        step = STEP_BY_NAME.get(name)
+        if step is None:
+            print(f"  {name} (in-process)")
+        else:
             tag = f" [{step.tag}]" if step.tag else ""
-            print(f"  {step.name}{tag}")
+            print(f"  {name}{tag} ({step_timeout(step):.0f}s)")
+
+
+def _run_in_process(name: str, fn, show_success: bool, *, timeout: int | None = None) -> bool:
+    if show_success:
+        print(f"START {name}", flush=True)
+    started = time.monotonic()
+    ok = fn(timeout=timeout) if timeout is not None else fn()
+    duration = time.monotonic() - started
+    print(f"{'PASS' if ok else 'FAIL'} {name} ({duration:.1f}s)", flush=True)
+    return ok
+
+
+def _build_entries(args, show_success: bool, multiplier: float) -> list[tuple[str, object]]:
+    suite_names = FULL_NAMES if args.full else QUICK_NAMES
+    selected_tags = {tag for tag in ALL_TAGS if getattr(args, f"tag_{tag}", False)}
+    unfiltered = not args.only and not args.from_step and not selected_tags and not args.no_build
+    ordered_steps = [STEP_BY_NAME[name] for name in suite_names if name in STEP_BY_NAME]
+    allowed_names = {
+        s.name
+        for s in _filter_steps(
+            ordered_steps,
+            only=args.only,
+            from_step=args.from_step,
+            selected_tags=selected_tags,
+            no_build=args.no_build,
+        )
+    }
+    names = list(suite_names)
+    if args.tag_storybook and "Storybook coverage" not in names:
+        names.append("Storybook coverage")
+    entries: list[tuple[str, object]] = []
+    for name in names:
+        if name == "Database schema freshness":
+            runner = functools.partial(_run_in_process, name, check_schema_freshness, show_success)
+        elif name == "Workflow contract":
+            runner = functools.partial(_run_in_process, name, check_workflow_contract, show_success)
+        elif name == "Storybook coverage":
+            if not (args.tag_storybook or (args.full and unfiltered)):
+                continue
+            runner = functools.partial(
+                _run_in_process, name, check_storybook_coverage, show_success
+            )
+        elif name == "Storybook validation":
+            if not (args.full and unfiltered):
+                continue
+            timeout = int(STORYBOOK_VALIDATION_TIMEOUT_SECONDS * multiplier)
+            runner = functools.partial(
+                _run_in_process, name, run_storybook_validation, show_success, timeout=timeout
+            )
+        else:
+            step = STEP_BY_NAME.get(name)
+            if step is None or name not in allowed_names:
+                continue
+            runner = functools.partial(run_step, step, show_success, timeout_multiplier=multiplier)
+        entries.append((name, runner))
+    return entries
+
+
+def main(argv: Iterable[str] | None = None) -> int:
+    parser = _build_parser()
+    args = parser.parse_args(list(argv) if argv is not None else None)
+    if not math.isfinite(args.timeout_multiplier) or args.timeout_multiplier <= 0:
+        parser.error("--timeout-multiplier must be finite and greater than zero")
+    if args.list:
+        _print_list(args.full)
         return 0
     show_success = not args.quiet
-    failed = False
+    multiplier = args.timeout_multiplier
     if args.fix:
         print("== Fix phase (explicit deterministic formatters) ==", flush=True)
         for step in FIX_STEPS:
-            if not run_step(step, show_success=False):
-                failed = True
+            if not run_step(step, show_success=show_success, timeout_multiplier=multiplier):
+                return 1
         if not regenerate_schema():
-            failed = True
-    else:
-        print("== Read-only mode (no formatters or generated files) ==", flush=True)
-    selected_tags = {tag for tag in ALL_TAGS if getattr(args, f"tag_{tag}", False)}
-    verify_steps = _filter_steps(
-        VERIFY,
-        only=args.only,
-        from_step=args.from_step,
-        selected_tags=selected_tags,
-        no_build=args.no_build,
-    )
+            return 1
     print("== Verify phase ==", flush=True)
-    if not check_schema_freshness():
-        failed = True
-    if not check_workflow_contract():
-        failed = True
-    if args.tag_storybook:
-        check_storybook_coverage()
-    for step in verify_steps:
-        if not run_step(step, show_success=show_success):
-            failed = True
-    if not selected_tags and not args.only and not args.from_step and not args.no_build:
-        if not run_storybook_validation():
-            failed = True
-    return 1 if failed else 0
+    for name, run in _build_entries(args, show_success, multiplier):
+        if not run():
+            return 1
+    remove_stale_failure_log()
+    return 0
