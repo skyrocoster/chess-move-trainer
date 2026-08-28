@@ -51,5 +51,9 @@ Thumbs.db
 !.opencode/agents/**
 opencode.json
 
+# Chess.com raw profiles (large, regenerable)
+data/chess-com/raw/profiles/
+chess-com/raw/profiles/
+
 # Scratch workspace
 Scratch/
