@@ -35,7 +35,9 @@ dependencies, ownership, destructive effects, or acceptance.
 Route README maintenance to `readme-updater` — after new features, moved files, renamed directories, or any
 structural change that would make existing READMEs stale. These changes do not need to be validated.
 
-Preserve unrelated worktree changes and completed historical records. Never commit or push. Use
-`.venv\Scripts\python.exe scripts\check.py` for full closeout and `--fix` only when explicitly authorized.
+Preserve unrelated worktree changes and completed historical records. Never commit or push. Retain passing proof
+until a later change affects what it established. At closeout, use `scripts/check.py` selectors to run only
+required proof gaps or invalidated checks; never run the aggregate suite merely to repeat still-valid evidence.
+Use `--fix` only when explicitly authorized.
 Never invoke the `bash` tool without an explicit finite timeout in milliseconds; missing, zero, or non-finite
 timeouts are forbidden because commands can hang.

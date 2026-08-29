@@ -28,14 +28,16 @@ authoring and execution guidance lives in the `plan` and `execute` skills.
 
 Every stage has ordered actions, focused proof, an escalation boundary, and any human or visual breakpoint.
 Stages are sequential; no parallel stages. The coordinator may split an oversized stage without changing
-the outcome or requiring a new human decision.
+the outcome or requiring a new human decision. A passing proof item remains valid until a later change affects
+its command, inputs, exercised behavior, configuration, dependencies, or environment; later stages run only
+missing or invalidated proof.
 
 ## Progress and decisions
 - **Stage 1:** pending - proof: <short proof>; breakpoint: <decision or none>
 
 ## Proof
 - <focused behavior, syntax, accessibility, or browser checks>
-- <full closeout checks when shared-contract risk requires them>
+- <remaining closeout steps selected with `scripts/check.py --only`; do not repeat valid proof>
 
 ## Escalation boundaries
 - <new product, visual, API, data, dependency, destructive, ownership, or acceptance decision>
@@ -51,5 +53,7 @@ the outcome or requiring a new human decision.
   breakpoint decisions.
 - Link upstream evidence and restate only implementation-critical facts.
 - Human pauses are for genuine product or visual decisions. User edits at a visual breakpoint are authoritative.
+- Do not prescribe duplicate implementation, Quality, and closeout runs. Quality independently audits retained
+  evidence and runs only gaps or checks invalidated by later changes.
 - Use a transient `handoff.md` only while rolling context; overwrite it on rollover and delete it at closeout.
 - A Plan never records transient executor evidence or a parallel execution graph.

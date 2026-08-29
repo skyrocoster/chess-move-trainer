@@ -1,15 +1,8 @@
-import type { ComponentProps, ReactNode } from "react";
 import { expect, userEvent, within } from "storybook/test";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-
 import "../../styles/cmt-tokens.css";
 import "../../styles/cmt-typescale.css";
-import type { Game } from "../viewer/gameModel";
-import {
-  completeGameLookup,
-  storyAnalysisClient,
-  storyCandidateAnalysisClient,
-} from "../viewer/viewerStoryHelpers";
+import { completeGameLookup, storyCandidateAnalysisClient } from "../viewer/viewerStoryHelpers";
 import { VIEWER_GAME, VIEWER_GAME_UUID } from "../viewer/viewerFixtures";
 import { PROMOTION_GAME } from "../viewer/viewerStoryFixtures";
 import RepertoireBuilderWorkspace from "./RepertoireBuilderWorkspace";
@@ -19,14 +12,11 @@ import {
   expectSingleStagedStatus,
   sharedPositionSummary,
 } from "./repertoireBuilderStoryAssertions";
+import { BLACK_SUBJECT_GAME, constrainedViewport, workspace } from "./repertoireBuilderStoryRender";
 import {
   expectNoHorizontalOverflow,
   loadGame,
   selectCurrentUtcDate,
-  storyPositionContextClient,
-  storyPreferredMoveClient,
-  type StoryPositionContextOptions,
-  type StoryPreferredMoveOptions,
 } from "./repertoireBuilderStoryHelpers";
 
 const meta = {
@@ -38,43 +28,16 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const BLACK_SUBJECT_GAME: Game = { ...VIEWER_GAME, subject_color: "black" };
-
-const constrainedViewport = {
-  viewport: {
-    defaultViewport: "cmt-repertoire-constrained",
-    options: {
-      "cmt-repertoire-constrained": {
-        name: "Constrained workspace",
-        styles: { width: "412px", height: "915px" },
-      },
-    },
-  },
+const STARTING_FEN = VIEWER_GAME.positions[0].fen;
+const STAGED_E4_FEN =
+  "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1";
+const stagedIdentityClient = storyCandidateAnalysisClient(["e2e4"]);
+const stagedObservedFens: string[] = [];
+const stagedIdentityObserve = stagedIdentityClient.observe;
+stagedIdentityClient.observe = async (fen, signal) => {
+  stagedObservedFens.push(fen);
+  return stagedIdentityObserve(fen, signal);
 };
-
-function frame(children: ReactNode) {
-  return <main>{children}</main>;
-}
-
-export function workspace(
-  props: ComponentProps<typeof RepertoireBuilderWorkspace> = {},
-  preferredOptions: StoryPreferredMoveOptions = {},
-  contextOptions: StoryPositionContextOptions = {},
-) {
-  const analysisClient = props.analysisClient ?? storyAnalysisClient();
-  const preferredMoveClient =
-    props.preferredMoveClient ?? storyPreferredMoveClient(preferredOptions);
-  const positionContextClient =
-    props.positionContextClient ?? storyPositionContextClient(contextOptions);
-  return frame(
-    <RepertoireBuilderWorkspace
-      {...props}
-      analysisClient={analysisClient}
-      preferredMoveClient={preferredMoveClient}
-      positionContextClient={positionContextClient}
-    />,
-  );
-}
 
 async function verifyStandardWorkspace(canvasElement: HTMLElement) {
   const canvas = within(canvasElement);
@@ -82,12 +45,19 @@ async function verifyStandardWorkspace(canvasElement: HTMLElement) {
   const board = canvas.getByRole("group", {
     name: "Chess board: standard starting position, White at the bottom",
   });
+  const stage = canvas.getByTestId("board-eval-stage");
+  const rail = canvas.getByTestId("board-eval-rail-shell");
+  const meter = canvas.getByRole("meter", { name: "Evaluation" });
   await expect(board).toBeVisible();
+  await expect(stage).toContainElement(board);
+  await expect(stage).toContainElement(rail);
+  await expect(meter).toHaveAttribute("data-state", "neutral");
+  await expect(meter).toHaveAttribute("data-orientation", "white");
+  await expect(meter).toHaveAttribute("aria-valuetext", "No analysis yet; evaluation neutral.");
   const descriptionRow = canvas.getByTestId("position-description-row");
   if (board.contains(descriptionRow)) {
     throw new Error("The position description is still inside the repertoire board container.");
   }
-
   const description = canvas.getByRole("button", { name: "Position description" });
   await expect(description).toHaveAttribute("aria-expanded", "false");
   await userEvent.click(description);
@@ -99,20 +69,17 @@ async function verifyStandardWorkspace(canvasElement: HTMLElement) {
   await expectSessionBoundary(canvasElement);
   await expectNoHorizontalOverflow(canvasElement);
 }
-
 export const Wide: Story = {
   name: "Standard starting position - Wide",
   render: () => workspace(),
   play: async ({ canvasElement }) => verifyStandardWorkspace(canvasElement),
 };
-
 export const Constrained: Story = {
   name: "Standard starting position - Constrained",
   parameters: constrainedViewport,
   render: () => workspace(),
   play: async ({ canvasElement }) => verifyStandardWorkspace(canvasElement),
 };
-
 export const StoredPrefixBlackSubject: Story = {
   name: "Stored prefix through selected Ply - Black subject",
   render: () =>
@@ -136,15 +103,18 @@ export const StoredPrefixBlackSubject: Story = {
     );
   },
 };
-
 export const StagedMy: Story = {
   name: "Local line - staged my move",
-  render: () =>
-    workspace({
-      analysisClient: storyCandidateAnalysisClient(["e2e4"]),
-    }),
+  render: () => {
+    stagedObservedFens.length = 0;
+    return workspace({ analysisClient: stagedIdentityClient });
+  },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
+    const meter = canvas.getByRole("meter", { name: "Evaluation" });
+    await expect(meter).toHaveAttribute("data-state", "best-line");
+    await expect(meter).toHaveAttribute("aria-valuetext", "best-line evaluation +0.34.");
+    await expect(stagedObservedFens).toContain(STARTING_FEN);
     await userEvent.click(await canvas.findByRole("button", { name: "1. e4" }));
     await expectSessionBoundary(canvasElement);
     await expectSingleStagedStatus(canvasElement);
@@ -152,9 +122,11 @@ export const StagedMy: Story = {
     await expectPositionSquares(canvasElement, "e4", 1);
     await expect(canvas.getByTestId("session-origin")).toHaveTextContent("Current Ply 0");
     await expect(canvas.getByTestId("session-san-history")).toHaveTextContent("No local moves yet");
+    await expect(meter).toHaveAttribute("aria-valuetext", "best-line evaluation +0.34.");
+    await expect(stagedObservedFens).toContain(STAGED_E4_FEN);
+    await expect(canvas.getByRole("button", { name: "1. e4" })).toBeVisible();
   },
 };
-
 export const OpponentImmediate: Story = {
   name: "Local line - immediate opponent move",
   render: () =>
@@ -174,7 +146,6 @@ export const OpponentImmediate: Story = {
     );
   },
 };
-
 export const CandidateActivation: Story = {
   name: "Candidate - Best line uses local move path",
   render: () =>
@@ -193,7 +164,6 @@ export const CandidateActivation: Story = {
     );
   },
 };
-
 export const NavigationAndReplacement: Story = {
   name: "Navigation - local history and replacement truncation",
   render: () =>
@@ -216,7 +186,6 @@ export const NavigationAndReplacement: Story = {
     await expect(canvas.getByRole("button", { name: "Next" })).toBeDisabled();
   },
 };
-
 export const FlipCancellation: Story = {
   name: "Flip - preserves FEN and cancels pending staging",
   render: () =>
@@ -242,7 +211,6 @@ export const FlipCancellation: Story = {
     await expect(canvas.getByTestId("session-san-history")).toHaveTextContent("1. e4");
   },
 };
-
 export const Promotion: Story = {
   name: "Promotion - selected piece stages a child preview",
   render: () =>
@@ -260,12 +228,12 @@ export const Promotion: Story = {
     await userEvent.click(await canvas.findByRole("button", { name: /1\. e8=Q/ }));
     await expect(body.getByRole("dialog", { name: "Choose a promotion piece" })).toBeVisible();
     await expectPositionSquares(canvasElement, "e7", 1);
-
     await userEvent.keyboard("{Escape}");
-    await expect(body.queryByRole("dialog", { name: "Choose a promotion piece" })).not.toBeInTheDocument();
+    await expect(
+      body.queryByRole("dialog", { name: "Choose a promotion piece" }),
+    ).not.toBeInTheDocument();
     await expectPositionSquares(canvasElement, "e7", 1);
     await expect(canvas.getByTestId("session-san-history")).toHaveTextContent("No local moves yet");
-
     await userEvent.click(await canvas.findByRole("button", { name: /1\. e8=Q/ }));
     await expect(body.getByRole("dialog", { name: "Choose a promotion piece" })).toBeVisible();
     await userEvent.click(body.getByRole("button", { name: "Promote to knight" }));

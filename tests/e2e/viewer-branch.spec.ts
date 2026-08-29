@@ -6,6 +6,8 @@ const STORYBOOK_URL = "http://127.0.0.1:6006";
 const STARTING_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 const AFTER_E4_FEN =
   "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1";
+const AFTER_E4_STRICT_FEN =
+  "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1";
 const STORY_IDS = {
   boardEmpty: "application-board-interactive-board--empty-origin",
   boardTerminal: "application-board-interactive-board--terminal-state",
@@ -463,7 +465,7 @@ test.describe("MP-11 Stage 3 temporary branch mechanics", () => {
     await bestLine.focus();
     await page.keyboard.press("Enter");
     await expect(page.getByTestId("branch-current-fen")).toHaveText(
-      AFTER_E4_FEN,
+      AFTER_E4_STRICT_FEN,
     );
     await expect(page.getByTestId("branch-san")).toHaveText("1. e4");
 
@@ -472,7 +474,7 @@ test.describe("MP-11 Stage 3 temporary branch mechanics", () => {
       page.getByRole("group", { name: /ply 0, Black at the bottom/ }),
     ).toBeVisible();
     await expect(page.getByTestId("branch-current-fen")).toHaveText(
-      AFTER_E4_FEN,
+      AFTER_E4_STRICT_FEN,
     );
 
     await page
@@ -484,7 +486,7 @@ test.describe("MP-11 Stage 3 temporary branch mechanics", () => {
     );
     await alternativeLine.click();
     await expect(page.getByTestId("branch-current-fen")).toHaveText(
-      "rnbqkbnr/pppppppp/8/8/3P4/8/PPP1PPPP/RNBQKBNR b KQkq - 0 1",
+      "rnbqkbnr/pppppppp/8/8/3P4/8/PPP1PPPP/RNBQKBNR b KQkq d3 0 1",
     );
     await expect(page.getByTestId("branch-san")).toHaveText("1. d4");
     await checkPageA11y(page);

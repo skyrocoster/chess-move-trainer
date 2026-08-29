@@ -19,10 +19,12 @@ report that result without further diagnosis or another edit.
 RESULT: REPAIRED | FAILED | BLOCKED
 EDITS: <changed paths or none>
 CHECK: <exact command and result>
+INVALIDATED: <other proof affected by the repair, or none>
 SCOPE: clean | <discrepancy>
 ISSUE: none | <remaining failure or blocker>
 NEXT: fresh Quality validation | coordinator review
 ```
 
-A fix never validates itself. Do not run another repair cycle, edit historical records, create workflow
-artifacts, run additional checks, commit, or push.
+A fix never validates itself. Its passing focused rerun and all unaffected earlier proof are retained for fresh
+Quality validation. Do not run another repair cycle, edit historical records, create workflow artifacts, run
+additional checks, commit, or push.

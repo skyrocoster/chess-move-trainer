@@ -43,6 +43,7 @@ REQUIRED_AGENT_NAMES = {
     "quality.md",
     "exploration.md",
     "readme-updater.md",
+    "test-fixer.md",
 }
 REQUIRED_SKILL_NAMES = {
     "assess-case",

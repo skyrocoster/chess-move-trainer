@@ -1,23 +1,26 @@
 import * as axe from "axe-core";
 import userEvent from "@testing-library/user-event";
-import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import type { ComponentProps } from "react";
+import { cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import axeMatchers from "@chialab/vitest-axe";
 import type {} from "@chialab/vitest-axe/matchers";
-
-import type { AnalysisClient } from "../viewer/analysisApi";
 import type { GameLookupResult } from "../viewer/positionApi";
-import type { PositionContextClient } from "../viewer/positionContextApi";
 import { PROMOTION_GAME } from "../viewer/viewerStoryFixtures";
 import { VIEWER_GAME, VIEWER_GAME_UUID } from "../viewer/viewerFixtures";
-import type {
-  PreferredMoveClient,
-  PreferredMoveMutationResult,
-  PreferredMoveResponse,
-} from "./preferredMoveApi";
-import RepertoireBuilderWorkspace from "./RepertoireBuilderWorkspace";
-
+import {
+  AFTER_D4_FEN,
+  AFTER_E4_FEN,
+  AFTER_E8_KNIGHT_FEN,
+  BOARD_LABEL,
+  displayAnalysisClient,
+  rawStyles,
+  renderWorkspace,
+  sharedPositionSummary,
+  STARTING_FEN,
+  STORED_BOARD_LABEL,
+  testClients,
+  type DisplayState,
+} from "./repertoireBuilderTestHelpers";
 vi.mock("react-chessboard", () => ({
   defaultPieces: Object.fromEntries(
     ["wP", "wR", "wN", "wB", "wQ", "wK", "bP", "bR", "bN", "bB", "bQ", "bK"].map((pieceType) => [
@@ -58,157 +61,30 @@ vi.mock("react-chessboard", () => ({
     </div>
   ),
 }));
-
 expect.extend(axeMatchers);
 afterEach(() => {
   cleanup();
   vi.useRealTimers();
 });
-
-const BOARD_LABEL = "Chess board: standard starting position, White at the bottom";
-const STORED_BOARD_LABEL = `Chess board: game ${VIEWER_GAME_UUID}, ply 2, Black at the bottom`;
-const STARTING_FEN = VIEWER_GAME.positions[0].fen;
-const AFTER_E4_FEN = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1";
-const AFTER_D4_FEN = "rnbqkbnr/pppppppp/8/8/3P4/8/PPP1PPPP/RNBQKBNR b KQkq d3 0 1";
-const AFTER_E8_KNIGHT_FEN = "k3N3/8/8/8/8/8/8/4K3 b - - 0 1";
-const CONTEXT = {
-  overall_exists: true,
-  white_count: 0,
-  black_count: 0,
-};
-
-function noAnalysisClient(): AnalysisClient {
-  return {
-    observe: vi.fn(async (fen: string) => ({
-      status: "success" as const,
-      data: { fen, eligibility: "missing" as const, result: null, status: null, terminal: false },
-    })),
-    enqueue: vi.fn() as AnalysisClient["enqueue"],
-    status: vi.fn() as AnalysisClient["status"],
-  };
-}
-
-function completedAnalysisClient(): AnalysisClient {
-  return {
-    observe: vi.fn(async (fen: string) => ({
-      status: "success" as const,
-      data: {
-        fen,
-        eligibility: "eligible" as const,
-        result: {
-          fen,
-          profile_id: "test-profile",
-          candidates: [
-            {
-              rank: 1,
-              score_kind: "cp" as const,
-              score_value: 34,
-              wdl_wins: 420,
-              wdl_draws: 300,
-              wdl_losses: 280,
-              pv_uci: ["e2e4"],
-              depth: 20,
-              seldepth: 24,
-              nodes: 200_000,
-              engine_time_ms: 100,
-            },
-          ],
-          terminal_kind: null,
-          completed_at: "2026-08-22T00:00:01+00:00",
-          wall_time_ms: 100,
-        },
-        status: {
-          state: "done" as const,
-          position: 0,
-          attempts: 1,
-          enqueued_at: "2026-08-22T00:00:00+00:00",
-          started_at: "2026-08-22T00:00:00+00:00",
-          completed_at: "2026-08-22T00:00:01+00:00",
-          error_code: null,
-        },
-        terminal: false,
-      },
-    })),
-    enqueue: vi.fn() as AnalysisClient["enqueue"],
-    status: vi.fn() as AnalysisClient["status"],
-  };
-}
-
-function preferredMoveResponse(
-  fen: string,
-  state: PreferredMoveResponse["state"] = "unassigned",
-): PreferredMoveResponse {
-  return {
-    fen,
-    state,
-    move: state === "assigned" ? { uci: "e2e4", san: "e4" } : null,
-  };
-}
-
-function mutationResponse(fen: string): PreferredMoveMutationResult {
-  return {
-    status: "success",
-    data: { fen, changed: true, effective_at: "2026-01-01T00:00:00.000000Z" },
-  };
-}
-
-function testClients(initialState: PreferredMoveResponse["state"] = "unassigned") {
-  let state = initialState;
-  const preferredMoveClient: PreferredMoveClient = {
-    get: vi.fn(async (fen) => ({
-      status: "success" as const,
-      data: preferredMoveResponse(fen, state),
-    })),
-    put: vi.fn(async ({ fen }) => {
-      state = "assigned";
-      return mutationResponse(fen);
-    }),
-    remove: vi.fn(async ({ fen }) => {
-      state = "unassigned";
-      return mutationResponse(fen);
-    }),
-  };
-  const positionContextClient: PositionContextClient = vi.fn(async (fen) => ({
-    status: "success" as const,
-    data: { fen, ...CONTEXT },
-  }));
-  return { preferredMoveClient, positionContextClient };
-}
-
-function renderWorkspace(
-  props: ComponentProps<typeof RepertoireBuilderWorkspace> = {},
-): ReturnType<typeof render> {
-  const clients = testClients();
-  return render(
-    <RepertoireBuilderWorkspace
-      analysisClient={noAnalysisClient()}
-      preferredMoveClient={clients.preferredMoveClient}
-      positionContextClient={clients.positionContextClient}
-      {...props}
-    />,
-  );
-}
-
-function sharedPositionSummary(): HTMLElement {
-  const row = screen.getByTestId("position-description-row");
-  const description = within(row).getByRole("button", { name: "Position description" });
-  if (description.getAttribute("aria-expanded") === "false") {
-    fireEvent.click(description);
-  }
-  const summary = row.querySelector("[data-position-summary]");
-  if (!(summary instanceof HTMLElement)) {
-    throw new Error("The shared position summary is missing.");
-  }
-  return summary;
-}
-
 describe("RepertoireBuilderWorkspace", () => {
   it("renders the standard starting position with White at the bottom", () => {
     const { container } = renderWorkspace();
-
     expect(screen.getByRole("heading", { name: "Repertoire Builder", level: 1 })).toBeVisible();
     const board = screen.getByRole("group", { name: BOARD_LABEL });
+    const stage = screen.getByTestId("board-eval-stage");
+    const rail = screen.getByTestId("board-eval-rail-shell");
     expect(board).toBeVisible();
+    expect(stage.parentElement).toBe(container.querySelector('[class*="workspace"]'));
+    expect(stage).toContainElement(board);
+    expect(stage).toContainElement(rail);
+    expect(screen.getByRole("meter", { name: "Evaluation" })).toHaveAttribute(
+      "data-orientation",
+      "white",
+    );
+    expect(rawStyles).toMatch(/"board board session"/);
+    expect(rawStyles).toMatch(/grid-template-columns:\s*minmax\(0, 1fr\) 30px minmax\(0, 1fr\)/);
+    expect(rawStyles).toMatch(/"board board"/);
+    expect(rawStyles).toMatch(/"controls \."/);
     expect(screen.getByTestId("session-origin")).toHaveTextContent(
       "Standard starting position; local session begins at Ply 0. Current Ply 0.",
     );
@@ -222,6 +98,11 @@ describe("RepertoireBuilderWorkspace", () => {
     expect(sharedPositionSummary()).toHaveTextContent("OrientationWhite at the bottom");
     description.focus();
     expect(description).toHaveFocus();
+    fireEvent.click(screen.getByRole("button", { name: "Flip" }));
+    expect(screen.getByRole("meter", { name: "Evaluation" })).toHaveAttribute(
+      "data-orientation",
+      "black",
+    );
   });
 
   it("loads a stored game with the complete prefix through the selected Ply and subject orientation", async () => {
@@ -231,7 +112,6 @@ describe("RepertoireBuilderWorkspace", () => {
     });
     const user = userEvent.setup();
     renderWorkspace({ lookup });
-
     await user.type(screen.getByLabelText("Game UUID"), VIEWER_GAME_UUID);
     await user.type(screen.getByLabelText(/Ply/), "2");
     await user.click(screen.getByRole("button", { name: "Load game" }));
@@ -246,7 +126,6 @@ describe("RepertoireBuilderWorkspace", () => {
     expect(screen.getByTestId("session-san-history")).toHaveTextContent("1. e4 1... e5");
     expect(sharedPositionSummary()).toHaveTextContent("OrientationBlack at the bottom");
   });
-
   it("exposes loading state while a stored game request is pending", async () => {
     let resolveLookup!: (result: GameLookupResult) => void;
     const lookup = vi.fn(
@@ -257,13 +136,10 @@ describe("RepertoireBuilderWorkspace", () => {
     );
     const user = userEvent.setup();
     renderWorkspace({ lookup });
-
     await user.type(screen.getByLabelText("Game UUID"), VIEWER_GAME_UUID);
     await user.click(screen.getByRole("button", { name: "Load game" }));
-
     expect(screen.getByText("Loading the complete game...")).toBeVisible();
     expect(screen.getByRole("button", { name: "Load game" })).toBeDisabled();
-
     resolveLookup({ status: "success", game: VIEWER_GAME });
     await waitFor(() => expect(screen.getByRole("button", { name: "Load game" })).toBeEnabled());
     expect(
@@ -283,9 +159,7 @@ describe("RepertoireBuilderWorkspace", () => {
 
     expect(await screen.findByText("Game not found")).toBeVisible();
     expect(screen.getByRole("group", { name: BOARD_LABEL })).toBeVisible();
-
     await user.click(screen.getByRole("button", { name: "Reset" }));
-
     expect(screen.getByLabelText("Game UUID")).toHaveValue("");
     expect(screen.getByLabelText(/Ply/)).toHaveValue("");
     expect(screen.getByTestId("session-origin")).toHaveTextContent("Standard starting position");
@@ -296,13 +170,11 @@ describe("RepertoireBuilderWorkspace", () => {
     const lookup = vi.fn().mockResolvedValue({ status: "success", game: VIEWER_GAME });
     const user = userEvent.setup();
     renderWorkspace({ lookup });
-
     await user.click(screen.getByTestId("move-e2-e4"));
     expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", AFTER_E4_FEN);
     await user.click(screen.getByRole("button", { name: "Reset" }));
     expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", STARTING_FEN);
     expect(screen.getByTestId("session-san-history")).toHaveTextContent("No local moves yet");
-
     await user.click(screen.getByTestId("move-e2-e4"));
     await user.type(screen.getByLabelText("Game UUID"), VIEWER_GAME_UUID);
     await user.click(screen.getByRole("button", { name: "Load game" }));
@@ -325,7 +197,6 @@ describe("RepertoireBuilderWorkspace", () => {
     renderWorkspace(clients);
 
     await waitFor(() => expect(screen.getByText("Never seen as White")).toBeVisible());
-
     await user.click(screen.getByTestId("move-e2-e4"));
     expect(sharedPositionSummary().querySelectorAll('[data-position-square="e2"]')).toHaveLength(0);
     expect(sharedPositionSummary().querySelectorAll('[data-position-square="e4"]')).toHaveLength(1);
@@ -354,7 +225,6 @@ describe("RepertoireBuilderWorkspace", () => {
     expect(within(session).getByTestId("session-san-history")).toBeVisible();
     expect(within(session).getByRole("heading", { name: "Preferred move" })).toBeVisible();
     expect(screen.getAllByText("My move staged: e4.", { exact: true })).toHaveLength(1);
-
     await user.click(screen.getByTestId("move-d2-d4"));
     expect(sharedPositionSummary().querySelectorAll('[data-position-square="e4"]')).toHaveLength(0);
     expect(sharedPositionSummary().querySelectorAll('[data-position-square="d2"]')).toHaveLength(0);
@@ -365,14 +235,12 @@ describe("RepertoireBuilderWorkspace", () => {
     expect(clients.preferredMoveClient.put).not.toHaveBeenCalled();
     expect(status).toHaveTextContent("My move staged: d4.");
     expect(screen.getAllByText("My move staged: d4.", { exact: true })).toHaveLength(1);
-
     await user.click(screen.getByRole("button", { name: "Flip" }));
     expect(screen.getByTestId("session-status")).toHaveTextContent(
       "Flipped to Black at the bottom.",
     );
     expect(sharedPositionSummary()).toHaveTextContent("OrientationBlack at the bottom");
     expect(sharedPositionSummary()).toHaveTextContent("Side to moveWhite");
-
     await user.click(screen.getByTestId("move-e2-e4"));
     expect(sharedPositionSummary().querySelectorAll('[data-position-square="e2"]')).toHaveLength(0);
     expect(sharedPositionSummary().querySelectorAll('[data-position-square="e4"]')).toHaveLength(1);
@@ -389,7 +257,6 @@ describe("RepertoireBuilderWorkspace", () => {
     const user = userEvent.setup();
     const clients = testClients();
     renderWorkspace(clients);
-
     await waitFor(() => expect(screen.getByText("Never seen as White")).toBeVisible());
     await user.click(screen.getByTestId("move-e2-e4"));
     expect(clients.preferredMoveClient.put).not.toHaveBeenCalled();
@@ -397,7 +264,6 @@ describe("RepertoireBuilderWorkspace", () => {
     expect(sharedPositionSummary().querySelectorAll('[data-position-square="e4"]')).toHaveLength(1);
     expect(screen.getByTestId("session-origin")).toHaveTextContent("Current Ply 0.");
     expect(screen.getByTestId("session-san-history")).toHaveTextContent("No local moves yet");
-
     await user.click(screen.getByRole("button", { name: "Add" }));
     await waitFor(() => expect(clients.preferredMoveClient.put).toHaveBeenCalledTimes(1));
     expect(clients.preferredMoveClient.put).toHaveBeenCalledWith(
@@ -429,7 +295,6 @@ describe("RepertoireBuilderWorkspace", () => {
     expect(screen.getByTestId("session-origin")).toHaveTextContent("Current Ply 0.");
     expect(screen.getByTestId("session-san-history")).toHaveTextContent("No local moves yet");
     expect(clients.preferredMoveClient.put).not.toHaveBeenCalled();
-
     await user.click(screen.getByRole("button", { name: "Cancel edit" }));
     await waitFor(() =>
       expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", STARTING_FEN),
@@ -438,10 +303,8 @@ describe("RepertoireBuilderWorkspace", () => {
     expect(sharedPositionSummary().querySelectorAll('[data-position-square="d2"]')).toHaveLength(1);
     expect(sharedPositionSummary().querySelectorAll('[data-position-square="d4"]')).toHaveLength(0);
     expect(screen.getByTestId("session-san-history")).toHaveTextContent("No local moves yet");
-
     await user.click(screen.getByRole("button", { name: "Edit" }));
     await user.click(screen.getByTestId("move-d2-d4"));
-
     await user.click(screen.getByRole("button", { name: "Save replacement" }));
     await waitFor(() => expect(clients.preferredMoveClient.put).toHaveBeenCalledTimes(1));
     expect(clients.preferredMoveClient.put).toHaveBeenCalledWith(
@@ -461,7 +324,6 @@ describe("RepertoireBuilderWorkspace", () => {
     const lookup = vi.fn().mockResolvedValue({ status: "success", game: PROMOTION_GAME });
     const user = userEvent.setup();
     renderWorkspace({ lookup });
-
     await user.type(screen.getByLabelText("Game UUID"), VIEWER_GAME_UUID);
     await user.click(screen.getByRole("button", { name: "Load game" }));
     await waitFor(() =>
@@ -476,9 +338,11 @@ describe("RepertoireBuilderWorkspace", () => {
     await screen.findByRole("dialog", { name: "Choose a promotion piece" });
     await user.keyboard("{Escape}");
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
-    expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", PROMOTION_GAME.positions[0].fen);
+    expect(screen.getByTestId("mock-chessboard")).toHaveAttribute(
+      "data-position",
+      PROMOTION_GAME.positions[0].fen,
+    );
     expect(screen.getByTestId("session-san-history")).toHaveTextContent("No local moves yet");
-
     await user.click(screen.getByTestId("move-e7-e8"));
     const dialog = await screen.findByRole("dialog", { name: "Choose a promotion piece" });
     await user.click(within(dialog).getByRole("button", { name: "Promote to knight" }));
@@ -497,7 +361,6 @@ describe("RepertoireBuilderWorkspace", () => {
     const user = userEvent.setup();
     const clients = testClients("assigned");
     renderWorkspace(clients);
-
     await waitFor(() => expect(screen.getByTestId("saved-move")).toBeVisible());
     await user.click(screen.getByRole("button", { name: "Play saved move" }));
 
@@ -513,7 +376,6 @@ describe("RepertoireBuilderWorkspace", () => {
     const user = userEvent.setup();
     const clients = testClients("assigned");
     renderWorkspace(clients);
-
     await waitFor(() => expect(screen.getByTestId("saved-move")).toBeVisible());
     await user.click(screen.getByRole("button", { name: "Remove" }));
     const dialog = await screen.findByRole("alertdialog", { name: "Remove preferred move?" });
@@ -589,27 +451,10 @@ describe("RepertoireBuilderWorkspace", () => {
     expect(screen.getByRole("button", { name: "Effective date: 2026-01-10" })).toBeVisible();
   });
 
-  it("stages a displayed Best candidate from the canonical parent", async () => {
-    const user = userEvent.setup();
-    const client = completedAnalysisClient();
-    renderWorkspace({ analysisClient: client });
-
-    const candidate = await screen.findByRole("button", { name: "1. e4" });
-    await user.click(candidate);
-
-    expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", AFTER_E4_FEN);
-    expect(sharedPositionSummary().querySelectorAll('[data-position-square="e2"]')).toHaveLength(0);
-    expect(sharedPositionSummary().querySelectorAll('[data-position-square="e4"]')).toHaveLength(1);
-    expect(screen.getByTestId("session-origin")).toHaveTextContent("Current Ply 0.");
-    expect(screen.getByTestId("session-san-history")).toHaveTextContent("No local moves yet");
-    expect(client.enqueue).not.toHaveBeenCalled();
-  });
-
   it("activates a displayed Best candidate through the same local move path", async () => {
     const user = userEvent.setup();
-    const client = completedAnalysisClient();
+    const client = displayAnalysisClient("completed-cp");
     renderWorkspace({ analysisClient: client });
-
     await user.click(screen.getByRole("button", { name: "Flip" }));
     const candidate = await screen.findByRole("button", { name: "1. e4" });
     await user.click(candidate);
@@ -618,6 +463,135 @@ describe("RepertoireBuilderWorkspace", () => {
     expect(sharedPositionSummary().querySelectorAll('[data-position-square="e4"]')).toHaveLength(1);
     expect(screen.getByTestId("session-san-history")).toHaveTextContent("1. e4");
     expect(client.enqueue).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["neutral", "neutral", "50", "0.00", "No analysis yet; evaluation neutral."],
+    ["completed CP", "best-line", "51.7", "+0.34", "best-line evaluation +0.34."],
+    ["mate", "best-line", "0", "-M3", "best-line evaluation -M3."],
+    ["pending", "pending", "50", "0.00", "Analysis queued; evaluation pending."],
+    ["stale retained", "best-line", "51.7", "+0.34", "Stale best-line evaluation +0.34."],
+    ["failed retained", "best-line", "51.7", "+0.34", "Stale best-line evaluation +0.34."],
+    ["failed without candidate", "neutral", "50", "0.00", "Analysis failed; evaluation neutral."],
+    ["unavailable", "neutral", "50", "0.00", "Evaluation unavailable; evaluation neutral."],
+  ])(
+    "renders %s display semantics through the Workspace evaluation rail",
+    async (name, expectedState, expectedValue, shortValue, accessibleValue) => {
+      const state =
+        name === "completed CP"
+          ? "completed-cp"
+          : name === "failed without candidate"
+            ? "failed-empty"
+            : (name.replaceAll(" ", "-") as DisplayState);
+      renderWorkspace({
+        analysisClient: displayAnalysisClient(state),
+        analysisPollIntervalMs: 60_000,
+      });
+      const meter = screen.getByRole("meter", { name: "Evaluation" });
+      await waitFor(() => {
+        expect(meter).toHaveAttribute("data-state", expectedState);
+        expect(meter).toHaveAttribute("aria-valuenow", expectedValue);
+        expect(meter).toHaveAttribute("aria-valuetext", accessibleValue);
+        expect(meter).toHaveTextContent(shortValue);
+      });
+    },
+  );
+
+  it("flips rail orientation and fill direction without changing the evaluated score", async () => {
+    const user = userEvent.setup();
+    const analysisClient = displayAnalysisClient("completed-cp");
+    renderWorkspace({ analysisClient });
+    const meter = screen.getByRole("meter", { name: "Evaluation" });
+    const indicator = meter.querySelector('[class*="indicator"]');
+    if (!(indicator instanceof HTMLElement)) {
+      throw new Error("The evaluation indicator is missing.");
+    }
+
+    await waitFor(() => {
+      expect(analysisClient.observe).toHaveBeenCalledWith(STARTING_FEN, expect.any(AbortSignal));
+      expect(meter).toHaveAttribute("data-orientation", "white");
+      expect(meter).toHaveAttribute("aria-valuenow", "51.7");
+      expect(meter).toHaveAttribute("aria-valuetext", "best-line evaluation +0.34.");
+      expect(indicator).toHaveStyle({ height: "51.7%" });
+    });
+
+    await user.click(screen.getByRole("button", { name: "Flip" }));
+
+    expect(meter).toHaveAttribute("data-orientation", "black");
+    expect(meter).toHaveAttribute("aria-valuenow", "51.7");
+    expect(meter).toHaveAttribute("aria-valuetext", "best-line evaluation +0.34.");
+    expect(indicator).toHaveStyle({ height: "51.7%" });
+    expect(analysisClient.observe).not.toHaveBeenCalledWith(AFTER_E4_FEN, expect.any(AbortSignal));
+  });
+
+  it("observes the staged displayed FEN separately while keeping analysis and workflow on the parent", async () => {
+    const user = userEvent.setup();
+    const sourceAnalysisClient = displayAnalysisClient("dual");
+    const sourceObserve = sourceAnalysisClient.observe;
+    const analysisClient = {
+      ...sourceAnalysisClient,
+      observe: vi.fn(async (fen: string, signal?: AbortSignal) => {
+        const result = await sourceObserve(fen, signal);
+        if (fen !== AFTER_E4_FEN || result.status !== "success" || result.data.result === null) {
+          return result;
+        }
+        const candidate = result.data.result.candidates[0];
+        if (!candidate) {
+          return result;
+        }
+        return {
+          ...result,
+          data: {
+            ...result.data,
+            result: {
+              ...result.data.result,
+              candidates: [{ ...candidate, pv_uci: ["e7e5"] }],
+            },
+          },
+        };
+      }),
+    };
+    const clients = testClients();
+    renderWorkspace({
+      analysisClient,
+      preferredMoveClient: clients.preferredMoveClient,
+      positionContextClient: clients.positionContextClient,
+    });
+    await waitFor(() =>
+      expect(analysisClient.observe).toHaveBeenCalledWith(STARTING_FEN, expect.any(AbortSignal)),
+    );
+    const meter = screen.getByRole("meter", { name: "Evaluation" });
+    await waitFor(() =>
+      expect(meter).toHaveAttribute("aria-valuetext", "best-line evaluation +0.34."),
+    );
+    await user.click(screen.getByTestId("move-e2-e4"));
+    await waitFor(() =>
+      expect(analysisClient.observe).toHaveBeenCalledWith(AFTER_E4_FEN, expect.any(AbortSignal)),
+    );
+    await waitFor(() => {
+      expect(meter).toHaveAttribute("aria-valuenow", "48.3");
+      expect(meter).toHaveAttribute("aria-valuetext", "best-line evaluation -0.34.");
+    });
+    expect(screen.getByRole("button", { name: "1. e4" })).toBeVisible();
+    expect(screen.queryByRole("button", { name: "1... e5" })).not.toBeInTheDocument();
+    expect(clients.preferredMoveClient.get).toHaveBeenCalledWith(STARTING_FEN, {
+      signal: expect.any(AbortSignal),
+    });
+    expect(clients.preferredMoveClient.get).not.toHaveBeenCalledWith(AFTER_E4_FEN, {
+      signal: expect.any(AbortSignal),
+    });
+    expect(clients.positionContextClient).toHaveBeenCalledWith(STARTING_FEN, expect.any(AbortSignal));
+    expect(clients.positionContextClient).not.toHaveBeenCalledWith(AFTER_E4_FEN, expect.any(AbortSignal));
+    expect(screen.getByTestId("session-origin")).toHaveTextContent("Current Ply 0.");
+    expect(screen.getByTestId("session-san-history")).toHaveTextContent("No local moves yet");
+    expect(clients.preferredMoveClient.put).not.toHaveBeenCalled();
+    expect(clients.preferredMoveClient.remove).not.toHaveBeenCalled();
+    expect(analysisClient.enqueue).not.toHaveBeenCalled();
+    await user.click(screen.getByRole("button", { name: "Flip" }));
+    expect(meter).toHaveAttribute("data-orientation", "black");
+    expect(meter).toHaveAttribute("aria-valuenow", "51.7");
+    expect(meter).toHaveAttribute("aria-valuetext", "best-line evaluation +0.34.");
+    expect(meter).toHaveTextContent("+0.34");
   });
 
   it("keeps local controls only and does not expose chess Undo or Reset actions", () => {

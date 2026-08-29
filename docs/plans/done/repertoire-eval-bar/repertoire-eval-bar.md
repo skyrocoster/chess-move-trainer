@@ -1,6 +1,6 @@
 # Repertoire Evaluation Bar - The displayed repertoire board has the viewer's evaluation rail
 
-> **Status:** pending - approved dual-analysis identity captured; execute only after all three upstream repertoire Plans are completed and closed
+> **Status:** completed - approved dual-analysis identity implemented, independently quality-validated, and closed by explicit user direction
 
 - **Read trigger:** Read before executing the approved `/repertoire` evaluation-rail integration.
 - **Upstream:** [`repertoire-position-description`](../repertoire-position-description/repertoire-position-description.md), [`repertoire-session-panel`](../repertoire-session-panel/repertoire-session-panel.md), and [`repertoire-staged-move-preview`](../repertoire-staged-move-preview/repertoire-staged-move-preview.md)
@@ -79,9 +79,11 @@ metadata remain explicitly anchored to the canonical parent position during stag
    - Add or adjust only focused tests/stories that assert the rail is beside the actual `[data-board-visual]`,
      its shell is 30px and board-height matched, its orientation follows Flip without score inversion, and
      the board/session/controls/description placement is correct at wide and constrained widths.
-   - **Focused proof:** from `frontend`, rerun
-     `npm exec vitest run src/features/repertoire-builder/RepertoireBuilderWorkspace.test.tsx src/features/viewer/BoardEvalStage.test.tsx src/features/analysis/EvalBar.test.tsx --testTimeout=10000 --hookTimeout=10000`;
-     Bash tool timeout: `120000 ms`.
+   - **Focused proof:** because this stage changes the Workspace and its tests after Stage 1, rerun from `frontend`
+     `npm exec vitest run src/features/repertoire-builder/RepertoireBuilderWorkspace.test.tsx --testTimeout=10000 --hookTimeout=10000`;
+     Bash tool timeout: `120000 ms`. Retain existing `BoardEvalStage` and `EvalBar` proof when those components,
+     their tests, and their relevant configuration remain unchanged; rerun their focused tests only after an
+     approved shared-contract correction affects them.
    - **Breakpoint:** stop if the viewer-faithful 30px geometry requires redesigning the board, controls,
      session panel, position description, analysis panel, or any upstream layout contract; do not silently
      restyle or extract another stage component.
@@ -103,9 +105,10 @@ metadata remain explicitly anchored to the canonical parent position during stag
      rail placement, exact 30px width, board/rail height alignment, orientation/fill direction, meter ARIA
      semantics, representative display states, staged-child evaluation, parent-anchored AnalysisPanel/workflow,
      no overflow, and accessibility. Keep the existing repertoire workflow coverage.
-   - **Focused proof:** from `frontend`, run
-     `npm exec vitest run src/features/repertoire-builder/RepertoireBuilderWorkspace.test.tsx src/features/viewer/evalBarDisplay.test.ts src/features/viewer/ViewerWorkspace.test.tsx src/features/analysis/EvalBar.test.tsx src/features/viewer/BoardEvalStage.test.tsx --testTimeout=10000 --hookTimeout=10000`;
-     Bash tool timeout: `120000 ms`.
+   - **Focused proof:** because this stage changes the Workspace test coverage after Stage 2, rerun from `frontend`
+     `npm exec vitest run src/features/repertoire-builder/RepertoireBuilderWorkspace.test.tsx --testTimeout=10000 --hookTimeout=10000`;
+     Bash tool timeout: `120000 ms`. Do not rerun unchanged viewer/helper/component tests unless this stage makes
+     an approved change that affects their source, tests, configuration, dependencies, or exercised contract.
    - **Story proof:** from `frontend`, run
      `npm run test-storybook -- --run src/features/repertoire-builder/RepertoireBuilderWorkspace.stories.tsx --testTimeout=10000 --hookTimeout=10000`;
      Bash tool timeout: `180000 ms`. If `PreferredMoveWorkflow.stories.tsx` is changed, run the same bounded
@@ -113,17 +116,20 @@ metadata remain explicitly anchored to the canonical parent position during stag
    - **Bounded browser proof:** with the existing Storybook server available, from the repository root run
      `npm exec playwright test tests/e2e/repertoire-builder-storybook.spec.ts --timeout=30000 --workers=1`;
      runner timeout: `30000 ms`; Bash tool timeout: `180000 ms`.
-   - **Viewer regression proof:** from the repository root run
-     `npm exec playwright test tests/e2e/viewer-storybook.spec.ts --timeout=30000 --workers=1`;
-     runner timeout: `30000 ms`; Bash tool timeout: `180000 ms`.
+   - **Viewer regression proof:** retain prior passing viewer proof while viewer source, tests, shared inputs,
+     configuration, and environment remain unaffected. Run
+     `npm exec playwright test tests/e2e/viewer-storybook.spec.ts --timeout=30000 --workers=1` only after an
+     approved shared/viewer correction invalidates that proof; runner timeout: `30000 ms`; Bash tool timeout:
+     `180000 ms`.
    - **Breakpoint:** stop if the rail observes the parent instead of the displayed child, if a staged eval
      request changes parent analysis/workflow behavior, if any state/score/mate/orientation/ARIA semantics
      differ from viewer, if geometry overflows, or if any upstream boundary changes.
 
 4. **pending** - Fresh independent Quality validation of the observable dual-identity UI.
-   - A fresh Quality session validates only the approved repertoire source, focused tests/stories, bounded E2E
-     surface, and reused viewer contracts read-only. It must not edit, format, repair, commit, or absorb
-     unrelated failures.
+   - Supply Quality with the retained proof ledger and every change made after each passing item. A fresh Quality
+     session independently audits applicability and runs only missing or invalidated checks against the approved
+     repertoire source, focused tests/stories, bounded E2E surface, and reused viewer contracts read-only. It
+     must not repeat still-valid commands, edit, format, repair, commit, or absorb unrelated failures.
    - At wide and constrained widths, verify that the rail is directly beside the displayed board, remains 30px
      wide, tracks the board height, follows White/Black orientation, and has no horizontal overflow.
    - Exercise or inspect neutral, pending, completed CP, mate, stale, failed, and unavailable states; verify
@@ -136,14 +142,16 @@ metadata remain explicitly anchored to the canonical parent position during stag
      visible placement, reused viewer semantics, accessibility, responsive behavior, or upstream boundary into
      question. Report unrelated failures without repairing them here.
 
-5. **pending** - Route only necessary ownership documentation and run repository closeout.
+5. **pending** - Route only necessary ownership documentation and fill repository closeout proof gaps.
    - After implementation and Quality validation, determine whether the structural/layout integration makes
      `frontend/src/features/repertoire-builder/README.md` stale. If so, route only that documentation change
      to `readme-updater`; the case-worker must not edit it speculatively. No README change is expected merely
      from consuming the existing viewer-owned stage.
-   - From the repository root, run `.venv/Scripts/python.exe scripts/check.py` without `--fix`; the closeout
-     runner has no additional supported CLI timeout flag, so use Bash tool timeout `180000 ms` and record the
-     exact result. Do not use `--fix` for semantic repair.
+   - Map the quick closeout steps to the retained proof after Quality. From the repository root, use
+     `.venv/Scripts/python.exe scripts/check.py --only "<step name>"` without `--fix` and Bash tool timeout
+     `180000 ms` for each required step that is missing or invalidated. Do not run the unfiltered aggregate suite,
+     and do not rerun a covered test through a broader command merely for closeout. Record retained and newly run
+     evidence separately. Do not use `--fix` for semantic repair.
    - Preserve truthful stage progress and proof; move this Plan to `docs/plans/done/` only through coordinator
      closeout.
    - **Breakpoint:** report the exact failing command and stop for any unrelated baseline failure, failed repair
@@ -151,11 +159,15 @@ metadata remain explicitly anchored to the canonical parent position during stag
 
 ## Progress and decisions
 
-- **Stage 1:** pending - upstream closure and explicit parent/displayed analysis wiring not implemented; breakpoint: preserve the approved staged-preview parent identity and use a read-only displayed-FEN observation.
-- **Stage 2:** pending - viewer-faithful rail composition and wide/constrained grid integration not implemented; breakpoint: preserve all three closed upstream component boundaries and layout contracts.
-- **Stage 3:** pending - focused Vitest, Storybook, and bounded browser proof not run; breakpoint: preserve viewer state/score/accessibility semantics and no eval-triggered workflow actions.
-- **Stage 4:** pending - requires fresh independent Quality validation of the observable dual-identity UI; breakpoint: no repair or unrelated-failure absorption.
-- **Stage 5:** pending - requires conditional README routing and repository closeout without `--fix`.
+- **Stage 1:** implemented - upstream closure confirmed and explicit parent/displayed analysis wiring added; focused proof deferred to the single consolidated Stage 3 run by user direction, with no runtime proof claimed; breakpoint: preserve the approved staged-preview parent identity and use a read-only displayed-FEN observation.
+- **Stage 2:** implemented - viewer-faithful rail composition and wide/constrained grid integration added; focused runtime proof deferred to the single consolidated Stage 3 run by user direction, with no runtime proof claimed; breakpoint: preserve all three closed upstream component boundaries and layout contracts.
+- **Stage 3:** implemented - focused Workspace Vitest, Storybook, and bounded browser proof passed; breakpoint: preserve viewer state/score/accessibility semantics and no eval-triggered workflow actions.
+- **Stage 4:** complete/PASS - fresh independent Quality read-only validation accepted the retained Stage 3
+  proof and authorized Stage 4 completion; no new commands were needed.
+- **Stage 5:** complete - the README ownership review found no stale documentation requiring an update, and
+  the Plan was closed under explicit user direction without additional checks. The user declined re-audit after
+  mentioning fixes/done work outside this context, so no claim is made that the earlier proof validates
+  unspecified later changes.
 - **Decision:** execute strictly after `repertoire-position-description`, then `repertoire-session-panel`, then `repertoire-staged-move-preview` are completed and closed; never execute these Plans in parallel.
 - **Decision:** the eval rail independently observes the displayed board FEN, including `session.stagedMove.position` or the final upstream displayed-position equivalent.
 - **Decision:** the existing AnalysisPanel, candidate activation, preferred context/workflow, mutation request identity, and Add/Save metadata remain anchored to `session.currentPosition.fen` during staging.
@@ -164,18 +176,31 @@ metadata remain explicitly anchored to the canonical parent position during stag
 
 ## Proof
 
-- Repertoire and reused viewer component regression (`frontend`; Vitest test timeout `10000 ms`, hook timeout `10000 ms`; Bash tool timeout `120000 ms`):
-  `npm exec vitest run src/features/repertoire-builder/RepertoireBuilderWorkspace.test.tsx src/features/viewer/evalBarDisplay.test.ts src/features/viewer/ViewerWorkspace.test.tsx src/features/analysis/EvalBar.test.tsx src/features/viewer/BoardEvalStage.test.tsx --testTimeout=10000 --hookTimeout=10000`
+- **Stage 1 ledger:** the focused Workspace test was intentionally not run; implementation proof is deferred to the single consolidated Stage 3 suite by user direction. No runtime proof is claimed for this stage.
+- **Stage 2 ledger:** the Workspace test was intentionally not run; implementation proof is deferred to the single consolidated Stage 3 suite by user direction. Unchanged viewer component/helper proof is retained and was not rerun. No runtime proof is claimed for this stage.
+- **Stage 3 ledger:** focused Workspace regression passed with 26 tests; Workspace Storybook interactions passed with 19 tests; bounded repertoire Storybook browser proof passed with 6 tests. The bounded Storybook server was started for browser proof and cleaned up afterward. No viewer/shared source correction occurred.
+- **Stage 4 ledger:** fresh independent Quality read-only validation returned PASS and accepted the retained Stage 3
+  evidence; no additional commands were run.
+- **Stage 5 ledger:** README ownership review found the feature README current because it documents the
+  repertoire workspace and consumes an existing viewer-owned stage; no README edit was needed. No repository
+  closeout checks were run. The user explicitly declined a post-change re-audit after mentioning outside-context
+  fixes/done work, so unspecified later changes are not claimed to be covered by the retained proof.
+- Repertoire component regression (`frontend`; Vitest test timeout `10000 ms`, hook timeout `10000 ms`; Bash tool timeout `120000 ms`):
+  `npm exec vitest run src/features/repertoire-builder/RepertoireBuilderWorkspace.test.tsx --testTimeout=10000 --hookTimeout=10000`. Rerun after a later stage only when that stage affects the selected source, test, configuration, dependencies, or environment.
+- Reused viewer/helper/component regression: retain passing proof while those inputs remain unaffected; run their
+  focused tests only after an approved shared-contract correction invalidates that evidence.
 - Repertoire Workspace Storybook interactions (`frontend`; test timeout `10000 ms`, hook timeout `10000 ms`; Bash tool timeout `180000 ms`):
   `npm run test-storybook -- --run src/features/repertoire-builder/RepertoireBuilderWorkspace.stories.tsx --testTimeout=10000 --hookTimeout=10000`
 - Optional preferred-workflow Storybook regression when that story is changed (`frontend`; test timeout `10000 ms`, hook timeout `10000 ms`; Bash tool timeout `180000 ms`):
   `npm run test-storybook -- --run src/features/repertoire-builder/PreferredMoveWorkflow.stories.tsx --testTimeout=10000 --hookTimeout=10000`
 - Repertoire Storybook browser proof (repository root; Playwright runner timeout `30000 ms`, one worker; Bash tool timeout `180000 ms`):
   `npm exec playwright test tests/e2e/repertoire-builder-storybook.spec.ts --timeout=30000 --workers=1`
-- Viewer regression browser proof (repository root; Playwright runner timeout `30000 ms`, one worker; Bash tool timeout `180000 ms`):
-  `npm exec playwright test tests/e2e/viewer-storybook.spec.ts --timeout=30000 --workers=1`
-- Full repository closeout (repository root; `scripts/check.py` exposes no additional CLI timeout; Bash tool timeout `180000 ms`; no `--fix`):
-  `.venv/Scripts/python.exe scripts/check.py`
+- Viewer regression browser proof: retain passing proof while viewer/shared inputs and environment remain unaffected;
+  only after invalidation run `npm exec playwright test tests/e2e/viewer-storybook.spec.ts --timeout=30000 --workers=1`
+  (repository root; runner timeout `30000 ms`; one worker; Bash tool timeout `180000 ms`).
+- Repository closeout gaps (repository root; Bash tool timeout `180000 ms` per command; no `--fix`):
+  `.venv/Scripts/python.exe scripts/check.py --only "<step name>"` for each required quick-suite step not covered
+  by still-valid proof.
 
 ## Escalation boundaries
 

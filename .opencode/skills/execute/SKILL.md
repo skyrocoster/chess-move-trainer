@@ -13,9 +13,10 @@ ordered actions, proof commands, acceptance, exclusions, support skills if any, 
 2. For a bug, capture a meaningful red regression when it is cheap and deterministic; never manufacture a brittle
    source-text failure.
 3. Make the smallest approved change. Do not refactor, polish, or repair adjacent behavior.
-4. Run every focused proof command via the `bash` tool with an explicit finite timeout in milliseconds
-   (missing, zero, or non-finite timeouts are forbidden because commands can hang). Use full-suite or browser
-   proof only when the packet requires it.
+4. Reuse supplied passing proof unless an edit in this execution affects its command, inputs, exercised behavior,
+   configuration, dependencies, or environment. Run only missing or invalidated focused proof via the `bash` tool
+   with an explicit finite timeout in milliseconds (missing, zero, or non-finite timeouts are forbidden because
+   commands can hang). Use full-suite or browser proof only when it adds uncovered evidence.
 5. Perform one final changed-path and semantic scope audit against the packet. Do not repeatedly run `git status`
    or `git diff`. On a failed check, make at most one deterministic, in-scope repair and rerun that check once;
    never weaken proof.
@@ -28,7 +29,8 @@ ownership, or acceptance decision.
 RESULT: DONE | BLOCKED | ESCALATED | FAILED
 EDITS: <changed paths or none>
 REGRESSION: <red/green evidence or why red was not useful>
-PROOF: <exact commands and results>
+PROOF: <retained proof plus exact newly run commands and results>
+INVALIDATION: <later changes and proof they invalidated, or none>
 SCOPE AUDIT: clean | <discrepancy>
 ACCEPTANCE: <observable result or remaining breakpoint>
 RESIDUAL RISK: none | <specific risk>

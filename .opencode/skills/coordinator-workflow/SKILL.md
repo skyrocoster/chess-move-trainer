@@ -51,6 +51,13 @@ unchanged.
 Review the returned proof and diff scope. Do not silently expand behavior. User edits at a visual breakpoint are
 authoritative: bound them, preserve them, and continue from the resulting state.
 
+Maintain one proof ledger in the active conversation. For every passing command or browser check, retain its
+exact command/scenario, working directory, finite timeout, result, covered behavior or check step, and the paths,
+configuration, dependencies, and environment it relied on. Passing proof remains valid until a later edit or
+environment change could affect what it established. Before requesting any check, compare changes since its pass:
+reuse unaffected proof, rerun only invalidated proof, and add only genuinely missing coverage. A broader command
+must not be used merely to rerun already-covered tests.
+
 ## 4. Validate and record
 
 Use a fresh `quality` validation for observable product behavior, UI/browser work, data or schema changes,
@@ -58,14 +65,19 @@ cross-layer/shared contracts, destructive effects, or whenever the Plan or proof
 case-worker proof may close low-risk documentation or workflow-only changes.
 
 Launch Quality with `PHASE: VALIDATE`, the observable outcome, exact approved paths, baseline and diff facts,
-exclusions, acceptance, and exact checks. Include a bounded browser scenario only when live evidence is required.
+exclusions, acceptance, the proof ledger, changes since each proof item, and only the exact missing or invalidated
+checks. Include a bounded browser scenario only when live evidence is missing or invalidated. Quality's
+independence comes from auditing evidence applicability and acceptance, not from repeating unchanged commands.
 
 If validation fails, authorize at most one `PHASE: FIX` with the exact failed check, paths, intended semantics,
-and deterministic repair. Then run final validation in a fresh Quality session. Stop after a failed repair or a
-second failed validation.
+and deterministic repair. Record the repair as invalidating only proof it could affect. Then run final validation
+in a fresh Quality session with unaffected proof retained and only invalidated checks requested. Stop after a
+failed repair or a second failed validation.
 
 After proof and any required human or visual breakpoint pass, update only the active Plan's progress, decisions,
-and concise proof. When every stage is accepted, set the Plan to done, remove any transient `handoff.md`, and move
-its feature directory from `docs/plans/active/` to `docs/plans/done/`.
+and concise proof. For closeout, map required `scripts/check.py` steps to the valid ledger, run only uncovered or
+invalidated steps using selectors such as `--only`, and do not invoke the unfiltered aggregate suite when that
+would repeat valid checks. When every stage is accepted, set the Plan to done, remove any transient `handoff.md`,
+and move its feature directory from `docs/plans/active/` to `docs/plans/done/`.
 
 Never create legacy lifecycle artifacts, commit, push, rewrite completed records, or disturb unrelated changes.

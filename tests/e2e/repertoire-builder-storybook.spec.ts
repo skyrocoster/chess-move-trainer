@@ -66,6 +66,88 @@ async function expectNoHorizontalOverflow(page: Page) {
   );
 }
 
+type RailExpectation = {
+  orientation: "white" | "black";
+  state: "neutral" | "pending" | "best-line";
+  value: number;
+  shortValue: string;
+  accessibleValue: string;
+};
+
+async function expectRailGeometry(page: Page, expected: RailExpectation) {
+  const stage = page.getByTestId("board-eval-stage");
+  const board = stage.locator("[data-board-visual]");
+  const rail = page.getByTestId("board-eval-rail-shell");
+  const meter = page.getByRole("meter", { name: "Evaluation" });
+  const track = meter.locator('[class*="track"]');
+  const indicator = meter.locator('[class*="indicator"]');
+
+  await expect(stage).toBeVisible();
+  await expect(board).toBeVisible();
+  await expect(rail).toBeVisible();
+  await expect(
+    stage.filter({ has: page.locator("[data-board-visual]") }),
+  ).toHaveCount(1);
+  await expect(
+    stage.filter({ has: page.getByTestId("board-eval-rail-shell") }),
+  ).toHaveCount(1);
+  await expect(meter).toHaveAttribute("data-orientation", expected.orientation);
+  await expect(meter).toHaveAttribute("data-state", expected.state);
+  await expect(meter).toHaveAttribute("aria-valuemin", "0");
+  await expect(meter).toHaveAttribute("aria-valuemax", "100");
+  await expect(meter).toHaveAttribute("aria-valuenow", String(expected.value));
+  await expect(meter).toHaveAttribute("aria-valuetext", expected.accessibleValue);
+  await expect(meter).toContainText(expected.shortValue);
+
+  const boardBox = await board.boundingBox();
+  const railBox = await rail.boundingBox();
+  const trackBox = await track.boundingBox();
+  const indicatorBox = await indicator.boundingBox();
+  expect(boardBox).not.toBeNull();
+  expect(railBox).not.toBeNull();
+  expect(trackBox).not.toBeNull();
+  expect(indicatorBox).not.toBeNull();
+  if (!boardBox || !railBox || !trackBox || !indicatorBox) {
+    throw new Error("The repertoire board/evaluation geometry did not render.");
+  }
+  expect(railBox.width).toBe(30);
+  expect(Math.abs(railBox.x - (boardBox.x + boardBox.width))).toBeLessThanOrEqual(0.01);
+  expect(Math.abs(boardBox.y - railBox.y)).toBeLessThanOrEqual(1);
+  expect(Math.abs(boardBox.height - railBox.height)).toBeLessThanOrEqual(1);
+  const overflow = await stage.evaluate((element) => ({
+    clientWidth: element.clientWidth,
+    scrollWidth: element.scrollWidth,
+  }));
+  expect(overflow.scrollWidth).toBeLessThanOrEqual(overflow.clientWidth);
+  const topDistance = indicatorBox.y - trackBox.y;
+  const bottomDistance = trackBox.y + trackBox.height - (indicatorBox.y + indicatorBox.height);
+  if (expected.orientation === "white") {
+    expect(bottomDistance).toBeLessThanOrEqual(1);
+    expect(topDistance).toBeGreaterThan(1);
+  } else {
+    expect(topDistance).toBeLessThanOrEqual(1);
+    expect(bottomDistance).toBeGreaterThan(1);
+  }
+}
+
+async function expectSessionPlacement(page: Page, placement: "wide" | "constrained") {
+  const stageBox = await page.getByTestId("board-eval-stage").boundingBox();
+  const railBox = await page.getByTestId("board-eval-rail-shell").boundingBox();
+  const sessionBox = await page.getByTestId("repertoire-session").boundingBox();
+  expect(stageBox).not.toBeNull();
+  expect(railBox).not.toBeNull();
+  expect(sessionBox).not.toBeNull();
+  if (!stageBox || !railBox || !sessionBox) {
+    throw new Error("The repertoire placement geometry did not render.");
+  }
+
+  if (placement === "wide") {
+    expect(sessionBox.x).toBeGreaterThanOrEqual(railBox.x + railBox.width);
+  } else {
+    expect(sessionBox.y).toBeGreaterThanOrEqual(stageBox.y + stageBox.height);
+  }
+}
+
 async function checkA11y(page: Page) {
   for (let attempt = 0; attempt < 4; attempt += 1) {
     try {
@@ -110,6 +192,14 @@ test.describe("Repertoire Builder Storybook surface", () => {
       "status",
     );
     await expect(session.getByRole("heading", { name: "Preferred move" })).toBeVisible();
+    await expectRailGeometry(page, {
+      orientation: "white",
+      state: "neutral",
+      value: 50,
+      shortValue: "0.00",
+      accessibleValue: "No analysis yet; evaluation neutral.",
+    });
+    await expectSessionPlacement(page, "wide");
     const summary = await sharedPositionSummary(page);
     await expect(summary).toContainText("OrientationWhite at the bottom");
     await expect(summary).toContainText("Side to moveWhite");
@@ -123,6 +213,14 @@ test.describe("Repertoire Builder Storybook surface", () => {
       }),
     ).toBeVisible();
     await expect(page.getByRole("button", { name: "Flip" })).toBeVisible();
+    await expectRailGeometry(page, {
+      orientation: "white",
+      state: "neutral",
+      value: 50,
+      shortValue: "0.00",
+      accessibleValue: "No analysis yet; evaluation neutral.",
+    });
+    await expectSessionPlacement(page, "constrained");
     await expectNoHorizontalOverflow(page);
     await checkA11y(page);
 
@@ -133,6 +231,13 @@ test.describe("Repertoire Builder Storybook surface", () => {
     await expect(widePreview.locator('[data-position-square="e4"]')).toHaveCount(1);
     await expect(widePreview).toContainText("Side to moveBlack");
     await expect(page.getByTestId("session-san-history")).toHaveText("No local moves yet");
+    await expectRailGeometry(page, {
+      orientation: "white",
+      state: "best-line",
+      value: 51.7,
+      shortValue: "+0.34",
+      accessibleValue: "best-line evaluation +0.34.",
+    });
     await expectNoHorizontalOverflow(page);
     await checkA11y(page);
 
@@ -143,6 +248,13 @@ test.describe("Repertoire Builder Storybook surface", () => {
     await expect(constrainedPreview.locator('[data-position-square="e4"]')).toHaveCount(1);
     await expect(constrainedPreview).toContainText("Side to moveBlack");
     await expect(page.getByTestId("session-san-history")).toHaveText("No local moves yet");
+    await expectRailGeometry(page, {
+      orientation: "white",
+      state: "best-line",
+      value: 51.7,
+      shortValue: "+0.34",
+      accessibleValue: "best-line evaluation +0.34.",
+    });
     await expectNoHorizontalOverflow(page);
     await checkA11y(page);
   });
@@ -159,6 +271,13 @@ test.describe("Repertoire Builder Storybook surface", () => {
     await expect(page.getByTestId("session-san-history")).toHaveText(
       "1. e4 1... e5",
     );
+    await expectRailGeometry(page, {
+      orientation: "black",
+      state: "neutral",
+      value: 50,
+      shortValue: "0.00",
+      accessibleValue: "No analysis yet; evaluation neutral.",
+    });
     const summary = await sharedPositionSummary(page);
     await expect(summary).toContainText("OrientationBlack at the bottom");
     await expect(summary).toContainText("Side to moveWhite");
@@ -171,6 +290,13 @@ test.describe("Repertoire Builder Storybook surface", () => {
     await expect(page.getByTestId("session-status")).toHaveText(
       "Opponent move played locally: Nf3.",
     );
+    await expectRailGeometry(page, {
+      orientation: "black",
+      state: "best-line",
+      value: 51.7,
+      shortValue: "+0.34",
+      accessibleValue: "best-line evaluation +0.34.",
+    });
   });
 
   test("proves navigation, replacement truncation, and Flip cancellation", async ({
@@ -195,6 +321,13 @@ test.describe("Repertoire Builder Storybook surface", () => {
     await expect(
       summary.locator('[data-position-piece="p"] [data-position-square="e4"]'),
     ).toHaveCount(1);
+    await expectRailGeometry(page, {
+      orientation: "black",
+      state: "best-line",
+      value: 51.7,
+      shortValue: "+0.34",
+      accessibleValue: "best-line evaluation +0.34.",
+    });
     await expectNoHorizontalOverflow(page);
   });
 
@@ -202,8 +335,12 @@ test.describe("Repertoire Builder Storybook surface", () => {
     page,
   }) => {
     await openStory(page, STORY_IDS.promotion);
-    await expect(page.getByTestId("session-san-history")).toHaveText("No local moves yet");
-    await expect(page.getByTestId("session-origin")).toHaveText(/Current Ply 0/);
+    await expect(page.getByTestId("session-san-history")).toHaveText(
+      "No local moves yet",
+    );
+    await expect(page.getByTestId("session-origin")).toHaveText(
+      /Current Ply 0/,
+    );
     const summary = await sharedPositionSummary(page);
     await expect(summary).toContainText("Side to moveBlack");
     await expect(
@@ -292,7 +429,9 @@ test.describe("Repertoire Builder Storybook surface", () => {
     await expect(
       replacementSummary.locator('[data-position-square="d4"]'),
     ).toHaveCount(0);
-    await expect(page.getByTestId("session-san-history")).toHaveText("No local moves yet");
+    await expect(page.getByTestId("session-san-history")).toHaveText(
+      "No local moves yet",
+    );
     await checkA11y(page);
   });
 
@@ -319,9 +458,15 @@ test.describe("Repertoire Builder Storybook surface", () => {
       page.getByRole("button", { name: /Effective date: \d{4}-\d{2}-\d{2}/ }),
     ).toBeVisible();
     const failedSummary = await sharedPositionSummary(page);
-    await expect(failedSummary.locator('[data-position-square="e2"]')).toHaveCount(0);
-    await expect(failedSummary.locator('[data-position-square="e4"]')).toHaveCount(1);
-    await expect(page.getByTestId("session-san-history")).toHaveText("No local moves yet");
+    await expect(
+      failedSummary.locator('[data-position-square="e2"]'),
+    ).toHaveCount(0);
+    await expect(
+      failedSummary.locator('[data-position-square="e4"]'),
+    ).toHaveCount(1);
+    await expect(page.getByTestId("session-san-history")).toHaveText(
+      "No local moves yet",
+    );
 
     await openStory(page, STORY_IDS.remove);
     await expect(page.getByText("Preferred move removed.")).toBeVisible();

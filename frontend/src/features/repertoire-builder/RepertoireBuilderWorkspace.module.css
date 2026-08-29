@@ -7,14 +7,14 @@
   box-sizing: border-box;
   display: grid;
   grid-template-areas:
-    "heading heading"
-    "loader loader"
-    "origin origin"
-    "board session"
-    "controls session"
-    "positionDescription positionDescription"
-    "analysis analysis";
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    "heading heading heading"
+    "loader loader loader"
+    "origin origin origin"
+    "board board session"
+    "controls . session"
+    "positionDescription positionDescription positionDescription"
+    "analysis analysis analysis";
+  grid-template-columns: minmax(0, 1fr) 30px minmax(0, 1fr);
   gap: var(--cmt-spacing-24);
   max-inline-size: 66rem;
   min-inline-size: 0;
@@ -40,17 +40,12 @@
 
 .origin {
   grid-area: origin;
+  min-inline-size: 0;
   margin: 0;
   color: var(--md-sys-color-on-surface-variant);
   font: var(--md-sys-typescale-body-medium);
+  overflow-wrap: anywhere;
   text-align: center;
-}
-
-.board {
-  display: flex;
-  grid-area: board;
-  justify-content: center;
-  min-inline-size: 0;
 }
 
 .controls,
@@ -74,16 +69,17 @@
 @container (max-width: 40rem) {
   .workspace {
     grid-template-areas:
-      "heading"
-      "loader"
-      "origin"
-      "board"
-      "controls"
-      "session"
-      "positionDescription"
-      "analysis";
-    grid-template-columns: minmax(0, 1fr);
-    gap: var(--cmt-spacing-16);
+      "heading heading"
+      "loader loader"
+      "origin origin"
+      "board board"
+      "controls ."
+      "session session"
+      "positionDescription positionDescription"
+      "analysis analysis";
+    grid-template-columns: minmax(0, 1fr) 30px;
+    column-gap: 0;
+    row-gap: var(--cmt-spacing-16);
   }
 }
 

@@ -29,7 +29,8 @@ PowerShell commands must use backslash paths, `$(...)` for subexpressions, ASCII
 - `powershell -ExecutionPolicy Bypass -File .\setup.ps1` installs pinned Python, npm, and Playwright dependencies.
 - `powershell -ExecutionPolicy Bypass -File .\dev.ps1 backend|frontend|all` starts services.
 - `.venv/Scripts/python.exe scripts/check.py` runs the fast fail-first local suite: roughly two minutes,
-  stopping at the first failure with a short excerpt and a native rerun command.
+  stopping at the first failure with a short excerpt and a native rerun command. At workflow closeout, use
+  its selectors (for example `--only`) to run only required checks not already covered by still-valid proof.
 - `.venv/Scripts/python.exe scripts/check.py --full` runs the complete local closeout suite (builds,
   Storybook, and E2E).
 - `.venv/Scripts/python.exe scripts/check.py --fix` runs deterministic formatters, then the same checks;
@@ -59,7 +60,9 @@ MANDATORY SAFETY: every test must have an explicit finite command-level timeout 
 1. Open the [documentation router](docs/README.md).
 2. Read the relevant active Plan under `docs/plans/active/` when work is Plan-backed.
 3. Read only the files named by the approved case or Plan stage before exploring source.
-4. Use `scripts/check.py` for closeout. It is read-only unless `--fix` is explicit.
+4. Use `scripts/check.py` for closeout gaps. It is read-only unless `--fix` is explicit. Do not rerun a
+   passing check when no later change affects its command, inputs, exercised behavior, configuration, or
+   environment; retain that proof and run only missing or invalidated checks.
 
 `Scratch/` is user-owned temporary workspace. Preserve unrelated Scratch content. New mock-ups and
 prototypes belong under `experiments/`, which has its own manifests and ignored environments/artifacts.
@@ -79,9 +82,10 @@ These modes are when you are working as the coordinator or the coordinators suba
   in parallel. Oversized stages may be split without human approval when the outcome is unchanged.
 - **Direct:** small, settled changes can execute without a Plan. The approved case-worker performs the
   change and proof; Quality independently validates when selected.
-- **Quality:** validation is read-only. A coordinator-authorized repair uses the Quality fix route, followed
-  by fresh-session final validation. After one failed repair, return to the coordinator. Unrelated failures
-  are reported, not absorbed.
+- **Quality:** validation is read-only. It independently audits retained proof and runs only missing or
+  invalidated checks. A coordinator-authorized repair uses the Quality fix route, followed by fresh-session
+  final validation of evidence invalidated by the repair. After one failed repair, return to the coordinator.
+  Unrelated failures are reported, not absorbed.
 - **Exploration:** mock-ups and prototypes are noncanonical until explicitly adopted.
 
 The coordinator may approve scope expansion needed for the settled outcome unless behavior, direction,

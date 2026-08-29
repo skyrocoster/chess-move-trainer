@@ -18,6 +18,22 @@ _EXCLUDED_COMPONENTS = {"main.tsx", "App.tsx"}
 # File suffixes to skip when scanning for components.
 _COMPONENT_SKIP_SUFFIXES = (".test.tsx", ".spec.tsx", ".test.ts", ".spec.ts")
 
+# Exported declarations that mark a .tsx file as a UI component. Helper modules
+# (test helpers, story render helpers) export plain functions and constants but
+# no PascalCase component, so they are not "components" for coverage purposes.
+_COMPONENT_EXPORT_RE = re.compile(
+    r"export\s+(?:default\s+)?function\s+[A-Z]|export\s+default\s+[A-Z]"
+)
+
+
+def _exports_component(path: Path) -> bool:
+    """Return True when a .tsx file exports a component declaration."""
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError:
+        return True
+    return bool(_COMPONENT_EXPORT_RE.search(text))
+
 
 def _parse_story_globs(config_path: Path) -> list[tuple[str, str]]:
     """Extract and normalise glob patterns from .storybook/main.ts.
@@ -97,6 +113,8 @@ def check_storybook_coverage() -> bool:
         if path.name in _EXCLUDED_COMPONENTS:
             continue
         if any(path.name.endswith(sfx) for sfx in _COMPONENT_SKIP_SUFFIXES):
+            continue
+        if not _exports_component(path):
             continue
         component_files[path.stem] = path
 

@@ -8,7 +8,7 @@ import {
 } from "../viewer/viewerStoryHelpers";
 import { VIEWER_GAME_UUID } from "../viewer/viewerFixtures";
 import RepertoireBuilderWorkspace from "./RepertoireBuilderWorkspace";
-import { BLACK_SUBJECT_GAME, workspace } from "./RepertoireBuilderWorkspace.stories";
+import { BLACK_SUBJECT_GAME, workspace } from "./repertoireBuilderStoryRender";
 import { loadGame } from "./repertoireBuilderStoryHelpers";
 
 const meta = {

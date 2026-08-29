@@ -15,12 +15,14 @@ import {
   usePromotionController,
 } from "../board-adapter/PromotionPicker";
 import { BoardControl } from "../viewer/BoardControl";
+import { BoardEvalStage } from "../viewer/BoardEvalStage";
 import { defaultAnalysisClient, type AnalysisClient } from "../viewer/analysisApi";
 import { analysisPanelDisplay } from "../viewer/analysisFormatting";
 import { useAnalysisState } from "../viewer/analysisState";
 import { GameLoader, type GameLoaderStatus, type GameLoaderValues } from "../viewer/GameLoader";
 import { fetchGame, type GameLookup } from "../viewer/positionApi";
 import type { PositionContextClient } from "../viewer/positionContextApi";
+import { evaluationDisplay } from "../viewer/evalBarDisplay";
 import type { PreferredMoveClient } from "./preferredMoveApi";
 import { usePreferredMoveWorkflow } from "./preferredMoveWorkflowState";
 import {
@@ -113,14 +115,20 @@ export default function RepertoireBuilderWorkspace({
     () => createPositionModel(displayedPosition.fen, session.orientation),
     [displayedPosition.fen, session.orientation],
   );
-  const analysisState = useAnalysisState(
+  const parentAnalysisState = useAnalysisState(
     currentPosition.fen,
     analysisClient,
     analysisPollIntervalMs,
   );
-  const analysisDisplay = analysisPanelDisplay(analysisState, {
+  const displayedAnalysisState = useAnalysisState(
+    displayedPosition.fen,
+    analysisClient,
+    analysisPollIntervalMs,
+  );
+  const analysisDisplay = analysisPanelDisplay(parentAnalysisState, {
     displayedPly: session.currentPly,
   });
+  const displayedEvaluationDisplay = evaluationDisplay(displayedAnalysisState);
   const sideToMoveColor = chess.turn() === "w" ? "white" : "black";
   const workflow = usePreferredMoveWorkflow({
     session,
@@ -353,7 +361,7 @@ export default function RepertoireBuilderWorkspace({
         <p className={styles.origin} data-testid="session-origin">
           {originDescription(session)} Current Ply {session.currentPly}.
         </p>
-        <div className={styles.board}>
+        <BoardEvalStage orientation={session.orientation} display={displayedEvaluationDisplay}>
           <InteractiveBoardAdapter
             key={viewKey}
             branchSnapshot={{
@@ -380,7 +388,7 @@ export default function RepertoireBuilderWorkspace({
             onUndo={() => undefined}
             onReset={() => undefined}
           />
-        </div>
+        </BoardEvalStage>
         <div className={styles.controls}>
           <BoardControl
             hasGame
@@ -419,10 +427,10 @@ export default function RepertoireBuilderWorkspace({
         <div className={styles.analysis}>
           <AnalysisPanel
             display={analysisDisplay}
-            onAnalyze={() => analysisState.handleAction("analyze")}
-            onUpdate={() => analysisState.handleAction("update")}
-            onRetry={() => analysisState.handleAction("retry")}
-            onRetryObservation={analysisState.retryObservation}
+            onAnalyze={() => parentAnalysisState.handleAction("analyze")}
+            onUpdate={() => parentAnalysisState.handleAction("update")}
+            onRetry={() => parentAnalysisState.handleAction("retry")}
+            onRetryObservation={parentAnalysisState.retryObservation}
             onCandidateMove={handleCandidateMove}
           />
         </div>
