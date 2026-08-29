@@ -27,6 +27,7 @@ import type { BranchMove, BranchSnapshot } from "../board-adapter/branchModel";
 import type { Game } from "./gameModel";
 import { fetchGame, type GameLookup } from "./positionApi";
 import styles from "./ViewerWorkspace.module.css";
+import { strictFen } from "./chessPrimitives";
 
 const BOARD_LABEL = "Chess board: standard starting position, White at the bottom";
 
@@ -158,7 +159,7 @@ export default function ViewerWorkspace({
         viewKey,
         resetToken: branchResetToken,
         originFen: currentPosition.fen,
-        currentFen: branchChess.fen(),
+        currentFen: strictFen(branchChess),
         originPly: currentPosition.ply,
         moves: historyMoves(branchChess),
         active,

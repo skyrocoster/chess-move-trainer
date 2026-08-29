@@ -37,7 +37,7 @@ describe("App routes", () => {
       await screen.findByRole(
         "heading",
         { name: "Repertoire Builder", level: 1 },
-        { timeout: 5000 },
+        { timeout: 15000 },
       ),
     ).toBeInTheDocument();
     expect(

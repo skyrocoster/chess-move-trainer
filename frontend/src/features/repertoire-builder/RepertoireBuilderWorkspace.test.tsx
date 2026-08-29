@@ -1,6 +1,6 @@
 import * as axe from "axe-core";
 import userEvent from "@testing-library/user-event";
-import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import type { ComponentProps } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import axeMatchers from "@chialab/vitest-axe";
@@ -67,7 +67,7 @@ afterEach(() => {
 const BOARD_LABEL = "Chess board: standard starting position, White at the bottom";
 const STORED_BOARD_LABEL = `Chess board: game ${VIEWER_GAME_UUID}, ply 2, Black at the bottom`;
 const STARTING_FEN = VIEWER_GAME.positions[0].fen;
-const AFTER_E4_FEN = VIEWER_GAME.positions[1].fen;
+const AFTER_E4_FEN = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1";
 const CONTEXT = {
   overall_exists: true,
   white_count: 0,
@@ -186,18 +186,37 @@ function renderWorkspace(
   );
 }
 
+function sharedPositionSummary(): HTMLElement {
+  const row = screen.getByTestId("position-description-row");
+  const description = within(row).getByRole("button", { name: "Position description" });
+  if (description.getAttribute("aria-expanded") === "false") {
+    fireEvent.click(description);
+  }
+  const summary = row.querySelector("[data-position-summary]");
+  if (!(summary instanceof HTMLElement)) {
+    throw new Error("The shared position summary is missing.");
+  }
+  return summary;
+}
+
 describe("RepertoireBuilderWorkspace", () => {
   it("renders the standard starting position with White at the bottom", () => {
-    renderWorkspace();
+    const { container } = renderWorkspace();
 
     expect(screen.getByRole("heading", { name: "Repertoire Builder", level: 1 })).toBeVisible();
-    expect(screen.getByRole("group", { name: BOARD_LABEL })).toBeVisible();
+    const board = screen.getByRole("group", { name: BOARD_LABEL });
+    expect(board).toBeVisible();
     expect(screen.getByTestId("session-origin")).toHaveTextContent(
       "Standard starting position; local session begins at Ply 0. Current Ply 0.",
     );
-    expect(screen.getByText(/Orientation: White at the bottom\./)).toBeVisible();
-
+    const descriptionRow = screen.getByTestId("position-description-row");
+    expect(board.contains(descriptionRow)).toBe(false);
+    expect(descriptionRow.parentElement).toBe(container.querySelector('[class*="workspace"]'));
+    expect(descriptionRow.className).toMatch(/positionDescription/);
     const description = screen.getByRole("button", { name: "Position description" });
+    expect(description).toHaveAttribute("aria-expanded", "false");
+    fireEvent.click(description);
+    expect(sharedPositionSummary()).toHaveTextContent("OrientationWhite at the bottom");
     description.focus();
     expect(description).toHaveFocus();
   });
@@ -222,7 +241,7 @@ describe("RepertoireBuilderWorkspace", () => {
       `Game ${VIEWER_GAME_UUID}; complete prefix through Ply 2. Current Ply 2.`,
     );
     expect(screen.getByTestId("session-san-history")).toHaveTextContent("1. e4 1... e5");
-    expect(screen.getByText(/Orientation: Black at the bottom\./)).toBeVisible();
+    expect(sharedPositionSummary()).toHaveTextContent("OrientationBlack at the bottom");
   });
 
   it("exposes loading state while a stored game request is pending", async () => {
@@ -275,18 +294,24 @@ describe("RepertoireBuilderWorkspace", () => {
     renderWorkspace();
 
     await user.click(screen.getByTestId("move-e2-e4"));
-    expect(screen.getByTestId("current-fen")).toHaveTextContent(STARTING_FEN);
+    expect(sharedPositionSummary().querySelectorAll('[data-position-square="e2"]')).toHaveLength(1);
+    expect(sharedPositionSummary().querySelectorAll('[data-position-square="e4"]')).toHaveLength(0);
     expect(screen.getByTestId("staged-move")).toHaveTextContent("My move staged: e4.");
 
     await user.click(screen.getByRole("button", { name: "Flip" }));
     expect(screen.queryByTestId("staged-move")).not.toBeInTheDocument();
-    expect(
-      screen.getByText("Orientation: Black at the bottom. Side to move: White."),
-    ).toBeVisible();
+    expect(sharedPositionSummary()).toHaveTextContent("OrientationBlack at the bottom");
+    expect(sharedPositionSummary()).toHaveTextContent("Side to moveWhite");
 
     await user.click(screen.getByTestId("move-e2-e4"));
-    expect(screen.getByTestId("current-fen")).toHaveTextContent(AFTER_E4_FEN);
+    expect(sharedPositionSummary().querySelectorAll('[data-position-square="e2"]')).toHaveLength(0);
+    expect(sharedPositionSummary().querySelectorAll('[data-position-square="e4"]')).toHaveLength(1);
+    expect(sharedPositionSummary().querySelector('[data-position-side="b"]')).toHaveAttribute(
+      "data-position-side-to-move",
+      "true",
+    );
     expect(screen.getByTestId("session-san-history")).toHaveTextContent("1. e4");
+    expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", AFTER_E4_FEN);
     expect(screen.getByRole("button", { name: "Previous" })).toBeEnabled();
   });
 
@@ -335,7 +360,9 @@ describe("RepertoireBuilderWorkspace", () => {
     await waitFor(() => expect(screen.getByTestId("saved-move")).toBeVisible());
     await user.click(screen.getByRole("button", { name: "Play saved move" }));
 
-    expect(screen.getByTestId("current-fen")).toHaveTextContent(AFTER_E4_FEN);
+    expect(sharedPositionSummary().querySelectorAll('[data-position-square="e2"]')).toHaveLength(0);
+    expect(sharedPositionSummary().querySelectorAll('[data-position-square="e4"]')).toHaveLength(1);
+    expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", AFTER_E4_FEN);
     expect(screen.getByTestId("session-san-history")).toHaveTextContent("1. e4");
     expect(clients.preferredMoveClient.put).not.toHaveBeenCalled();
     expect(clients.preferredMoveClient.remove).not.toHaveBeenCalled();
@@ -420,7 +447,8 @@ describe("RepertoireBuilderWorkspace", () => {
     const candidate = await screen.findByRole("button", { name: "1. e4" });
     await user.click(candidate);
 
-    expect(screen.getByTestId("current-fen")).toHaveTextContent(AFTER_E4_FEN);
+    expect(sharedPositionSummary().querySelectorAll('[data-position-square="e2"]')).toHaveLength(0);
+    expect(sharedPositionSummary().querySelectorAll('[data-position-square="e4"]')).toHaveLength(1);
     expect(screen.getByTestId("session-san-history")).toHaveTextContent("1. e4");
     expect(client.enqueue).not.toHaveBeenCalled();
   });

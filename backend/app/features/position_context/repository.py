@@ -96,7 +96,7 @@ def open_read_connection() -> sqlite3.Connection:
 
     connection: sqlite3.Connection | None = None
     try:
-        connection = sqlite3.connect(_database_uri(path, "ro"), uri=True, timeout=0)
+        connection = sqlite3.connect(_database_uri(path, "ro"), uri=True, timeout=5.0)
         connection.row_factory = sqlite3.Row
         connection.execute("PRAGMA foreign_keys = ON")
         _require_schema(connection)

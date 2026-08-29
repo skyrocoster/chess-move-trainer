@@ -44,13 +44,13 @@ export const CandidateActivation: Story = {
     await bestLine.focus();
     await userEvent.keyboard("{Enter}");
     await expect(canvas.getByTestId("branch-current-fen")).toHaveTextContent(
-      "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1",
+      "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1",
     );
     await expect(canvas.getByTestId("branch-san")).toHaveTextContent("1. e4");
     await userEvent.click(canvas.getByRole("button", { name: "Flip" }));
     await expect(canvas.getByRole("group", { name: /ply 0, Black at the bottom/ })).toBeVisible();
     await expect(canvas.getByTestId("branch-current-fen")).toHaveTextContent(
-      "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1",
+      "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1",
     );
 
     await userEvent.click(
@@ -64,7 +64,7 @@ export const CandidateActivation: Story = {
     const alternativeLine = canvas.getByRole("button", { name: "1. d4" });
     await userEvent.click(alternativeLine);
     await expect(canvas.getByTestId("branch-current-fen")).toHaveTextContent(
-      "rnbqkbnr/pppppppp/8/8/3P4/8/PPP1PPPP/RNBQKBNR b KQkq - 0 1",
+      "rnbqkbnr/pppppppp/8/8/3P4/8/PPP1PPPP/RNBQKBNR b KQkq d3 0 1",
     );
     await expect(canvas.getByTestId("branch-san")).toHaveTextContent("1. d4");
   },

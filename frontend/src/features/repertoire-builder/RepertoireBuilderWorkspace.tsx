@@ -6,13 +6,14 @@ import {
   InteractiveBoardAdapter,
   type InteractiveBoardMoveIntent,
 } from "../board-adapter/InteractiveBoardAdapter";
+import { PositionDescription } from "../board-adapter/PositionDescription";
+import { createPositionModel } from "../board-adapter/positionDescriptionModel";
 import {
   isPromotionTarget,
   type PromotionCommit,
   type PromotionPiece,
   usePromotionController,
 } from "../board-adapter/PromotionPicker";
-import { Disclosure } from "../design-system/Disclosure";
 import { BoardControl } from "../viewer/BoardControl";
 import { defaultAnalysisClient, type AnalysisClient } from "../viewer/analysisApi";
 import { analysisPanelDisplay } from "../viewer/analysisFormatting";
@@ -38,10 +39,6 @@ import styles from "./RepertoireBuilderWorkspace.module.css";
 
 function orientationDescription(orientation: PositionPickerSession["orientation"]): string {
   return orientation === "white" ? "White at the bottom" : "Black at the bottom";
-}
-
-function sideDescription(side: "w" | "b"): string {
-  return side === "w" ? "White" : "Black";
 }
 
 function boardLabel(session: PositionPickerSession): string {
@@ -111,6 +108,10 @@ export default function RepertoireBuilderWorkspace({
     void chessVersion;
     return new Chess(currentPosition.fen);
   }, [chessVersion, currentPosition.fen]);
+  const positionModel = useMemo(
+    () => createPositionModel(currentPosition.fen, session.orientation),
+    [currentPosition.fen, session.orientation],
+  );
   const analysisState = useAnalysisState(
     currentPosition.fen,
     analysisClient,
@@ -180,8 +181,6 @@ export default function RepertoireBuilderWorkspace({
   const hasLocalPrevious = session.localCursor > 0;
   const hasLocalNext = session.localCursor < session.localContinuation.length;
   const label = boardLabel(session);
-  const orientation = orientationDescription(session.orientation);
-  const sideToMove = sideDescription(chess.turn());
   const sanHistory = sessionSanHistory(session);
   const localMoves = session.localMoves.slice(0, session.localCursor).map(branchMove);
 
@@ -380,14 +379,6 @@ export default function RepertoireBuilderWorkspace({
             onUndo={() => undefined}
             onReset={() => undefined}
           />
-          <Disclosure summary="Position description" defaultOpen>
-            <p className={styles.positionSummary} data-testid="position-summary" role="status">
-              Orientation: {orientation}. Side to move: {sideToMove}.
-            </p>
-            <p className={styles.fen} data-testid="current-fen">
-              Current FEN: {currentPosition.fen}
-            </p>
-          </Disclosure>
         </div>
         <div className={styles.controls}>
           <BoardControl
@@ -398,6 +389,9 @@ export default function RepertoireBuilderWorkspace({
             onNext={handleNext}
             onFlip={handleFlip}
           />
+        </div>
+        <div className={styles.positionDescription} data-testid="position-description-row">
+          <PositionDescription model={positionModel} />
         </div>
         <div className={styles.session}>
           <p className={styles.historyLabel}>Local SAN history</p>

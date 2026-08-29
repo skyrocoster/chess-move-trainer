@@ -3,6 +3,7 @@ import { Popover } from "@base-ui/react/popover";
 import { Chess, type Move, type Square } from "chess.js";
 import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
 
+import { strictFen } from "../viewer/chessPrimitives";
 import styles from "./PromotionPicker.module.css";
 
 export type PromotionPiece = "q" | "r" | "b" | "n";
@@ -154,7 +155,7 @@ export function usePromotionController({
 
       const commit = {
         move,
-        fen: chess.fen(),
+        fen: strictFen(chess),
         history: chess.history(),
       };
       clearPending(setPending, positionTokenRef);

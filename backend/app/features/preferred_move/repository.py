@@ -94,12 +94,12 @@ def _require_schema(connection: sqlite3.Connection) -> None:
         raise PreferredMoveUnavailableError from error
 
 
-def _open_connection(mode: str) -> sqlite3.Connection:
+def _open_connection(mode: str, *, timeout: float) -> sqlite3.Connection:
     path = database_path().expanduser().resolve()
     if not path.is_file():
         raise PreferredMoveUnavailableError
     try:
-        connection = sqlite3.connect(_database_uri(path, mode), uri=True, timeout=0)
+        connection = sqlite3.connect(_database_uri(path, mode), uri=True, timeout=timeout)
         connection.row_factory = sqlite3.Row
         connection.execute("PRAGMA foreign_keys = ON")
         _require_schema(connection)
@@ -121,13 +121,13 @@ def _open_connection(mode: str) -> sqlite3.Connection:
 def open_read_connection() -> sqlite3.Connection:
     """Open an existing supported database without write permission or DDL."""
 
-    return _open_connection("ro")
+    return _open_connection("ro", timeout=5.0)
 
 
 def open_write_connection() -> sqlite3.Connection:
     """Open an existing supported database for append-only event writes only."""
 
-    return _open_connection("rw")
+    return _open_connection("rw", timeout=0)
 
 
 class PreferredMoveRepository:

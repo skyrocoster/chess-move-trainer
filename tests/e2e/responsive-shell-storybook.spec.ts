@@ -1,5 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
+import { retryAxeWhenBusy } from "./axeBusyRetry";
 
 const STORYBOOK_ORIGIN = "http://127.0.0.1:6006";
 const STORYBOOK_ROOT_SELECTOR = "#storybook-root";
@@ -66,9 +67,9 @@ async function modalState(page: Page) {
 }
 
 async function expectApplicationAxeClean(page: Page) {
-  const results = await new AxeBuilder({ page })
-    .include(STORYBOOK_ROOT_SELECTOR)
-    .analyze();
+  const results = await retryAxeWhenBusy(page, () =>
+    new AxeBuilder({ page }).include(STORYBOOK_ROOT_SELECTOR).analyze(),
+  );
   expect(results.violations).toEqual([]);
 }
 

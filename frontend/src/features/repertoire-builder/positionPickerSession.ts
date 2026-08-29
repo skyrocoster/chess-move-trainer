@@ -2,7 +2,7 @@ import { Chess, type Square } from "chess.js";
 
 import { STARTING_FEN } from "../board-adapter/BoardAdapter";
 import type { BoardOrientation } from "../board-adapter/BoardAdapter";
-import type { ChessSide, Ply } from "../viewer/chessPrimitives";
+import { strictFen, type ChessSide, type Ply } from "../viewer/chessPrimitives";
 import type { Game, GamePosition } from "../viewer/gameModel";
 import type { PromotionPiece } from "../board-adapter/PromotionPicker";
 
@@ -146,7 +146,7 @@ function positionAfterMove(
       san: chessMove.san,
       position: {
         ply: session.currentPly + 1,
-        fen: chess.fen(),
+        fen: strictFen(chess),
         san: chessMove.san,
       },
     };

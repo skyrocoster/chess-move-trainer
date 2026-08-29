@@ -70,19 +70,52 @@ export function workspace(
   );
 }
 
+async function sharedPositionSummary(canvasElement: HTMLElement): Promise<HTMLElement> {
+  const description = canvasElement.querySelector(
+    '[data-testid="position-description-row"] button',
+  );
+  if (!(description instanceof HTMLElement)) {
+    throw new Error("The shared position description trigger is missing.");
+  }
+  if (description.getAttribute("aria-expanded") === "false") {
+    await userEvent.click(description);
+  }
+  const summary = canvasElement.querySelector(
+    '[data-testid="position-description-row"] [data-position-summary]',
+  );
+  if (!(summary instanceof HTMLElement)) {
+    throw new Error("The shared position summary is missing.");
+  }
+  return summary;
+}
+
+async function expectPositionSquares(
+  canvasElement: HTMLElement,
+  square: string,
+  count: number,
+): Promise<void> {
+  const summary = await sharedPositionSummary(canvasElement);
+  await expect(summary.querySelectorAll(`[data-position-square="${square}"]`)).toHaveLength(count);
+}
+
 async function verifyStandardWorkspace(canvasElement: HTMLElement) {
   const canvas = within(canvasElement);
   await expect(canvas.getByRole("heading", { name: "Repertoire Builder", level: 1 })).toBeVisible();
-  await expect(
-    canvas.getByRole("group", {
-      name: "Chess board: standard starting position, White at the bottom",
-    }),
-  ).toBeVisible();
-  await expect(canvas.getByTestId("position-summary")).toHaveTextContent(
-    "Orientation: White at the bottom. Side to move: White.",
-  );
+  const board = canvas.getByRole("group", {
+    name: "Chess board: standard starting position, White at the bottom",
+  });
+  await expect(board).toBeVisible();
+  const descriptionRow = canvas.getByTestId("position-description-row");
+  if (board.contains(descriptionRow)) {
+    throw new Error("The position description is still inside the repertoire board container.");
+  }
 
   const description = canvas.getByRole("button", { name: "Position description" });
+  await expect(description).toHaveAttribute("aria-expanded", "false");
+  await userEvent.click(description);
+  await expect(await sharedPositionSummary(canvasElement)).toHaveTextContent(
+    "OrientationWhite at the bottom",
+  );
   description.focus();
   await expect(description).toHaveFocus();
   await expectNoHorizontalOverflow(canvasElement);
@@ -119,8 +152,8 @@ export const StoredPrefixBlackSubject: Story = {
       `complete prefix through Ply 2. Current Ply 2`,
     );
     await expect(canvas.getByTestId("session-san-history")).toHaveTextContent("1. e4 1... e5");
-    await expect(canvas.getByTestId("position-summary")).toHaveTextContent(
-      "Orientation: Black at the bottom. Side to move: White.",
+    await expect(await sharedPositionSummary(canvasElement)).toHaveTextContent(
+      "OrientationBlack at the bottom",
     );
   },
 };
@@ -133,10 +166,9 @@ export const StagedMy: Story = {
     }),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    const startingFen = canvas.getByTestId("current-fen").textContent;
     await userEvent.click(await canvas.findByRole("button", { name: "1. e4" }));
     await expect(canvas.getByTestId("staged-move")).toHaveTextContent("My move staged: e4.");
-    await expect(canvas.getByTestId("current-fen")).toHaveTextContent(startingFen ?? "");
+    await expectPositionSquares(canvasElement, "e2", 1);
     await expect(canvas.getByTestId("session-san-history")).toHaveTextContent("No local moves yet");
   },
 };
@@ -170,10 +202,10 @@ export const CandidateActivation: Story = {
     }),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    const startingFen = canvas.getByTestId("current-fen").textContent;
     await userEvent.click(canvas.getByRole("button", { name: "Flip" }));
     await userEvent.click(await canvas.findByRole("button", { name: "1. e4" }));
-    await expect(canvas.getByTestId("current-fen")).not.toHaveTextContent(startingFen ?? "");
+    await expectPositionSquares(canvasElement, "e2", 0);
+    await expectPositionSquares(canvasElement, "e4", 1);
     await expect(canvas.getByTestId("session-san-history")).toHaveTextContent("1. e4");
     await expect(canvas.queryByTestId("staged-move")).not.toBeInTheDocument();
   },
@@ -211,15 +243,15 @@ export const FlipCancellation: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await userEvent.click(await canvas.findByRole("button", { name: "1. e4" }));
-    const stagedFen = canvas.getByTestId("current-fen").textContent;
     await expect(canvas.getByTestId("staged-move")).toBeVisible();
     await userEvent.click(canvas.getByRole("button", { name: "Flip" }));
     await expect(canvas.queryByTestId("staged-move")).not.toBeInTheDocument();
-    await expect(canvas.getByTestId("current-fen")).toHaveTextContent(stagedFen ?? "");
-    await expect(canvas.getByTestId("position-summary")).toHaveTextContent(
-      "Orientation: Black at the bottom. Side to move: White.",
+    await expect(await sharedPositionSummary(canvasElement)).toHaveTextContent(
+      "OrientationBlack at the bottom",
     );
+    await expectPositionSquares(canvasElement, "e2", 1);
     await userEvent.click(await canvas.findByRole("button", { name: "1. e4" }));
+    await expectPositionSquares(canvasElement, "e4", 1);
     await expect(canvas.getByTestId("session-san-history")).toHaveTextContent("1. e4");
   },
 };
@@ -236,15 +268,19 @@ export const Promotion: Story = {
     const body = within(canvasElement.ownerDocument.body);
     await loadGame(canvas, VIEWER_GAME_UUID, "0");
     await userEvent.click(canvas.getByRole("button", { name: "Flip" }));
+    const description = canvas.getByRole("button", { name: "Position description" });
+    await userEvent.click(description);
+    await expect(description).toHaveAttribute("aria-expanded", "true");
     await userEvent.click(await canvas.findByRole("button", { name: /1\. e8=Q/ }));
     await expect(body.getByRole("dialog", { name: "Choose a promotion piece" })).toBeVisible();
-    await expect(canvas.getByTestId("current-fen")).toHaveTextContent(
-      PROMOTION_GAME.positions[0].fen,
-    );
+    await expectPositionSquares(canvasElement, "e7", 1);
     await userEvent.click(body.getByRole("button", { name: "Promote to knight" }));
-    await expect(canvas.getByTestId("current-fen")).toHaveTextContent(
-      "k3N3/8/8/8/8/8/8/4K3 b - - 0 1",
-    );
+    await expectPositionSquares(canvasElement, "e8", 1);
+    await expect(
+      (await sharedPositionSummary(canvasElement)).querySelector(
+        '[data-position-side="w"] [data-position-piece="n"]',
+      ),
+    ).toBeTruthy();
     await expect(canvas.getByTestId("session-san-history")).toHaveTextContent("1. e8=N");
   },
 };
@@ -280,7 +316,7 @@ export const Accessibility: Story = {
     await expect(canvas.getByRole("toolbar", { name: "Board controls" })).toBeVisible();
     await expect(canvas.getByRole("button", { name: "Position description" })).toHaveAttribute(
       "aria-expanded",
-      "true",
+      "false",
     );
     await expectNoHorizontalOverflow(canvasElement);
   },
@@ -364,7 +400,7 @@ export const AssignedReadOnly: Story = {
     await expect(canvas.getByRole("button", { name: "Play saved move" })).toBeEnabled();
     await expect(canvas.queryByRole("button", { name: "Add" })).not.toBeInTheDocument();
     await userEvent.click(canvas.getByRole("button", { name: "Play saved move" }));
-    await expect(canvas.getByTestId("current-fen")).toHaveTextContent("4P3");
+    await expectPositionSquares(canvasElement, "e4", 1);
     await expect(canvas.getByTestId("session-san-history")).toHaveTextContent("1. e4");
     await expect(canvas.getByTestId("session-status")).toHaveTextContent(
       "Saved move played locally: e4.",

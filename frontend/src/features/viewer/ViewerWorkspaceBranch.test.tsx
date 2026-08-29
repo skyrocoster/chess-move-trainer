@@ -10,7 +10,7 @@ import type { GameLookup } from "./positionApi";
 import type { PositionContextClient } from "./positionContextApi";
 import { VIEWER_GAME, VIEWER_GAME_UUID } from "./viewerFixtures";
 
-const BRANCH_FEN = VIEWER_GAME.positions[1].fen;
+const BRANCH_FEN = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1";
 
 vi.mock("../board-adapter/InteractiveBoardAdapter", () => ({
   InteractiveBoardAdapter: ({
@@ -47,6 +47,20 @@ vi.mock("../board-adapter/InteractiveBoardAdapter", () => ({
           }
         >
           Start test branch
+        </button>
+        <button
+          type="button"
+          data-testid="branch-test-black-move"
+          onClick={() =>
+            onMoveIntent({
+              sourceSquare: "e7",
+              targetSquare: "e5",
+              sourceElement: null,
+              anchorElement: null,
+            })
+          }
+        >
+          Continue test branch
         </button>
         <button type="button" onClick={onReset}>
           Reset branch
@@ -227,9 +241,28 @@ describe("ViewerWorkspace temporary branch ownership", () => {
     expect(vi.mocked(client.enqueue).mock.calls.map(([fen]) => fen)).toEqual([BRANCH_FEN]);
   });
 
+  it("serializes a black temporary branch double-step with its strict target square", async () => {
+    const user = userEvent.setup();
+    render(
+      <ViewerWorkspace
+        lookup={successfulLookup()}
+        analysisClient={analysisClient()}
+        positionContextClient={positionContextClient()}
+      />,
+    );
+
+    await loadGame(user, "1");
+    await screen.findByText("Ply 1 of 3");
+    await user.click(screen.getByTestId("branch-test-black-move"));
+
+    expect(screen.getByTestId("branch-current-fen")).toHaveTextContent(
+      "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq e6 0 2",
+    );
+  });
+
   it.each([
     ["Best", "1. e4", BRANCH_FEN],
-    ["alternative", "1. d4", "rnbqkbnr/pppppppp/8/8/3P4/8/PPP1PPPP/RNBQKBNR b KQkq - 0 1"],
+    ["alternative", "1. d4", "rnbqkbnr/pppppppp/8/8/3P4/8/PPP1PPPP/RNBQKBNR b KQkq d3 0 1"],
   ] as const)(
     "routes the %s candidate through the branch handler after Flip",
     async (_, name, fen) => {

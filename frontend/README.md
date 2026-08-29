@@ -22,7 +22,7 @@ Each feature lives in `src/features/<name>/` and typically contains:
 | `src/features/app-shell/`          | Layout container, error boundary, 404 view                                   |
 | `src/features/board-adapter/`      | Chess board wrapper (read-only + interactive modes)                          |
 | `src/features/design-system/`      | Shared UI: Button, Disclosure, feedback components, tokens                   |
-| `src/features/repertoire-builder/` | Repertoire Builder: position-picker session with preferred-move workflow      |
+| `src/features/repertoire-builder/` | Repertoire Builder: position-picker session with preferred-move workflow     |
 | `src/features/status/`             | Backend health status page                                                   |
 | `src/features/viewer/`             | Main viewer: board, game loading, analysis panel, eval bar, position context |
 | `src/features/foundation/`         | Reserved (currently empty)                                                   |

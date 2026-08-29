@@ -12,6 +12,7 @@
     "origin origin"
     "board session"
     "controls session"
+    "positionDescription positionDescription"
     "analysis analysis";
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: var(--cmt-spacing-24);
@@ -54,7 +55,8 @@
 
 .controls,
 .session,
-.analysis {
+.analysis,
+.positionDescription {
   min-inline-size: 0;
 }
 
@@ -80,8 +82,7 @@
 
 .history,
 .staged,
-.sessionStatus,
-.fen {
+.sessionStatus {
   color: var(--md-sys-color-on-surface);
   font: var(--md-sys-typescale-body-medium);
   overflow-wrap: anywhere;
@@ -99,18 +100,8 @@
   grid-area: analysis;
 }
 
-.positionSummary,
-.fen {
-  margin: 0;
-}
-
-.positionSummary {
-  color: var(--md-sys-color-on-surface);
-  font: var(--md-sys-typescale-body-medium);
-}
-
-.fen {
-  margin-block-start: var(--cmt-spacing-8);
+.positionDescription {
+  grid-area: positionDescription;
 }
 
 @container (max-width: 40rem) {
@@ -122,6 +113,7 @@
       "board"
       "controls"
       "session"
+      "positionDescription"
       "analysis";
     grid-template-columns: minmax(0, 1fr);
     gap: var(--cmt-spacing-16);

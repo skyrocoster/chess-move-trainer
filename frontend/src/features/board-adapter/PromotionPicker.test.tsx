@@ -171,8 +171,14 @@ describe("PromotionPicker", () => {
     expect(screen.getByTestId("committed")).toHaveTextContent(`e8=${promotion}`);
     expect(screen.getByTestId("chess-history")).toHaveTextContent(`e8=${promotion}`);
     const promotionPiece = { queen: "q", rook: "r", bishop: "b", knight: "n" }[name];
-    expect(screen.getByTestId("chess-fen")).toHaveTextContent(
-      new Chess(PROMOTION_FEN).move({ from: "e7", to: "e8", promotion: promotionPiece }).after,
+    const expectedMove = new Chess(PROMOTION_FEN).move({
+      from: "e7",
+      to: "e8",
+      promotion: promotionPiece,
+    });
+    expect(screen.getByTestId("chess-fen")).toHaveTextContent(expectedMove.after);
+    expect(screen.getByTestId("committed")).toHaveTextContent(
+      `${expectedMove.san}|${expectedMove.after}`,
     );
   });
 

@@ -4,7 +4,6 @@ import { expect, test, type Page } from "@playwright/test";
 const STORYBOOK_URL = "http://127.0.0.1:6006";
 const STORYBOOK_ROOT = "#storybook-root";
 const GAME_UUID = "0007925c-5a8d-11f0-9740-f690a301000f";
-const PROMOTED_FEN = "k3N3/8/8/8/8/8/8/4K3 b - - 0 1";
 const STORY_IDS = {
   wide: "application-repertoire-builder-workspace--wide",
   constrained: "application-repertoire-builder-workspace--constrained",
@@ -40,6 +39,15 @@ async function openStory(
   await expect(
     page.getByRole("heading", { name: "Repertoire Builder", level: 1 }),
   ).toBeVisible({ timeout: 30_000 });
+}
+
+async function sharedPositionSummary(page: Page) {
+  const row = page.getByTestId("position-description-row");
+  const description = row.getByRole("button", { name: "Position description" });
+  await expect(description).toHaveAttribute("aria-expanded", "true");
+  const summary = row.locator("[data-position-summary]");
+  await expect(summary).toBeVisible();
+  return summary;
 }
 
 async function expectNoHorizontalOverflow(page: Page) {
@@ -93,9 +101,9 @@ test.describe("Repertoire Builder Storybook surface", () => {
         name: "Chess board: standard starting position, White at the bottom",
       }),
     ).toBeVisible();
-    await expect(page.getByTestId("position-summary")).toHaveText(
-      "Orientation: White at the bottom. Side to move: White.",
-    );
+    const summary = await sharedPositionSummary(page);
+    await expect(summary).toContainText("OrientationWhite at the bottom");
+    await expect(summary).toContainText("Side to moveWhite");
     await expectNoHorizontalOverflow(page);
     await checkA11y(page);
 
@@ -122,9 +130,9 @@ test.describe("Repertoire Builder Storybook surface", () => {
     await expect(page.getByTestId("session-san-history")).toHaveText(
       "1. e4 1... e5",
     );
-    await expect(page.getByTestId("position-summary")).toHaveText(
-      "Orientation: Black at the bottom. Side to move: White.",
-    );
+    const summary = await sharedPositionSummary(page);
+    await expect(summary).toContainText("OrientationBlack at the bottom");
+    await expect(summary).toContainText("Side to moveWhite");
     await checkA11y(page);
 
     await openStory(page, STORY_IDS.opponent);
@@ -148,7 +156,10 @@ test.describe("Repertoire Builder Storybook surface", () => {
 
     await openStory(page, STORY_IDS.flip);
     await expect(page.getByTestId("staged-move")).toHaveCount(0);
-    await expect(page.getByTestId("current-fen")).toContainText("4P3");
+    const summary = await sharedPositionSummary(page);
+    await expect(
+      summary.locator('[data-position-piece="p"] [data-position-square="e4"]'),
+    ).toHaveCount(1);
     await expectNoHorizontalOverflow(page);
   });
 
@@ -156,8 +167,40 @@ test.describe("Repertoire Builder Storybook surface", () => {
     page,
   }) => {
     await openStory(page, STORY_IDS.promotion);
-    await expect(page.getByTestId("current-fen")).toContainText(PROMOTED_FEN);
     await expect(page.getByTestId("session-san-history")).toHaveText("1. e8=N");
+    const summary = await sharedPositionSummary(page);
+    await expect(summary).toContainText("Side to moveBlack");
+    await expect(
+      summary.locator(
+        '[data-position-side="b"] [data-position-piece="k"] [data-position-square="a8"]',
+      ),
+    ).toHaveCount(1);
+    await expect(
+      summary.locator(
+        '[data-position-side="w"] [data-position-piece="n"] [data-position-square="e8"]',
+      ),
+    ).toHaveCount(1);
+    await expect(
+      summary.locator(
+        '[data-position-side="w"] [data-position-piece="k"] [data-position-square="e1"]',
+      ),
+    ).toHaveCount(1);
+    await expect(summary.locator("[data-position-square]")).toHaveCount(3);
+    await expect(
+      summary.locator('[data-position-fact="castling-white"]'),
+    ).toContainText("Castling · White -");
+    await expect(
+      summary.locator('[data-position-fact="castling-black"]'),
+    ).toContainText("Castling · Black -");
+    await expect(
+      summary.locator('[data-position-fact="en-passant"]'),
+    ).toContainText("En-passant target -");
+    await expect(
+      summary.locator('[data-position-fact="halfmove"]'),
+    ).toContainText("Halfmove clock 0");
+    await expect(
+      summary.locator('[data-position-fact="fullmove"]'),
+    ).toContainText("Fullmove 1");
     await expect(
       page.getByRole("button", { name: "Position description" }),
     ).toBeVisible();

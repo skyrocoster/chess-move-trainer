@@ -6,6 +6,8 @@ from pathlib import Path
 
 from fastapi.testclient import TestClient
 
+import backend.app.features.position_context.repository as repository_module
+
 from .conftest import AFTER_E4_FEN, COUNTER_FEN, START_FEN, UNKNOWN_FEN, create_context_database
 
 
@@ -23,6 +25,16 @@ def test_valid_context_returns_overall_and_distinct_game_color_counts(
         "white_count": 2,
         "black_count": 1,
     }
+
+
+def test_read_connection_uses_a_five_second_sqlite_busy_timeout(api_context) -> None:
+    _client, _database = api_context
+
+    connection = repository_module.open_read_connection()
+    try:
+        assert tuple(connection.execute("PRAGMA busy_timeout").fetchone()) == (5000,)
+    finally:
+        connection.close()
 
 
 def test_full_fen_counters_do_not_change_the_four_field_identity(

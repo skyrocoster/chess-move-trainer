@@ -24,11 +24,11 @@ move tree or separate chess Undo/Reset UI.
 | ---------------------------- | ------------------------------------------------------------------------- |
 | `RepertoireBuilderWorkspace` | Top-level workspace — loader, board, session controls, and analysis panel |
 | `positionPickerSession`      | In-memory session model — standard/stored origins, history, move staging  |
-| `PreferredMovePanel`         | Preferred-move UI — context/saveability, date, add/save/play/remove      |
+| `PreferredMovePanel`         | Preferred-move UI — context/saveability, date, add/save/play/remove       |
 | `preferredMoveApi`           | Typed `/api/preferred-move` client — GET/PUT/DELETE, failure codes        |
-| `preferredMoveState`         | `usePreferredMoveState` read hook — preferred move, loading, error       |
-| `preferredMoveWorkflowState` | `usePreferredMoveWorkflow` hook — draft, date, mutations, play, reset    |
-| `repertoireWorkflowModel`    | Pure position model — saveability, saved move, draft state               |
+| `preferredMoveState`         | `usePreferredMoveState` read hook — preferred move, loading, error        |
+| `preferredMoveWorkflowState` | `usePreferredMoveWorkflow` hook — draft, date, mutations, play, reset     |
+| `repertoireWorkflowModel`    | Pure position model — saveability, saved move, draft state                |
 
 ## API contract
 

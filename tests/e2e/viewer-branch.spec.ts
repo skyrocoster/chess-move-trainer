@@ -1,5 +1,6 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
+import { retryAxeWhenBusy } from "./axeBusyRetry";
 
 const STORYBOOK_URL = "http://127.0.0.1:6006";
 const STARTING_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
@@ -138,25 +139,31 @@ async function openInteractiveBoardStory(page: Page, storyId: string) {
 }
 
 async function checkInteractiveBoardA11y(page: Page) {
-  const results = await new AxeBuilder({ page })
-    .disableRules(["landmark-one-main", "page-has-heading-one", "region"])
-    .include('[data-testid="interactive-board-adapter"]')
-    .analyze();
+  const results = await retryAxeWhenBusy(page, () =>
+    new AxeBuilder({ page })
+      .disableRules(["landmark-one-main", "page-has-heading-one", "region"])
+      .include('[data-testid="interactive-board-adapter"]')
+      .analyze(),
+  );
   expect(results.violations).toEqual([]);
 }
 
 async function checkPageA11y(page: Page) {
-  const results = await new AxeBuilder({ page })
-    .disableRules(["landmark-one-main", "page-has-heading-one", "region"])
-    .analyze();
+  const results = await retryAxeWhenBusy(page, () =>
+    new AxeBuilder({ page })
+      .disableRules(["landmark-one-main", "page-has-heading-one", "region"])
+      .analyze(),
+  );
   expect(results.violations).toEqual([]);
 }
 
 async function checkPromotionA11y(page: Page) {
-  const results = await new AxeBuilder({ page })
-    .disableRules(["landmark-one-main", "page-has-heading-one", "region"])
-    .include('[role="dialog"]')
-    .analyze();
+  const results = await retryAxeWhenBusy(page, () =>
+    new AxeBuilder({ page })
+      .disableRules(["landmark-one-main", "page-has-heading-one", "region"])
+      .include('[role="dialog"]')
+      .analyze(),
+  );
   expect(results.violations).toEqual([]);
 }
 

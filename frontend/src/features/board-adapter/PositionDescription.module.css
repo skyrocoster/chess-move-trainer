@@ -1,0 +1,250 @@
+.positionDescription :global(button:focus-visible),
+.positionDescription :global(summary:focus-visible) {
+  outline: 3px solid var(--md-sys-color-primary);
+  outline-offset: 3px;
+}
+
+.descriptionDisclosure {
+  box-sizing: border-box;
+  background: var(--md-sys-color-surface-container-low, var(--md-sys-color-surface-container));
+  border: 1px solid var(--md-sys-color-outline-variant, var(--md-sys-color-outline));
+  border-radius: var(--cmt-radius-default);
+  color: var(--md-sys-color-on-surface);
+  max-inline-size: 100%;
+  overflow-x: clip;
+  min-inline-size: 0;
+  padding: var(--cmt-spacing-16);
+}
+
+.positionSummary {
+  display: grid;
+  gap: var(--cmt-spacing-16);
+  min-inline-size: 0;
+}
+
+.positionMetadata,
+.positionInventories {
+  display: grid;
+  gap: calc(var(--cmt-spacing-16) / 2);
+  min-inline-size: 0;
+}
+
+.positionMetadata {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.metadataItem {
+  align-items: baseline;
+  background: var(--md-sys-color-surface-container-high, var(--md-sys-color-surface-container));
+  border: 1px solid var(--md-sys-color-outline-variant, var(--md-sys-color-outline));
+  border-radius: var(--cmt-radius-default);
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--cmt-spacing-16) / 2);
+  justify-content: space-between;
+  min-inline-size: 0;
+  padding: calc(var(--cmt-spacing-16) / 2) var(--cmt-spacing-16);
+}
+
+.metadataLabel,
+.pieceLabel {
+  color: var(--md-sys-color-on-surface-variant, var(--md-sys-color-on-surface));
+  font: var(--md-sys-typescale-label-medium, var(--md-sys-typescale-body-medium));
+}
+
+.metadataValue {
+  font: var(--md-sys-typescale-title-small, var(--md-sys-typescale-body-medium));
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
+  text-align: end;
+}
+
+[data-position-metadata-item="side-to-move"] .metadataValue {
+  background: var(--md-sys-color-primary-container, var(--md-sys-color-surface-container-high));
+  border-radius: var(--cmt-radius-default);
+  color: var(--md-sys-color-on-primary-container, var(--md-sys-color-on-surface));
+  padding: calc(var(--cmt-spacing-16) / 4) calc(var(--cmt-spacing-16) / 2);
+}
+
+.positionInventories {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.sideInventory {
+  background: var(--md-sys-color-surface-container, var(--md-sys-color-surface));
+  border: 1px solid var(--md-sys-color-outline-variant, var(--md-sys-color-outline));
+  border-radius: var(--cmt-radius-default);
+  min-inline-size: 0;
+  overflow: hidden;
+  padding: var(--cmt-spacing-16);
+}
+
+.sideInventory[data-position-side-to-move="true"] {
+  border-color: var(--md-sys-color-primary);
+  box-shadow: inset 0 0 0 1px var(--md-sys-color-primary);
+}
+
+.sideHeader {
+  align-items: center;
+  border-block-end: 1px solid var(--md-sys-color-outline-variant, var(--md-sys-color-outline));
+  display: flex;
+  gap: calc(var(--cmt-spacing-16) / 2);
+  justify-content: space-between;
+  min-inline-size: 0;
+  padding-block-end: calc(var(--cmt-spacing-16) / 2);
+}
+
+.sideHeader h3 {
+  font: var(--md-sys-typescale-title-medium, var(--md-sys-typescale-body-medium));
+  margin: 0;
+}
+
+.pieceRows {
+  display: grid;
+  min-inline-size: 0;
+}
+
+.pieceRow {
+  align-items: center;
+  border-block-end: 1px solid var(--md-sys-color-outline-variant, var(--md-sys-color-outline));
+  display: grid;
+  gap: calc(var(--cmt-spacing-16) / 2);
+  grid-template-columns: minmax(0, 5.5rem) minmax(0, 1fr);
+  min-inline-size: 0;
+  padding-block: calc(var(--cmt-spacing-16) / 2);
+}
+
+.pieceRow:last-child {
+  border-block-end: 0;
+  padding-block-end: 0;
+}
+
+.positionSquares {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--cmt-spacing-16) / 4);
+  min-inline-size: 0;
+}
+
+.squareToken {
+  align-items: center;
+  background: var(--md-sys-color-surface-container-high, var(--md-sys-color-surface-container));
+  border: 1px solid var(--md-sys-color-outline);
+  border-radius: var(--cmt-radius-default);
+  box-sizing: border-box;
+  color: var(--md-sys-color-on-surface);
+  display: inline-flex;
+  font: var(--md-sys-typescale-label-medium, var(--md-sys-typescale-body-medium));
+  justify-content: center;
+  min-block-size: calc(var(--cmt-spacing-16) * 1.75);
+  min-inline-size: calc(var(--cmt-spacing-16) * 1.75);
+  padding-inline: calc(var(--cmt-spacing-16) / 4);
+  transition:
+    background-color 140ms ease,
+    border-color 140ms ease;
+}
+
+.squareToken:hover,
+.squareToken:focus-visible {
+  background: var(--md-sys-color-primary-container, var(--md-sys-color-surface-container-high));
+  border-color: var(--md-sys-color-primary);
+  color: var(--md-sys-color-on-primary-container, var(--md-sys-color-on-surface));
+}
+
+.positionFacts {
+  border-block-start: 1px solid var(--md-sys-color-outline-variant, var(--md-sys-color-outline));
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--cmt-spacing-16) / 2);
+  min-inline-size: 0;
+  padding-block-start: var(--cmt-spacing-16);
+}
+
+.factChip {
+  align-items: baseline;
+  background: var(--md-sys-color-surface-container-high, var(--md-sys-color-surface-container));
+  border: 1px solid var(--md-sys-color-outline-variant, var(--md-sys-color-outline));
+  border-radius: var(--cmt-radius-default);
+  box-sizing: border-box;
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: calc(var(--cmt-spacing-16) / 4);
+  max-inline-size: 100%;
+  overflow-wrap: anywhere;
+  padding: calc(var(--cmt-spacing-16) / 2) calc(var(--cmt-spacing-16) * 0.75);
+}
+
+.factChip strong {
+  color: var(--md-sys-color-on-surface);
+  font: var(--md-sys-typescale-label-medium, var(--md-sys-typescale-body-medium));
+}
+
+@container (max-width: 36rem) {
+  .positionInventories {
+    grid-template-columns: 1fr;
+  }
+}
+
+@container (max-width: 26rem) {
+  .positionMetadata {
+    grid-template-columns: 1fr;
+  }
+
+  .metadataItem {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: calc(var(--cmt-spacing-16) / 4);
+  }
+
+  .metadataValue {
+    text-align: start;
+  }
+}
+
+@media (forced-colors: active) {
+  .positionDescription :global(button:focus-visible),
+  .positionDescription :global(summary:focus-visible) {
+    background: Highlight;
+    border-color: Highlight;
+    color: HighlightText;
+    outline-color: Highlight;
+  }
+
+  .descriptionDisclosure,
+  .metadataItem,
+  .sideInventory,
+  .squareToken,
+  .factChip,
+  [data-position-metadata-item="side-to-move"] .metadataValue {
+    background: Canvas;
+    border-color: CanvasText;
+    color: CanvasText;
+  }
+
+  .sideInventory[data-position-side-to-move="true"] {
+    box-shadow: inset 0 0 0 1px Highlight;
+  }
+
+  .metadataLabel,
+  .pieceLabel {
+    color: CanvasText;
+  }
+
+  .factChip strong {
+    color: CanvasText;
+  }
+
+  .squareToken:hover,
+  .squareToken:focus-visible {
+    background: Highlight;
+    border-color: Highlight;
+    color: HighlightText;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .squareToken {
+    transition-duration: 0s;
+  }
+}

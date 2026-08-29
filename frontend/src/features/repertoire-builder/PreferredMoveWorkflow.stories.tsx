@@ -52,9 +52,12 @@ export const OpponentLocalOnly: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await loadGame(canvas, VIEWER_GAME_UUID, "2");
-    await expect(canvas.getByTestId("position-summary")).toHaveTextContent(
-      "Orientation: Black at the bottom. Side to move: White.",
-    );
+    const description = canvas.getByRole("button", { name: "Position description" });
+    await userEvent.click(description);
+    await expect(description).toHaveAttribute("aria-expanded", "true");
+    await expect(
+      canvas.getByTestId("position-description-row").querySelector("[data-position-summary]"),
+    ).toHaveTextContent("OrientationBlack at the bottom");
     await expect(canvas.queryByTestId("saved-move")).not.toBeInTheDocument();
     await userEvent.click(await canvas.findByRole("button", { name: "2. Nf3" }));
     await expect(canvas.getByTestId("session-status")).toHaveTextContent(

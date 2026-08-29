@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
+import backend.app.features.preferred_move.repository as repository_module
 import backend.app.features.preferred_move.router as router_module
 from backend.app.main import app
 
@@ -60,6 +61,16 @@ def _count(database: Path, table: str = MOVE_TABLE) -> int:
 
 def _parse_time(value: str) -> datetime:
     return datetime.fromisoformat(value.replace("Z", "+00:00"))
+
+
+def test_read_connection_uses_a_five_second_sqlite_busy_timeout(api_context) -> None:
+    _client, _database = api_context
+
+    connection = repository_module.open_read_connection()
+    try:
+        assert tuple(connection.execute("PRAGMA busy_timeout").fetchone()) == (5000,)
+    finally:
+        connection.close()
 
 
 def test_lifecycle_returns_explicit_unassigned_state_and_preserves_append_only_history(

@@ -6,6 +6,7 @@ import {
   createStoredGameSession,
   flipPositionPickerSession,
   navigatePositionPickerSession,
+  appendPositionPickerMove,
   selectPositionPickerMove,
   sessionSanHistory,
 } from "./positionPickerSession";
@@ -76,7 +77,13 @@ describe("position picker session", () => {
     expect(result?.disposition).toBe("staged");
     expect(result?.session.currentPosition).toEqual(session.currentPosition);
     expect(result?.session.localContinuation).toEqual([]);
-    expect(result?.session.stagedMove).toMatchObject({ san: "e4", color: "white" });
+    expect(result?.session.stagedMove).toMatchObject({
+      san: "e4",
+      color: "white",
+      position: {
+        fen: "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1",
+      },
+    });
   });
 
   it("advances opposing moves, records SAN, and rejects illegal moves without mutation", () => {
@@ -87,7 +94,11 @@ describe("position picker session", () => {
       targetSquare: "e4",
     });
     expect(result?.disposition).toBe("advanced");
-    expect(result?.session.currentPosition).toMatchObject({ ply: 1, san: "e4" });
+    expect(result?.session.currentPosition).toMatchObject({
+      ply: 1,
+      san: "e4",
+      fen: "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1",
+    });
     expect(result?.session.localMoves[0]).toMatchObject({
       sourceSquare: "e2",
       targetSquare: "e4",
@@ -113,6 +124,9 @@ describe("position picker session", () => {
     })!.session;
 
     expect(session.localContinuation).toHaveLength(2);
+    expect(session.currentPosition.fen).toBe(
+      "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq e6 0 2",
+    );
     expect(sessionSanHistory(session)).toBe("1. e4 1... e5");
 
     session = navigatePositionPickerSession(session, "previous");
@@ -174,5 +188,16 @@ describe("position picker session", () => {
       promotion: "q",
     });
     expect(promoted?.session.currentPosition.fen).toBe("k3Q3/8/8/8/8/8/8/4K3 b - - 0 1");
+  });
+
+  it("plays a saved move through the same strict local continuation", () => {
+    const next = appendPositionPickerMove(createStandardStartSession(), {
+      sourceSquare: "e2",
+      targetSquare: "e4",
+    });
+
+    expect(next?.currentPosition.fen).toBe(
+      "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1",
+    );
   });
 });
