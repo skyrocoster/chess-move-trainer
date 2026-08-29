@@ -1,9 +1,9 @@
 ---
 description: Independent Quality Agent for fresh validation or one exact coordinator-authorized repair.
 mode: subagent
-model: opencode-go/deepseek-v4-flash
-variant: medium
-#model: opencode/mimo-v2.5-free
+#model: opencode-go/deepseek-v4-flash
+#variant: medium
+model: opencode/mimo-v2.5-free
 #variant: max
 steps: 30
 permission:
