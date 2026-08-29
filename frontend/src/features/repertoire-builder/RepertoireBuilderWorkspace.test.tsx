@@ -9,6 +9,7 @@ import type {} from "@chialab/vitest-axe/matchers";
 import type { AnalysisClient } from "../viewer/analysisApi";
 import type { GameLookupResult } from "../viewer/positionApi";
 import type { PositionContextClient } from "../viewer/positionContextApi";
+import { PROMOTION_GAME } from "../viewer/viewerStoryFixtures";
 import { VIEWER_GAME, VIEWER_GAME_UUID } from "../viewer/viewerFixtures";
 import type {
   PreferredMoveClient,
@@ -68,6 +69,8 @@ const BOARD_LABEL = "Chess board: standard starting position, White at the botto
 const STORED_BOARD_LABEL = `Chess board: game ${VIEWER_GAME_UUID}, ply 2, Black at the bottom`;
 const STARTING_FEN = VIEWER_GAME.positions[0].fen;
 const AFTER_E4_FEN = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1";
+const AFTER_D4_FEN = "rnbqkbnr/pppppppp/8/8/3P4/8/PPP1PPPP/RNBQKBNR b KQkq d3 0 1";
+const AFTER_E8_KNIGHT_FEN = "k3N3/8/8/8/8/8/8/4K3 b - - 0 1";
 const CONTEXT = {
   overall_exists: true,
   white_count: 0,
@@ -289,13 +292,60 @@ describe("RepertoireBuilderWorkspace", () => {
     expect(screen.queryByText("Game not found")).not.toBeInTheDocument();
   });
 
-  it("stages my moves, cancels staging on Flip, and advances an opposing move locally", async () => {
+  it("clears a staged preview on Reset and when a new game loads", async () => {
+    const lookup = vi.fn().mockResolvedValue({ status: "success", game: VIEWER_GAME });
     const user = userEvent.setup();
-    renderWorkspace();
+    renderWorkspace({ lookup });
 
     await user.click(screen.getByTestId("move-e2-e4"));
-    expect(sharedPositionSummary().querySelectorAll('[data-position-square="e2"]')).toHaveLength(1);
-    expect(sharedPositionSummary().querySelectorAll('[data-position-square="e4"]')).toHaveLength(0);
+    expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", AFTER_E4_FEN);
+    await user.click(screen.getByRole("button", { name: "Reset" }));
+    expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", STARTING_FEN);
+    expect(screen.getByTestId("session-san-history")).toHaveTextContent("No local moves yet");
+
+    await user.click(screen.getByTestId("move-e2-e4"));
+    await user.type(screen.getByLabelText("Game UUID"), VIEWER_GAME_UUID);
+    await user.click(screen.getByRole("button", { name: "Load game" }));
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole("group", {
+          name: `Chess board: game ${VIEWER_GAME_UUID}, ply 0, White at the bottom`,
+        }),
+      ).toBeVisible(),
+    );
+    expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", STARTING_FEN);
+    expect(screen.getByTestId("session-origin")).toHaveTextContent("Current Ply 0.");
+    expect(screen.getByTestId("session-san-history")).toHaveTextContent("No local moves yet");
+  });
+
+  it("stages my moves, cancels staging on Flip, and advances an opposing move locally", async () => {
+    const user = userEvent.setup();
+    const clients = testClients();
+    renderWorkspace(clients);
+
+    await waitFor(() => expect(screen.getByText("Never seen as White")).toBeVisible());
+
+    await user.click(screen.getByTestId("move-e2-e4"));
+    expect(sharedPositionSummary().querySelectorAll('[data-position-square="e2"]')).toHaveLength(0);
+    expect(sharedPositionSummary().querySelectorAll('[data-position-square="e4"]')).toHaveLength(1);
+    expect(sharedPositionSummary().querySelector('[data-position-side="b"]')).toHaveAttribute(
+      "data-position-side-to-move",
+      "true",
+    );
+    expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", AFTER_E4_FEN);
+    expect(screen.getByTestId("session-origin")).toHaveTextContent(
+      "Standard starting position; local session begins at Ply 0. Current Ply 0.",
+    );
+    expect(screen.getByTestId("session-san-history")).toHaveTextContent("No local moves yet");
+    expect(clients.preferredMoveClient.put).not.toHaveBeenCalled();
+    expect(clients.preferredMoveClient.get).toHaveBeenCalledWith(STARTING_FEN, {
+      signal: expect.any(AbortSignal),
+    });
+    expect(clients.positionContextClient).toHaveBeenCalledWith(
+      STARTING_FEN,
+      expect.any(AbortSignal),
+    );
     const session = screen.getByTestId("repertoire-session");
     const status = within(session).getByTestId("session-status");
     expect(status).toHaveTextContent("My move staged: e4.");
@@ -304,6 +354,17 @@ describe("RepertoireBuilderWorkspace", () => {
     expect(within(session).getByTestId("session-san-history")).toBeVisible();
     expect(within(session).getByRole("heading", { name: "Preferred move" })).toBeVisible();
     expect(screen.getAllByText("My move staged: e4.", { exact: true })).toHaveLength(1);
+
+    await user.click(screen.getByTestId("move-d2-d4"));
+    expect(sharedPositionSummary().querySelectorAll('[data-position-square="e4"]')).toHaveLength(0);
+    expect(sharedPositionSummary().querySelectorAll('[data-position-square="d2"]')).toHaveLength(0);
+    expect(sharedPositionSummary().querySelectorAll('[data-position-square="d4"]')).toHaveLength(1);
+    expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", AFTER_D4_FEN);
+    expect(screen.getByTestId("session-origin")).toHaveTextContent("Current Ply 0.");
+    expect(screen.getByTestId("session-san-history")).toHaveTextContent("No local moves yet");
+    expect(clients.preferredMoveClient.put).not.toHaveBeenCalled();
+    expect(status).toHaveTextContent("My move staged: d4.");
+    expect(screen.getAllByText("My move staged: d4.", { exact: true })).toHaveLength(1);
 
     await user.click(screen.getByRole("button", { name: "Flip" }));
     expect(screen.getByTestId("session-status")).toHaveTextContent(
@@ -332,6 +393,10 @@ describe("RepertoireBuilderWorkspace", () => {
     await waitFor(() => expect(screen.getByText("Never seen as White")).toBeVisible());
     await user.click(screen.getByTestId("move-e2-e4"));
     expect(clients.preferredMoveClient.put).not.toHaveBeenCalled();
+    expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", AFTER_E4_FEN);
+    expect(sharedPositionSummary().querySelectorAll('[data-position-square="e4"]')).toHaveLength(1);
+    expect(screen.getByTestId("session-origin")).toHaveTextContent("Current Ply 0.");
+    expect(screen.getByTestId("session-san-history")).toHaveTextContent("No local moves yet");
 
     await user.click(screen.getByRole("button", { name: "Add" }));
     await waitFor(() => expect(clients.preferredMoveClient.put).toHaveBeenCalledTimes(1));
@@ -339,6 +404,13 @@ describe("RepertoireBuilderWorkspace", () => {
       { fen: STARTING_FEN, move_uci: "e2e4", effective_at: "" },
       { signal: expect.any(AbortSignal) },
     );
+    await waitFor(() =>
+      expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", STARTING_FEN),
+    );
+    expect(sharedPositionSummary().querySelectorAll('[data-position-square="e2"]')).toHaveLength(1);
+    expect(sharedPositionSummary().querySelectorAll('[data-position-square="e4"]')).toHaveLength(0);
+    expect(screen.getByTestId("session-origin")).toHaveTextContent("Current Ply 0.");
+    expect(screen.getByTestId("session-san-history")).toHaveTextContent("No local moves yet");
     expect(screen.getByRole("button", { name: "Effective date: Choose date" })).toBeVisible();
   });
 
@@ -351,7 +423,24 @@ describe("RepertoireBuilderWorkspace", () => {
     await user.click(screen.getByRole("button", { name: "Edit" }));
     await user.click(screen.getByTestId("move-d2-d4"));
     expect(screen.getByTestId("replacement-move")).toHaveTextContent("d4");
+    expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", AFTER_D4_FEN);
+    expect(sharedPositionSummary().querySelectorAll('[data-position-square="d2"]')).toHaveLength(0);
+    expect(sharedPositionSummary().querySelectorAll('[data-position-square="d4"]')).toHaveLength(1);
+    expect(screen.getByTestId("session-origin")).toHaveTextContent("Current Ply 0.");
+    expect(screen.getByTestId("session-san-history")).toHaveTextContent("No local moves yet");
     expect(clients.preferredMoveClient.put).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole("button", { name: "Cancel edit" }));
+    await waitFor(() =>
+      expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", STARTING_FEN),
+    );
+    expect(screen.queryByTestId("replacement-move")).not.toBeInTheDocument();
+    expect(sharedPositionSummary().querySelectorAll('[data-position-square="d2"]')).toHaveLength(1);
+    expect(sharedPositionSummary().querySelectorAll('[data-position-square="d4"]')).toHaveLength(0);
+    expect(screen.getByTestId("session-san-history")).toHaveTextContent("No local moves yet");
+
+    await user.click(screen.getByRole("button", { name: "Edit" }));
+    await user.click(screen.getByTestId("move-d2-d4"));
 
     await user.click(screen.getByRole("button", { name: "Save replacement" }));
     await waitFor(() => expect(clients.preferredMoveClient.put).toHaveBeenCalledTimes(1));
@@ -359,6 +448,49 @@ describe("RepertoireBuilderWorkspace", () => {
       { fen: STARTING_FEN, move_uci: "d2d4", effective_at: "" },
       { signal: expect.any(AbortSignal) },
     );
+    await waitFor(() =>
+      expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", STARTING_FEN),
+    );
+    expect(sharedPositionSummary().querySelectorAll('[data-position-square="d2"]')).toHaveLength(1);
+    expect(sharedPositionSummary().querySelectorAll('[data-position-square="d4"]')).toHaveLength(0);
+    expect(screen.getByTestId("session-origin")).toHaveTextContent("Current Ply 0.");
+    expect(screen.getByTestId("session-san-history")).toHaveTextContent("No local moves yet");
+  });
+
+  it("stages a selected promotion on the child position without local history", async () => {
+    const lookup = vi.fn().mockResolvedValue({ status: "success", game: PROMOTION_GAME });
+    const user = userEvent.setup();
+    renderWorkspace({ lookup });
+
+    await user.type(screen.getByLabelText("Game UUID"), VIEWER_GAME_UUID);
+    await user.click(screen.getByRole("button", { name: "Load game" }));
+    await waitFor(() =>
+      expect(
+        screen.getByRole("group", {
+          name: `Chess board: game ${VIEWER_GAME_UUID}, ply 0, White at the bottom`,
+        }),
+      ).toBeVisible(),
+    );
+
+    await user.click(screen.getByTestId("move-e7-e8"));
+    await screen.findByRole("dialog", { name: "Choose a promotion piece" });
+    await user.keyboard("{Escape}");
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", PROMOTION_GAME.positions[0].fen);
+    expect(screen.getByTestId("session-san-history")).toHaveTextContent("No local moves yet");
+
+    await user.click(screen.getByTestId("move-e7-e8"));
+    const dialog = await screen.findByRole("dialog", { name: "Choose a promotion piece" });
+    await user.click(within(dialog).getByRole("button", { name: "Promote to knight" }));
+
+    expect(screen.getByTestId("mock-chessboard")).toHaveAttribute(
+      "data-position",
+      AFTER_E8_KNIGHT_FEN,
+    );
+    expect(sharedPositionSummary().querySelectorAll('[data-position-square="e7"]')).toHaveLength(0);
+    expect(sharedPositionSummary().querySelectorAll('[data-position-square="e8"]')).toHaveLength(1);
+    expect(screen.getByTestId("session-origin")).toHaveTextContent("Current Ply 0.");
+    expect(screen.getByTestId("session-san-history")).toHaveTextContent("No local moves yet");
   });
 
   it("plays the saved move through the local W1 path without a mutation", async () => {
@@ -443,9 +575,34 @@ describe("RepertoireBuilderWorkspace", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "The selected date cannot be in the future.",
     );
+    expect(clients.preferredMoveClient.put).toHaveBeenCalledWith(
+      { fen: STARTING_FEN, move_uci: "e2e4", effective_at: "2026-01-10T00:00:00.000Z" },
+      { signal: expect.any(AbortSignal) },
+    );
+    expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", AFTER_E4_FEN);
+    expect(sharedPositionSummary().querySelectorAll('[data-position-square="e2"]')).toHaveLength(0);
+    expect(sharedPositionSummary().querySelectorAll('[data-position-square="e4"]')).toHaveLength(1);
+    expect(screen.getByTestId("session-origin")).toHaveTextContent("Current Ply 0.");
+    expect(screen.getByTestId("session-san-history")).toHaveTextContent("No local moves yet");
     expect(screen.getByTestId("session-status")).toHaveTextContent("My move staged: e4.");
     expect(screen.getAllByText("My move staged: e4.", { exact: true })).toHaveLength(1);
     expect(screen.getByRole("button", { name: "Effective date: 2026-01-10" })).toBeVisible();
+  });
+
+  it("stages a displayed Best candidate from the canonical parent", async () => {
+    const user = userEvent.setup();
+    const client = completedAnalysisClient();
+    renderWorkspace({ analysisClient: client });
+
+    const candidate = await screen.findByRole("button", { name: "1. e4" });
+    await user.click(candidate);
+
+    expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", AFTER_E4_FEN);
+    expect(sharedPositionSummary().querySelectorAll('[data-position-square="e2"]')).toHaveLength(0);
+    expect(sharedPositionSummary().querySelectorAll('[data-position-square="e4"]')).toHaveLength(1);
+    expect(screen.getByTestId("session-origin")).toHaveTextContent("Current Ply 0.");
+    expect(screen.getByTestId("session-san-history")).toHaveTextContent("No local moves yet");
+    expect(client.enqueue).not.toHaveBeenCalled();
   });
 
   it("activates a displayed Best candidate through the same local move path", async () => {

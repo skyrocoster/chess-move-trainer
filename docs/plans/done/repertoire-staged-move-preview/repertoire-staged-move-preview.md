@@ -1,6 +1,6 @@
 # Repertoire Staged-Move Preview - A legal bottom-side move appears without committing the local session
 
-> **Status:** pending - approved behavior captured; execute only after both upstream repertoire Plans are completed and closed
+> **Status:** done - implementation and independent validation passed; repository closeout reruns were waived by the user
 
 - **Read trigger:** Read before executing the approved `/repertoire` staged-preview behavior change.
 
@@ -34,7 +34,7 @@ move remains the operation that commits a move into the local session.
 
 ## Stages
 
-1. **pending** - Implement the parent-anchored visual preview from the closed upstream baseline.
+1. **complete** - Implement the parent-anchored visual preview from the closed upstream baseline.
    - Confirm that `repertoire-position-description` is completed and closed, then confirm that
      `repertoire-session-panel` is completed and closed. Read the resulting `RepertoireBuilderWorkspace` baseline only
      after those sequential closures; never execute this Plan in parallel with either upstream Plan.
@@ -70,7 +70,7 @@ move remains the operation that commits a move into the local session.
      requires changing the preferred-move/public API contract, if parent anchoring cannot be maintained, or if safe
      one-move interaction requires a new board abstraction or product decision.
 
-2. **pending** - Regression-guard preview lifecycle, explicit persistence, and existing repertoire workflows.
+2. **complete** - Regression-guard preview lifecycle, explicit persistence, and existing repertoire workflows.
    - Update `RepertoireBuilderWorkspace.test.tsx` to prove a legal bottom-side board/candidate move immediately shows
      the resulting FEN and shared `data-position-*` description while `session.currentPosition`, current ply, Local SAN
      history, and parent context remain unchanged.
@@ -105,7 +105,7 @@ move remains the operation that commits a move into the local session.
      interaction chains a second ply, opponent behavior changes, or any upstream extracted component, preferred-move
      contract, accessibility behavior, or responsive layout must be redesigned.
 
-3. **pending** - Fresh independent Quality validation of the observable preview behavior.
+3. **complete** - Fresh independent Quality validation of the observable preview behavior.
    - A fresh Quality session validates only the approved repertoire source, focused tests/stories, E2E surface, and the
      closed upstream component boundaries read-only. It must not edit, format, repair, commit, or absorb unrelated
      failures.
@@ -124,7 +124,7 @@ move remains the operation that commits a move into the local session.
      parent anchoring, explicit persistence, one-move interaction, or either closed upstream boundary into question;
      report unrelated baseline failures without repairing them here.
 
-4. **pending** - Run repository closeout and route only necessary ownership documentation.
+4. **complete (user-waived reruns)** - Run repository closeout and route only necessary ownership documentation.
    - Determine whether the final implementation changes documented component ownership or structure. The expected
      change is consumer logic inside the existing Workspace and requires no README edit; if a real ownership change
      makes `frontend/src/features/repertoire-builder/README.md` stale, route that documentation-only update to
@@ -139,14 +139,23 @@ move remains the operation that commits a move into the local session.
 
 ## Progress and decisions
 
-- **Stage 1:** pending - implementation must wait for completed and closed `repertoire-position-description` and then
-  `repertoire-session-panel`; breakpoint: preserve both extracted boundaries and parent workflow anchoring.
-- **Stage 2:** pending - focused model/Vitest, Storybook, and bounded wide/constrained browser proof not run;
-  breakpoint: preserve explicit persistence, preview lifecycle, and one-move semantics.
-- **Stage 3:** pending - requires a fresh independent read-only Quality validation of the observable board,
-  description, session, and preferred-workflow behavior.
-- **Stage 4:** pending - requires readme-updater routing only if actual ownership documentation becomes stale, followed
-  by repository closeout without `--fix`.
+- **Stage 1:** complete - both upstream Plans are closed; `displayedPosition` now drives only the board and shared
+  description while canonical session/history/workflow identity remains parent-based. Focused Vitest proof passed:
+  3 files, 29 tests. Final scope audit clean; breakpoint: preserve both extracted boundaries and parent workflow
+  anchoring.
+- **Stage 2:** complete - focused Vitest passed 3 files/32 tests; Workspace Storybook passed 21 tests; bounded
+  Storybook browser proof passed 6 tests at wide and constrained widths. Existing Storybook server was available, so no
+  setup or cleanup was required. Preview lifecycle, parent-anchored persistence, cancellation, promotion, local play,
+  opponent behavior, accessibility, and overflow assertions passed; breakpoint: preserve explicit persistence, preview
+  lifecycle, and one-move semantics.
+- **Stage 3:** complete - fresh independent Quality validation passed. Focused Vitest passed 3 files/32 tests,
+  Workspace Storybook passed 21 tests, and bounded Playwright proof passed 6 tests. Wide and constrained browser
+  inspection confirmed synchronized preview rendering, parent-anchored session/history, and no horizontal overflow;
+  both closed upstream component boundaries remained unchanged.
+- **Stage 4:** complete by explicit user waiver - no ownership or structural change made the repertoire-builder README
+  stale, so no README update was needed. After the Stage 3 PASS, the user directed that no further retests be run and
+  approved closing the Plan using the existing passing proof. Repository `scripts/check.py`, build, and lint reruns were
+  therefore not run at closeout; no `--fix` was used.
 - **Decision:** this is a separate Plan and must execute only after `repertoire-position-description` is completed and
   closed, followed sequentially by `repertoire-session-panel` being completed and closed; no parallel execution.
 - **Decision:** the existing `PositionPickerMoveRecord.position` is the deterministic preview source. Do not add a
@@ -175,10 +184,8 @@ move remains the operation that commits a move into the local session.
   promotion, overflow, and accessibility checks.
 - Fresh independent Quality validation: read-only browser and focused-source review of the approved paths; no repair or
   formatting.
-- Repository closeout: `.venv/Scripts/python.exe scripts/check.py` (repository root; no `--fix`; Bash tool timeout
-  `180000 ms`).
-- Build and lint: `npm run build` and `npm run lint` (`frontend`; Bash tool timeout `180000 ms` each) when not already
-  covered by the closeout result.
+- Repository closeout: not rerun after independent validation, by explicit user direction and closeout approval.
+- Build and lint: not rerun after independent validation, by explicit user direction and closeout approval.
 
 ## Escalation boundaries
 

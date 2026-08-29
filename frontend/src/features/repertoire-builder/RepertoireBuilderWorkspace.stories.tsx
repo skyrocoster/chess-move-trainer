@@ -148,7 +148,9 @@ export const StagedMy: Story = {
     await userEvent.click(await canvas.findByRole("button", { name: "1. e4" }));
     await expectSessionBoundary(canvasElement);
     await expectSingleStagedStatus(canvasElement);
-    await expectPositionSquares(canvasElement, "e2", 1);
+    await expectPositionSquares(canvasElement, "e2", 0);
+    await expectPositionSquares(canvasElement, "e4", 1);
+    await expect(canvas.getByTestId("session-origin")).toHaveTextContent("Current Ply 0");
     await expect(canvas.getByTestId("session-san-history")).toHaveTextContent("No local moves yet");
   },
 };
@@ -225,6 +227,8 @@ export const FlipCancellation: Story = {
     const canvas = within(canvasElement);
     await userEvent.click(await canvas.findByRole("button", { name: "1. e4" }));
     await expectSingleStagedStatus(canvasElement);
+    await expectPositionSquares(canvasElement, "e2", 0);
+    await expectPositionSquares(canvasElement, "e4", 1);
     await userEvent.click(canvas.getByRole("button", { name: "Flip" }));
     await expect(canvas.getByTestId("session-status")).toHaveTextContent(
       "Flipped to Black at the bottom.",
@@ -240,7 +244,7 @@ export const FlipCancellation: Story = {
 };
 
 export const Promotion: Story = {
-  name: "Promotion - existing picker commits a local move",
+  name: "Promotion - selected piece stages a child preview",
   render: () =>
     workspace({
       analysisClient: storyCandidateAnalysisClient(["e7e8q"]),
@@ -250,21 +254,30 @@ export const Promotion: Story = {
     const canvas = within(canvasElement);
     const body = within(canvasElement.ownerDocument.body);
     await loadGame(canvas, VIEWER_GAME_UUID, "0");
-    await userEvent.click(canvas.getByRole("button", { name: "Flip" }));
     const description = canvas.getByRole("button", { name: "Position description" });
     await userEvent.click(description);
     await expect(description).toHaveAttribute("aria-expanded", "true");
     await userEvent.click(await canvas.findByRole("button", { name: /1\. e8=Q/ }));
     await expect(body.getByRole("dialog", { name: "Choose a promotion piece" })).toBeVisible();
     await expectPositionSquares(canvasElement, "e7", 1);
+
+    await userEvent.keyboard("{Escape}");
+    await expect(body.queryByRole("dialog", { name: "Choose a promotion piece" })).not.toBeInTheDocument();
+    await expectPositionSquares(canvasElement, "e7", 1);
+    await expect(canvas.getByTestId("session-san-history")).toHaveTextContent("No local moves yet");
+
+    await userEvent.click(await canvas.findByRole("button", { name: /1\. e8=Q/ }));
+    await expect(body.getByRole("dialog", { name: "Choose a promotion piece" })).toBeVisible();
     await userEvent.click(body.getByRole("button", { name: "Promote to knight" }));
+    await expectPositionSquares(canvasElement, "e7", 0);
     await expectPositionSquares(canvasElement, "e8", 1);
     await expect(
       (await sharedPositionSummary(canvasElement)).querySelector(
         '[data-position-side="w"] [data-position-piece="n"]',
       ),
     ).toBeTruthy();
-    await expect(canvas.getByTestId("session-san-history")).toHaveTextContent("1. e8=N");
+    await expect(canvas.getByTestId("session-origin")).toHaveTextContent("Current Ply 0");
+    await expect(canvas.getByTestId("session-san-history")).toHaveTextContent("No local moves yet");
   },
 };
 
@@ -287,6 +300,8 @@ export const KeyboardAndAccessibility: Story = {
     await expectSessionBoundary(canvasElement);
     await expectSingleStagedStatus(canvasElement);
     await expect(candidate).toHaveFocus();
+    await expectPositionSquares(canvasElement, "e2", 0);
+    await expectPositionSquares(canvasElement, "e4", 1);
     await expectNoHorizontalOverflow(canvasElement);
   },
 };
@@ -320,9 +335,16 @@ export const UnassignedSavable: Story = {
     await expect(canvas.getByRole("button", { name: "Add" })).toBeDisabled();
     await userEvent.click(await canvas.findByRole("button", { name: "1. e4" }));
     await expectSingleStagedStatus(canvasElement);
+    await expectPositionSquares(canvasElement, "e2", 0);
+    await expectPositionSquares(canvasElement, "e4", 1);
+    await expect(canvas.getByTestId("session-san-history")).toHaveTextContent("No local moves yet");
     await userEvent.click(canvas.getByRole("button", { name: "Add" }));
     await expect(canvas.getByText("Preferred move added.")).toBeVisible();
     await expect(canvas.getByTestId("saved-move")).toHaveTextContent("e4");
+    await expectPositionSquares(canvasElement, "e2", 1);
+    await expectPositionSquares(canvasElement, "e4", 0);
+    await expect(canvas.getByTestId("session-origin")).toHaveTextContent("Current Ply 0");
+    await expect(canvas.getByTestId("session-san-history")).toHaveTextContent("No local moves yet");
     await expect(canvas.getByRole("button", { name: "Effective date: Choose date" })).toBeVisible();
   },
 };
@@ -407,9 +429,16 @@ export const EditReplacement: Story = {
     await userEvent.click(canvas.getByRole("button", { name: "Edit" }));
     await userEvent.click(await canvas.findByRole("button", { name: "1. d4" }));
     await expect(canvas.getByTestId("replacement-move")).toHaveTextContent("d4");
+    await expectPositionSquares(canvasElement, "d2", 0);
+    await expectPositionSquares(canvasElement, "d4", 1);
+    await expect(canvas.getByTestId("session-origin")).toHaveTextContent("Current Ply 0");
+    await expect(canvas.getByTestId("session-san-history")).toHaveTextContent("No local moves yet");
     await userEvent.click(canvas.getByRole("button", { name: "Save replacement" }));
     await expect(canvas.getByText("Preferred move replaced.")).toBeVisible();
     await expect(canvas.getByTestId("saved-move")).toHaveTextContent("Saved move: d4 (d2d4)");
+    await expectPositionSquares(canvasElement, "d2", 1);
+    await expectPositionSquares(canvasElement, "d4", 0);
+    await expect(canvas.getByTestId("session-san-history")).toHaveTextContent("No local moves yet");
     await expect(canvas.getByRole("button", { name: "Effective date: Choose date" })).toBeVisible();
   },
 };
@@ -427,8 +456,13 @@ export const DatedAdd: Story = {
     const date = await selectCurrentUtcDate(canvasElement);
     await expect(canvas.getByRole("button", { name: `Effective date: ${date}` })).toBeVisible();
     await userEvent.click(await canvas.findByRole("button", { name: "1. e4" }));
+    await expectPositionSquares(canvasElement, "e2", 0);
+    await expectPositionSquares(canvasElement, "e4", 1);
     await userEvent.click(canvas.getByRole("button", { name: "Add" }));
     await expect(canvas.getByText("Preferred move added.")).toBeVisible();
+    await expectPositionSquares(canvasElement, "e2", 1);
+    await expectPositionSquares(canvasElement, "e4", 0);
+    await expect(canvas.getByTestId("session-san-history")).toHaveTextContent("No local moves yet");
     await expect(canvas.getByRole("button", { name: "Effective date: Choose date" })).toBeVisible();
   },
 };
@@ -450,6 +484,9 @@ export const MutationFailure: Story = {
       "The selected date cannot be in the future.",
     );
     await expectSingleStagedStatus(canvasElement);
+    await expectPositionSquares(canvasElement, "e2", 0);
+    await expectPositionSquares(canvasElement, "e4", 1);
+    await expect(canvas.getByTestId("session-origin")).toHaveTextContent("Current Ply 0");
     await expect(canvas.getByRole("button", { name: `Effective date: ${date}` })).toBeVisible();
   },
 };

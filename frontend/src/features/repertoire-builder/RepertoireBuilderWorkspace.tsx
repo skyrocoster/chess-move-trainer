@@ -103,14 +103,15 @@ export default function RepertoireBuilderWorkspace({
   const controller = useRef<AbortController | null>(null);
 
   const currentPosition = session.currentPosition;
+  const displayedPosition = session.stagedMove?.position ?? currentPosition;
   const viewKey = sessionViewKey(session);
   const chess = useMemo(() => {
     void chessVersion;
     return new Chess(currentPosition.fen);
   }, [chessVersion, currentPosition.fen]);
   const positionModel = useMemo(
-    () => createPositionModel(currentPosition.fen, session.orientation),
-    [currentPosition.fen, session.orientation],
+    () => createPositionModel(displayedPosition.fen, session.orientation),
+    [displayedPosition.fen, session.orientation],
   );
   const analysisState = useAnalysisState(
     currentPosition.fen,
@@ -359,7 +360,7 @@ export default function RepertoireBuilderWorkspace({
               viewKey,
               resetToken: 0,
               originFen: session.prefix.at(-1)!.fen,
-              currentFen: currentPosition.fen,
+              currentFen: displayedPosition.fen,
               originPly: session.origin.selectedPly,
               moves: localMoves,
               active: localMoves.length > 0,

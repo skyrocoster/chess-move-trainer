@@ -7,6 +7,7 @@ const GAME_UUID = "0007925c-5a8d-11f0-9740-f690a301000f";
 const STORY_IDS = {
   wide: "application-repertoire-builder-workspace--wide",
   constrained: "application-repertoire-builder-workspace--constrained",
+  stagedMy: "application-repertoire-builder-workspace--staged-my",
   storedPrefix:
     "application-repertoire-builder-workspace--stored-prefix-black-subject",
   opponent: "application-repertoire-builder-workspace--opponent-immediate",
@@ -124,6 +125,26 @@ test.describe("Repertoire Builder Storybook surface", () => {
     await expect(page.getByRole("button", { name: "Flip" })).toBeVisible();
     await expectNoHorizontalOverflow(page);
     await checkA11y(page);
+
+    await openStory(page, STORY_IDS.stagedMy, 1280, 900);
+    await expect(page.getByTestId("session-origin")).toHaveText(/Current Ply 0/);
+    const widePreview = await sharedPositionSummary(page);
+    await expect(widePreview.locator('[data-position-square="e2"]')).toHaveCount(0);
+    await expect(widePreview.locator('[data-position-square="e4"]')).toHaveCount(1);
+    await expect(widePreview).toContainText("Side to moveBlack");
+    await expect(page.getByTestId("session-san-history")).toHaveText("No local moves yet");
+    await expectNoHorizontalOverflow(page);
+    await checkA11y(page);
+
+    await openStory(page, STORY_IDS.stagedMy, 412, 915);
+    await expect(page.getByTestId("session-origin")).toHaveText(/Current Ply 0/);
+    const constrainedPreview = await sharedPositionSummary(page);
+    await expect(constrainedPreview.locator('[data-position-square="e2"]')).toHaveCount(0);
+    await expect(constrainedPreview.locator('[data-position-square="e4"]')).toHaveCount(1);
+    await expect(constrainedPreview).toContainText("Side to moveBlack");
+    await expect(page.getByTestId("session-san-history")).toHaveText("No local moves yet");
+    await expectNoHorizontalOverflow(page);
+    await checkA11y(page);
   });
 
   test("proves the complete stored prefix, Black subject, and opponent move", async ({
@@ -181,7 +202,8 @@ test.describe("Repertoire Builder Storybook surface", () => {
     page,
   }) => {
     await openStory(page, STORY_IDS.promotion);
-    await expect(page.getByTestId("session-san-history")).toHaveText("1. e8=N");
+    await expect(page.getByTestId("session-san-history")).toHaveText("No local moves yet");
+    await expect(page.getByTestId("session-origin")).toHaveText(/Current Ply 0/);
     const summary = await sharedPositionSummary(page);
     await expect(summary).toContainText("Side to moveBlack");
     await expect(
@@ -263,6 +285,14 @@ test.describe("Repertoire Builder Storybook surface", () => {
     await expect(page.getByTestId("saved-move")).toHaveText(
       "Saved move: d4 (d2d4)",
     );
+    const replacementSummary = await sharedPositionSummary(page);
+    await expect(
+      replacementSummary.locator('[data-position-square="d2"]'),
+    ).toHaveCount(1);
+    await expect(
+      replacementSummary.locator('[data-position-square="d4"]'),
+    ).toHaveCount(0);
+    await expect(page.getByTestId("session-san-history")).toHaveText("No local moves yet");
     await checkA11y(page);
   });
 
@@ -288,6 +318,10 @@ test.describe("Repertoire Builder Storybook surface", () => {
     await expect(
       page.getByRole("button", { name: /Effective date: \d{4}-\d{2}-\d{2}/ }),
     ).toBeVisible();
+    const failedSummary = await sharedPositionSummary(page);
+    await expect(failedSummary.locator('[data-position-square="e2"]')).toHaveCount(0);
+    await expect(failedSummary.locator('[data-position-square="e4"]')).toHaveCount(1);
+    await expect(page.getByTestId("session-san-history")).toHaveText("No local moves yet");
 
     await openStory(page, STORY_IDS.remove);
     await expect(page.getByText("Preferred move removed.")).toBeVisible();
