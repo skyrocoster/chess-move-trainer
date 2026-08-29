@@ -1,6 +1,7 @@
 # repertoire-builder
 
-Repertoire Builder frontend page with an in-memory position-picker session and a preferred-move workflow.
+Repertoire Builder frontend page with an in-memory position-picker session, a cohesive right-side session
+panel, and a preferred-move workflow.
 
 ## Scope
 
@@ -11,7 +12,8 @@ through the selected Ply and initially placing the recorded subject color at the
 supports one legal local SAN line via board dragging and the displayed legal analysis candidates
 (including Best line), promotion through the existing picker, local Previous/Next with truncation
 of the later continuation on replacement, position-preserving Flip that cancels pending staging,
-staged bottom-side ("my") moves, and immediate opponent moves.
+staged bottom-side ("my") moves, immediate opponent moves, and one visible staged/status sentence shown
+through the single live session-status message.
 
 The preferred-move workflow reads, adds, saves (replaces), plays locally, and removes (with
 confirmation) the fixed owner's one move per game-derived position, using an optional UTC effective
@@ -20,15 +22,16 @@ move tree or separate chess Undo/Reset UI.
 
 ## Component
 
-| Component                    | Responsibility                                                            |
-| ---------------------------- | ------------------------------------------------------------------------- |
-| `RepertoireBuilderWorkspace` | Top-level workspace — loader, board, session controls, and analysis panel |
-| `positionPickerSession`      | In-memory session model — standard/stored origins, history, move staging  |
-| `PreferredMovePanel`         | Preferred-move UI — context/saveability, date, add/save/play/remove       |
-| `preferredMoveApi`           | Typed `/api/preferred-move` client — GET/PUT/DELETE, failure codes        |
-| `preferredMoveState`         | `usePreferredMoveState` read hook — preferred move, loading, error        |
-| `preferredMoveWorkflowState` | `usePreferredMoveWorkflow` hook — draft, date, mutations, play, reset     |
-| `repertoireWorkflowModel`    | Pure position model — saveability, saved move, draft state                |
+| Component                    | Responsibility                                                                                              |
+| ---------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `RepertoireBuilderWorkspace` | Page/state/workflow orchestration — loader, board, callbacks, board notice                                  |
+| `RepertoireSessionPanel`     | Right-side session composition — Local SAN history, single live session status, nested `PreferredMovePanel` |
+| `positionPickerSession`      | In-memory session model — standard/stored origins, history, move staging                                    |
+| `PreferredMovePanel`         | Nested preferred-move UI — private behavior/presentation; context/saveability, date, add/save/play/remove   |
+| `preferredMoveApi`           | Typed `/api/preferred-move` client — GET/PUT/DELETE, failure codes                                          |
+| `preferredMoveState`         | `usePreferredMoveState` read hook — preferred move, loading, error                                          |
+| `preferredMoveWorkflowState` | `usePreferredMoveWorkflow` hook — draft, date, mutations, play, reset                                       |
+| `repertoireWorkflowModel`    | Pure position model — saveability, saved move, draft state                                                  |
 
 ## API contract
 

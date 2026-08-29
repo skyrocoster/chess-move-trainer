@@ -296,10 +296,19 @@ describe("RepertoireBuilderWorkspace", () => {
     await user.click(screen.getByTestId("move-e2-e4"));
     expect(sharedPositionSummary().querySelectorAll('[data-position-square="e2"]')).toHaveLength(1);
     expect(sharedPositionSummary().querySelectorAll('[data-position-square="e4"]')).toHaveLength(0);
-    expect(screen.getByTestId("staged-move")).toHaveTextContent("My move staged: e4.");
+    const session = screen.getByTestId("repertoire-session");
+    const status = within(session).getByTestId("session-status");
+    expect(status).toHaveTextContent("My move staged: e4.");
+    expect(status).toHaveAttribute("role", "status");
+    expect(status).toHaveAttribute("aria-live", "polite");
+    expect(within(session).getByTestId("session-san-history")).toBeVisible();
+    expect(within(session).getByRole("heading", { name: "Preferred move" })).toBeVisible();
+    expect(screen.getAllByText("My move staged: e4.", { exact: true })).toHaveLength(1);
 
     await user.click(screen.getByRole("button", { name: "Flip" }));
-    expect(screen.queryByTestId("staged-move")).not.toBeInTheDocument();
+    expect(screen.getByTestId("session-status")).toHaveTextContent(
+      "Flipped to Black at the bottom.",
+    );
     expect(sharedPositionSummary()).toHaveTextContent("OrientationBlack at the bottom");
     expect(sharedPositionSummary()).toHaveTextContent("Side to moveWhite");
 
@@ -434,7 +443,8 @@ describe("RepertoireBuilderWorkspace", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "The selected date cannot be in the future.",
     );
-    expect(screen.getByTestId("staged-move")).toHaveTextContent("e4");
+    expect(screen.getByTestId("session-status")).toHaveTextContent("My move staged: e4.");
+    expect(screen.getAllByText("My move staged: e4.", { exact: true })).toHaveLength(1);
     expect(screen.getByRole("button", { name: "Effective date: 2026-01-10" })).toBeVisible();
   });
 
@@ -465,6 +475,11 @@ describe("RepertoireBuilderWorkspace", () => {
 
   it("passes a focused accessibility check", async () => {
     const { container } = renderWorkspace();
+    const session = screen.getByTestId("repertoire-session");
+
+    expect(within(session).getByTestId("session-san-history")).toBeVisible();
+    expect(within(session).getByTestId("session-status")).toHaveAttribute("aria-live", "polite");
+    expect(within(session).getByRole("heading", { name: "Preferred move" })).toBeVisible();
 
     expect(await axe.run(container)).toHaveNoViolations();
   });

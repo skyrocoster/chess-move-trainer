@@ -14,6 +14,12 @@ import { VIEWER_GAME, VIEWER_GAME_UUID } from "../viewer/viewerFixtures";
 import { PROMOTION_GAME } from "../viewer/viewerStoryFixtures";
 import RepertoireBuilderWorkspace from "./RepertoireBuilderWorkspace";
 import {
+  expectPositionSquares,
+  expectSessionBoundary,
+  expectSingleStagedStatus,
+  sharedPositionSummary,
+} from "./repertoireBuilderStoryAssertions";
+import {
   expectNoHorizontalOverflow,
   loadGame,
   selectCurrentUtcDate,
@@ -70,34 +76,6 @@ export function workspace(
   );
 }
 
-async function sharedPositionSummary(canvasElement: HTMLElement): Promise<HTMLElement> {
-  const description = canvasElement.querySelector(
-    '[data-testid="position-description-row"] button',
-  );
-  if (!(description instanceof HTMLElement)) {
-    throw new Error("The shared position description trigger is missing.");
-  }
-  if (description.getAttribute("aria-expanded") === "false") {
-    await userEvent.click(description);
-  }
-  const summary = canvasElement.querySelector(
-    '[data-testid="position-description-row"] [data-position-summary]',
-  );
-  if (!(summary instanceof HTMLElement)) {
-    throw new Error("The shared position summary is missing.");
-  }
-  return summary;
-}
-
-async function expectPositionSquares(
-  canvasElement: HTMLElement,
-  square: string,
-  count: number,
-): Promise<void> {
-  const summary = await sharedPositionSummary(canvasElement);
-  await expect(summary.querySelectorAll(`[data-position-square="${square}"]`)).toHaveLength(count);
-}
-
 async function verifyStandardWorkspace(canvasElement: HTMLElement) {
   const canvas = within(canvasElement);
   await expect(canvas.getByRole("heading", { name: "Repertoire Builder", level: 1 })).toBeVisible();
@@ -118,6 +96,7 @@ async function verifyStandardWorkspace(canvasElement: HTMLElement) {
   );
   description.focus();
   await expect(description).toHaveFocus();
+  await expectSessionBoundary(canvasElement);
   await expectNoHorizontalOverflow(canvasElement);
 }
 
@@ -167,7 +146,8 @@ export const StagedMy: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await userEvent.click(await canvas.findByRole("button", { name: "1. e4" }));
-    await expect(canvas.getByTestId("staged-move")).toHaveTextContent("My move staged: e4.");
+    await expectSessionBoundary(canvasElement);
+    await expectSingleStagedStatus(canvasElement);
     await expectPositionSquares(canvasElement, "e2", 1);
     await expect(canvas.getByTestId("session-san-history")).toHaveTextContent("No local moves yet");
   },
@@ -184,7 +164,6 @@ export const OpponentImmediate: Story = {
     const canvas = within(canvasElement);
     await loadGame(canvas, VIEWER_GAME_UUID, "2");
     await userEvent.click(await canvas.findByRole("button", { name: "2. Nf3" }));
-    await expect(canvas.queryByTestId("staged-move")).not.toBeInTheDocument();
     await expect(canvas.getByTestId("session-status")).toHaveTextContent(
       "Opponent move played locally: Nf3.",
     );
@@ -207,7 +186,9 @@ export const CandidateActivation: Story = {
     await expectPositionSquares(canvasElement, "e2", 0);
     await expectPositionSquares(canvasElement, "e4", 1);
     await expect(canvas.getByTestId("session-san-history")).toHaveTextContent("1. e4");
-    await expect(canvas.queryByTestId("staged-move")).not.toBeInTheDocument();
+    await expect(canvas.getByTestId("session-status")).toHaveTextContent(
+      "Opponent move played locally: e4.",
+    );
   },
 };
 
@@ -243,9 +224,11 @@ export const FlipCancellation: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await userEvent.click(await canvas.findByRole("button", { name: "1. e4" }));
-    await expect(canvas.getByTestId("staged-move")).toBeVisible();
+    await expectSingleStagedStatus(canvasElement);
     await userEvent.click(canvas.getByRole("button", { name: "Flip" }));
-    await expect(canvas.queryByTestId("staged-move")).not.toBeInTheDocument();
+    await expect(canvas.getByTestId("session-status")).toHaveTextContent(
+      "Flipped to Black at the bottom.",
+    );
     await expect(await sharedPositionSummary(canvasElement)).toHaveTextContent(
       "OrientationBlack at the bottom",
     );
@@ -301,7 +284,8 @@ export const KeyboardAndAccessibility: Story = {
     const candidate = await canvas.findByRole("button", { name: "1. e4" });
     candidate.focus();
     await userEvent.keyboard("{Enter}");
-    await expect(canvas.getByTestId("staged-move")).toHaveTextContent("My move staged: e4.");
+    await expectSessionBoundary(canvasElement);
+    await expectSingleStagedStatus(canvasElement);
     await expect(candidate).toHaveFocus();
     await expectNoHorizontalOverflow(canvasElement);
   },
@@ -335,7 +319,7 @@ export const UnassignedSavable: Story = {
     await expect(canvas.getByText("Seen in 3 games as White")).toBeVisible();
     await expect(canvas.getByRole("button", { name: "Add" })).toBeDisabled();
     await userEvent.click(await canvas.findByRole("button", { name: "1. e4" }));
-    await expect(canvas.getByTestId("staged-move")).toHaveTextContent("e4");
+    await expectSingleStagedStatus(canvasElement);
     await userEvent.click(canvas.getByRole("button", { name: "Add" }));
     await expect(canvas.getByText("Preferred move added.")).toBeVisible();
     await expect(canvas.getByTestId("saved-move")).toHaveTextContent("e4");
@@ -465,7 +449,7 @@ export const MutationFailure: Story = {
     await expect(canvas.getByRole("alert")).toHaveTextContent(
       "The selected date cannot be in the future.",
     );
-    await expect(canvas.getByTestId("staged-move")).toHaveTextContent("e4");
+    await expectSingleStagedStatus(canvasElement);
     await expect(canvas.getByRole("button", { name: `Effective date: ${date}` })).toBeVisible();
   },
 };

@@ -101,6 +101,14 @@ test.describe("Repertoire Builder Storybook surface", () => {
         name: "Chess board: standard starting position, White at the bottom",
       }),
     ).toBeVisible();
+    const session = page.getByTestId("repertoire-session");
+    await expect(session).toBeVisible();
+    await expect(session.getByTestId("session-san-history")).toBeVisible();
+    await expect(session.getByTestId("session-status")).toHaveAttribute(
+      "role",
+      "status",
+    );
+    await expect(session.getByRole("heading", { name: "Preferred move" })).toBeVisible();
     const summary = await sharedPositionSummary(page);
     await expect(summary).toContainText("OrientationWhite at the bottom");
     await expect(summary).toContainText("Side to moveWhite");
@@ -142,7 +150,6 @@ test.describe("Repertoire Builder Storybook surface", () => {
     await expect(page.getByTestId("session-status")).toHaveText(
       "Opponent move played locally: Nf3.",
     );
-    await expect(page.getByTestId("staged-move")).toHaveCount(0);
   });
 
   test("proves navigation, replacement truncation, and Flip cancellation", async ({
@@ -155,8 +162,15 @@ test.describe("Repertoire Builder Storybook surface", () => {
     await expect(page.getByRole("button", { name: "Next" })).toBeDisabled();
 
     await openStory(page, STORY_IDS.flip);
-    await expect(page.getByTestId("staged-move")).toHaveCount(0);
+    // The story's play function already asserts the transient
+    // "Flipped to Black at the bottom." state and the cleared position
+    // deterministically. The E2E proof verifies the final post-play
+    // state: the board remains flipped and the scenario completed.
+    await expect(page.getByTestId("session-status")).toHaveText(
+      "Opponent move played locally: e4.",
+    );
     const summary = await sharedPositionSummary(page);
+    await expect(summary).toContainText("OrientationBlack at the bottom");
     await expect(
       summary.locator('[data-position-piece="p"] [data-position-square="e4"]'),
     ).toHaveCount(1);
@@ -265,7 +279,12 @@ test.describe("Repertoire Builder Storybook surface", () => {
     await expect(page.getByRole("alert")).toHaveText(
       "The selected date cannot be in the future.",
     );
-    await expect(page.getByTestId("staged-move")).toContainText("e4");
+    await expect(page.getByTestId("session-status")).toHaveText(
+      "My move staged: e4.",
+    );
+    await expect(
+      page.getByText("My move staged: e4.", { exact: true }),
+    ).toHaveCount(1);
     await expect(
       page.getByRole("button", { name: /Effective date: \d{4}-\d{2}-\d{2}/ }),
     ).toBeVisible();

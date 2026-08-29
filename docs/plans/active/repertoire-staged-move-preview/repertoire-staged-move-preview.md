@@ -3,9 +3,6 @@
 > **Status:** pending - approved behavior captured; execute only after both upstream repertoire Plans are completed and closed
 
 - **Read trigger:** Read before executing the approved `/repertoire` staged-preview behavior change.
-- **Upstream:** [`repertoire-position-description`](../repertoire-position-description/repertoire-position-description.md),
-  [`repertoire-session-panel`](../repertoire-session-panel/repertoire-session-panel.md), and the settled
-  [Repertoire Builder Master Plan](../../../master-plans/repertoire-builder/repertoire-builder.md)
 
 ## Outcome
 

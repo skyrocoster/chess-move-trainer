@@ -1,6 +1,6 @@
 # Repertoire Session Panel - one cohesive right-side session region
 
-> **Status:** pending - approved scope captured; execute only after the position-description Plan is closed
+> **Status:** Done - all stages accepted; focused, browser, Quality, and repository closeout proof passed
 
 - **Read trigger:** Read before executing the approved `/repertoire` session-region extraction.
 
@@ -31,7 +31,7 @@ session-status presentation. Existing preferred-move presentation and workflow b
 
 ## Stages
 
-1. **pending** - Extract and wire the cohesive session component from the closed position-description baseline.
+1. **complete** - Extract and wire the cohesive session component from the closed position-description baseline.
    - Confirm that `docs/plans/active/repertoire-position-description/repertoire-position-description.md` is
      completed and closed before reading the final `RepertoireBuilderWorkspace` and CSS baseline. Do not execute
      this stage in parallel with that Plan, and preserve its shared `PositionDescription`, grid, test, and story
@@ -62,7 +62,7 @@ session-status presentation. Existing preferred-move presentation and workflow b
      removing the duplicate requires changing workflow status semantics beyond the single live presentation, or
      if `PreferredMovePanel` must change to preserve its existing behavior.
 
-2. **pending** - Regression-guard the full session/preferred boundary and observable behavior.
+2. **complete** - Regression-guard the full session/preferred boundary and observable behavior.
    - Complete `RepertoireBuilderWorkspace.test.tsx` staging, Flip, mutation-failure, and accessibility assertions
      to prove the exact staged sentence occurs once through `session-status` and that the
      `repertoire-session` boundary contains the history, status, and preferred panel; retain history,
@@ -88,7 +88,7 @@ session-status presentation. Existing preferred-move presentation and workflow b
    - **Breakpoint:** stop if any preferred-move state, date, action, confirmation, status, accessibility, or
      overflow behavior changes; do not absorb unrelated baseline failures or broaden the extraction.
 
-3. **pending** - Route ownership documentation after the structural product change.
+3. **complete** - Route ownership documentation after the structural product change.
    - After Stages 1-2 complete, route `frontend/src/features/repertoire-builder/README.md` to `readme-updater`.
      The updater should reflect that `RepertoireSessionPanel` owns the right-side session composition,
      `RepertoireBuilderWorkspace` owns the page/state orchestration, and `PreferredMovePanel` owns the nested
@@ -98,7 +98,7 @@ session-status presentation. Existing preferred-move presentation and workflow b
    - **Breakpoint:** return to the coordinator if the ownership update requires documenting a broader component
      redesign or conflicts with the closed position-description baseline.
 
-4. **pending** - Fresh independent Quality validation of the observable UI.
+4. **complete** - Fresh independent Quality validation of the observable UI.
    - A fresh Quality session validates only the approved source and test paths read-only; it must not edit,
      format, repair, commit, or absorb unrelated failures.
    - At wide and constrained widths, verify that one `RepertoireSessionPanel` boundary contains the history,
@@ -110,7 +110,7 @@ session-status presentation. Existing preferred-move presentation and workflow b
    - **Breakpoint:** return to the coordinator for any browser result that calls the approved boundary,
      duplicate-removal behavior, preferred presentation, or closed position-description baseline into question.
 
-5. **pending** - Run repository closeout and prepare the Plan for coordinator closeout.
+5. **complete** - Run repository closeout and prepare the Plan for coordinator closeout.
    - From the repository root, run `.venv/Scripts/python.exe scripts/check.py` without `--fix`;
      Bash tool timeout: `180000 ms`. The closeout runner has no additional supported CLI timeout flag; the
      Bash timeout remains finite.
@@ -121,19 +121,30 @@ session-status presentation. Existing preferred-move presentation and workflow b
 
 ## Progress and decisions
 
-- **Stage 1:** pending - extraction and duplicate removal are approved but not implemented; breakpoint: preserve
-  the closed position-description baseline and unchanged PreferredMovePanel behavior.
-- **Stage 2:** pending - focused regression, Storybook, and bounded browser proof not run; breakpoint: preserve
-  all existing workflow and accessibility behavior.
-- **Stage 3:** pending - README ownership update is explicitly delegated to `readme-updater` after structure;
-  no Quality validation is required for that documentation-only edit.
-- **Stage 4:** pending - requires a fresh independent read-only Quality session at wide and constrained widths.
-- **Stage 5:** pending - requires repository closeout without `--fix`.
+- **Stage 1:** complete - Luna added and wired `RepertoireSessionPanel`, removed the duplicate staged
+  presentation, preserved the closed position-description baseline and unchanged `PreferredMovePanel`, and the
+  focused Workspace regression passed 14/14 tests.
+- **Stage 2:** complete - Luna updated the focused Workspace, Storybook, and bounded browser guards; Workspace
+  regression passed 14/14, Workspace stories passed 21/21, Preferred workflow stories passed 2/2, and the
+  repertoire Storybook browser suite passed 6/6 after a temporary server was started and cleanly stopped.
+- **Stage 3:** complete - `readme-updater` updated the repertoire-builder README with the Workspace,
+  `RepertoireSessionPanel`, and nested `PreferredMovePanel` ownership boundaries; no Quality validation is
+  required for that documentation-only edit.
+- **Stage 4:** complete - after one authorized deterministic E2E race repair, a fresh read-only Quality session
+  passed the approved boundary, single-status, wide/constrained, workflow, overflow, and accessibility validation;
+  its independent bounded browser run passed 6/6.
+- **Stage 5:** complete - Luna reduced the enlarged Workspace story through a behavior-neutral assertion-helper
+  extraction, the focused Workspace Storybook suite passed 21/21, README formatting was repaired by
+  `readme-updater`, and `.venv/Scripts/python.exe scripts/check.py` passed without `--fix`.
 - **Decision:** this is a separate Plan, not an amendment to the position-description Plan; execution is
   strictly serialized after that Plan is completed and closed.
 - **Decision:** `session-status` remains the one visible live staged sentence; the separate duplicate staged
   paragraph is removed, while PreferredMovePanel's distinct detailed staged instruction remains.
 - **Decision:** no public prop, API, workflow, visual-style, or preferred-panel contract changes are approved.
+- **Decision:** aggregate Flip-cancellation proof keeps the transient status assertion in the Storybook play
+  function while bounded E2E verifies the deterministic post-play state, removing the observed timing race.
+- **Decision:** the Workspace story assertion-helper extraction is a behavior-neutral size-limit repair and does
+  not change story exports, scenarios, or acceptance.
 
 ## Proof
 

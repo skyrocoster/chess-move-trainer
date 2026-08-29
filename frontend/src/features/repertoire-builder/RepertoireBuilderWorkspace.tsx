@@ -22,7 +22,6 @@ import { GameLoader, type GameLoaderStatus, type GameLoaderValues } from "../vie
 import { fetchGame, type GameLookup } from "../viewer/positionApi";
 import type { PositionContextClient } from "../viewer/positionContextApi";
 import type { PreferredMoveClient } from "./preferredMoveApi";
-import { PreferredMovePanel } from "./PreferredMovePanel";
 import { usePreferredMoveWorkflow } from "./preferredMoveWorkflowState";
 import {
   createStandardStartSession,
@@ -36,6 +35,7 @@ import {
   type PositionPickerSession,
 } from "./positionPickerSession";
 import styles from "./RepertoireBuilderWorkspace.module.css";
+import { RepertoireSessionPanel } from "./RepertoireSessionPanel";
 
 function orientationDescription(orientation: PositionPickerSession["orientation"]): string {
   return orientation === "white" ? "White at the bottom" : "Black at the bottom";
@@ -393,44 +393,28 @@ export default function RepertoireBuilderWorkspace({
         <div className={styles.positionDescription} data-testid="position-description-row">
           <PositionDescription model={positionModel} />
         </div>
-        <div className={styles.session}>
-          <p className={styles.historyLabel}>Local SAN history</p>
-          <p
-            className={styles.history}
-            data-testid="session-san-history"
-            aria-label="Local SAN history"
-          >
-            {sanHistory || "No local moves yet"}
-          </p>
-          {session.stagedMove ? (
-            <p className={styles.staged} data-testid="staged-move" aria-live="polite">
-              My move staged: {session.stagedMove.san}.
-            </p>
-          ) : null}
-          <p className={styles.sessionStatus} data-testid="session-status" aria-live="polite">
-            {sessionStatus}
-          </p>
-          <PreferredMovePanel
-            model={workflow.positionModel}
-            sideToMove={sideToMoveColor}
-            stagedMove={workflow.stagedMove}
-            draftMode={workflow.draftMode}
-            date={workflow.date}
-            mutation={workflow.mutation}
-            preferredLoading={workflow.preferredLoading}
-            preferredError={workflow.preferredError}
-            contextLoading={workflow.contextLoading}
-            contextError={workflow.contextError}
-            workflowError={workflow.workflowError}
-            onDateChange={workflow.onDateChange}
-            onAdd={workflow.onAdd}
-            onEdit={workflow.onEdit}
-            onSave={workflow.onSave}
-            onCancelEdit={workflow.onCancelEdit}
-            onPlaySavedMove={workflow.onPlaySavedMove}
-            onRemove={workflow.onRemove}
-          />
-        </div>
+        <RepertoireSessionPanel
+          sanHistory={sanHistory}
+          sessionStatus={sessionStatus}
+          model={workflow.positionModel}
+          sideToMove={sideToMoveColor}
+          stagedMove={workflow.stagedMove}
+          draftMode={workflow.draftMode}
+          date={workflow.date}
+          mutation={workflow.mutation}
+          preferredLoading={workflow.preferredLoading}
+          preferredError={workflow.preferredError}
+          contextLoading={workflow.contextLoading}
+          contextError={workflow.contextError}
+          workflowError={workflow.workflowError}
+          onDateChange={workflow.onDateChange}
+          onAdd={workflow.onAdd}
+          onEdit={workflow.onEdit}
+          onSave={workflow.onSave}
+          onCancelEdit={workflow.onCancelEdit}
+          onPlaySavedMove={workflow.onPlaySavedMove}
+          onRemove={workflow.onRemove}
+        />
         <div className={styles.analysis}>
           <AnalysisPanel
             display={analysisDisplay}
