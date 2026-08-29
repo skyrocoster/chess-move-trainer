@@ -1,114 +1,74 @@
-import { expect, fn, userEvent, waitFor, within } from "storybook/test";
+import { expect, fn, userEvent, within } from "storybook/test";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-
 import "../../styles/cmt-tokens.css";
 import "../../styles/cmt-typescale.css";
 import ViewerWorkspace from "./ViewerWorkspace";
-import type { AnalysisClient } from "./analysisApi";
 import type { Game } from "./gameModel";
 import type { GameLookup, GameLookupFailure } from "./positionApi";
+import type { PositionContextClient, PositionContextResponse } from "./positionContextApi";
 import styles from "./Stage1Story.module.css";
-import { VIEWER_GAME, VIEWER_GAME_UUID } from "./viewerFixtures";
+import { VIEWER_GAME, VIEWER_GAME_UUID, UNSAFE_SOURCE_GAME } from "./viewerFixtures";
+import {
+  CASTLING_GAME,
+  EN_PASSANT_GAME,
+  PROMOTION_GAME,
+  TERMINAL_GAME,
+} from "./viewerStoryFixtures";
+import {
+  completeGameLookup,
+  branchPromotionInteractionPlay,
+  failureLookup,
+  finalPlay,
+  keyboardMove,
+  pendingLookup,
+  storyAnalysisClient,
+  submit,
+} from "./viewerStoryHelpers";
+
+function storyPositionContextClient(
+  valuesFor: (fen: string) => Omit<PositionContextResponse, "fen"> = () => ({
+    overall_exists: true,
+    white_count: 2,
+    black_count: 1,
+  }),
+): PositionContextClient {
+  return fn(async (fen) => ({
+    status: "success" as const,
+    data: { fen, ...valuesFor(fen) },
+  }));
+}
+
+function viewerPositionContext(fen: string): Omit<PositionContextResponse, "fen"> {
+  const index = VIEWER_GAME.positions.findIndex((position) => position.fen === fen);
+  return {
+    overall_exists: true,
+    white_count: index + 2,
+    black_count: index + 1,
+  };
+}
+
+const positionContextClient = storyPositionContextClient(viewerPositionContext);
+const blackGame: Game = { ...VIEWER_GAME, subject_color: "black" };
+const branchPositionContextClient = storyPositionContextClient((fen) =>
+  fen === VIEWER_GAME.positions[0].fen
+    ? { overall_exists: true, white_count: 2, black_count: 1 }
+    : { overall_exists: true, white_count: 7, black_count: 6 },
+);
 
 const meta = {
   title: "Application/Viewer/Workspace",
   component: ViewerWorkspace,
   parameters: { layout: "fullscreen" },
+  args: { positionContextClient },
 } satisfies Meta<typeof ViewerWorkspace>;
-
 export default meta;
 type Story = StoryObj<typeof meta>;
-
 const frame = (children: React.ReactNode) => <main className={styles.frame}>{children}</main>;
 const constrained = (children: React.ReactNode) => (
   <main className={styles.frame}>
     <div className={styles.constrained}>{children}</div>
   </main>
 );
-
-function completeGameLookup(game: Game = VIEWER_GAME): GameLookup {
-  return fn(async (_uuid, initialPly) => ({
-    status: "success" as const,
-    game: { ...game, initial_ply: initialPly ?? 0 },
-  }));
-}
-
-function failureLookup(status: GameLookupFailure): GameLookup {
-  return fn(async () => ({ status }));
-}
-
-function storyAnalysisClient(): AnalysisClient {
-  return {
-    observe: fn(async (fen) => ({
-      status: "success" as const,
-      data: { fen, eligibility: "missing" as const, result: null, status: null, terminal: false },
-    })),
-    enqueue: fn(async () => {
-      throw new Error("Stage 1 workspace stories do not exercise analysis actions");
-    }),
-    status: fn(async () => ({
-      status: "success" as const,
-      data: {
-        fen: VIEWER_GAME.positions[0].fen,
-        state: null,
-        completed_at: null,
-        error_code: null,
-      },
-    })),
-  };
-}
-
-const pendingLookup: GameLookup = () => new Promise(() => {});
-const blackGame: Game = { ...VIEWER_GAME, subject_color: "black" };
-const promotionGame: Game = {
-  game_uuid: VIEWER_GAME_UUID,
-  initial_ply: 0,
-  subject_color: "white",
-  source_url: "https://www.chess.com/game/live/140399891142",
-  positions: [
-    {
-      ply: 0,
-      fen: "k7/4P3/8/8/8/8/8/4K3 w - - 0 1",
-      san: null,
-    },
-  ],
-};
-const singlePositionGame = (fen: string): Game => ({
-  ...VIEWER_GAME,
-  positions: [{ ply: 0, fen, san: null }],
-});
-const castlingGame = singlePositionGame("r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1");
-const enPassantGame = singlePositionGame("4k3/3p4/8/4P3/8/8/8/4K3 b - - 0 1");
-const terminalGame = singlePositionGame("7k/5Q2/p5K1/8/8/8/8/8 b - - 0 1");
-const unsafeGame: Game = {
-  ...VIEWER_GAME,
-  source_url: "https://example.com/game/live/unsafe",
-};
-
-async function submit(canvas: ReturnType<typeof within>, uuid = VIEWER_GAME_UUID, ply?: string) {
-  await userEvent.type(canvas.getByLabelText("Game UUID"), uuid);
-  if (ply !== undefined) {
-    await userEvent.type(canvas.getByLabelText(/Ply/), ply);
-  }
-  await userEvent.click(canvas.getByRole("button", { name: "Load game" }));
-}
-
-async function keyboardMove(canvasElement: HTMLElement, sourceSquare: string, arrows: string) {
-  const piece = canvasElement.querySelector<HTMLElement>(
-    `[data-square="${sourceSquare}"] [aria-roledescription="draggable"]`,
-  );
-  if (!piece) {
-    throw new Error(`Unable to start a keyboard move from ${sourceSquare}.`);
-  }
-
-  piece.focus();
-  await userEvent.keyboard("{Enter}");
-  for (const arrow of arrows.match(/\{[^}]+\}/g) ?? []) {
-    await userEvent.keyboard(arrow);
-  }
-  await userEvent.keyboard("{Enter}");
-}
-
 const loadingPlay: NonNullable<Story["play"]> = async ({ canvasElement }) => {
   const canvas = within(canvasElement);
   await submit(canvas);
@@ -118,11 +78,16 @@ const loadingPlay: NonNullable<Story["play"]> = async ({ canvasElement }) => {
   await expect(canvas.getByRole("button", { name: "Next" })).toBeDisabled();
   await expect(canvas.getByRole("button", { name: "Reset" })).toBeEnabled();
   await expect(canvas.getByRole("img", { name: /standard starting position/ })).toBeVisible();
+  await expect(
+    canvas.queryByRole("group", { name: "Position recurrence" }),
+  ).not.toBeInTheDocument();
 };
-
 const initialPlay: NonNullable<Story["play"]> = async ({ canvasElement }) => {
   const canvas = within(canvasElement);
   await submit(canvas, VIEWER_GAME_UUID, "0");
+  const board = canvas.getByRole("group", { name: /ply 0,/ });
+  const meter = canvas.getByRole("meter", { name: "Evaluation" });
+  const initialOrientation = meter.getAttribute("data-orientation") ?? "white";
   const contextButton = canvas.getByRole("button", { name: "Game Context" });
   const sourceLink = canvas.getByRole("link", { name: "Chess.com game" });
   const analysis = await canvas.findByText("Analysis available on request");
@@ -133,6 +98,23 @@ const initialPlay: NonNullable<Story["play"]> = async ({ canvasElement }) => {
   await expect(canvas.getByText("Initial position")).toBeVisible();
   await expect(canvas.getByRole("button", { name: "Previous" })).toBeDisabled();
   await expect(canvas.getByRole("button", { name: "Next" })).toBeEnabled();
+  await expect(board).toHaveAttribute("aria-label", expect.stringContaining("at the bottom"));
+  await expect(meter).toHaveAttribute("data-orientation", initialOrientation);
+  const currentFen = canvas.getByTestId("branch-current-fen").textContent;
+  await userEvent.click(canvas.getByRole("button", { name: "Flip" }));
+  await expect(meter).toHaveAttribute(
+    "data-orientation",
+    initialOrientation === "white" ? "black" : "white",
+  );
+  await expect(board).toHaveAttribute(
+    "aria-label",
+    expect.stringContaining(
+      initialOrientation === "white" ? "Black at the bottom" : "White at the bottom",
+    ),
+  );
+  await expect(canvas.getByTestId("branch-current-fen")).toHaveTextContent(currentFen ?? "");
+  await expect(canvas.getByText("Ply 0 of 3: Initial position", { exact: true })).toBeVisible();
+  await userEvent.click(canvas.getByRole("button", { name: "Flip" }));
   await expect(contextButton).toHaveAttribute("aria-expanded", "true");
   await expect(sourceLink.compareDocumentPosition(analysis)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
   await userEvent.click(contextButton);
@@ -141,33 +123,31 @@ const initialPlay: NonNullable<Story["play"]> = async ({ canvasElement }) => {
   await userEvent.click(contextButton);
   await expect(canvas.getByText("Analysis available on request")).toBeVisible();
 };
-
 const intermediatePlay: NonNullable<Story["play"]> = async ({ canvasElement }) => {
   const canvas = within(canvasElement);
   await submit(canvas, VIEWER_GAME_UUID, "1");
   await expect(canvas.getByText("Ply 1 of 3")).toBeVisible();
+  await expect(canvas.getByText("Seen in 3 games as White", { exact: true })).toBeVisible();
+  await expect(canvas.getByText("Seen in 2 games as Black", { exact: true })).toBeVisible();
+  const currentFen = canvas.getByTestId("branch-current-fen").textContent;
+  await userEvent.click(canvas.getByRole("button", { name: "Flip" }));
+  await expect(canvas.getByRole("group", { name: /ply 1, Black at the bottom/ })).toBeVisible();
+  await expect(canvas.getByText("Seen in 3 games as White", { exact: true })).toBeVisible();
+  await expect(canvas.getByTestId("branch-current-fen")).toHaveTextContent(currentFen ?? "");
   await expect(canvas.getByRole("button", { name: "Previous" })).toBeEnabled();
   await expect(canvas.getByRole("button", { name: "Next" })).toBeEnabled();
   await userEvent.click(canvas.getByRole("button", { name: "Next" }));
   await expect(canvas.getByText("Ply 2 of 3")).toBeVisible();
+  await expect(canvas.getByText("Seen in 4 games as White", { exact: true })).toBeVisible();
+  await expect(canvas.getByText("Seen in 3 games as Black", { exact: true })).toBeVisible();
   await expect(canvas.getByText("Ply 2 of 3: e5", { exact: true })).toBeInTheDocument();
 };
-
-const finalPlay: NonNullable<Story["play"]> = async ({ canvasElement }) => {
-  const canvas = within(canvasElement);
-  await submit(canvas, VIEWER_GAME_UUID, "3");
-  await expect(canvas.getByText("Ply 3 of 3")).toBeVisible();
-  await expect(canvas.getByRole("button", { name: "Previous" })).toBeEnabled();
-  await expect(canvas.getByRole("button", { name: "Next" })).toBeDisabled();
-};
-
 export const Wide: Story = {
   name: "Empty - Wide",
   args: { lookup: completeGameLookup() },
   render: () =>
     frame(<ViewerWorkspace lookup={completeGameLookup()} analysisClient={storyAnalysisClient()} />),
 };
-
 export const Constrained: Story = {
   name: "Empty - Constrained",
   args: { lookup: completeGameLookup() },
@@ -176,14 +156,60 @@ export const Constrained: Story = {
       <ViewerWorkspace lookup={completeGameLookup()} analysisClient={storyAnalysisClient()} />,
     ),
 };
-
+export const SeenCounts: Story = {
+  name: "Recurrence - seen counts",
+  args: { lookup: completeGameLookup() },
+  render: (args) => frame(<ViewerWorkspace analysisClient={storyAnalysisClient()} {...args} />),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await submit(canvas, VIEWER_GAME_UUID, "0");
+    await expect(canvas.getByRole("group", { name: "Position recurrence" })).toBeVisible();
+    await expect(canvas.getByText("Seen in 2 games as White", { exact: true })).toBeVisible();
+    await expect(canvas.getByText("Seen in 1 games as Black", { exact: true })).toBeVisible();
+  },
+};
+export const ZeroCounts: Story = {
+  name: "Recurrence - zero counts",
+  args: {
+    lookup: completeGameLookup(),
+    positionContextClient: storyPositionContextClient(() => ({
+      overall_exists: true,
+      white_count: 0,
+      black_count: 0,
+    })),
+  },
+  render: (args) => frame(<ViewerWorkspace analysisClient={storyAnalysisClient()} {...args} />),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await submit(canvas);
+    await expect(canvas.getByText("Never seen as White", { exact: true })).toBeVisible();
+    await expect(canvas.getByText("Never seen as Black", { exact: true })).toBeVisible();
+  },
+};
+export const AbsentPosition: Story = {
+  name: "Recurrence - absent overall position",
+  args: {
+    lookup: completeGameLookup(),
+    positionContextClient: storyPositionContextClient(() => ({
+      overall_exists: false,
+      white_count: 4,
+      black_count: 3,
+    })),
+  },
+  render: (args) => frame(<ViewerWorkspace analysisClient={storyAnalysisClient()} {...args} />),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await submit(canvas);
+    await expect(canvas.getByText("Never seen as White", { exact: true })).toBeVisible();
+    await expect(canvas.getByText("Never seen as Black", { exact: true })).toBeVisible();
+  },
+};
 export const LoadingWide: Story = {
   name: "Loading - Wide",
   args: { lookup: pendingLookup },
   render: (args) => frame(<ViewerWorkspace analysisClient={storyAnalysisClient()} {...args} />),
   play: loadingPlay,
 };
-
 export const LoadingConstrained: Story = {
   name: "Loading - Constrained",
   args: { lookup: pendingLookup },
@@ -191,14 +217,12 @@ export const LoadingConstrained: Story = {
     constrained(<ViewerWorkspace analysisClient={storyAnalysisClient()} {...args} />),
   play: loadingPlay,
 };
-
 export const InitialBoundary: Story = {
   name: "Initial boundary",
   args: { lookup: completeGameLookup() },
   render: (args) => frame(<ViewerWorkspace analysisClient={storyAnalysisClient()} {...args} />),
   play: initialPlay,
 };
-
 export const IntermediateTraversal: Story = {
   name: "Intermediate traversal",
   args: { lookup: completeGameLookup() },
@@ -212,17 +236,15 @@ export const FinalBoundary: Story = {
   render: (args) => frame(<ViewerWorkspace analysisClient={storyAnalysisClient()} {...args} />),
   play: finalPlay,
 };
-
 export const BlackSubject: Story = {
   name: "Success - Black subject",
   args: { lookup: completeGameLookup(blackGame) },
   render: (args) => frame(<ViewerWorkspace analysisClient={storyAnalysisClient()} {...args} />),
   play: initialPlay,
 };
-
 export const UnsafeSource: Story = {
   name: "Success - Unsafe source unavailable",
-  args: { lookup: completeGameLookup(unsafeGame) },
+  args: { lookup: completeGameLookup(UNSAFE_SOURCE_GAME) },
   render: (args) => frame(<ViewerWorkspace analysisClient={storyAnalysisClient()} {...args} />),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -250,6 +272,9 @@ function failureStory(status: GameLookupFailure): Story {
       const canvas = within(canvasElement);
       await submit(canvas);
       await expect(canvas.getByRole("heading", { name: heading, level: 2 })).toBeVisible();
+      await expect(
+        canvas.queryByRole("group", { name: "Position recurrence" }),
+      ).not.toBeInTheDocument();
     },
   };
 }
@@ -285,17 +310,26 @@ export const ReplacementFailure: Story = {
         ? { status: "success", game: { ...VIEWER_GAME, initial_ply: initialPly ?? 0 } }
         : { status: "game_unavailable" };
     };
-    return frame(<ViewerWorkspace lookup={lookup} analysisClient={storyAnalysisClient()} />);
+    return frame(
+      <ViewerWorkspace
+        lookup={lookup}
+        analysisClient={storyAnalysisClient()}
+        positionContextClient={positionContextClient}
+      />,
+    );
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await submit(canvas, VIEWER_GAME_UUID, "1");
     await expect(canvas.getByText("Ply 1 of 3")).toBeVisible();
+    await userEvent.click(canvas.getByRole("button", { name: "Flip" }));
+    await expect(canvas.getByRole("group", { name: /ply 1, Black at the bottom/ })).toBeVisible();
     await userEvent.clear(canvas.getByLabelText(/Ply/));
     await userEvent.type(canvas.getByLabelText(/Ply/), "2");
     await userEvent.click(canvas.getByRole("button", { name: "Load game" }));
     await expect(canvas.getByRole("heading", { name: "Game unavailable", level: 2 })).toBeVisible();
     await expect(canvas.getByText("Ply 1 of 3")).toBeVisible();
+    await expect(canvas.getByRole("group", { name: /ply 1, Black at the bottom/ })).toBeVisible();
     await expect(canvas.getByRole("button", { name: "Next" })).toBeEnabled();
   },
 };
@@ -308,12 +342,17 @@ export const Reset: Story = {
     const canvas = within(canvasElement);
     await submit(canvas);
     await expect(canvas.getByText("Ply 0 of 3")).toBeVisible();
+    await userEvent.click(canvas.getByRole("button", { name: "Flip" }));
+    await expect(canvas.getByRole("group", { name: /ply 0, Black at the bottom/ })).toBeVisible();
     const loaderForm = canvas.getByLabelText("Game UUID").closest("form");
     if (!loaderForm) {
       throw new Error("Game Loader form was not rendered");
     }
     await userEvent.click(within(loaderForm).getByRole("button", { name: "Reset" }));
     await expect(canvas.getAllByText("No game loaded")).toHaveLength(2);
+    await expect(
+      canvas.getByRole("img", { name: /standard starting position, White at the bottom/ }),
+    ).toBeVisible();
     await expect(canvas.getByRole("button", { name: "Next" })).toBeDisabled();
   },
 };
@@ -339,15 +378,15 @@ export const BranchFromInitialPosition: Story = {
     await expect(branch.getByRole("button", { name: "Reset" })).toBeDisabled();
   },
 };
-
 export const BranchNavigationGate: Story = {
   name: "Branch - navigation gated",
-  args: { lookup: completeGameLookup() },
+  args: { lookup: completeGameLookup(), positionContextClient: branchPositionContextClient },
   render: (args) => frame(<ViewerWorkspace analysisClient={storyAnalysisClient()} {...args} />),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await submit(canvas, VIEWER_GAME_UUID, "0");
     await expect(canvas.getByText("Ply 0 of 3")).toBeVisible();
+    await expect(canvas.getByText("Seen in 2 games as White", { exact: true })).toBeVisible();
     await keyboardMove(canvasElement, "e2", "{ArrowUp}{ArrowUp}");
     await expect(canvas.getByTestId("branch-san")).not.toHaveTextContent("No branch moves yet");
     await expect(canvas.getByTestId("branch-current-fen")).toHaveTextContent(
@@ -356,127 +395,93 @@ export const BranchNavigationGate: Story = {
     await expect(canvas.getByTestId("branch-status")).toHaveTextContent(
       "Branch move committed: e3.",
     );
+    await expect(canvas.getByText("Seen in 7 games as White", { exact: true })).toBeVisible();
+    await expect(canvas.getByText("Seen in 6 games as Black", { exact: true })).toBeVisible();
+    const branchFen = canvas.getByTestId("branch-current-fen").textContent;
+    const branchSan = canvas.getByTestId("branch-san").textContent;
+    await userEvent.click(canvas.getByRole("button", { name: "Flip" }));
+    await expect(canvas.getByRole("group", { name: /ply 0, Black at the bottom/ })).toBeVisible();
+    await expect(canvas.getByTestId("branch-current-fen")).toHaveTextContent(branchFen ?? "");
+    await expect(canvas.getByTestId("branch-san")).toHaveTextContent(branchSan ?? "");
     await expect(canvas.getByRole("button", { name: "Previous" })).toBeDisabled();
     await expect(canvas.getByRole("button", { name: "Next" })).toBeDisabled();
     await expect(canvas.getByText("Initial position")).toBeVisible();
   },
 };
-
 export const BranchPromotion: Story = {
   name: "Branch - promotion fixture",
-  args: { lookup: completeGameLookup(promotionGame) },
+  args: { lookup: completeGameLookup(PROMOTION_GAME) },
   render: (args) => frame(<ViewerWorkspace analysisClient={storyAnalysisClient()} {...args} />),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await submit(canvas, VIEWER_GAME_UUID, "0");
     await expect(canvas.getByText("Ply 0 of 0")).toBeVisible();
     await expect(canvas.getByTestId("branch-origin-fen")).toHaveTextContent(
-      promotionGame.positions[0].fen,
+      PROMOTION_GAME.positions[0].fen,
     );
     await expect(canvas.getByTestId("branch-current-fen")).toHaveTextContent(
-      promotionGame.positions[0].fen,
+      PROMOTION_GAME.positions[0].fen,
     );
     await expect(canvas.getByTestId("branch-san")).toHaveTextContent("No branch moves yet");
   },
 };
-
-const branchPromotionInteractionPlay: NonNullable<Story["play"]> = async ({ canvasElement }) => {
-  const canvas = within(canvasElement);
-  const body = within(canvasElement.ownerDocument.body);
-  await submit(canvas, VIEWER_GAME_UUID, "0");
-  await expect(canvas.getByText("Ply 0 of 0")).toBeVisible();
-  await expect(canvas.getByTestId("branch-origin-fen")).toHaveTextContent(
-    promotionGame.positions[0].fen,
-  );
-  await expect(canvas.getByTestId("branch-current-fen")).toHaveTextContent(
-    promotionGame.positions[0].fen,
-  );
-
-  await keyboardMove(canvasElement, "e7", "{ArrowUp}{ArrowUp}");
-  await waitFor(() =>
-    expect(body.getByRole("dialog", { name: "Choose a promotion piece" })).toBeVisible(),
-  );
-  await expect(canvas.getByTestId("branch-current-fen")).toHaveTextContent(
-    promotionGame.positions[0].fen,
-  );
-  await userEvent.keyboard("{Escape}");
-  await expect(body.queryByRole("dialog")).not.toBeInTheDocument();
-  await expect(canvas.getByTestId("branch-status")).toHaveTextContent(
-    "Promotion cancelled; the captured position is unchanged.",
-  );
-
-  await keyboardMove(canvasElement, "e7", "{ArrowUp}{ArrowUp}");
-  await waitFor(() =>
-    expect(body.getByRole("dialog", { name: "Choose a promotion piece" })).toBeVisible(),
-  );
-  await userEvent.click(body.getByRole("button", { name: "Promote to knight" }));
-  await expect(canvas.getByTestId("branch-san")).toHaveTextContent("1. e8=N");
-  await expect(canvas.getByTestId("branch-current-fen")).toHaveTextContent(
-    "k3N3/8/8/8/8/8/8/4K3 b - - 0 1",
-  );
-};
-
 export const BranchPromotionInteraction: Story = {
   name: "Branch - promotion interaction",
-  args: { lookup: completeGameLookup(promotionGame) },
+  args: { lookup: completeGameLookup(PROMOTION_GAME) },
   render: (args) => frame(<ViewerWorkspace analysisClient={storyAnalysisClient()} {...args} />),
   play: branchPromotionInteractionPlay,
 };
-
 export const BranchCastling: Story = {
   name: "Branch - castling fixture",
-  args: { lookup: completeGameLookup(castlingGame) },
+  args: { lookup: completeGameLookup(CASTLING_GAME) },
   render: (args) => frame(<ViewerWorkspace analysisClient={storyAnalysisClient()} {...args} />),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await submit(canvas, VIEWER_GAME_UUID, "0");
     await expect(canvas.getByText("Ply 0 of 0")).toBeVisible();
     await expect(canvas.getByTestId("branch-origin-fen")).toHaveTextContent(
-      castlingGame.positions[0].fen,
+      CASTLING_GAME.positions[0].fen,
     );
     await expect(canvas.getByTestId("branch-current-fen")).toHaveTextContent(
-      castlingGame.positions[0].fen,
+      CASTLING_GAME.positions[0].fen,
     );
     await expect(canvas.getByTestId("branch-san")).toHaveTextContent("No branch moves yet");
   },
 };
-
 export const BranchEnPassant: Story = {
   name: "Branch - en-passant fixture",
-  args: { lookup: completeGameLookup(enPassantGame) },
+  args: { lookup: completeGameLookup(EN_PASSANT_GAME) },
   render: (args) => frame(<ViewerWorkspace analysisClient={storyAnalysisClient()} {...args} />),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await submit(canvas, VIEWER_GAME_UUID, "0");
     await expect(canvas.getByText("Ply 0 of 0")).toBeVisible();
     await expect(canvas.getByTestId("branch-origin-fen")).toHaveTextContent(
-      enPassantGame.positions[0].fen,
+      EN_PASSANT_GAME.positions[0].fen,
     );
     await expect(canvas.getByTestId("branch-current-fen")).toHaveTextContent(
-      enPassantGame.positions[0].fen,
+      EN_PASSANT_GAME.positions[0].fen,
     );
     await expect(canvas.getByTestId("branch-san")).toHaveTextContent("No branch moves yet");
   },
 };
-
 export const BranchTerminal: Story = {
   name: "Branch - terminal fixture",
-  args: { lookup: completeGameLookup(terminalGame) },
+  args: { lookup: completeGameLookup(TERMINAL_GAME) },
   render: (args) => frame(<ViewerWorkspace analysisClient={storyAnalysisClient()} {...args} />),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await submit(canvas, VIEWER_GAME_UUID, "0");
     await expect(canvas.getByText("Ply 0 of 0")).toBeVisible();
     await expect(canvas.getByTestId("branch-origin-fen")).toHaveTextContent(
-      terminalGame.positions[0].fen,
+      TERMINAL_GAME.positions[0].fen,
     );
     await expect(canvas.getByTestId("branch-current-fen")).toHaveTextContent(
-      terminalGame.positions[0].fen,
+      TERMINAL_GAME.positions[0].fen,
     );
     await expect(canvas.getByTestId("branch-san")).toHaveTextContent("No branch moves yet");
   },
 };
-
 export const BranchReplacementDiscard: Story = {
   name: "Branch - replacement discards line",
   args: { lookup: completeGameLookup() },

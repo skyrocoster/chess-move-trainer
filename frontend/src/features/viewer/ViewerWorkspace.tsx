@@ -15,6 +15,9 @@ import { defaultAnalysisClient, type AnalysisClient } from "./analysisApi";
 import { useAnalysisState } from "./analysisState";
 import { analysisPanelDisplay } from "./analysisFormatting";
 import { evaluationDisplay } from "./evalBarDisplay";
+import { PositionContext } from "./PositionContext";
+import { fetchPositionContext, type PositionContextClient } from "./positionContextApi";
+import { usePositionContextState } from "./positionContextState";
 import {
   isPromotionTarget,
   type PromotionColor,
@@ -61,6 +64,14 @@ function terminalDescription(chess: Chess) {
   return null;
 }
 
+function oppositeOrientation(orientation: BoardOrientation): BoardOrientation {
+  return orientation === "white" ? "black" : "white";
+}
+
+function orientationDescription(orientation: BoardOrientation): string {
+  return orientation === "white" ? "White at the bottom" : "Black at the bottom";
+}
+
 function announcementFor(game: Game, index: number): string {
   const position = game.positions[index];
   const finalPly = game.positions.at(-1)?.ply ?? 0;
@@ -71,12 +82,14 @@ export type ViewerWorkspaceProps = {
   lookup?: GameLookup;
   analysisClient?: AnalysisClient;
   analysisPollIntervalMs?: number;
+  positionContextClient?: PositionContextClient;
 };
 
 export default function ViewerWorkspace({
   lookup = fetchGame,
   analysisClient = defaultAnalysisClient,
   analysisPollIntervalMs,
+  positionContextClient = fetchPositionContext,
 }: ViewerWorkspaceProps) {
   const [gameUuidInput, setGameUuidInput] = useState("");
   const [plyInput, setPlyInput] = useState("");
@@ -88,6 +101,7 @@ export default function ViewerWorkspace({
   const [branchResetToken, setBranchResetToken] = useState(0);
   const [branchNotice, setBranchNotice] = useState(DEFAULT_BRANCH_NOTICE);
   const [promotionColor, setPromotionColor] = useState<PromotionColor>("w");
+  const [flipped, setFlipped] = useState(false);
   const requestId = useRef(0);
   const controller = useRef<AbortController | null>(null);
 
@@ -125,6 +139,7 @@ export default function ViewerWorkspace({
       : emptyBranchSnapshot;
   const analysisFen = branchForView?.currentFen ?? currentPosition?.fen ?? null;
   const analysisState = useAnalysisState(analysisFen, analysisClient, analysisPollIntervalMs);
+  const positionContextState = usePositionContextState(analysisFen, positionContextClient);
   const analysisDisplay = analysisPanelDisplay(analysisState, {
     displayedPly: currentPosition?.ply,
   });
@@ -223,6 +238,20 @@ export default function ViewerWorkspace({
     [branchChess, createBranchSnapshot, requestPromotion],
   );
 
+  const handleCandidateMove = useCallback(
+    (move: string) => {
+      const sourceElement =
+        document.activeElement instanceof HTMLElement ? document.activeElement : null;
+      void handleMoveIntent({
+        sourceSquare: move.slice(0, 2) as InteractiveBoardMoveIntent["sourceSquare"],
+        targetSquare: move.slice(2, 4) as InteractiveBoardMoveIntent["targetSquare"],
+        sourceElement,
+        anchorElement: sourceElement,
+      });
+    },
+    [handleMoveIntent],
+  );
+
   const handlePromotionCancel = useCallback(() => {
     cancelPromotion();
     const moves = historyMoves(branchChess);
@@ -273,6 +302,7 @@ export default function ViewerWorkspace({
     setGame(null);
     setCurrentIndex(0);
     setAnnouncement("");
+    setFlipped(false);
   }
 
   async function handleSubmit(values: GameLoaderValues) {
@@ -314,6 +344,7 @@ export default function ViewerWorkspace({
       setCurrentIndex(nextIndex);
       setStatus("idle");
       setAnnouncement(announcementFor(nextGame, nextIndex));
+      setFlipped(false);
       return;
     }
 
@@ -349,18 +380,19 @@ export default function ViewerWorkspace({
   }
 
   const boardFen = analysisFen ?? START_BOARD.fen;
-  const boardOrientation = game?.subject_color ?? START_BOARD.orientation;
+  const baseOrientation = game?.subject_color ?? START_BOARD.orientation;
+  const boardOrientation = flipped ? oppositeOrientation(baseOrientation) : baseOrientation;
   const branchTerminal = terminalDescription(branchChess);
   const boardLabel =
     branchForView && currentPosition
-      ? `Chess board: temporary branch from game ${game.game_uuid}, captured ply ${currentPosition.ply}, ${
-          boardOrientation === "white" ? "White" : "Black"
-        } at the bottom`
+      ? `Chess board: temporary branch from game ${game.game_uuid}, captured ply ${currentPosition.ply}, ${orientationDescription(
+          boardOrientation,
+        )}`
       : currentPosition
-        ? `Chess board: game ${game.game_uuid}, ply ${currentPosition.ply}, ${
-            boardOrientation === "white" ? "White" : "Black"
-          } at the bottom`
-        : START_BOARD.label;
+        ? `Chess board: game ${game.game_uuid}, ply ${currentPosition.ply}, ${orientationDescription(
+            boardOrientation,
+          )}`
+        : `Chess board: standard starting position, ${orientationDescription(boardOrientation)}`;
 
   return (
     <div className={styles.viewer}>
@@ -415,17 +447,20 @@ export default function ViewerWorkspace({
             canGoNext={canGoNext}
             onPrevious={handlePrevious}
             onNext={handleNext}
+            onFlip={() => setFlipped((current) => !current)}
           />
         </div>
 
         <div className={styles.context}>
           <GameContext game={game} position={currentPosition}>
+            <PositionContext context={positionContextState.context} />
             <AnalysisPanel
               display={analysisDisplay}
               onAnalyze={() => analysisState.handleAction("analyze")}
               onUpdate={() => analysisState.handleAction("update")}
               onRetry={() => analysisState.handleAction("retry")}
               onRetryObservation={analysisState.retryObservation}
+              onCandidateMove={handleCandidateMove}
             />
           </GameContext>
         </div>

@@ -31,6 +31,7 @@ export const Empty: Story = {
     await expect(within(toolbar).getByText("Next", { exact: true })).toBeVisible();
     await expect(canvas.getByRole("button", { name: "Previous" })).toBeDisabled();
     await expect(canvas.getByRole("button", { name: "Next" })).toBeDisabled();
+    await expect(canvas.getByRole("button", { name: "Flip" })).toBeEnabled();
     await expect(canvas.getByText("No game loaded")).toBeVisible();
   },
 };
@@ -52,6 +53,7 @@ export const Intermediate: Story = {
     canGoNext: true,
     onPrevious: fn(),
     onNext: fn(),
+    onFlip: fn(),
   },
   render: (args) =>
     frame(
@@ -59,19 +61,23 @@ export const Intermediate: Story = {
         {...args}
         onPrevious={() => args.onPrevious?.()}
         onNext={() => args.onNext?.()}
+        onFlip={() => args.onFlip?.()}
       />,
     ),
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement);
     const previous = canvas.getByRole("button", { name: "Previous" });
     const next = canvas.getByRole("button", { name: "Next" });
+    const flip = canvas.getByRole("button", { name: "Flip" });
     await expect(previous).toBeEnabled();
     await expect(next).toBeEnabled();
 
     await userEvent.click(previous);
     await userEvent.click(next);
+    await userEvent.click(flip);
     await expect(args.onPrevious).toHaveBeenCalledTimes(1);
     await expect(args.onNext).toHaveBeenCalledTimes(1);
+    await expect(args.onFlip).toHaveBeenCalledTimes(1);
   },
 };
 
@@ -113,7 +119,8 @@ export const Constrained: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     const toolbar = canvas.getByRole("toolbar", { name: "Board controls" });
-    await expect(within(toolbar).getAllByRole("button")).toHaveLength(2);
+    await expect(within(toolbar).getAllByRole("button")).toHaveLength(3);
+    await expect(canvas.getByRole("button", { name: "Flip" })).toBeEnabled();
   },
 };
 
@@ -124,6 +131,7 @@ export const KeyboardToolbar: Story = {
     canGoNext: true,
     onPrevious: fn(),
     onNext: fn(),
+    onFlip: fn(),
   },
   render: (args) =>
     frame(
@@ -131,6 +139,7 @@ export const KeyboardToolbar: Story = {
         {...args}
         onPrevious={() => args.onPrevious?.()}
         onNext={() => args.onNext?.()}
+        onFlip={() => args.onFlip?.()}
       />,
     ),
   play: async ({ args, canvasElement }) => {
@@ -138,6 +147,7 @@ export const KeyboardToolbar: Story = {
     const toolbar = canvas.getByRole("toolbar", { name: "Board controls" });
     const previous = within(toolbar).getByRole("button", { name: "Previous" });
     const next = within(toolbar).getByRole("button", { name: "Next" });
+    const flip = within(toolbar).getByRole("button", { name: "Flip" });
     previous.focus();
     await userEvent.keyboard("{Enter}");
     await expect(args.onPrevious).toHaveBeenCalledTimes(1);
@@ -145,5 +155,9 @@ export const KeyboardToolbar: Story = {
     await expect(next).toHaveFocus();
     await userEvent.keyboard(" ");
     await expect(args.onNext).toHaveBeenCalledTimes(1);
+    await userEvent.keyboard("{ArrowRight}");
+    await expect(flip).toHaveFocus();
+    await userEvent.keyboard("{Enter}");
+    await expect(args.onFlip).toHaveBeenCalledTimes(1);
   },
 };

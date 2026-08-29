@@ -41,6 +41,10 @@ describe("AppShell", () => {
     expect(viewerLinks).toHaveLength(1);
     expect(viewerLinks[0]).toHaveAttribute("href", "/viewer");
     expect(viewerLinks[0]).not.toHaveAttribute("aria-current", "page");
+    const repertoireLinks = screen.getAllByRole("link", { name: "Repertoire Builder" });
+    expect(repertoireLinks).toHaveLength(1);
+    expect(repertoireLinks[0]).toHaveAttribute("href", "/repertoire");
+    expect(repertoireLinks[0]).not.toHaveAttribute("aria-current", "page");
     expect(
       screen.getByRole("button", { name: "Open navigation menu", hidden: true }),
     ).toBeInTheDocument();
@@ -83,11 +87,41 @@ describe("AppShell", () => {
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
+  it("closes the drawer when Repertoire Builder is selected", async () => {
+    const user = userEvent.setup();
+    renderShell(["/repertoire"]);
+
+    await user.click(screen.getByRole("button", { name: "Open navigation menu", hidden: true }));
+    const dialog = screen.getByRole("dialog");
+    const repertoireLink = within(dialog).getByRole("link", { name: "Repertoire Builder" });
+    expect(repertoireLink).toHaveAttribute("aria-current", "page");
+    await user.click(repertoireLink);
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
   it("marks Viewer as the active navigation destination", () => {
     renderShell(["/viewer"]);
 
     expect(screen.getByRole("link", { name: "Viewer" })).toHaveAttribute("aria-current", "page");
     expect(screen.getByRole("link", { name: "Status" })).not.toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+  });
+
+  it("marks Repertoire Builder as the active navigation destination", () => {
+    renderShell(["/repertoire"]);
+
+    expect(screen.getByRole("link", { name: "Repertoire Builder" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+    expect(screen.getByRole("link", { name: "Status" })).not.toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+    expect(screen.getByRole("link", { name: "Viewer" })).not.toHaveAttribute(
       "aria-current",
       "page",
     );

@@ -158,6 +158,7 @@ export function analysisPanelDisplay(
           },
           lines: result.candidates.slice(0, 5).map((candidate) => ({
             rank: candidate.rank,
+            move: candidate.pv_uci[0]!,
             score: formatScore(candidate),
             pv: displayPv(result, candidate),
             wdl: formatWdl(candidate),

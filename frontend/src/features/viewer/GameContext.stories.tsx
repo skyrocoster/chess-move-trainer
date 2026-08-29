@@ -4,6 +4,8 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import "../../styles/cmt-tokens.css";
 import "../../styles/cmt-typescale.css";
 import { GameContext } from "./GameContext";
+import { PositionContext } from "./PositionContext";
+import type { PositionContextResponse } from "./positionContextApi";
 import styles from "./Stage1Story.module.css";
 import { MISSING_SOURCE_GAME, UNSAFE_SOURCE_GAME, VIEWER_GAME } from "./viewerFixtures";
 
@@ -24,6 +26,12 @@ const constrained = (children: React.ReactNode) => (
 );
 
 const finalPosition = VIEWER_GAME.positions.at(-1);
+const positionContext: PositionContextResponse = {
+  fen: VIEWER_GAME.positions[2].fen,
+  overall_exists: true,
+  white_count: 2,
+  black_count: 1,
+};
 
 const emptyPlay: NonNullable<Story["play"]> = async ({ canvasElement }) => {
   const canvas = within(canvasElement);
@@ -56,11 +64,21 @@ const composedPlay: NonNullable<Story["play"]> = async ({ canvasElement }) => {
   const canvas = within(canvasElement);
   const disclosureButton = canvas.getByRole("button", { name: "Game Context" });
   const sourceLink = canvas.getByRole("link", { name: "Chess.com game" });
+  const recurrence = canvas.getByRole("group", { name: "Position recurrence" });
   const analysisChild = canvas.getByTestId("analysis-child");
 
   await expect(canvas.getByText("Ply 2 of 3")).toBeVisible();
   await expect(canvas.getByText("e5", { exact: true })).toBeVisible();
+  await expect(recurrence).toBeVisible();
+  await expect(canvas.getByText("Seen in 2 games as White", { exact: true })).toBeVisible();
+  await expect(canvas.getByText("Seen in 1 games as Black", { exact: true })).toBeVisible();
   await expect(sourceLink.compareDocumentPosition(analysisChild)).toBe(
+    Node.DOCUMENT_POSITION_FOLLOWING,
+  );
+  await expect(sourceLink.compareDocumentPosition(recurrence)).toBe(
+    Node.DOCUMENT_POSITION_FOLLOWING,
+  );
+  await expect(recurrence.compareDocumentPosition(analysisChild)).toBe(
     Node.DOCUMENT_POSITION_FOLLOWING,
   );
   await expect(disclosureButton).toHaveAttribute("aria-expanded", "true");
@@ -185,6 +203,7 @@ export const ComposedAnalysis: Story = {
   render: (args) =>
     frame(
       <GameContext {...args}>
+        <PositionContext context={positionContext} />
         <div data-testid="analysis-child">Controlled analysis presentation</div>
       </GameContext>,
     ),

@@ -19,7 +19,9 @@ permission:
     "ux-design": allow
     "frontend-design": allow
     "frontend-component-iteration": allow
-  task: deny
+  task:
+    "*": deny
+    "scout": allow
   webfetch: allow
   websearch: allow
   external_directory: deny
@@ -47,3 +49,5 @@ Do not run `git status` or `git diff` during assessment or planning. During exec
 and inspect Git changes only once for the final scope audit unless a directly conflicting concurrent edit appears.
 Never invoke the `bash` tool without an explicit finite timeout in milliseconds; missing, zero, or non-finite
 timeouts are forbidden because commands can hang.
+
+Send bounded factual questions to `scout`.

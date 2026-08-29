@@ -17,7 +17,9 @@ data derivation live in the `viewer` feature, not here.
 `AnalysisPanel` is a controlled presentation component. Its presentation contracts
 (`AnalysisPanelLine` and `AnalysisPanelDisplay`) describe the display state and callback intents
 it renders, but it performs no formatting, data derivation, state management, or API calls.
-Viewer owns those responsibilities.
+When an `onCandidateMove` callback is provided, every displayed candidate line (including Best)
+renders as an accessible pointer/keyboard control; activation signals only that candidate's first
+UCI move. Viewer owns those responsibilities.
 
 ## Consumers
 

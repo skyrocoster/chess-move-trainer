@@ -30,6 +30,23 @@ describe("App routes", () => {
     ).toBeInTheDocument();
   });
 
+  it("renders the Repertoire Builder scaffold at /repertoire", async () => {
+    renderApp(["/repertoire"]);
+
+    expect(
+      await screen.findByRole(
+        "heading",
+        { name: "Repertoire Builder", level: 1 },
+        { timeout: 5000 },
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("group", {
+        name: "Chess board: standard starting position, White at the bottom",
+      }),
+    ).toBeInTheDocument();
+  }, 20_000);
+
   it("renders the in-shell not-found state for an unmatched route", () => {
     renderApp(["/does-not-exist"]);
 

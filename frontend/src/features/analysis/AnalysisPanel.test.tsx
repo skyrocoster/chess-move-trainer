@@ -36,30 +36,35 @@ function displayWdl(wins: number, draws: number, losses: number): AnalysisPanelW
 const DISPLAY_LINES: AnalysisPanelLine[] = [
   {
     rank: 1,
+    move: "e2e4",
     score: "+0.34",
     pv: "1. e4 e5 2. Nf3",
     wdl: displayWdl(42, 30, 28),
   },
   {
     rank: 2,
+    move: "d2d4",
     score: "-M3",
     pv: "1. d4 d5",
     wdl: displayWdl(20, 30, 50),
   },
   {
     rank: 3,
+    move: "c2c4",
     score: "+M",
     pv: "1. c4",
     wdl: displayWdl(50, 25, 25),
   },
   {
     rank: 4,
+    move: "g1f3",
     score: "-2.50",
     pv: "1. Nf3",
     wdl: displayWdl(10, 20, 70),
   },
   {
     rank: 5,
+    move: "b1c3",
     score: "+0.10",
     pv: "Line unavailable",
     wdl: displayWdl(40, 30, 30),
@@ -162,7 +167,7 @@ function errorDisplay(overrides: DisplayOverrides = {}): AnalysisPanelDisplay {
 
 type PanelCallbacks = Pick<
   ComponentProps<typeof AnalysisPanel>,
-  "onAnalyze" | "onUpdate" | "onRetry" | "onRetryObservation"
+  "onAnalyze" | "onUpdate" | "onRetry" | "onRetryObservation" | "onCandidateMove"
 >;
 
 function renderPanel(display: AnalysisPanelDisplay, overrides: Partial<PanelCallbacks> = {}) {
@@ -256,6 +261,28 @@ describe("AnalysisPanel", () => {
     expect(screen.getByRole("button", { name: "Update analysis" })).toBeVisible();
     expect(screen.queryByRole("button", { name: "Analyze position" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Retry analysis" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "1. e4 e5 2. Nf3" })).not.toBeInTheDocument();
+  });
+
+  it("exposes every candidate as a native pointer and keyboard control when controlled", async () => {
+    const onCandidateMove = vi.fn();
+    renderPanel(completeDisplay(), { onCandidateMove });
+    const user = userEvent.setup();
+    const bestLine = screen.getByRole("button", { name: "1. e4 e5 2. Nf3" });
+    const alternativeLine = screen.getByRole("button", { name: "1. d4 d5" });
+
+    expect(screen.getAllByRole("button")).toHaveLength(6);
+    expect(bestLine).toHaveAttribute("type", "button");
+    expect(alternativeLine).toHaveAttribute("type", "button");
+
+    await user.tab();
+    expect(bestLine).toHaveFocus();
+    await user.keyboard("{Enter}");
+    await user.keyboard(" ");
+    expect(onCandidateMove).toHaveBeenNthCalledWith(2, "e2e4");
+
+    await user.click(alternativeLine);
+    expect(onCandidateMove).toHaveBeenNthCalledWith(3, "d2d4");
   });
 
   it("labels stale results and emits a deliberate Update intention", async () => {

@@ -1,0 +1,140 @@
+.repertoire {
+  container-type: inline-size;
+  inline-size: 100%;
+}
+
+.workspace {
+  box-sizing: border-box;
+  display: grid;
+  grid-template-areas:
+    "heading heading"
+    "loader loader"
+    "origin origin"
+    "board session"
+    "controls session"
+    "analysis analysis";
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--cmt-spacing-24);
+  max-inline-size: 66rem;
+  min-inline-size: 0;
+  margin-inline: auto;
+  padding: var(--cmt-spacing-24);
+  background: var(--md-sys-color-background);
+  color: var(--md-sys-color-on-background);
+}
+
+.heading {
+  grid-area: heading;
+  margin: 0;
+  padding-block-end: var(--cmt-spacing-8);
+  color: var(--md-sys-color-on-surface);
+  font: var(--md-sys-typescale-headline-medium);
+  text-align: center;
+}
+
+.loader {
+  grid-area: loader;
+  min-inline-size: 0;
+}
+
+.origin {
+  grid-area: origin;
+  margin: 0;
+  color: var(--md-sys-color-on-surface-variant);
+  font: var(--md-sys-typescale-body-medium);
+  text-align: center;
+}
+
+.board {
+  display: flex;
+  grid-area: board;
+  justify-content: center;
+  min-inline-size: 0;
+}
+
+.controls,
+.session,
+.analysis {
+  min-inline-size: 0;
+}
+
+.controls {
+  grid-area: controls;
+}
+
+.session {
+  display: grid;
+  grid-area: session;
+  gap: var(--cmt-spacing-8);
+  align-content: start;
+}
+
+.session > p {
+  margin: 0;
+}
+
+.historyLabel {
+  color: var(--md-sys-color-on-surface-variant);
+  font: var(--cmt-typescale-label-large, var(--md-sys-typescale-label-large));
+}
+
+.history,
+.staged,
+.sessionStatus,
+.fen {
+  color: var(--md-sys-color-on-surface);
+  font: var(--md-sys-typescale-body-medium);
+  overflow-wrap: anywhere;
+}
+
+.staged {
+  color: var(--md-sys-color-primary);
+}
+
+.sessionStatus {
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.analysis {
+  grid-area: analysis;
+}
+
+.positionSummary,
+.fen {
+  margin: 0;
+}
+
+.positionSummary {
+  color: var(--md-sys-color-on-surface);
+  font: var(--md-sys-typescale-body-medium);
+}
+
+.fen {
+  margin-block-start: var(--cmt-spacing-8);
+}
+
+@container (max-width: 40rem) {
+  .workspace {
+    grid-template-areas:
+      "heading"
+      "loader"
+      "origin"
+      "board"
+      "controls"
+      "session"
+      "analysis";
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--cmt-spacing-16);
+  }
+}
+
+@media (forced-colors: active) {
+  .workspace {
+    background: Canvas;
+    color: CanvasText;
+  }
+
+  .heading {
+    color: CanvasText;
+  }
+}

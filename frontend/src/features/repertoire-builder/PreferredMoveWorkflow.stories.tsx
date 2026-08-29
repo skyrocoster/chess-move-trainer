@@ -1,0 +1,68 @@
+import { expect, userEvent, within } from "storybook/test";
+import type { Meta, StoryObj } from "@storybook/react-vite";
+
+import {
+  completeGameLookup,
+  storyAnalysisClient,
+  storyCandidateAnalysisClient,
+} from "../viewer/viewerStoryHelpers";
+import { VIEWER_GAME_UUID } from "../viewer/viewerFixtures";
+import RepertoireBuilderWorkspace from "./RepertoireBuilderWorkspace";
+import { BLACK_SUBJECT_GAME, workspace } from "./RepertoireBuilderWorkspace.stories";
+import { loadGame } from "./repertoireBuilderStoryHelpers";
+
+const meta = {
+  title: "Application/Repertoire Builder/Workspace",
+  component: RepertoireBuilderWorkspace,
+  parameters: { layout: "fullscreen" },
+} satisfies Meta<typeof RepertoireBuilderWorkspace>;
+
+export default meta;
+type Story = StoryObj<typeof meta>;
+
+export const ReadErrors: Story = {
+  name: "Preferred move - read errors are announced safely",
+  render: () =>
+    workspace(
+      { analysisClient: storyAnalysisClient() },
+      { readFailure: "preferred_move_unavailable" },
+      { failure: "position_context_unavailable" },
+    ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const alerts = await canvas.findAllByRole("alert");
+    await expect(alerts).toHaveLength(2);
+    await expect(alerts[0]).toHaveTextContent("Preferred move data is unavailable. Try again.");
+    await expect(alerts[1]).toHaveTextContent("Position context is temporarily unavailable.");
+    await expect(canvas.queryByRole("button", { name: "Add" })).not.toBeInTheDocument();
+  },
+};
+
+export const OpponentLocalOnly: Story = {
+  name: "Preferred move - opponent turn stays local-only",
+  render: () =>
+    workspace(
+      {
+        analysisClient: storyCandidateAnalysisClient(["g1f3"]),
+        lookup: completeGameLookup(BLACK_SUBJECT_GAME),
+      },
+      { initialState: "assigned", putFailure: "unexpected_failure" },
+      { overall_exists: true, white_count: 5, black_count: 2 },
+    ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await loadGame(canvas, VIEWER_GAME_UUID, "2");
+    await expect(canvas.getByTestId("position-summary")).toHaveTextContent(
+      "Orientation: Black at the bottom. Side to move: White.",
+    );
+    await expect(canvas.queryByTestId("saved-move")).not.toBeInTheDocument();
+    await userEvent.click(await canvas.findByRole("button", { name: "2. Nf3" }));
+    await expect(canvas.getByTestId("session-status")).toHaveTextContent(
+      "Opponent move played locally: Nf3.",
+    );
+    await expect(canvas.getByTestId("session-san-history")).toHaveTextContent(
+      "1. e4 1... e5 2. Nf3",
+    );
+    await expect(canvas.queryByRole("alert")).not.toBeInTheDocument();
+  },
+};

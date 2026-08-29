@@ -6,6 +6,9 @@ import PageNotFoundView from "./features/app-shell/PageNotFoundView";
 import { StatusPage } from "./features/status/StatusPage";
 
 const ViewerWorkspace = lazy(() => import("./features/viewer/ViewerWorkspace"));
+const RepertoireBuilderWorkspace = lazy(
+  () => import("./features/repertoire-builder/RepertoireBuilderWorkspace"),
+);
 
 export default function App() {
   return (
@@ -17,6 +20,14 @@ export default function App() {
           element={
             <Suspense fallback={<p role="status">Loading position viewer...</p>}>
               <ViewerWorkspace />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/repertoire"
+          element={
+            <Suspense fallback={<p role="status">Loading Repertoire Builder...</p>}>
+              <RepertoireBuilderWorkspace />
             </Suspense>
           }
         />

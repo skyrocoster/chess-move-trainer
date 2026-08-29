@@ -38,6 +38,7 @@ export type InteractiveBoardAdapterProps = {
   promotionColor: PromotionColor;
   promotionSourceElement: HTMLElement | null;
   promotionAnchorElement: HTMLElement | null;
+  showBranchPanel?: boolean;
   onMoveIntent: (intent: InteractiveBoardMoveIntent) => boolean;
   onPromotionSelect: (promotion: PromotionPiece) => void;
   onPromotionCancel: () => void;
@@ -128,6 +129,7 @@ export function InteractiveBoardAdapter({
   promotionColor,
   promotionSourceElement,
   promotionAnchorElement,
+  showBranchPanel = true,
   onMoveIntent,
   onPromotionSelect,
   onPromotionCancel,
@@ -213,67 +215,74 @@ export function InteractiveBoardAdapter({
       >
         <Chessboard options={options} />
       </div>
-      <div className={styles.branchPanel} aria-label="Temporary branch">
-        <div className={styles.branchHeading}>
-          <strong>Temporary branch</strong>
-          <span>From captured ply {branchSnapshot.originPly}</span>
-          <span data-testid="branch-current-ply">
-            Current ply {branchSnapshot.originPly + branchSnapshot.moves.length}
-          </span>
-        </div>
-        <div className={styles.fenFields} aria-label="Temporary branch FEN">
-          <div className={styles.fenField}>
-            <span>Branch origin FEN</span>
-            <code data-testid="branch-origin-fen">{branchSnapshot.originFen}</code>
-            <Button
-              size="sm"
-              variant="secondary"
-              aria-label="Copy branch origin FEN"
-              data-testid="copy-branch-origin-fen"
-              onClick={() => void handleCopyFen(branchSnapshot.originFen, "branch origin")}
-            >
-              Copy
-            </Button>
+      {showBranchPanel ? (
+        <div className={styles.branchPanel} aria-label="Temporary branch">
+          <div className={styles.branchHeading}>
+            <strong>Temporary branch</strong>
+            <span>From captured ply {branchSnapshot.originPly}</span>
+            <span data-testid="branch-current-ply">
+              Current ply {branchSnapshot.originPly + branchSnapshot.moves.length}
+            </span>
           </div>
-          <div className={styles.fenField}>
-            <span>Current branch FEN</span>
-            <code data-testid="branch-current-fen">{branchSnapshot.currentFen}</code>
-            <Button
-              size="sm"
-              variant="secondary"
-              aria-label="Copy current branch FEN"
-              data-testid="copy-current-branch-fen"
-              onClick={() => void handleCopyFen(branchSnapshot.currentFen, "current branch")}
-            >
-              Copy
-            </Button>
+          <div className={styles.fenFields} aria-label="Temporary branch FEN">
+            <div className={styles.fenField}>
+              <span>Branch origin FEN</span>
+              <code data-testid="branch-origin-fen">{branchSnapshot.originFen}</code>
+              <Button
+                size="sm"
+                variant="secondary"
+                aria-label="Copy branch origin FEN"
+                data-testid="copy-branch-origin-fen"
+                onClick={() => void handleCopyFen(branchSnapshot.originFen, "branch origin")}
+              >
+                Copy
+              </Button>
+            </div>
+            <div className={styles.fenField}>
+              <span>Current branch FEN</span>
+              <code data-testid="branch-current-fen">{branchSnapshot.currentFen}</code>
+              <Button
+                size="sm"
+                variant="secondary"
+                aria-label="Copy current branch FEN"
+                data-testid="copy-current-branch-fen"
+                onClick={() => void handleCopyFen(branchSnapshot.currentFen, "current branch")}
+              >
+                Copy
+              </Button>
+            </div>
           </div>
-        </div>
-        <p className={styles.san} data-testid="branch-san" aria-label="Temporary branch SAN">
-          {san || "No branch moves yet"}
-        </p>
-        {terminal ? (
-          <p className={styles.terminal} data-testid="branch-terminal" role="status">
-            Terminal result: {terminal}
+          <p className={styles.san} data-testid="branch-san" aria-label="Temporary branch SAN">
+            {san || "No branch moves yet"}
           </p>
-        ) : null}
-        <div className={styles.actions} aria-label="Temporary branch actions">
-          <Button
-            size="sm"
-            variant="secondary"
-            onClick={onUndo}
-            disabled={branchSnapshot.moves.length === 0}
-          >
-            Undo
-          </Button>
-          <Button size="sm" variant="secondary" onClick={onReset} disabled={!branchSnapshot.active}>
-            Reset
-          </Button>
+          {terminal ? (
+            <p className={styles.terminal} data-testid="branch-terminal" role="status">
+              Terminal result: {terminal}
+            </p>
+          ) : null}
+          <div className={styles.actions} aria-label="Temporary branch actions">
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={onUndo}
+              disabled={branchSnapshot.moves.length === 0}
+            >
+              Undo
+            </Button>
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={onReset}
+              disabled={!branchSnapshot.active}
+            >
+              Reset
+            </Button>
+          </div>
+          <p className={styles.notice} data-testid="branch-status" role="status" aria-live="polite">
+            {copyFeedback ?? notice}
+          </p>
         </div>
-        <p className={styles.notice} data-testid="branch-status" role="status" aria-live="polite">
-          {copyFeedback ?? notice}
-        </p>
-      </div>
+      ) : null}
       <PromotionPicker
         pending={promotionPending}
         color={promotionColor}

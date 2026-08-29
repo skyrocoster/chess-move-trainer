@@ -166,6 +166,24 @@
   overflow-wrap: anywhere;
 }
 
+.candidateMove {
+  inline-size: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-align: start;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+
+.candidateMove:focus-visible {
+  outline: 2px solid var(--md-sys-color-primary);
+  outline-offset: 4px;
+}
+
 .wdlFigure {
   display: grid;
   gap: var(--cmt-spacing-8);

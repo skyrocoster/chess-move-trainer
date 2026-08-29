@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import axe from "axe-core";
 import matchers from "@chialab/vitest-axe";
@@ -17,8 +17,10 @@ import type {
   EvaluationStatus,
 } from "./analysisApi";
 import type { GameLookup, GameLookupResult } from "./positionApi";
+import type { PositionContextClient, PositionContextResult } from "./positionContextApi";
 import type { Game } from "./gameModel";
 import { UNSAFE_SOURCE_GAME, VIEWER_GAME, VIEWER_GAME_UUID } from "./viewerFixtures";
+import { PROMOTION_GAME } from "./viewerStoryFixtures";
 
 expect.extend(matchers);
 
@@ -74,25 +76,37 @@ function noAnalysisClient(): AnalysisClient {
   };
 }
 
-function completedResult(fen: string): EvaluationResult {
+function positionContextClient(
+  resultFor: (fen: string) => PositionContextResult = (fen) => ({
+    status: "success",
+    data: {
+      fen,
+      overall_exists: true,
+      white_count: 2,
+      black_count: 1,
+    },
+  }),
+): PositionContextClient {
+  return vi.fn(async (fen) => resultFor(fen));
+}
+
+function completedResult(fen: string, candidateMoves = ["e2e4"]): EvaluationResult {
   return {
     fen,
     profile_id: "mp09-balanced-nodes-v2-200000",
-    candidates: [
-      {
-        rank: 1,
-        score_kind: "cp",
-        score_value: 34,
-        wdl_wins: 420,
-        wdl_draws: 300,
-        wdl_losses: 280,
-        pv_uci: ["e2e4"],
-        depth: 20,
-        seldepth: 24,
-        nodes: 200000,
-        engine_time_ms: 100,
-      },
-    ],
+    candidates: candidateMoves.map((move, index) => ({
+      rank: index + 1,
+      score_kind: "cp",
+      score_value: 34 - index * 10,
+      wdl_wins: 420,
+      wdl_draws: 300,
+      wdl_losses: 280,
+      pv_uci: [move],
+      depth: 20,
+      seldepth: 24,
+      nodes: 200000,
+      engine_time_ms: 100,
+    })),
     terminal_kind: null,
     completed_at: "2026-08-21T00:00:01+00:00",
     wall_time_ms: 100,
@@ -111,12 +125,12 @@ function completedStatus(): EvaluationStatus {
   };
 }
 
-function completedAnalysisClient(): AnalysisClient {
+function completedAnalysisClient(candidateMoves = ["e2e4"]): AnalysisClient {
   const observe = vi.fn(async (fen: string) => {
     const data: EvaluationObservation = {
       fen,
       eligibility: "eligible",
-      result: completedResult(fen),
+      result: completedResult(fen, candidateMoves),
       status: completedStatus(),
       terminal: false,
     };
@@ -187,11 +201,18 @@ function pollingAnalysisClient(): AnalysisClient {
 }
 
 function renderViewer(props: ComponentProps<typeof ViewerWorkspace> = {}) {
-  return render(<ViewerWorkspace analysisClient={noAnalysisClient()} {...props} />);
+  return render(
+    <ViewerWorkspace
+      analysisClient={noAnalysisClient()}
+      positionContextClient={positionContextClient()}
+      {...props}
+    />,
+  );
 }
 
 describe("ViewerWorkspace", () => {
-  it("composes the empty viewer with the static board and both empty panels", () => {
+  it("composes the empty viewer with the static board and both empty panels", async () => {
+    const user = userEvent.setup();
     renderViewer();
 
     expect(screen.getByRole("heading", { level: 1, name: "Position viewer" })).toBeVisible();
@@ -206,6 +227,99 @@ describe("ViewerWorkspace", () => {
     expect(screen.getAllByText("No game loaded")).toHaveLength(2);
     expect(screen.getByRole("button", { name: "Previous" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Next" })).toBeDisabled();
+    const flip = screen.getByRole("button", { name: "Flip" });
+    expect(flip).toBeEnabled();
+
+    await user.click(flip);
+    expect(
+      screen.getByRole("img", { name: /standard starting position, Black at the bottom/ }),
+    ).toBeVisible();
+    expect(meter).toHaveAttribute("data-orientation", "black");
+
+    await user.click(flip);
+    expect(screen.getByRole("img", { name: BOARD_LABEL })).toBeVisible();
+    expect(meter).toHaveAttribute("data-orientation", "white");
+  });
+
+  it("shows recurrence for the displayed position, refreshes navigation, and preserves it through Flip", async () => {
+    const contextClient = positionContextClient();
+    const user = userEvent.setup();
+    renderViewer({ lookup: successfulLookup(), positionContextClient: contextClient });
+
+    await fillAndSubmit(user);
+    await screen.findByText("Seen in 2 games as White", { exact: true });
+    expect(contextClient).toHaveBeenCalledWith(
+      VIEWER_GAME.positions[0].fen,
+      expect.any(AbortSignal),
+    );
+    const callsBeforeFlip = vi.mocked(contextClient).mock.calls.length;
+
+    await user.click(screen.getByRole("button", { name: "Flip" }));
+    expect(screen.getByText("Seen in 2 games as White", { exact: true })).toBeVisible();
+    expect(contextClient).toHaveBeenCalledTimes(callsBeforeFlip);
+
+    await user.click(screen.getByRole("button", { name: "Next" }));
+    await screen.findByText("Ply 1 of 3");
+    await waitFor(() =>
+      expect(contextClient).toHaveBeenCalledWith(
+        VIEWER_GAME.positions[1].fen,
+        expect.any(AbortSignal),
+      ),
+    );
+  });
+
+  it("renders Never seen for zero and absent positions without exposing context failures", async () => {
+    const contextClient = positionContextClient((fen) => ({
+      status: "success",
+      data: {
+        fen,
+        overall_exists: fen === VIEWER_GAME.positions[0].fen,
+        white_count: 0,
+        black_count: 0,
+      },
+    }));
+    const user = userEvent.setup();
+    renderViewer({ lookup: successfulLookup(), positionContextClient: contextClient });
+
+    await fillAndSubmit(user);
+    expect(await screen.findByText("Never seen as White", { exact: true })).toBeVisible();
+    expect(screen.getByText("Never seen as Black", { exact: true })).toBeVisible();
+    expect(screen.queryByText(/Seen in/)).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Next" }));
+    await screen.findByText("Ply 1 of 3");
+    await waitFor(() =>
+      expect(contextClient).toHaveBeenCalledWith(
+        VIEWER_GAME.positions[1].fen,
+        expect.any(AbortSignal),
+      ),
+    );
+    expect(screen.getByText("Never seen as White", { exact: true })).toBeVisible();
+    expect(screen.getByText("Never seen as Black", { exact: true })).toBeVisible();
+  });
+
+  it("keeps the existing Game Context visible while recurrence is loading or unavailable", async () => {
+    const contextClient = vi.fn<PositionContextClient>(() => new Promise(() => {}));
+    const user = userEvent.setup();
+    renderViewer({ lookup: successfulLookup(), positionContextClient: contextClient });
+
+    await fillAndSubmit(user);
+    expect(await screen.findByText("Ply 0 of 3")).toBeVisible();
+    expect(screen.queryByText(/Seen in|Never seen/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/position context/i)).not.toBeInTheDocument();
+  });
+
+  it("silently omits recurrence when the position-context request fails", async () => {
+    const contextClient = vi.fn<PositionContextClient>(async () => ({
+      status: "position_context_unavailable",
+    }));
+    const user = userEvent.setup();
+    renderViewer({ lookup: successfulLookup(), positionContextClient: contextClient });
+
+    await fillAndSubmit(user);
+    expect(await screen.findByText("Ply 0 of 3")).toBeVisible();
+    expect(screen.queryByText(/Seen in|Never seen/)).not.toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 
   it("uses the whole-game lookup, loads blank Ply at zero, and shows the complete context", async () => {
@@ -222,11 +336,47 @@ describe("ViewerWorkspace", () => {
     expect(announcement).toHaveAttribute("aria-atomic", "true");
     expect(screen.getByText("Initial position")).toBeVisible();
     expect(screen.getByRole("group", { name: /ply 0, Black at the bottom/ })).toBeVisible();
+    const flip = screen.getByRole("button", { name: "Flip" });
+    await user.click(flip);
+    expect(screen.getByRole("group", { name: /ply 0, White at the bottom/ })).toBeVisible();
+    expect(screen.getByText("Ply 0 of 3: Initial position", { exact: true })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Previous" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Next" })).toBeEnabled();
+    await user.click(flip);
+    expect(screen.getByRole("group", { name: /ply 0, Black at the bottom/ })).toBeVisible();
     expect(screen.getByRole("link", { name: "Chess.com game" })).toHaveAttribute(
       "target",
       "_blank",
     );
     expect(lookup).toHaveBeenCalledWith(GAME_UUID, undefined, expect.any(AbortSignal));
+  });
+
+  it("resets the flipped orientation for reset and a newly loaded game", async () => {
+    const lookup = vi
+      .fn<GameLookup>()
+      .mockResolvedValueOnce({
+        status: "success",
+        game: { ...VIEWER_GAME, initial_ply: 0 },
+      })
+      .mockResolvedValueOnce({
+        status: "success",
+        game: { ...VIEWER_GAME, initial_ply: 0 },
+      });
+    const user = userEvent.setup();
+    renderViewer({ lookup });
+
+    await fillAndSubmit(user);
+    await screen.findByText("Ply 0 of 3");
+    const flip = screen.getByRole("button", { name: "Flip" });
+    await user.click(flip);
+    expect(screen.getByRole("group", { name: /ply 0, Black at the bottom/ })).toBeVisible();
+
+    await user.click(screen.getByRole("button", { name: "Load game" }));
+    expect(await screen.findByRole("group", { name: /ply 0, White at the bottom/ })).toBeVisible();
+    expect(lookup).toHaveBeenCalledTimes(2);
+
+    await user.click(screen.getAllByRole("button", { name: "Reset" })[0]);
+    expect(screen.getByRole("img", { name: BOARD_LABEL })).toBeVisible();
   });
 
   it("loads an explicit Ply and traverses in memory without changing the form or requesting again", async () => {
@@ -237,9 +387,15 @@ describe("ViewerWorkspace", () => {
     await fillAndSubmit(user, GAME_UUID, "1");
     await screen.findByText("Ply 1 of 3");
     const next = screen.getByRole("button", { name: "Next" });
+    const flip = screen.getByRole("button", { name: "Flip" });
     expect(screen.getByLabelText(/Ply/)).toHaveValue("1");
 
+    await user.click(flip);
+    expect(screen.getByRole("group", { name: /ply 1, Black at the bottom/ })).toBeVisible();
+    expect(screen.getByText("Ply 1 of 3: e4", { exact: true })).toBeInTheDocument();
+
     await user.click(next);
+    expect(screen.getByRole("group", { name: /ply 2, Black at the bottom/ })).toBeVisible();
     expect(screen.getByText("Ply 2 of 3")).toBeVisible();
     expect(screen.getByText("e5")).toBeVisible();
     expect(screen.getByText("Ply 2 of 3: e5", { exact: true })).toBeInTheDocument();
@@ -291,10 +447,13 @@ describe("ViewerWorkspace", () => {
     await screen.findByText("Ply 1 of 3");
     await user.clear(screen.getByLabelText(/Ply/));
     await user.type(screen.getByLabelText(/Ply/), "2");
+    await user.click(screen.getByRole("button", { name: "Flip" }));
+    expect(screen.getByRole("group", { name: /ply 1, Black at the bottom/ })).toBeVisible();
     await user.click(screen.getByRole("button", { name: "Load game" }));
 
     await screen.findByText("Loading the complete game...");
     expect(screen.getByText("Ply 1 of 3")).toBeVisible();
+    expect(screen.getByRole("group", { name: /ply 1, Black at the bottom/ })).toBeVisible();
     expect(screen.getByRole("button", { name: "Next" })).toBeDisabled();
 
     resolveReplacement({ status: "game_unavailable" });
@@ -302,6 +461,7 @@ describe("ViewerWorkspace", () => {
       await screen.findByRole("heading", { name: "Game unavailable", level: 2 }),
     ).toBeVisible();
     expect(screen.getByText("Ply 1 of 3")).toBeVisible();
+    expect(screen.getByRole("group", { name: /ply 1, Black at the bottom/ })).toBeVisible();
     expect(screen.getByRole("button", { name: "Next" })).toBeEnabled();
   });
 
@@ -407,6 +567,35 @@ describe("ViewerWorkspace", () => {
     expect(analysisClient.enqueue).not.toHaveBeenCalled();
   });
 
+  it("routes a promotion candidate through the existing picker without changing FEN until selection", async () => {
+    const user = userEvent.setup();
+    renderViewer({
+      lookup: successfulLookup(PROMOTION_GAME),
+      analysisClient: completedAnalysisClient(["e7e8q"]),
+    });
+
+    await fillAndSubmit(user);
+    const candidate = await screen.findByRole("button", { name: /1\. e8=Q/ });
+    const originFen = PROMOTION_GAME.positions[0].fen;
+    expect(screen.getByTestId("branch-current-fen")).toHaveTextContent(originFen);
+
+    await user.click(candidate);
+    const queen = await screen.findByRole("button", { name: "Promote to queen" });
+    await waitFor(() => expect(queen).toHaveFocus());
+    expect(screen.getByTestId("branch-current-fen")).toHaveTextContent(originFen);
+
+    await user.keyboard("{Escape}");
+    await waitFor(() => expect(candidate).toHaveFocus());
+    expect(screen.getByTestId("branch-current-fen")).toHaveTextContent(originFen);
+
+    await user.click(candidate);
+    await user.click(await screen.findByRole("button", { name: "Promote to queen" }));
+    expect(screen.getByTestId("branch-current-fen")).toHaveTextContent(
+      "k3Q3/8/8/8/8/8/8/4K3 b - - 0 1",
+    );
+    expect(screen.getByTestId("branch-san")).toHaveTextContent("1. e8=Q+");
+  });
+
   it("shares one completed observation with the panel and the beside-board eval bar", async () => {
     const lookup = successfulLookup();
     const analysisClient = completedAnalysisClient();
@@ -443,6 +632,15 @@ describe("ViewerWorkspace", () => {
     expect(disclosureContent).toContainElement(analysisStatus);
     expect(analysisClient.observe).toHaveBeenCalledOnce();
     expect(analysisClient.status).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole("button", { name: "Flip" }));
+    expect(screen.getByRole("group", { name: /ply 0, Black at the bottom/ })).toBeVisible();
+    expect(screen.getByRole("meter", { name: "Evaluation" })).toHaveAttribute(
+      "data-orientation",
+      "black",
+    );
+    expect(screen.getByText("Analysis complete")).toBeVisible();
+    expect(analysisClient.observe).toHaveBeenCalledOnce();
   });
 
   it("keeps the accepted container-query and accessibility boundaries", async () => {

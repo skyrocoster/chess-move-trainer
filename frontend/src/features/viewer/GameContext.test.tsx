@@ -6,10 +6,19 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { GameContext } from "./GameContext";
+import { PositionContext } from "./PositionContext";
+import type { PositionContextResponse } from "./positionContextApi";
 import { safeSourceUrl } from "./stage1SourceSafety";
 import { MISSING_SOURCE_GAME, UNSAFE_SOURCE_GAME, VIEWER_GAME } from "./viewerFixtures";
 
 expect.extend(matchers);
+
+const POSITION_CONTEXT: PositionContextResponse = {
+  fen: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+  overall_exists: true,
+  white_count: 2,
+  black_count: 1,
+};
 
 afterEach(() => cleanup());
 
@@ -76,6 +85,7 @@ describe("GameContext", () => {
   it("keeps a controlled analysis child after metadata in the same disclosure", () => {
     render(
       <GameContext game={VIEWER_GAME} position={VIEWER_GAME.positions[0]}>
+        <PositionContext context={POSITION_CONTEXT} />
         <div data-testid="analysis-child">Controlled analysis child</div>
       </GameContext>,
     );
@@ -83,10 +93,15 @@ describe("GameContext", () => {
     const disclosureButton = screen.getByRole("button", { name: "Game Context" });
     const analysisChild = screen.getByTestId("analysis-child");
     const sourceLink = screen.getByRole("link", { name: "Chess.com game" });
+    const recurrence = screen.getByText("Seen in 2 games as White", { exact: true });
     const contentId = disclosureButton.getAttribute("aria-controls");
 
     expect(disclosureButton).toHaveAttribute("aria-expanded", "true");
     expect(sourceLink.compareDocumentPosition(analysisChild)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
+    expect(sourceLink.compareDocumentPosition(recurrence)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(recurrence.compareDocumentPosition(analysisChild)).toBe(
       Node.DOCUMENT_POSITION_FOLLOWING,
     );
     if (!contentId) {

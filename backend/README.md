@@ -23,6 +23,8 @@ Some features add a `schema.py` (singular) for SQLite DDL initialization.
 | `app/features/positions/` | FEN position CRUD |
 | `app/features/evaluation/` | Stockfish evaluation job queue and results |
 | `app/features/analysis/` | Stockfish analysis pipeline, benchmarking, and persistence |
+| `app/features/preferred_move/` | Fixed-owner preferred-move API (`GET`/`PUT`/`DELETE /api/preferred-move`) |
+| `app/features/position_context/` | Neutral recurrence context for a position (`GET /api/position-context`) |
 
 ## Running
 

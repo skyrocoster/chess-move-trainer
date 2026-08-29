@@ -4,6 +4,7 @@ const STORYBOOK_TEST_FILES = new Set([
   "board-adapter-storybook.spec.ts",
   "design-system-accessibility.spec.ts",
   "responsive-shell-storybook.spec.ts",
+  "repertoire-builder-storybook.spec.ts",
   "analysis-panel-storybook.spec.ts",
   "viewer-branch.spec.ts",
   "viewer-branch-stage4.spec.ts",
@@ -59,6 +60,7 @@ const storybookWebServer = {
   url: "http://localhost:6006",
   cwd: process.cwd(),
   reuseExistingServer: true,
+  timeout: 30_000,
 };
 
 const profile = serverProfile();

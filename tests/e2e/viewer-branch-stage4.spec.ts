@@ -6,6 +6,8 @@ const STORY_IDS = {
   castling: "application-viewer-workspace--branch-castling",
   enPassant: "application-viewer-workspace--branch-en-passant",
   promotion: "application-viewer-workspace--branch-promotion",
+  candidatePromotion:
+    "application-viewer-workspace-analysis--candidate-promotion-surface",
   terminal: "application-viewer-workspace--branch-terminal",
 } as const;
 
@@ -149,6 +151,37 @@ test.describe("MP-11 Stage 4 special moves and terminal branch", () => {
       await expectFen(page, PROMOTION_FEN, PROMOTION_FEN);
 
       await page.getByRole("button", { name: `Promote to ${name}` }).click();
+      await expect(page.getByTestId("branch-san")).toHaveText(san);
+      await expectFen(page, PROMOTION_FEN, fen);
+    }
+  });
+
+  test("commits every q/r/b/n promotion candidate through the approved picker", async ({
+    page,
+  }) => {
+    const candidates = [
+      ["Q", "queen", "1. e8=Q+", "k3Q3/8/8/8/8/8/8/4K3 b - - 0 1"],
+      ["R", "rook", "1. e8=R+", "k3R3/8/8/8/8/8/8/4K3 b - - 0 1"],
+      ["B", "bishop", "1. e8=B", "k3B3/8/8/8/8/8/8/4K3 b - - 0 1"],
+      ["N", "knight", "1. e8=N", "k3N3/8/8/8/8/8/8/4K3 b - - 0 1"],
+    ] as const;
+
+    for (const [pieceName, promotionName, san, fen] of candidates) {
+      await openViewerStory(page, STORY_IDS.candidatePromotion);
+      await expect(page.getByText("Analysis complete")).toBeVisible();
+      await expectFen(page, PROMOTION_FEN, PROMOTION_FEN);
+
+      await page
+        .getByRole("button", { name: new RegExp(`1\\. e8=${pieceName}`) })
+        .click();
+      await expect(
+        page.getByRole("dialog", { name: "Choose a promotion piece" }),
+      ).toBeVisible();
+      await expectFen(page, PROMOTION_FEN, PROMOTION_FEN);
+
+      await page
+        .getByRole("button", { name: `Promote to ${promotionName}` })
+        .click();
       await expect(page.getByTestId("branch-san")).toHaveText(san);
       await expectFen(page, PROMOTION_FEN, fen);
     }

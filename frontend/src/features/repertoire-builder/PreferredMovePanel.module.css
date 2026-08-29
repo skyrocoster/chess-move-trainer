@@ -1,0 +1,128 @@
+.panel {
+  display: grid;
+  gap: var(--cmt-spacing-12);
+  padding: var(--cmt-spacing-16);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--cmt-radius-default);
+  background: var(--md-sys-color-surface-container);
+}
+
+.heading,
+.panel p {
+  margin: 0;
+}
+
+.heading {
+  color: var(--md-sys-color-on-surface);
+  font: var(--md-sys-typescale-title-medium);
+}
+
+.context,
+.instruction,
+.savedMove,
+.stagedMove,
+.status {
+  color: var(--md-sys-color-on-surface-variant);
+  font: var(--md-sys-typescale-body-medium);
+}
+
+.savedMove {
+  color: var(--md-sys-color-on-surface);
+}
+
+.stagedMove {
+  color: var(--md-sys-color-primary);
+}
+
+.error {
+  margin: 0;
+  color: var(--md-sys-color-error);
+  font: var(--md-sys-typescale-body-medium);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--cmt-spacing-8);
+  align-items: center;
+}
+
+.date {
+  display: grid;
+  gap: var(--cmt-spacing-8);
+  justify-items: start;
+}
+
+.dateLabel {
+  color: var(--md-sys-color-on-surface-variant);
+  font: var(--md-sys-typescale-label-large);
+}
+
+.dialogBackdrop {
+  position: fixed;
+  inset: 0;
+  background: var(--md-sys-color-scrim);
+  opacity: 0.32;
+}
+
+.dialogViewport {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: var(--cmt-spacing-24);
+}
+
+.dialogPopup {
+  display: grid;
+  gap: var(--cmt-spacing-16);
+  inline-size: min(100%, 28rem);
+  box-sizing: border-box;
+  padding: var(--cmt-spacing-24);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--cmt-radius-default);
+  background: var(--md-sys-color-surface-container-high);
+  color: var(--md-sys-color-on-surface);
+  box-shadow: var(--cmt-elevation-e2);
+}
+
+.dialogTitle,
+.dialogDescription {
+  margin: 0;
+}
+
+.dialogTitle {
+  font: var(--md-sys-typescale-title-large);
+}
+
+.dialogDescription {
+  color: var(--md-sys-color-on-surface-variant);
+  font: var(--md-sys-typescale-body-medium);
+}
+
+@media (forced-colors: active) {
+  .panel,
+  .dialogPopup {
+    border-color: ButtonBorder;
+    background: Canvas;
+    color: CanvasText;
+  }
+
+  .dialogBackdrop {
+    background: CanvasText;
+  }
+
+  .heading,
+  .savedMove,
+  .dialogTitle {
+    color: CanvasText;
+  }
+
+  .context,
+  .instruction,
+  .status,
+  .dialogDescription,
+  .dateLabel {
+    color: CanvasText;
+  }
+}

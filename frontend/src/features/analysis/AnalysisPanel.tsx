@@ -15,6 +15,7 @@ export type AnalysisPanelWdl = {
 
 export type AnalysisPanelLine = {
   rank: number;
+  move?: string;
   score: string;
   pv: string;
   wdl: AnalysisPanelWdl;
@@ -48,6 +49,7 @@ export type AnalysisPanelDisplay = {
 };
 
 export type AnalysisPanelIntent = () => void | Promise<void>;
+export type AnalysisPanelCandidateIntent = (move: string) => void | Promise<void>;
 
 export type AnalysisPanelProps = {
   display: AnalysisPanelDisplay;
@@ -55,6 +57,7 @@ export type AnalysisPanelProps = {
   onUpdate: AnalysisPanelIntent;
   onRetry: AnalysisPanelIntent;
   onRetryObservation: () => void;
+  onCandidateMove?: AnalysisPanelCandidateIntent;
 };
 
 type WdlItem = {
@@ -144,7 +147,39 @@ function resultMetadataLabel(metadata: AnalysisPanelResultMetadata): string {
   return `Displayed position${details.length > 0 ? ` · ${details.join(" · ")}` : ""}`;
 }
 
-function ResultPresentation({ result }: { result: NonNullable<AnalysisPanelDisplay["result"]> }) {
+function CandidateMove({
+  line,
+  className,
+  onCandidateMove,
+}: {
+  line: AnalysisPanelLine;
+  className: string;
+  onCandidateMove?: AnalysisPanelCandidateIntent;
+}) {
+  const { move } = line;
+
+  if (!onCandidateMove || !move) {
+    return <p className={className}>{line.pv}</p>;
+  }
+
+  return (
+    <button
+      type="button"
+      className={`${className} ${styles.candidateMove}`}
+      onClick={() => void onCandidateMove(move)}
+    >
+      {line.pv}
+    </button>
+  );
+}
+
+function ResultPresentation({
+  result,
+  onCandidateMove,
+}: {
+  result: NonNullable<AnalysisPanelDisplay["result"]>;
+  onCandidateMove?: AnalysisPanelCandidateIntent;
+}) {
   const [bestLine, ...alternativeLines] = result.lines;
 
   return (
@@ -168,7 +203,11 @@ function ResultPresentation({ result }: { result: NonNullable<AnalysisPanelDispl
                 {bestLine.score}
               </strong>
             </div>
-            <p className={styles.bestLineMoves}>{bestLine.pv}</p>
+            <CandidateMove
+              line={bestLine}
+              className={styles.bestLineMoves}
+              onCandidateMove={onCandidateMove}
+            />
 
             <figure className={styles.wdlFigure} aria-labelledby="analysis-wdl-caption">
               <figcaption className={styles.wdlCaption} id="analysis-wdl-caption">
@@ -191,7 +230,11 @@ function ResultPresentation({ result }: { result: NonNullable<AnalysisPanelDispl
                   <li className={styles.line} key={line.rank}>
                     <span className={styles.lineRank}>{String(line.rank).padStart(2, "0")}</span>
                     <div className={styles.lineBody}>
-                      <p className={styles.linePv}>{line.pv}</p>
+                      <CandidateMove
+                        line={line}
+                        className={styles.linePv}
+                        onCandidateMove={onCandidateMove}
+                      />
                       <WdlTrack
                         wdl={line.wdl}
                         compact
@@ -224,6 +267,7 @@ export function AnalysisPanel({
   onUpdate,
   onRetry,
   onRetryObservation,
+  onCandidateMove,
 }: AnalysisPanelProps) {
   const { stateLabel, error, actionError, message, result, actions } = display;
 
@@ -258,7 +302,7 @@ export function AnalysisPanel({
           {message.text}
         </p>
       ) : null}
-      {result ? <ResultPresentation result={result} /> : null}
+      {result ? <ResultPresentation result={result} onCandidateMove={onCandidateMove} /> : null}
 
       <div className={styles.actionRow}>
         {actions.update ? (

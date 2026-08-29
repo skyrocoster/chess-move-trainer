@@ -8,6 +8,11 @@ const STAGE1_GAME_UUID = "0007925c-5a8d-11f0-9740-f690a301000f";
 const STORY_IDS = {
   wide: "application-viewer-workspace--wide",
   constrained: "application-viewer-workspace--constrained",
+  seenCounts: "application-viewer-workspace--seen-counts",
+  zeroCounts: "application-viewer-workspace--zero-counts",
+  absentPosition: "application-viewer-workspace--absent-position",
+  positionContextForcedColors:
+    "application-viewer-position-context--forced-colors",
   loadingWide: "application-viewer-workspace--loading-wide",
   blackSubject: "application-viewer-workspace--black-subject",
 } as const;
@@ -21,6 +26,13 @@ const EVAL_STORY_IDS = {
   negativeMate: "application-analysis-evaluation-bar--completed-negative-mate",
   stale: "application-analysis-evaluation-bar--stale-with-retained-candidate",
   failed: "application-analysis-evaluation-bar--failed-with-retained-candidate",
+} as const;
+
+const ANALYSIS_STORY_IDS = {
+  candidateActivation:
+    "application-analysis-analysis-panel--candidate-activation",
+  constrainedCandidates:
+    "application-analysis-analysis-panel--constrained-complete",
 } as const;
 
 const WORKSPACE_ROOT = '[class*="workspace"]';
@@ -174,6 +186,10 @@ test.describe("Viewer Workspace Storybook surface", () => {
     await expect(
       page.getByRole("button", { name: "Game Loader" }),
     ).toBeVisible();
+    await expect(
+      page.getByRole("group", { name: "Position recurrence" }),
+    ).toHaveCount(0);
+    await expect(page.getByText("No game loaded")).toHaveCount(2);
     await expect(page.locator('aside, [role="complementary"]')).toHaveCount(0);
 
     const workspaceRoot = page.locator(WORKSPACE_ROOT).first();
@@ -267,7 +283,28 @@ test.describe("Viewer Workspace Storybook surface", () => {
         accessibleValue: "No analysis yet; evaluation neutral.",
       });
       await expect(wrapper).toHaveJSProperty("scrollWidth", size);
+      expect(
+        await page.evaluate(
+          () =>
+            document.documentElement.scrollWidth <=
+            document.documentElement.clientWidth,
+        ),
+      ).toBe(true);
     }
+
+    const emptyFlip = page.getByRole("button", { name: "Flip" });
+    await emptyFlip.focus();
+    await page.keyboard.press("Enter");
+    await expect(emptyFlip).toBeFocused();
+    await expect(
+      page.getByRole("img", {
+        name: /standard starting position, Black at the bottom/,
+      }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("meter", { name: "Evaluation" }),
+    ).toHaveAttribute("data-orientation", "black");
+    await emptyFlip.click();
 
     const constrainedRoot = page.locator(WORKSPACE_ROOT).first();
     const constrainedPanel = page.locator(CONTEXT_PANEL).first();
@@ -288,13 +325,14 @@ test.describe("Viewer Workspace Storybook surface", () => {
     const wideToolbar = page.getByRole("toolbar", { name: "Board controls" });
     const wideButtons = wideToolbar.getByRole("button");
     await expect(wideToolbar).toBeVisible();
-    await expect(wideButtons).toHaveCount(2);
+    await expect(wideButtons).toHaveCount(3);
     await expect(page.getByRole("button", { name: "Previous" })).toBeDisabled();
     await expect(page.getByRole("button", { name: "Next" })).toBeDisabled();
     await expect(
       wideToolbar.getByText("Previous", { exact: true }),
     ).toBeVisible();
     await expect(wideToolbar.getByText("Next", { exact: true })).toBeVisible();
+    await expect(wideToolbar.getByText("Flip", { exact: true })).toBeVisible();
 
     const wideBoardBox = await wideBoard.boundingBox();
     const wideToolbarBox = await wideToolbar.boundingBox();
@@ -339,13 +377,18 @@ test.describe("Viewer Workspace Storybook surface", () => {
       name: "Previous",
     });
     const next = constrainedToolbar.getByRole("button", { name: "Next" });
-    await expect(constrainedToolbar.getByRole("button")).toHaveCount(2);
+    await expect(constrainedToolbar.getByRole("button")).toHaveCount(3);
     await expect(
       constrainedToolbar.getByText("Previous", { exact: true }),
     ).toBeHidden();
     await expect(
       constrainedToolbar.getByText("Next", { exact: true }),
     ).toBeHidden();
+    const flip = constrainedToolbar.getByRole("button", { name: "Flip" });
+    await expect(
+      constrainedToolbar.getByText("Flip", { exact: true }),
+    ).toBeHidden();
+    await expect(flip).toBeEnabled();
     await expect(previous).toBeEnabled();
     await expect(next).toBeEnabled();
     await expect(constrainedToolbar).toHaveJSProperty(
@@ -366,6 +409,25 @@ test.describe("Viewer Workspace Storybook surface", () => {
     await expect(next).toBeFocused();
     await page.keyboard.press("Enter");
     await expect(page.getByText("Ply 2 of 3", { exact: true })).toBeVisible();
+    const currentFen = await page
+      .getByTestId("branch-current-fen")
+      .textContent();
+    await page.keyboard.press("ArrowRight");
+    await expect(flip).toBeFocused();
+    await page.keyboard.press("Enter");
+    await expect(
+      page.getByRole("group", { name: /ply 2, Black at the bottom/ }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("meter", { name: "Evaluation" }),
+    ).toHaveAttribute("data-orientation", "black");
+    await expect(page.getByTestId("branch-current-fen")).toHaveText(
+      currentFen ?? "",
+    );
+    await expect(
+      page.getByText("Ply 2 of 3: e5", { exact: true }),
+    ).toBeVisible();
+    await flip.click();
 
     await page.goto(
       `${STORYBOOK_URL}/iframe.html?id=${STORY_IDS.loadingWide}&viewMode=story`,
@@ -379,6 +441,160 @@ test.describe("Viewer Workspace Storybook surface", () => {
     await expect(
       loadingToolbar.getByRole("button", { name: "Next" }),
     ).toBeDisabled();
+    await expect(
+      loadingToolbar.getByRole("button", { name: "Flip" }),
+    ).toBeEnabled();
+    await expect(
+      page.getByRole("group", { name: "Position recurrence" }),
+    ).toHaveCount(0);
+  });
+
+  test("proves controlled analysis candidates are semantic, keyboard-operable, and bounded", async ({
+    page,
+  }) => {
+    await page.goto(
+      `${STORYBOOK_URL}/iframe.html?id=${ANALYSIS_STORY_IDS.candidateActivation}&viewMode=story`,
+    );
+
+    const bestLine = page.getByRole("button", { name: "1. e4 e5 2. Nf3" });
+    const alternativeLine = page.getByRole("button", { name: "1. d4 d5" });
+    await expect(page.getByRole("button", { name: /^1\./ })).toHaveCount(4);
+    await expect(
+      page.getByRole("button", { name: "Line unavailable" }),
+    ).toBeVisible();
+    await expect(bestLine.locator("button")).toHaveCount(0);
+    await bestLine.focus();
+    await page.keyboard.press("Enter");
+    await expect(bestLine).toBeFocused();
+    await page.keyboard.press("Space");
+    await alternativeLine.click();
+    await checkA11y(page);
+
+    await page.goto(
+      `${STORYBOOK_URL}/iframe.html?id=${ANALYSIS_STORY_IDS.constrainedCandidates}&viewMode=story`,
+    );
+    for (const width of [320, 480, 640]) {
+      await page.setViewportSize({ width, height: 900 });
+      await expect(
+        page.getByRole("button", { name: "1. e4 e5 2. Nf3" }),
+      ).toBeVisible();
+      const overflow = await page.evaluate(() => ({
+        document:
+          document.documentElement.scrollWidth <=
+          document.documentElement.clientWidth,
+        frame: [
+          ...document.querySelectorAll<HTMLElement>(
+            "[data-testid='analysis-panel-constrained-frame']",
+          ),
+        ].every((element) => element.scrollWidth <= element.clientWidth),
+      }));
+      expect(overflow.document, `${width}px document overflow`).toBe(true);
+      expect(overflow.frame, `${width}px analysis frame overflow`).toBe(true);
+    }
+    await checkA11y(page);
+  });
+
+  test("proves seen, zero, absent, navigation, Flip preservation, and metadata order", async ({
+    page,
+  }) => {
+    await page.goto(
+      `${STORYBOOK_URL}/iframe.html?id=${STORY_IDS.seenCounts}&viewMode=story`,
+    );
+    await expect(page.getByText("Ply 0 of 3", { exact: true })).toBeVisible();
+    const recurrence = page.getByRole("group", { name: "Position recurrence" });
+    await expect(recurrence).toBeVisible();
+    await expect(
+      page.getByText("Seen in 2 games as White", { exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByText("Seen in 1 games as Black", { exact: true }),
+    ).toBeVisible();
+    const source = page.getByRole("link", { name: "Chess.com game" });
+    const analysis = page.getByText("Analysis available on request");
+    expect(
+      await source.evaluate((element) => {
+        const target = document.querySelector(
+          '[aria-label="Position recurrence"]',
+        );
+        return Boolean(
+          target &&
+            element.compareDocumentPosition(target) &
+              Node.DOCUMENT_POSITION_FOLLOWING,
+        );
+      }),
+    ).toBe(true);
+    expect(
+      await recurrence.evaluate((element) => {
+        const target = [...document.querySelectorAll("p")].find(
+          (paragraph) =>
+            paragraph.textContent === "Analysis available on request",
+        );
+        return Boolean(
+          target &&
+            element.compareDocumentPosition(target) &
+              Node.DOCUMENT_POSITION_FOLLOWING,
+        );
+      }),
+    ).toBe(true);
+    await checkA11y(page);
+
+    const flip = page.getByRole("button", { name: "Flip" });
+    await flip.click();
+    await expect(
+      page.getByText("Seen in 2 games as White", { exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByText("Seen in 1 games as Black", { exact: true }),
+    ).toBeVisible();
+    await page.getByRole("button", { name: "Next" }).click();
+    await expect(page.getByText("Ply 1 of 3", { exact: true })).toBeVisible();
+    await expect(
+      page.getByText("Seen in 3 games as White", { exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByText("Seen in 2 games as Black", { exact: true }),
+    ).toBeVisible();
+    await page.getByRole("button", { name: "Previous" }).click();
+    await expect(
+      page.getByText("Seen in 2 games as White", { exact: true }),
+    ).toBeVisible();
+
+    for (const storyId of [STORY_IDS.zeroCounts, STORY_IDS.absentPosition]) {
+      await page.goto(
+        `${STORYBOOK_URL}/iframe.html?id=${storyId}&viewMode=story`,
+      );
+      await expect(
+        page.getByText("Never seen as White", { exact: true }),
+      ).toBeVisible();
+      await expect(
+        page.getByText("Never seen as Black", { exact: true }),
+      ).toBeVisible();
+      await expect(page.getByText(/Seen in/)).toHaveCount(0);
+    }
+  });
+
+  test("keeps recurrence visible in forced colors without constrained overflow", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 320, height: 900 });
+    await page.emulateMedia({ forcedColors: "active" });
+    await page.goto(
+      `${STORYBOOK_URL}/iframe.html?id=${STORY_IDS.positionContextForcedColors}&viewMode=story`,
+    );
+    await expect(
+      page.getByRole("group", { name: "Position recurrence" }),
+    ).toBeVisible();
+    await expect(
+      page.getByText("Seen in 2 games as White", { exact: true }),
+    ).toBeVisible();
+    expect(
+      await page.evaluate(
+        () =>
+          document.documentElement.scrollWidth <=
+          document.documentElement.clientWidth,
+      ),
+    ).toBe(true);
+    await checkA11y(page);
   });
 
   test("proves representative rail states, Black fill direction, meter semantics, and reduced motion", async ({
@@ -468,6 +684,18 @@ test.describe("Viewer Workspace Storybook surface", () => {
         accessibleValue: "No analysis yet; evaluation neutral.",
       });
     }
+    const blackFlip = page.getByRole("button", { name: "Flip" });
+    await blackFlip.click();
+    await expect(
+      page.getByRole("group", { name: /ply 0, White at the bottom/ }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("meter", { name: "Evaluation" }),
+    ).toHaveAttribute("data-orientation", "white");
+    await blackFlip.click();
+    await expect(
+      page.getByRole("group", { name: /ply 0, Black at the bottom/ }),
+    ).toBeVisible();
     await checkA11y(page);
   });
 });

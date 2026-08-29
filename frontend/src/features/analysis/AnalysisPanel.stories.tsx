@@ -41,30 +41,35 @@ function displayWdl(wins: number, draws: number, losses: number): AnalysisPanelW
 const DISPLAY_LINES: AnalysisPanelLine[] = [
   {
     rank: 1,
+    move: "e2e4",
     score: "+0.34",
     pv: "1. e4 e5 2. Nf3",
     wdl: displayWdl(42, 30, 28),
   },
   {
     rank: 2,
+    move: "d2d4",
     score: "-M3",
     pv: "1. d4 d5",
     wdl: displayWdl(20, 30, 50),
   },
   {
     rank: 3,
+    move: "c2c4",
     score: "+M",
     pv: "1. c4",
     wdl: displayWdl(50, 25, 25),
   },
   {
     rank: 4,
+    move: "g1f3",
     score: "-2.50",
     pv: "1. Nf3",
     wdl: displayWdl(10, 20, 70),
   },
   {
     rank: 5,
+    move: "b1c3",
     score: "+0.10",
     pv: "Line unavailable",
     wdl: displayWdl(40, 30, 30),
@@ -172,6 +177,7 @@ function panelArgs(display: AnalysisPanelDisplay): ComponentProps<typeof Analysi
     onUpdate: fn(),
     onRetry: fn(),
     onRetryObservation: fn(),
+    onCandidateMove: fn(),
   };
 }
 
@@ -238,6 +244,34 @@ export const Complete: Story = {
   name: "Complete - five ranked lines and formatted values",
   args: panelArgs(completeDisplay()),
   render: (args) => panel(args),
+};
+
+export const CandidateActivation: Story = {
+  name: "Complete - controlled candidate activation",
+  args: panelArgs(completeDisplay()),
+  render: (args) => panel(args),
+  play: async ({ args, canvasElement }) => {
+    const canvas = within(canvasElement);
+    const onCandidateMove = args.onCandidateMove;
+    if (!onCandidateMove) {
+      throw new Error("Candidate activation callback was not supplied");
+    }
+
+    const bestLine = canvas.getByRole("button", { name: "1. e4 e5 2. Nf3" });
+    const alternativeLine = canvas.getByRole("button", { name: "1. d4 d5" });
+    await expect(canvas.getAllByRole("button", { name: /^1\./ })).toHaveLength(4);
+    await expect(canvas.getByRole("button", { name: "Line unavailable" })).toBeVisible();
+    await expect(bestLine.querySelectorAll("button")).toHaveLength(0);
+
+    await userEvent.click(alternativeLine);
+    await expect(onCandidateMove).toHaveBeenCalledWith("d2d4");
+
+    await bestLine.focus();
+    await userEvent.keyboard("{Enter}");
+    await userEvent.keyboard(" ");
+    await expect(onCandidateMove).toHaveBeenNthCalledWith(2, "e2e4");
+    await expect(onCandidateMove).toHaveBeenNthCalledWith(3, "e2e4");
+  },
 };
 
 export const ConstrainedComplete: Story = {

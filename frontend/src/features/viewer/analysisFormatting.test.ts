@@ -97,6 +97,7 @@ describe("analysisPanelDisplay", () => {
       lines: [
         {
           rank: 1,
+          move: "e2e4",
           score: "+0.34",
           pv: "1. e4",
           wdl: {
@@ -133,6 +134,12 @@ describe("analysisPanelDisplay", () => {
       [2, "-M3", "1. d4"],
       [3, "+M", "1. c4"],
       [4, "-2.50", "Line unavailable"],
+    ]);
+    expect(display.result?.lines.map((line) => line.move)).toEqual([
+      "e2e4",
+      "d2d4",
+      "c2c4",
+      "a1a1",
     ]);
   });
 

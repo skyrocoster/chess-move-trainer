@@ -43,17 +43,52 @@ test("loads the full corpus game and traverses all positions in memory", async (
   expect(positionRequests).toHaveLength(1);
   expect(positionRequests[0]).not.toContain("/positions/0");
 
+  const flip = page.getByRole("button", { name: "Flip" });
+  const initialFen = await page.getByTestId("branch-current-fen").textContent();
+  await flip.focus();
+  await page.keyboard.press("Enter");
+  await expect(flip).toBeFocused();
+  await expect(
+    page.getByRole("group", { name: /ply 0, White at the bottom/ }),
+  ).toBeVisible();
+  await expect(page.getByRole("meter", { name: "Evaluation" })).toHaveAttribute(
+    "data-orientation",
+    "white",
+  );
+  await expect(page.getByTestId("branch-current-fen")).toHaveText(
+    initialFen ?? "",
+  );
+  await expect(
+    page.getByText("Initial position", { exact: true }),
+  ).toBeVisible();
+  await flip.click();
+
   const next = page.getByRole("button", { name: "Next" });
   await next.focus();
   await page.keyboard.press("Enter");
   await expect(page.getByText("Ply 1 of 82", { exact: true })).toBeVisible();
   await expect(page.getByText("e4", { exact: true })).toBeVisible();
+  await expect(next).toBeFocused();
+  const plyOneFen = await page.getByTestId("branch-current-fen").textContent();
+  await flip.focus();
+  await page.keyboard.press("Enter");
+  await expect(
+    page.getByRole("group", { name: /ply 1, White at the bottom/ }),
+  ).toBeVisible();
+  await expect(page.getByRole("meter", { name: "Evaluation" })).toHaveAttribute(
+    "data-orientation",
+    "white",
+  );
+  await expect(page.getByTestId("branch-current-fen")).toHaveText(
+    plyOneFen ?? "",
+  );
+  await expect(page.getByText("Ply 1 of 82", { exact: true })).toBeVisible();
   await expect(
     page.getByRole("textbox", { name: "Ply (optional)" }),
   ).toHaveValue("");
   expect(positionRequests).toHaveLength(1);
   expect(page.url()).toMatch(/\/viewer$/);
-  await expect(next).toBeFocused();
+  await expect(flip).toBeFocused();
 
   await page.getByRole("button", { name: "Previous" }).focus();
   await page.keyboard.press("Space");

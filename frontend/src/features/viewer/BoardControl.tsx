@@ -1,5 +1,5 @@
 import { Toolbar } from "@base-ui/react/toolbar";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, FlipHorizontal2 } from "lucide-react";
 
 import styles from "./BoardControl.module.css";
 
@@ -9,6 +9,7 @@ export type BoardControlProps = {
   canGoNext?: boolean;
   onPrevious?: () => void;
   onNext?: () => void;
+  onFlip?: () => void;
 };
 
 export function BoardControl({
@@ -17,6 +18,7 @@ export function BoardControl({
   canGoNext = false,
   onPrevious,
   onNext,
+  onFlip,
 }: BoardControlProps) {
   const previousDisabled = !hasGame || !canGoPrevious;
   const nextDisabled = !hasGame || !canGoNext;
@@ -49,7 +51,10 @@ export function BoardControl({
           <ChevronRight aria-hidden="true" />
           <span className={styles.label}>Next</span>
         </Toolbar.Button>
-        {/* Future board control: Flip. */}
+        <Toolbar.Button className={styles.button} type="button" onClick={onFlip} aria-label="Flip">
+          <FlipHorizontal2 aria-hidden="true" />
+          <span className={styles.label}>Flip</span>
+        </Toolbar.Button>
       </Toolbar.Root>
     </div>
   );

@@ -1,0 +1,114 @@
+import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
+import { createElement } from "react";
+import { afterEach, describe, expect, it, vi } from "vitest";
+
+import type {
+  PreferredMoveReader,
+  PreferredMoveResponse,
+  PreferredMoveResult,
+} from "./preferredMoveApi";
+import { usePreferredMoveState } from "./preferredMoveState";
+import type { Fen } from "../viewer/chessPrimitives";
+
+const FEN: Fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+const NEXT_FEN: Fen = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1";
+
+function response(fen: Fen): PreferredMoveResponse {
+  return { fen, state: "assigned", move: { uci: "e2e4", san: "e4" } };
+}
+
+function success(fen: Fen): PreferredMoveResult {
+  return { status: "success", data: response(fen) };
+}
+
+function Probe({ fen, client }: { fen: Fen | null; client: PreferredMoveReader }) {
+  const state = usePreferredMoveState(fen, client);
+  return createElement(
+    "output",
+    { "data-testid": "state" },
+    JSON.stringify({
+      fen: state.preferredMove?.fen ?? null,
+      loading: state.loading,
+      error: state.error,
+    }),
+  );
+}
+
+afterEach(() => cleanup());
+
+describe("usePreferredMoveState", () => {
+  it("does not request a null position and keeps its reset state", async () => {
+    const client = vi.fn<PreferredMoveReader>();
+    render(createElement(Probe, { fen: null, client }));
+
+    await waitFor(() =>
+      expect(screen.getByTestId("state")).toHaveTextContent(
+        JSON.stringify({ fen: null, loading: false, error: null }),
+      ),
+    );
+    expect(client).not.toHaveBeenCalled();
+  });
+
+  it("loads the full displayed FEN and passes an abort signal", async () => {
+    const client = vi.fn<PreferredMoveReader>(async (fen) => success(fen));
+    render(createElement(Probe, { fen: FEN, client }));
+
+    await waitFor(() => expect(screen.getByTestId("state")).toHaveTextContent(FEN));
+    expect(client).toHaveBeenCalledWith(FEN, { signal: expect.any(AbortSignal) });
+  });
+
+  it("discards a stale response and aborts the replaced request", async () => {
+    let resolveFirst: ((result: PreferredMoveResult) => void) | undefined;
+    let resolveSecond: ((result: PreferredMoveResult) => void) | undefined;
+    const client = vi.fn((fen: Fen, options?: { signal?: AbortSignal }) => {
+      void options;
+      return new Promise<PreferredMoveResult>((resolve) => {
+        if (fen === FEN) {
+          resolveFirst = resolve;
+        } else {
+          resolveSecond = resolve;
+        }
+      });
+    });
+    const view = render(createElement(Probe, { fen: FEN, client }));
+    await waitFor(() => expect(client).toHaveBeenCalledTimes(1));
+
+    const firstSignal = client.mock.calls[0]?.[1]?.signal;
+    view.rerender(createElement(Probe, { fen: NEXT_FEN, client }));
+    await waitFor(() => expect(client).toHaveBeenCalledTimes(2));
+    expect(firstSignal).toBeDefined();
+    expect(firstSignal?.aborted).toBe(true);
+
+    await act(async () => {
+      resolveFirst?.(success(FEN));
+    });
+    expect(screen.getByTestId("state")).not.toHaveTextContent(FEN);
+
+    await act(async () => {
+      resolveSecond?.(success(NEXT_FEN));
+    });
+    await waitFor(() => expect(screen.getByTestId("state")).toHaveTextContent(NEXT_FEN));
+  });
+
+  it("exposes typed failures and clears them when the position resets", async () => {
+    const client = vi
+      .fn<PreferredMoveReader>()
+      .mockResolvedValueOnce({ status: "position_not_found" })
+      .mockResolvedValueOnce(success(FEN));
+    const view = render(createElement(Probe, { fen: FEN, client }));
+
+    await waitFor(() =>
+      expect(screen.getByTestId("state")).toHaveTextContent(
+        JSON.stringify({ fen: null, loading: false, error: "position_not_found" }),
+      ),
+    );
+
+    view.rerender(createElement(Probe, { fen: null, client }));
+    await waitFor(() =>
+      expect(screen.getByTestId("state")).toHaveTextContent(
+        JSON.stringify({ fen: null, loading: false, error: null }),
+      ),
+    );
+    expect(client).toHaveBeenCalledTimes(1);
+  });
+});

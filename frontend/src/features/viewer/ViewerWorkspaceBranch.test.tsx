@@ -7,6 +7,7 @@ import type { BranchSnapshot } from "../board-adapter/branchModel";
 import type { AnalysisClient } from "./analysisApi";
 import ViewerWorkspace from "./ViewerWorkspace";
 import type { GameLookup } from "./positionApi";
+import type { PositionContextClient } from "./positionContextApi";
 import { VIEWER_GAME, VIEWER_GAME_UUID } from "./viewerFixtures";
 
 const BRANCH_FEN = VIEWER_GAME.positions[1].fen;
@@ -17,11 +18,13 @@ vi.mock("../board-adapter/InteractiveBoardAdapter", () => ({
     onMoveIntent,
     onReset,
     label,
+    notice,
   }: {
     branchSnapshot: BranchSnapshot;
     onMoveIntent: (intent: InteractiveBoardMoveIntent) => boolean;
     onReset: () => void;
     label: string;
+    notice: string;
   }) => {
     return (
       <section data-testid="interactive-board-adapter">
@@ -29,6 +32,8 @@ vi.mock("../board-adapter/InteractiveBoardAdapter", () => ({
         <p data-testid="branch-san">
           {branchSnapshot.moves.length > 0 ? "1. e4" : "No branch moves yet"}
         </p>
+        <code data-testid="branch-current-fen">{branchSnapshot.currentFen}</code>
+        <p data-testid="branch-status">{notice}</p>
         <button
           type="button"
           data-testid="branch-test-move"
@@ -94,6 +99,59 @@ function analysisClient(): AnalysisClient {
   };
 }
 
+function completedAnalysisClient(candidateMoves: string[]): AnalysisClient {
+  const observe = vi.fn(async (fen: string) => ({
+    status: "success" as const,
+    data: {
+      fen,
+      eligibility: "eligible" as const,
+      result: {
+        fen,
+        profile_id: "test-profile",
+        candidates: candidateMoves.map((move, index) => ({
+          rank: index + 1,
+          score_kind: "cp" as const,
+          score_value: 34 - index * 10,
+          wdl_wins: 420,
+          wdl_draws: 300,
+          wdl_losses: 280,
+          pv_uci: [move],
+          depth: 20,
+          seldepth: 24,
+          nodes: 200_000,
+          engine_time_ms: 100,
+        })),
+        terminal_kind: null,
+        completed_at: "2026-08-22T00:00:01+00:00",
+        wall_time_ms: 100,
+      },
+      status: {
+        state: "done" as const,
+        position: 0,
+        attempts: 1,
+        enqueued_at: "2026-08-22T00:00:00+00:00",
+        started_at: "2026-08-22T00:00:00+00:00",
+        completed_at: "2026-08-22T00:00:01+00:00",
+        error_code: null,
+      },
+      terminal: false,
+    },
+  }));
+  return { observe, enqueue: vi.fn(), status: vi.fn() };
+}
+
+function positionContextClient(): PositionContextClient {
+  return vi.fn(async (fen) => ({
+    status: "success" as const,
+    data: {
+      fen,
+      overall_exists: true,
+      white_count: 2,
+      black_count: 1,
+    },
+  }));
+}
+
 async function loadGame(user: ReturnType<typeof userEvent.setup>, ply = "") {
   await user.type(screen.getByLabelText("Game UUID"), VIEWER_GAME_UUID);
   if (ply) {
@@ -105,8 +163,15 @@ async function loadGame(user: ReturnType<typeof userEvent.setup>, ply = "") {
 describe("ViewerWorkspace temporary branch ownership", () => {
   it("keeps captured context immutable, targets branch FEN, gates traversal, and never enqueues", async () => {
     const client = analysisClient();
+    const contextClient = positionContextClient();
     const user = userEvent.setup();
-    render(<ViewerWorkspace lookup={successfulLookup()} analysisClient={client} />);
+    render(
+      <ViewerWorkspace
+        lookup={successfulLookup()}
+        analysisClient={client}
+        positionContextClient={contextClient}
+      />,
+    );
 
     await loadGame(user);
     await screen.findByText("Ply 0 of 3");
@@ -120,17 +185,32 @@ describe("ViewerWorkspace temporary branch ownership", () => {
     await waitFor(() =>
       expect(client.observe).toHaveBeenCalledWith(BRANCH_FEN, expect.any(AbortSignal)),
     );
+    await waitFor(() =>
+      expect(contextClient).toHaveBeenCalledWith(BRANCH_FEN, expect.any(AbortSignal)),
+    );
     expect(client.enqueue).not.toHaveBeenCalled();
 
     await user.click(screen.getByRole("button", { name: "Reset branch" }));
     expect(screen.getByTestId("branch-san")).toHaveTextContent("No branch moves yet");
     expect(screen.getByRole("button", { name: "Next" })).toBeEnabled();
+    await waitFor(() =>
+      expect(contextClient).toHaveBeenCalledWith(
+        VIEWER_GAME.positions[0].fen,
+        expect.any(AbortSignal),
+      ),
+    );
   });
 
   it("deliberately analyzes only the currently displayed branch FEN", async () => {
     const client = analysisClient();
     const user = userEvent.setup();
-    render(<ViewerWorkspace lookup={successfulLookup()} analysisClient={client} />);
+    render(
+      <ViewerWorkspace
+        lookup={successfulLookup()}
+        analysisClient={client}
+        positionContextClient={positionContextClient()}
+      />,
+    );
 
     await loadGame(user);
     await screen.findByText("Ply 0 of 3");
@@ -147,6 +227,59 @@ describe("ViewerWorkspace temporary branch ownership", () => {
     expect(vi.mocked(client.enqueue).mock.calls.map(([fen]) => fen)).toEqual([BRANCH_FEN]);
   });
 
+  it.each([
+    ["Best", "1. e4", BRANCH_FEN],
+    ["alternative", "1. d4", "rnbqkbnr/pppppppp/8/8/3P4/8/PPP1PPPP/RNBQKBNR b KQkq - 0 1"],
+  ] as const)(
+    "routes the %s candidate through the branch handler after Flip",
+    async (_, name, fen) => {
+      const client = completedAnalysisClient(["e2e4", "d2d4"]);
+      const user = userEvent.setup();
+      render(
+        <ViewerWorkspace
+          lookup={successfulLookup()}
+          analysisClient={client}
+          positionContextClient={positionContextClient()}
+        />,
+      );
+
+      await loadGame(user);
+      await screen.findByText("Analysis complete");
+      await user.click(screen.getByRole("button", { name: "Flip" }));
+      expect(screen.getByRole("img", { name: /Black at the bottom/ })).toBeVisible();
+
+      await user.click(screen.getByRole("button", { name }));
+
+      expect(screen.getByTestId("branch-current-fen")).toHaveTextContent(fen);
+      expect(client.enqueue).not.toHaveBeenCalled();
+    },
+  );
+
+  it("rejects illegal or stale candidates without changing the branch or enqueueing analysis", async () => {
+    const client = completedAnalysisClient(["e2e4", "a1a1"]);
+    const user = userEvent.setup();
+    render(
+      <ViewerWorkspace
+        lookup={successfulLookup()}
+        analysisClient={client}
+        positionContextClient={positionContextClient()}
+      />,
+    );
+
+    await loadGame(user);
+    await screen.findByText("Analysis complete");
+    await user.click(screen.getByRole("button", { name: "1. e4" }));
+    expect(screen.getByTestId("branch-current-fen")).toHaveTextContent(BRANCH_FEN);
+
+    await user.click(screen.getAllByRole("button", { name: "Line unavailable" })[0]);
+
+    expect(screen.getByTestId("branch-current-fen")).toHaveTextContent(BRANCH_FEN);
+    expect(screen.getByTestId("branch-status")).toHaveTextContent(
+      "Move rejected because it is illegal.",
+    );
+    expect(client.enqueue).not.toHaveBeenCalled();
+  });
+
   it("discards a branch immediately when replacement loading starts", async () => {
     let calls = 0;
     const lookup: GameLookup = vi.fn(async (_uuid, initialPly) => {
@@ -156,7 +289,13 @@ describe("ViewerWorkspace temporary branch ownership", () => {
         : { status: "game_unavailable" as const };
     });
     const user = userEvent.setup();
-    render(<ViewerWorkspace lookup={lookup} analysisClient={analysisClient()} />);
+    render(
+      <ViewerWorkspace
+        lookup={lookup}
+        analysisClient={analysisClient()}
+        positionContextClient={positionContextClient()}
+      />,
+    );
 
     await loadGame(user);
     await screen.findByText("Ply 0 of 3");

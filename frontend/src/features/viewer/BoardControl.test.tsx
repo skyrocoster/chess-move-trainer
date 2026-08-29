@@ -12,16 +12,19 @@ describe("BoardControl", () => {
 
     const toolbar = screen.getByRole("toolbar", { name: "Board controls" });
     expect(toolbar).toBeVisible();
-    expect(within(toolbar).getAllByRole("button")).toHaveLength(2);
+    expect(within(toolbar).getAllByRole("button")).toHaveLength(3);
     expect(screen.getByText("No game loaded")).toBeVisible();
     const previous = screen.getByRole("button", { name: "Previous" });
     const next = screen.getByRole("button", { name: "Next" });
+    const flip = screen.getByRole("button", { name: "Flip" });
     expect(previous).toBeDisabled();
     expect(previous).not.toHaveAttribute("aria-disabled");
     expect(previous.querySelector("svg")).toHaveClass("lucide-chevron-left");
     expect(next).toBeDisabled();
     expect(next).not.toHaveAttribute("aria-disabled");
     expect(next.querySelector("svg")).toHaveClass("lucide-chevron-right");
+    expect(flip).toBeEnabled();
+    expect(flip.querySelector("svg")).toHaveClass("lucide-flip-horizontal-2");
   });
 
   it("enforces explicit initial and final direction capabilities", () => {
@@ -38,15 +41,25 @@ describe("BoardControl", () => {
   it("calls one native action for each enabled direction capability", async () => {
     const onPrevious = vi.fn();
     const onNext = vi.fn();
+    const onFlip = vi.fn();
     const user = userEvent.setup();
     render(
-      <BoardControl hasGame canGoPrevious canGoNext onPrevious={onPrevious} onNext={onNext} />,
+      <BoardControl
+        hasGame
+        canGoPrevious
+        canGoNext
+        onPrevious={onPrevious}
+        onNext={onNext}
+        onFlip={onFlip}
+      />,
     );
 
     await user.click(screen.getByRole("button", { name: "Previous" }));
     await user.click(screen.getByRole("button", { name: "Next" }));
+    await user.click(screen.getByRole("button", { name: "Flip" }));
     expect(onPrevious).toHaveBeenCalledOnce();
     expect(onNext).toHaveBeenCalledOnce();
+    expect(onFlip).toHaveBeenCalledOnce();
 
     cleanup();
     render(<BoardControl hasGame canGoPrevious={false} canGoNext={false} />);

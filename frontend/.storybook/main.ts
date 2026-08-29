@@ -7,6 +7,7 @@ const config: StorybookConfig = {
     "../src/features/status/**/*.stories.@(ts|tsx)",
     "../src/features/analysis/**/*.stories.@(ts|tsx)",
     "../src/features/board-adapter/**/*.stories.@(ts|tsx)",
+    "../src/features/repertoire-builder/**/*.stories.@(ts|tsx)",
     "../src/features/viewer/**/*.stories.@(ts|tsx)",
   ],
   addons: ["@storybook/addon-a11y", "@storybook/addon-vitest"],
