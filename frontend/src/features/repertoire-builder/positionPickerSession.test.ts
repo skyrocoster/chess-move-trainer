@@ -7,6 +7,9 @@ import {
   flipPositionPickerSession,
   navigatePositionPickerSession,
   appendPositionPickerMove,
+  positionPickerHistory,
+  positionPickerHistoryBounds,
+  selectPositionPickerPly,
   selectPositionPickerMove,
   sessionSanHistory,
 } from "./positionPickerSession";
@@ -64,6 +67,94 @@ describe("position picker session", () => {
         positions: VIEWER_GAME.positions.slice(0, 2),
       }),
     ).toThrow("complete prefix");
+  });
+
+  it("represents the complete stored prefix followed by a local continuation", () => {
+    let session = createStoredGameSession({
+      ...VIEWER_GAME,
+      initial_ply: 2,
+      subject_color: "black",
+    });
+    session = selectPositionPickerMove(session, {
+      sourceSquare: "g1",
+      targetSquare: "f3",
+    })!.session;
+    session = flipPositionPickerSession(session);
+    session = selectPositionPickerMove(session, {
+      sourceSquare: "g8",
+      targetSquare: "f6",
+    })!.session;
+
+    expect(positionPickerHistory(session).map((position) => position.ply)).toEqual([0, 1, 2, 3, 4]);
+    expect(positionPickerHistory(session).map((position) => position.san)).toEqual([
+      null,
+      "e4",
+      "e5",
+      "Nf3",
+      "Nf6",
+    ]);
+    expect(positionPickerHistoryBounds(session)).toEqual({ firstPly: 0, lastPly: 4 });
+  });
+
+  it("selects any represented prefix or local position without dropping local continuation", () => {
+    let session = createStoredGameSession({
+      ...VIEWER_GAME,
+      initial_ply: 2,
+      subject_color: "black",
+    });
+    session = selectPositionPickerMove(session, {
+      sourceSquare: "g1",
+      targetSquare: "f3",
+    })!.session;
+    session = flipPositionPickerSession(session);
+    session = selectPositionPickerMove(session, {
+      sourceSquare: "g8",
+      targetSquare: "f6",
+    })!.session;
+
+    const prefixPosition = selectPositionPickerPly(session, 1)!;
+    expect(prefixPosition.currentPosition).toEqual(VIEWER_GAME.positions[1]);
+    expect(prefixPosition.currentPly).toBe(1);
+    expect(prefixPosition.localCursor).toBe(0);
+    expect(prefixPosition.localContinuation).toHaveLength(2);
+    expect(prefixPosition.stagedMove).toBeNull();
+
+    const localPosition = selectPositionPickerPly(prefixPosition, 4)!;
+    expect(localPosition.currentPosition.san).toBe("Nf6");
+    expect(localPosition.currentPly).toBe(4);
+    expect(localPosition.localCursor).toBe(2);
+    expect(localPosition.localContinuation).toHaveLength(2);
+  });
+
+  it("navigates combined history through represented bounds and cancels staging", () => {
+    let session = createStoredGameSession({
+      ...VIEWER_GAME,
+      initial_ply: 2,
+      subject_color: "black",
+    });
+    session = selectPositionPickerMove(session, {
+      sourceSquare: "g1",
+      targetSquare: "f3",
+    })!.session;
+    session = flipPositionPickerSession(session);
+    session = selectPositionPickerMove(session, {
+      sourceSquare: "g8",
+      targetSquare: "f6",
+    })!.session;
+
+    expect(navigatePositionPickerSession(session, "home").currentPly).toBe(0);
+    expect(navigatePositionPickerSession(session, "previous").currentPly).toBe(3);
+    expect(navigatePositionPickerSession(session, "end").currentPly).toBe(4);
+    expect(navigatePositionPickerSession(selectPositionPickerPly(session, 0)!, "previous").currentPly).toBe(0);
+    expect(navigatePositionPickerSession(selectPositionPickerPly(session, 4)!, "next").currentPly).toBe(4);
+
+    const staged = selectPositionPickerMove(createStandardStartSession(), {
+      sourceSquare: "e2",
+      targetSquare: "e4",
+    })!.session;
+    const selected = selectPositionPickerPly(staged, 0)!;
+    expect(selected.currentPly).toBe(0);
+    expect(selected.stagedMove).toBeNull();
   });
 
   it("stages a bottom-side move without changing the current position", () => {

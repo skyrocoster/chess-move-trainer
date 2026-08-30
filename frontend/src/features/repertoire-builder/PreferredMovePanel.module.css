@@ -21,6 +21,7 @@
 .instruction,
 .savedMove,
 .stagedMove,
+.effectiveDate,
 .status {
   color: var(--md-sys-color-on-surface-variant);
   font: var(--md-sys-typescale-body-medium);
@@ -32,6 +33,10 @@
 
 .stagedMove {
   color: var(--md-sys-color-primary);
+}
+
+.effectiveDate strong {
+  color: var(--md-sys-color-on-surface);
 }
 
 .error {
@@ -114,6 +119,7 @@
 
   .heading,
   .savedMove,
+  .effectiveDate strong,
   .dialogTitle {
     color: CanvasText;
   }
@@ -121,6 +127,7 @@
   .context,
   .instruction,
   .status,
+  .effectiveDate,
   .dialogDescription,
   .dateLabel {
     color: CanvasText;

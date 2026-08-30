@@ -5,13 +5,23 @@ import type { PositionPickerMoveRecord } from "./positionPickerSession";
 
 export type PositionSaveability = "unknown" | "savable" | "unsavable";
 
+export type RepertoirePositionState =
+  | "no-saved"
+  | "saved"
+  | "matching-played"
+  | "unsaved-played";
+
 export type RepertoirePositionModel = {
   bottomColor: ChessSide;
   personalCount: number | null;
   contextMessage: string | null;
   saveability: PositionSaveability;
+  state: RepertoirePositionState;
   savedMove: PreferredMoveValue | null;
   savedMoveVisible: boolean;
+  effectiveAt: string | null;
+  lastPlayedMove: PositionPickerMoveRecord | null;
+  lastPlayedPreferredMove: PreferredMoveResponse | null;
 };
 
 export type PreferredMoveDraftMode = "add" | "edit";
@@ -30,17 +40,37 @@ export function deriveRepertoirePositionModel({
   preferredMove,
   sideToMove,
   bottomColor,
+  lastPlayedMove = null,
+  lastPlayedPreferredMove = null,
 }: {
   context: PositionContextResponse | null;
   preferredMove: PreferredMoveResponse | null;
   sideToMove: ChessSide;
   bottomColor: ChessSide;
+  lastPlayedMove?: PositionPickerMoveRecord | null;
+  lastPlayedPreferredMove?: PreferredMoveResponse | null;
 }): RepertoirePositionModel {
   const personalCount =
     context === null ? null : bottomColor === "white" ? context.white_count : context.black_count;
   const color = colorLabel(bottomColor);
   const ownTurn = sideToMove === bottomColor;
   const savedMove = ownTurn && preferredMove?.state === "assigned" ? preferredMove.move : null;
+  const hasLastPlayedFocus = lastPlayedMove?.color === bottomColor;
+  const lastPlayedMatches =
+    hasLastPlayedFocus &&
+    lastPlayedPreferredMove?.state === "assigned" &&
+    lastPlayedPreferredMove.move !== null &&
+    moveUci(lastPlayedMove) === lastPlayedPreferredMove.move.uci;
+  const state: RepertoirePositionState = hasLastPlayedFocus
+    ? lastPlayedMatches
+      ? "matching-played"
+      : "unsaved-played"
+    : savedMove === null
+      ? "no-saved"
+      : "saved";
+  const effectiveAtSource = hasLastPlayedFocus ? lastPlayedPreferredMove : preferredMove;
+  const effectiveAt =
+    effectiveAtSource?.state === "assigned" ? effectiveAtSource.effective_at : null;
 
   return {
     bottomColor,
@@ -52,9 +82,19 @@ export function deriveRepertoirePositionModel({
           ? `Seen in ${personalCount} games as ${color}`
           : `Never seen as ${color}`,
     saveability: context === null ? "unknown" : context.overall_exists ? "savable" : "unsavable",
+    state,
     savedMove,
     savedMoveVisible: savedMove !== null,
+    effectiveAt,
+    lastPlayedMove,
+    lastPlayedPreferredMove,
   };
+}
+
+function moveUci(move: PositionPickerMoveRecord | null | undefined): string | null {
+  return move === null || move === undefined
+    ? null
+    : `${move.sourceSquare}${move.targetSquare}${move.promotion ?? ""}`;
 }
 
 export function emptyPreferredMoveDraft(): PreferredMoveDraftState {

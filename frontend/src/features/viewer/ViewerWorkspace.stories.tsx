@@ -51,6 +51,9 @@ function viewerPositionContext(fen: string): Omit<PositionContextResponse, "fen"
 }
 const positionContextClient = storyPositionContextClient(viewerPositionContext);
 const blackGame: Game = { ...VIEWER_GAME, subject_color: "black" };
+const unavailablePositionContextClient: PositionContextClient = fn(async () => ({
+  status: "position_context_unavailable" as const,
+}));
 const branchPositionContextClient = storyPositionContextClient((fen) =>
   fen === VIEWER_GAME.positions[0].fen
     ? {
@@ -92,7 +95,7 @@ const loadingPlay: NonNullable<Story["play"]> = async ({ canvasElement }) => {
   await expect(canvas.getByRole("button", { name: "Reset" })).toBeEnabled();
   await expect(canvas.getByRole("img", { name: /standard starting position/ })).toBeVisible();
   await expect(
-    canvas.queryByRole("group", { name: "Position recurrence" }),
+    canvas.queryByRole("heading", { name: "Position reach frequency" }),
   ).not.toBeInTheDocument();
 };
 const initialPlay: NonNullable<Story["play"]> = async ({ canvasElement }) => {
@@ -102,13 +105,21 @@ const initialPlay: NonNullable<Story["play"]> = async ({ canvasElement }) => {
   const meter = canvas.getByRole("meter", { name: "Evaluation" });
   const initialOrientation = meter.getAttribute("data-orientation") ?? "white";
   const contextButton = canvas.getByRole("button", { name: "Game Context" });
+  const history = within(canvas.getByRole("navigation", { name: "Move history" }));
   const sourceLink = canvas.getByRole("link", { name: "Chess.com game" });
   const analysis = await canvas.findByText("Analysis available on request");
+  const initial = history.getByRole("button", { name: "Initial position" });
   await expect(canvas.getByText("Ply 0 of 3")).toBeVisible();
   await expect(
     canvas.getByText("Ply 0 of 3: Initial position", { exact: true }),
   ).toBeInTheDocument();
-  await expect(canvas.getByText("Initial position")).toBeVisible();
+  await expect(initial).toBeVisible();
+  await expect(initial).toHaveAttribute("aria-current", "step");
+  await expect(await canvas.findByText("2 / 10 games", { exact: true })).toBeVisible();
+  await expect(canvas.getByText("White repertoire colour", { exact: true })).toBeVisible();
+  await expect(
+    canvas.getByRole("meter", { name: "Position reach frequency as White" }),
+  ).toBeVisible();
   await expect(canvas.getByRole("button", { name: "Previous" })).toBeDisabled();
   await expect(canvas.getByRole("button", { name: "Next" })).toBeEnabled();
   await expect(board).toHaveAttribute("aria-label", expect.stringContaining("at the bottom"));
@@ -140,20 +151,53 @@ const intermediatePlay: NonNullable<Story["play"]> = async ({ canvasElement }) =
   const canvas = within(canvasElement);
   await submit(canvas, VIEWER_GAME_UUID, "1");
   await expect(canvas.getByText("Ply 1 of 3")).toBeVisible();
-  await expect(canvas.getByText("Seen in 3 games as White", { exact: true })).toBeVisible();
-  await expect(canvas.getByText("Seen in 2 games as Black", { exact: true })).toBeVisible();
+  await expect(canvas.getByText("3 / 10 games", { exact: true })).toBeVisible();
+  await expect(canvas.getByText("White repertoire colour", { exact: true })).toBeVisible();
+  const history = within(canvas.getByRole("navigation", { name: "Move history" }));
+  const e4 = history.getByRole("button", { name: "White, move 1, e4" });
+  const e5 = history.getByRole("button", { name: "Black, move 1, e5" });
+  await expect(e4).toHaveAttribute("aria-current", "step");
   const currentFen = canvas.getByTestId("branch-current-fen").textContent;
   await userEvent.click(canvas.getByRole("button", { name: "Flip" }));
   await expect(canvas.getByRole("group", { name: /ply 1, Black at the bottom/ })).toBeVisible();
-  await expect(canvas.getByText("Seen in 3 games as White", { exact: true })).toBeVisible();
+  await expect(canvas.getByText("3 / 10 games", { exact: true })).toBeVisible();
   await expect(canvas.getByTestId("branch-current-fen")).toHaveTextContent(currentFen ?? "");
   await expect(canvas.getByRole("button", { name: "Previous" })).toBeEnabled();
   await expect(canvas.getByRole("button", { name: "Next" })).toBeEnabled();
-  await userEvent.click(canvas.getByRole("button", { name: "Next" }));
+  await userEvent.click(e5);
   await expect(canvas.getByText("Ply 2 of 3")).toBeVisible();
-  await expect(canvas.getByText("Seen in 4 games as White", { exact: true })).toBeVisible();
-  await expect(canvas.getByText("Seen in 3 games as Black", { exact: true })).toBeVisible();
+  await expect(canvas.getByText("4 / 10 games", { exact: true })).toBeVisible();
+  await expect(e5).toHaveAttribute("aria-current", "step");
+  await expect(e5).toHaveFocus();
   await expect(canvas.getByText("Ply 2 of 3: e5", { exact: true })).toBeInTheDocument();
+  await userEvent.keyboard("{Home}");
+  await expect(history.getByRole("button", { name: "Initial position" })).toHaveAttribute(
+    "aria-current",
+    "step",
+  );
+  await expect(history.getByRole("button", { name: "Initial position" })).toHaveFocus();
+  await expect(canvas.getByText("Ply 0 of 3")).toBeVisible();
+  await userEvent.keyboard("{End}");
+  const finalMove = history.getByRole("button", { name: "White, move 2, Nf3" });
+  await expect(finalMove).toHaveAttribute("aria-current", "step");
+  await expect(finalMove).toHaveFocus();
+  await expect(canvas.getByText("Ply 3 of 3: Nf3", { exact: true })).toBeInTheDocument();
+};
+
+const blackSubjectPlay: NonNullable<Story["play"]> = async ({ canvasElement }) => {
+  const canvas = within(canvasElement);
+  await submit(canvas, VIEWER_GAME_UUID, "0");
+  await expect(canvas.getByRole("group", { name: /ply 0, Black at the bottom/ })).toBeVisible();
+  await expect(canvas.getByText("Black repertoire colour", { exact: true })).toBeVisible();
+  await expect(canvas.getByText("1 / 10 games", { exact: true })).toBeVisible();
+  await expect(
+    canvas.getByRole("meter", { name: "Position reach frequency as Black" }),
+  ).toBeVisible();
+  await userEvent.click(canvas.getByRole("button", { name: "Flip" }));
+  await expect(canvas.getByRole("group", { name: /ply 0, White at the bottom/ })).toBeVisible();
+  await expect(canvas.getByText("Black repertoire colour", { exact: true })).toBeVisible();
+  await expect(canvas.getByText("1 / 10 games", { exact: true })).toBeVisible();
+  await userEvent.click(canvas.getByRole("button", { name: "Flip" }));
 };
 export const Wide: Story = {
   name: "Empty - Wide",
@@ -167,22 +211,44 @@ export const Constrained: Story = {
   render: () =>
     constrained(
       <ViewerWorkspace lookup={completeGameLookup()} analysisClient={storyAnalysisClient()} />,
-    ),
+  ),
+};
+export const LoadedConstrained: Story = {
+  name: "Loaded - Constrained",
+  args: { lookup: completeGameLookup() },
+  render: (args) =>
+    constrained(<ViewerWorkspace analysisClient={storyAnalysisClient()} {...args} />),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await submit(canvas);
+    await expect(canvas.getByText("Ply 0 of 3", { exact: true })).toBeVisible();
+    await expect(canvas.getByRole("navigation", { name: "Move history" })).toBeVisible();
+    await expect(canvas.getByText("2 / 10 games", { exact: true })).toBeVisible();
+  },
 };
 export const SeenCounts: Story = {
-  name: "Recurrence - seen counts",
+  name: "Reach frequency - selected colour updates",
   args: { lookup: completeGameLookup() },
   render: (args) => frame(<ViewerWorkspace analysisClient={storyAnalysisClient()} {...args} />),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await submit(canvas, VIEWER_GAME_UUID, "0");
-    await expect(canvas.getByRole("group", { name: "Position recurrence" })).toBeVisible();
-    await expect(canvas.getByText("Seen in 2 games as White", { exact: true })).toBeVisible();
-    await expect(canvas.getByText("Seen in 1 games as Black", { exact: true })).toBeVisible();
+    await expect(canvas.getByRole("heading", { name: "Position reach frequency" })).toBeVisible();
+    await expect(canvas.getByText("2 / 10 games", { exact: true })).toBeVisible();
+    await expect(canvas.getByText("White repertoire colour", { exact: true })).toBeVisible();
+  const history = within(canvas.getByRole("navigation", { name: "Move history" }));
+    const e4 = history.getByRole("button", { name: "White, move 1, e4" });
+    await userEvent.click(e4);
+    await expect(canvas.getByText("Ply 1 of 3", { exact: true })).toBeVisible();
+    await expect(e4).toHaveAttribute("aria-current", "step");
+    await expect(e4).toHaveFocus();
+    await expect(canvas.getByText("3 / 10 games", { exact: true })).toBeVisible();
+    await userEvent.keyboard("{Home}");
+    await expect(history.getByRole("button", { name: "Initial position" })).toHaveFocus();
   },
 };
 export const ZeroCounts: Story = {
-  name: "Recurrence - zero counts",
+  name: "Reach frequency - zero count",
   args: {
     lookup: completeGameLookup(),
     positionContextClient: storyPositionContextClient(() => ({
@@ -197,12 +263,12 @@ export const ZeroCounts: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await submit(canvas);
-    await expect(canvas.getByText("Never seen as White", { exact: true })).toBeVisible();
-    await expect(canvas.getByText("Never seen as Black", { exact: true })).toBeVisible();
+    await expect(canvas.getByText("0 / 10 games", { exact: true })).toBeVisible();
+    await expect(canvas.getByText("White repertoire colour", { exact: true })).toBeVisible();
   },
 };
 export const AbsentPosition: Story = {
-  name: "Recurrence - absent overall position",
+  name: "Reach frequency - absent position",
   args: {
     lookup: completeGameLookup(),
     positionContextClient: storyPositionContextClient(() => ({
@@ -217,8 +283,15 @@ export const AbsentPosition: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await submit(canvas);
-    await expect(canvas.getByText("Never seen as White", { exact: true })).toBeVisible();
-    await expect(canvas.getByText("Never seen as Black", { exact: true })).toBeVisible();
+    await expect(
+      canvas.getByText(
+        "This position is not present in the accepted game data for White.",
+        { exact: true },
+      ),
+    ).toBeVisible();
+    await expect(
+      canvas.queryByRole("meter", { name: /Position reach frequency/ }),
+    ).not.toBeInTheDocument();
   },
 };
 export const LoadingWide: Story = {
@@ -257,7 +330,38 @@ export const BlackSubject: Story = {
   name: "Success - Black subject",
   args: { lookup: completeGameLookup(blackGame) },
   render: (args) => frame(<ViewerWorkspace analysisClient={storyAnalysisClient()} {...args} />),
-  play: initialPlay,
+  play: blackSubjectPlay,
+};
+export const ReachUnavailable: Story = {
+  name: "Success - Position reach unavailable",
+  args: {
+    lookup: completeGameLookup(),
+    positionContextClient: unavailablePositionContextClient,
+  },
+  render: (args) => frame(<ViewerWorkspace analysisClient={storyAnalysisClient()} {...args} />),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await submit(canvas);
+    await expect(canvas.getByText("Ply 0 of 3", { exact: true })).toBeVisible();
+    await expect(canvas.getByText("Position reach data is unavailable.")).toBeVisible();
+    await expect(
+      canvas.queryByRole("meter", { name: /Position reach frequency/ }),
+    ).not.toBeInTheDocument();
+    await expect(canvas.getByRole("navigation", { name: "Move history" })).toBeVisible();
+  },
+};
+export const ReachForcedColors: Story = {
+  name: "Media emulation - reach frequency forced colors",
+  args: { lookup: completeGameLookup() },
+  render: (args) =>
+    constrained(<ViewerWorkspace analysisClient={storyAnalysisClient()} {...args} />),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await submit(canvas);
+    await expect(canvas.getByRole("heading", { name: "Position reach frequency" })).toBeVisible();
+    await expect(canvas.getByText("2 / 10 games", { exact: true })).toBeVisible();
+    await expect(canvas.getByRole("meter", { name: "Position reach frequency as White" })).toBeVisible();
+  },
 };
 export const UnsafeSource: Story = {
   name: "Success - Unsafe source unavailable",
@@ -337,7 +441,7 @@ export const BranchFromInitialPosition: Story = {
     await submit(canvas, VIEWER_GAME_UUID, "0");
     const branch = within(canvas.getByTestId("interactive-board-adapter"));
     await expect(canvas.getByText("Ply 0 of 3")).toBeVisible();
-    await expect(canvas.getByText("Initial position")).toBeVisible();
+    await expect(canvas.getByRole("button", { name: "Initial position" })).toBeVisible();
     await expect(canvas.getByTestId("branch-origin-fen")).toHaveTextContent(
       VIEWER_GAME.positions[0].fen,
     );
@@ -357,7 +461,7 @@ export const BranchNavigationGate: Story = {
     const canvas = within(canvasElement);
     await submit(canvas, VIEWER_GAME_UUID, "0");
     await expect(canvas.getByText("Ply 0 of 3")).toBeVisible();
-    await expect(canvas.getByText("Seen in 2 games as White", { exact: true })).toBeVisible();
+    await expect(canvas.getByText("2 / 10 games", { exact: true })).toBeVisible();
     await keyboardMove(canvasElement, "e2", "{ArrowUp}{ArrowUp}");
     await expect(canvas.getByTestId("branch-san")).not.toHaveTextContent("No branch moves yet");
     await expect(canvas.getByTestId("branch-current-fen")).toHaveTextContent(
@@ -366,8 +470,7 @@ export const BranchNavigationGate: Story = {
     await expect(canvas.getByTestId("branch-status")).toHaveTextContent(
       "Branch move committed: e3.",
     );
-    await expect(canvas.getByText("Seen in 7 games as White", { exact: true })).toBeVisible();
-    await expect(canvas.getByText("Seen in 6 games as Black", { exact: true })).toBeVisible();
+    await expect(canvas.getByText("7 / 10 games", { exact: true })).toBeVisible();
     const branchFen = canvas.getByTestId("branch-current-fen").textContent;
     const branchSan = canvas.getByTestId("branch-san").textContent;
     await userEvent.click(canvas.getByRole("button", { name: "Flip" }));
@@ -376,7 +479,7 @@ export const BranchNavigationGate: Story = {
     await expect(canvas.getByTestId("branch-san")).toHaveTextContent(branchSan ?? "");
     await expect(canvas.getByRole("button", { name: "Previous" })).toBeDisabled();
     await expect(canvas.getByRole("button", { name: "Next" })).toBeDisabled();
-    await expect(canvas.getByText("Initial position")).toBeVisible();
+    await expect(canvas.getByRole("button", { name: "Initial position" })).toBeVisible();
   },
 };
 export const BranchPromotion: Story = {

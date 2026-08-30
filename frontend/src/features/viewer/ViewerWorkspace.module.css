@@ -47,6 +47,15 @@
   align-self: stretch;
 }
 
+@media (forced-colors: active) {
+  .history,
+  .history :global(thead th),
+  .history :global(tbody th),
+  .history :global(tbody td) {
+    color: CanvasText;
+  }
+}
+
 .announcement {
   position: absolute;
   inline-size: 1px;

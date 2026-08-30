@@ -25,6 +25,7 @@ Some features add a `schema.py` (singular) for SQLite DDL initialization.
 | `app/features/analysis/` | Stockfish analysis pipeline, benchmarking, and persistence |
 | `app/features/preferred_move/` | Fixed-owner preferred-move API (`GET`/`PUT`/`DELETE /api/preferred-move`) |
 | `app/features/position_context/` | Neutral recurrence context for a position (`GET /api/position-context`) |
+| `app/features/openings/` | Read-only opening Line Library API (`GET /api/openings/line-library`) |
 
 ## Running
 

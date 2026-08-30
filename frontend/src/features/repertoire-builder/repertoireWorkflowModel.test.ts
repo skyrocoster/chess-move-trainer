@@ -42,6 +42,39 @@ const BLACK_MOVE: PositionPickerMoveRecord = {
 };
 
 describe("repertoire position model", () => {
+  const assignedPreferredMove = {
+    fen: FEN,
+    state: "assigned" as const,
+    move: { uci: "e2e4", san: "e4" },
+    effective_at: "2026-01-01T00:00:00.000000Z",
+  };
+
+  it.each([
+    ["no-saved", null, null, null],
+    ["saved", assignedPreferredMove, null, null],
+    ["matching-played", assignedPreferredMove, WHITE_MOVE, assignedPreferredMove],
+    [
+      "unsaved-played",
+      { ...assignedPreferredMove, move: { uci: "d2d4", san: "d4" } },
+      WHITE_MOVE,
+      { ...assignedPreferredMove, move: { uci: "d2d4", san: "d4" } },
+    ],
+  ])(
+    "derives the %s state from saved and last-played workflow data",
+    (state, preferredMove, lastPlayedMove, lastPlayedPreferredMove) => {
+      expect(
+        deriveRepertoirePositionModel({
+          context: context(),
+          preferredMove,
+          sideToMove: "white",
+          bottomColor: "white",
+          lastPlayedMove,
+          lastPlayedPreferredMove,
+        }),
+      ).toMatchObject({ state });
+    },
+  );
+
   it("maps bottom color to its personal count and keeps zero savable", () => {
     expect(
       deriveRepertoirePositionModel({
@@ -88,12 +121,7 @@ describe("repertoire position model", () => {
   });
 
   it("only exposes an assigned saved move on the bottom-color turn", () => {
-    const preferredMove = {
-      fen: FEN,
-      state: "assigned" as const,
-      move: { uci: "e2e4", san: "e4" },
-      effective_at: "2026-01-01T00:00:00.000000Z",
-    };
+    const preferredMove = assignedPreferredMove;
 
     expect(
       deriveRepertoirePositionModel({
@@ -111,6 +139,24 @@ describe("repertoire position model", () => {
         bottomColor: "white",
       }),
     ).toMatchObject({ savedMove: null, savedMoveVisible: false });
+  });
+
+  it("retains the focused preferred response and its persisted effective timestamp", () => {
+    expect(
+      deriveRepertoirePositionModel({
+        context: context(),
+        preferredMove: null,
+        sideToMove: "black",
+        bottomColor: "white",
+        lastPlayedMove: WHITE_MOVE,
+        lastPlayedPreferredMove: assignedPreferredMove,
+      }),
+    ).toMatchObject({
+      state: "matching-played",
+      lastPlayedMove: WHITE_MOVE,
+      lastPlayedPreferredMove: assignedPreferredMove,
+      effectiveAt: assignedPreferredMove.effective_at,
+    });
   });
 });
 

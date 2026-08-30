@@ -243,13 +243,16 @@ describe("ViewerWorkspace", () => {
     expect(meter).toHaveAttribute("data-orientation", "white");
   });
 
-  it("shows recurrence for the displayed position, refreshes navigation, and preserves it through Flip", async () => {
+  it("shows selected-colour reach frequency for the displayed position and preserves it through Flip", async () => {
     const contextClient = positionContextClient();
     const user = userEvent.setup();
     renderViewer({ lookup: successfulLookup(), positionContextClient: contextClient });
 
     await fillAndSubmit(user);
-    await screen.findByText("Seen in 2 games as White", { exact: true });
+    await screen.findByText("2 / 10 games", { exact: true });
+    expect(screen.getByRole("heading", { name: "Position reach frequency" })).toBeVisible();
+    expect(screen.getByText("White repertoire colour", { exact: true })).toBeVisible();
+    expect(screen.queryByRole("group", { name: "Position recurrence" })).not.toBeInTheDocument();
     expect(contextClient).toHaveBeenCalledWith(
       VIEWER_GAME.positions[0].fen,
       expect.any(AbortSignal),
@@ -257,7 +260,8 @@ describe("ViewerWorkspace", () => {
     const callsBeforeFlip = vi.mocked(contextClient).mock.calls.length;
 
     await user.click(screen.getByRole("button", { name: "Flip" }));
-    expect(screen.getByText("Seen in 2 games as White", { exact: true })).toBeVisible();
+    expect(screen.getByText("2 / 10 games", { exact: true })).toBeVisible();
+    expect(screen.getByText("White repertoire colour", { exact: true })).toBeVisible();
     expect(contextClient).toHaveBeenCalledTimes(callsBeforeFlip);
 
     await user.click(screen.getByRole("button", { name: "Next" }));
@@ -270,7 +274,7 @@ describe("ViewerWorkspace", () => {
     );
   });
 
-  it("renders Never seen for zero and absent positions without exposing context failures", async () => {
+  it("renders selected-colour zero and absent states without exposing context failures", async () => {
     const contextClient = positionContextClient((fen) => ({
       status: "success",
       data: {
@@ -286,9 +290,9 @@ describe("ViewerWorkspace", () => {
     renderViewer({ lookup: successfulLookup(), positionContextClient: contextClient });
 
     await fillAndSubmit(user);
-    expect(await screen.findByText("Never seen as White", { exact: true })).toBeVisible();
-    expect(screen.getByText("Never seen as Black", { exact: true })).toBeVisible();
-    expect(screen.queryByText(/Seen in/)).not.toBeInTheDocument();
+    expect(await screen.findByText("0 / 10 games", { exact: true })).toBeVisible();
+    expect(screen.getByText("White repertoire colour", { exact: true })).toBeVisible();
+    expect(screen.queryByText(/Never seen|Seen in/)).not.toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Next" }));
     await screen.findByText("Ply 1 of 3");
@@ -298,22 +302,28 @@ describe("ViewerWorkspace", () => {
         expect.any(AbortSignal),
       ),
     );
-    expect(screen.getByText("Never seen as White", { exact: true })).toBeVisible();
-    expect(screen.getByText("Never seen as Black", { exact: true })).toBeVisible();
+    expect(
+      await screen.findByText(
+        "This position is not present in the accepted game data for White.",
+        { exact: true },
+      ),
+    ).toBeVisible();
+    expect(screen.queryByRole("meter", { name: /Position reach frequency/ })).not.toBeInTheDocument();
   });
 
-  it("keeps the existing Game Context visible while recurrence is loading or unavailable", async () => {
+  it("keeps the existing Game Context visible while reach data is loading or unavailable", async () => {
     const contextClient = vi.fn<PositionContextClient>(() => new Promise(() => {}));
     const user = userEvent.setup();
     renderViewer({ lookup: successfulLookup(), positionContextClient: contextClient });
 
     await fillAndSubmit(user);
     expect(await screen.findByText("Ply 0 of 3")).toBeVisible();
+    expect(screen.getByText("Position reach data is unavailable.")).toBeVisible();
     expect(screen.queryByText(/Seen in|Never seen/)).not.toBeInTheDocument();
     expect(screen.queryByText(/position context/i)).not.toBeInTheDocument();
   });
 
-  it("silently omits recurrence when the position-context request fails", async () => {
+  it("shows unavailable reach data when the position-context request fails", async () => {
     const contextClient = vi.fn<PositionContextClient>(async () => ({
       status: "position_context_unavailable",
     }));
@@ -322,6 +332,7 @@ describe("ViewerWorkspace", () => {
 
     await fillAndSubmit(user);
     expect(await screen.findByText("Ply 0 of 3")).toBeVisible();
+    expect(screen.getByText("Position reach data is unavailable.")).toBeVisible();
     expect(screen.queryByText(/Seen in|Never seen/)).not.toBeInTheDocument();
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
@@ -334,16 +345,21 @@ describe("ViewerWorkspace", () => {
     await fillAndSubmit(user);
 
     expect(await screen.findByText("Ply 0 of 3")).toBeVisible();
+    expect(screen.getByText("Black repertoire colour", { exact: true })).toBeVisible();
+    expect(screen.getByText("1 / 10 games", { exact: true })).toBeVisible();
+    expect(screen.queryByText("White repertoire colour", { exact: true })).not.toBeInTheDocument();
     const announcement = screen.getByText("Ply 0 of 3: Initial position", { exact: true });
     expect(announcement).toHaveAttribute("role", "status");
     expect(announcement).toHaveAttribute("aria-live", "polite");
     expect(announcement).toHaveAttribute("aria-atomic", "true");
-    expect(screen.getByText("Initial position")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Initial position" })).toBeVisible();
     expect(screen.getByRole("group", { name: /ply 0, Black at the bottom/ })).toBeVisible();
     const flip = screen.getByRole("button", { name: "Flip" });
     await user.click(flip);
     expect(screen.getByRole("group", { name: /ply 0, White at the bottom/ })).toBeVisible();
     expect(screen.getByText("Ply 0 of 3: Initial position", { exact: true })).toBeVisible();
+    expect(screen.getByText("Black repertoire colour", { exact: true })).toBeVisible();
+    expect(screen.getByText("1 / 10 games", { exact: true })).toBeVisible();
     expect(screen.getByRole("button", { name: "Previous" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Next" })).toBeEnabled();
     await user.click(flip);
@@ -401,17 +417,77 @@ describe("ViewerWorkspace", () => {
     await user.click(next);
     expect(screen.getByRole("group", { name: /ply 2, Black at the bottom/ })).toBeVisible();
     expect(screen.getByText("Ply 2 of 3")).toBeVisible();
-    expect(screen.getByText("e5")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Black, move 1, e5" })).toBeVisible();
     expect(screen.getByText("Ply 2 of 3: e5", { exact: true })).toBeInTheDocument();
     expect(screen.getByLabelText(/Ply/)).toHaveValue("1");
     expect(lookup).toHaveBeenCalledOnce();
-    expect(document.activeElement).toBe(next);
+    expect(screen.getByRole("button", { name: "Black, move 1, e5" })).toHaveFocus();
 
     await user.click(next);
     expect(screen.getByText("Ply 3 of 3")).toBeVisible();
     expect(next).toBeDisabled();
     await user.click(screen.getByRole("button", { name: "Previous" }));
     expect(screen.getByText("Ply 2 of 3")).toBeVisible();
+  });
+
+  it("keeps history selection, toolbar navigation, board position, and announcement synchronized", async () => {
+    const lookup = successfulLookup();
+    const contextClient = positionContextClient();
+    const user = userEvent.setup();
+    renderViewer({ lookup, positionContextClient: contextClient });
+
+    await fillAndSubmit(user, GAME_UUID, "1");
+    await screen.findByText("Ply 1 of 3");
+
+    const initial = screen.getByRole("button", { name: "Initial position" });
+    const e4 = screen.getByRole("button", { name: "White, move 1, e4" });
+    const e5 = screen.getByRole("button", { name: "Black, move 1, e5" });
+    const finalMove = screen.getByRole("button", { name: "White, move 2, Nf3" });
+    const plyInput = screen.getByLabelText(/Ply/);
+
+    expect(e4).toHaveAttribute("aria-current", "step");
+    expect(plyInput).toHaveValue("1");
+
+    await user.click(e5);
+    expect(screen.getByRole("group", { name: /ply 2, White at the bottom/ })).toBeVisible();
+    expect(screen.getByText("Ply 2 of 3: e5", { exact: true })).toBeInTheDocument();
+    expect(plyInput).toHaveValue("1");
+    expect(e5).toHaveAttribute("aria-current", "step");
+    expect(e5).toHaveFocus();
+    await waitFor(() =>
+      expect(contextClient).toHaveBeenCalledWith(
+        VIEWER_GAME.positions[2].fen,
+        expect.any(AbortSignal),
+      ),
+    );
+
+    await user.click(screen.getByRole("button", { name: "Previous" }));
+    expect(screen.getByRole("group", { name: /ply 1, White at the bottom/ })).toBeVisible();
+    expect(e4).toHaveAttribute("aria-current", "step");
+    expect(e4).toHaveFocus();
+
+    await user.click(screen.getByRole("button", { name: "Next" }));
+    expect(e5).toHaveAttribute("aria-current", "step");
+    expect(e5).toHaveFocus();
+
+    await user.keyboard("{ArrowLeft}");
+    expect(e4).toHaveAttribute("aria-current", "step");
+    expect(e4).toHaveFocus();
+    await user.keyboard("{ArrowRight}");
+    expect(e5).toHaveAttribute("aria-current", "step");
+    expect(e5).toHaveFocus();
+
+    await user.keyboard("{Home}");
+    expect(initial).toHaveAttribute("aria-current", "step");
+    expect(initial).toHaveFocus();
+    expect(screen.getByRole("button", { name: "Previous" })).toBeDisabled();
+
+    await user.keyboard("{End}");
+    expect(screen.getByRole("group", { name: /ply 3, White at the bottom/ })).toBeVisible();
+    expect(screen.getByText("Ply 3 of 3: Nf3", { exact: true })).toBeInTheDocument();
+    expect(finalMove).toHaveAttribute("aria-current", "step");
+    expect(finalMove).toHaveFocus();
+    expect(screen.getByRole("button", { name: "Next" })).toBeDisabled();
   });
 
   it.each([

@@ -8,11 +8,12 @@ const STAGE1_GAME_UUID = "0007925c-5a8d-11f0-9740-f690a301000f";
 const STORY_IDS = {
   wide: "application-viewer-workspace--wide",
   constrained: "application-viewer-workspace--constrained",
+  loadedConstrained: "application-viewer-workspace--loaded-constrained",
   seenCounts: "application-viewer-workspace--seen-counts",
   zeroCounts: "application-viewer-workspace--zero-counts",
   absentPosition: "application-viewer-workspace--absent-position",
-  positionContextForcedColors:
-    "application-viewer-position-context--forced-colors",
+  reachUnavailable: "application-viewer-workspace--reach-unavailable",
+  reachForcedColors: "application-viewer-workspace--reach-forced-colors",
   loadingWide: "application-viewer-workspace--loading-wide",
   blackSubject: "application-viewer-workspace--black-subject",
 } as const;
@@ -187,7 +188,7 @@ test.describe("Viewer Workspace Storybook surface", () => {
       page.getByRole("button", { name: "Game Loader" }),
     ).toBeVisible();
     await expect(
-      page.getByRole("group", { name: "Position recurrence" }),
+      page.getByRole("heading", { name: "Position reach frequency" }),
     ).toHaveCount(0);
     await expect(page.getByText("No game loaded")).toHaveCount(2);
     await expect(page.locator('aside, [role="complementary"]')).toHaveCount(0);
@@ -412,9 +413,16 @@ test.describe("Viewer Workspace Storybook surface", () => {
     const currentFen = await page
       .getByTestId("branch-current-fen")
       .textContent();
+    const e5 = page.getByRole("button", { name: "Black, move 1, e5" });
+    const finalMove = page.getByRole("button", { name: "White, move 2, Nf3" });
+    await expect(e5).toBeFocused();
     await page.keyboard.press("ArrowRight");
-    await expect(flip).toBeFocused();
-    await page.keyboard.press("Enter");
+    await expect(page.getByText("Ply 3 of 3", { exact: true })).toBeVisible();
+    await expect(finalMove).toBeFocused();
+    await page.keyboard.press("ArrowLeft");
+    await expect(page.getByText("Ply 2 of 3", { exact: true })).toBeVisible();
+    await expect(e5).toBeFocused();
+    await flip.click();
     await expect(
       page.getByRole("group", { name: /ply 2, Black at the bottom/ }),
     ).toBeVisible();
@@ -445,7 +453,7 @@ test.describe("Viewer Workspace Storybook surface", () => {
       loadingToolbar.getByRole("button", { name: "Flip" }),
     ).toBeEnabled();
     await expect(
-      page.getByRole("group", { name: "Position recurrence" }),
+      page.getByRole("heading", { name: "Position reach frequency" }),
     ).toHaveCount(0);
   });
 
@@ -497,24 +505,31 @@ test.describe("Viewer Workspace Storybook surface", () => {
   test("proves seen, zero, absent, navigation, Flip preservation, and metadata order", async ({
     page,
   }) => {
+    await page.setViewportSize({ width: 1280, height: 1000 });
     await page.goto(
       `${STORYBOOK_URL}/iframe.html?id=${STORY_IDS.seenCounts}&viewMode=story`,
     );
     await expect(page.getByText("Ply 0 of 3", { exact: true })).toBeVisible();
-    const recurrence = page.getByRole("group", { name: "Position recurrence" });
-    await expect(recurrence).toBeVisible();
+    const history = page.getByRole("navigation", { name: "Move history" });
+    await expect(history).toBeVisible();
+    const initial = history.getByRole("button", { name: "Initial position" });
+    await expect(initial).toHaveAttribute("aria-current", "step");
+    const frequencyHeading = page.getByRole("heading", {
+      name: "Position reach frequency",
+    });
+    await expect(frequencyHeading).toBeVisible();
     await expect(
-      page.getByText("Seen in 2 games as White", { exact: true }),
+      page.getByText("2 / 10 games", { exact: true }),
     ).toBeVisible();
     await expect(
-      page.getByText("Seen in 1 games as Black", { exact: true }),
+      page.getByText("White repertoire colour", { exact: true }),
     ).toBeVisible();
     const source = page.getByRole("link", { name: "Chess.com game" });
     const analysis = page.getByText("Analysis available on request");
     expect(
       await source.evaluate((element) => {
-        const target = document.querySelector(
-          '[aria-label="Position recurrence"]',
+        const target = [...document.querySelectorAll("h2")].find(
+          (heading) => heading.textContent === "Position reach frequency",
         );
         return Boolean(
           target &&
@@ -524,7 +539,7 @@ test.describe("Viewer Workspace Storybook surface", () => {
       }),
     ).toBe(true);
     expect(
-      await recurrence.evaluate((element) => {
+      await frequencyHeading.evaluate((element) => {
         const target = [...document.querySelectorAll("p")].find(
           (paragraph) =>
             paragraph.textContent === "Analysis available on request",
@@ -541,51 +556,95 @@ test.describe("Viewer Workspace Storybook surface", () => {
     const flip = page.getByRole("button", { name: "Flip" });
     await flip.click();
     await expect(
-      page.getByText("Seen in 2 games as White", { exact: true }),
+      page.getByText("2 / 10 games", { exact: true }),
     ).toBeVisible();
     await expect(
-      page.getByText("Seen in 1 games as Black", { exact: true }),
+      page.getByText("White repertoire colour", { exact: true }),
     ).toBeVisible();
-    await page.getByRole("button", { name: "Next" }).click();
+    const e4 = history.getByRole("button", { name: "White, move 1, e4" });
+    await e4.click();
     await expect(page.getByText("Ply 1 of 3", { exact: true })).toBeVisible();
     await expect(
-      page.getByText("Seen in 3 games as White", { exact: true }),
+      page.getByText("3 / 10 games", { exact: true }),
     ).toBeVisible();
-    await expect(
-      page.getByText("Seen in 2 games as Black", { exact: true }),
-    ).toBeVisible();
-    await page.getByRole("button", { name: "Previous" }).click();
-    await expect(
-      page.getByText("Seen in 2 games as White", { exact: true }),
-    ).toBeVisible();
+    await expect(e4).toHaveAttribute("aria-current", "step");
+    await expect(e4).toBeFocused();
+    await page.keyboard.press("Home");
+    await expect(page.getByText("Ply 0 of 3", { exact: true })).toBeVisible();
+    await expect(initial).toHaveAttribute("aria-current", "step");
+    await expect(initial).toBeFocused();
+
+    await page.screenshot({
+      path: "test-results/viewer-stage3-wide.png",
+      fullPage: true,
+    });
 
     for (const storyId of [STORY_IDS.zeroCounts, STORY_IDS.absentPosition]) {
       await page.goto(
         `${STORYBOOK_URL}/iframe.html?id=${storyId}&viewMode=story`,
       );
       await expect(
-        page.getByText("Never seen as White", { exact: true }),
+        page.getByRole("heading", { name: "Position reach frequency" }),
       ).toBeVisible();
-      await expect(
-        page.getByText("Never seen as Black", { exact: true }),
-      ).toBeVisible();
-      await expect(page.getByText(/Seen in/)).toHaveCount(0);
+      if (storyId === STORY_IDS.zeroCounts) {
+        await expect(page.getByText("0 / 10 games", { exact: true })).toBeVisible();
+        await expect(
+          page.getByRole("meter", { name: "Position reach frequency as White" }),
+        ).toBeVisible();
+      } else {
+        await expect(
+          page.getByText(
+            "This position is not present in the accepted game data for White.",
+            { exact: true },
+          ),
+        ).toBeVisible();
+        await expect(
+          page.getByRole("meter", { name: /Position reach frequency/ }),
+        ).toHaveCount(0);
+      }
     }
+
+    await page.goto(
+      `${STORYBOOK_URL}/iframe.html?id=${STORY_IDS.reachUnavailable}&viewMode=story`,
+    );
+    await expect(page.getByText("Ply 0 of 3", { exact: true })).toBeVisible();
+    await expect(page.getByText("Position reach data is unavailable.")).toBeVisible();
+    await expect(page.getByRole("navigation", { name: "Move history" })).toBeVisible();
+    await expect(
+      page.getByRole("meter", { name: /Position reach frequency/ }),
+    ).toHaveCount(0);
+
+    await page.setViewportSize({ width: 480, height: 1000 });
+    await page.goto(
+      `${STORYBOOK_URL}/iframe.html?id=${STORY_IDS.loadedConstrained}&viewMode=story`,
+    );
+    await expect(page.getByText("Ply 0 of 3", { exact: true })).toBeVisible();
+    await expect(page.getByRole("navigation", { name: "Move history" })).toBeVisible();
+    await expect(page.getByText("2 / 10 games", { exact: true })).toBeVisible();
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+      ),
+    ).toBe(true);
+    await page.screenshot({
+      path: "test-results/viewer-stage3-constrained.png",
+      fullPage: true,
+    });
   });
 
-  test("keeps recurrence visible in forced colors without constrained overflow", async ({
+  test("keeps reach frequency visible in forced colors without constrained overflow", async ({
     page,
   }) => {
     await page.setViewportSize({ width: 320, height: 900 });
     await page.emulateMedia({ forcedColors: "active" });
     await page.goto(
-      `${STORYBOOK_URL}/iframe.html?id=${STORY_IDS.positionContextForcedColors}&viewMode=story`,
+      `${STORYBOOK_URL}/iframe.html?id=${STORY_IDS.reachForcedColors}&viewMode=story`,
     );
     await expect(
-      page.getByRole("group", { name: "Position recurrence" }),
+      page.getByRole("heading", { name: "Position reach frequency" }),
     ).toBeVisible();
     await expect(
-      page.getByText("Seen in 2 games as White", { exact: true }),
+      page.getByText("2 / 10 games", { exact: true }),
     ).toBeVisible();
     expect(
       await page.evaluate(
@@ -675,6 +734,13 @@ test.describe("Viewer Workspace Storybook surface", () => {
       );
       await expect(
         page.getByRole("group", { name: /ply 0, Black at the bottom/ }),
+      ).toBeVisible();
+      await expect(
+        page.getByText("Black repertoire colour", { exact: true }),
+      ).toBeVisible();
+      await expect(page.getByText("1 / 10 games", { exact: true })).toBeVisible();
+      await expect(
+        page.getByRole("meter", { name: "Position reach frequency as Black" }),
       ).toBeVisible();
       await expectStageGeometry(page, {
         orientation: "black",

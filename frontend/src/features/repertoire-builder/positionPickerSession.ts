@@ -59,6 +59,8 @@ export type PositionPickerMoveResult =
       session: PositionPickerSession;
     };
 
+export type PositionPickerNavigation = "previous" | "next" | "home" | "end";
+
 const STANDARD_START_POSITION: GamePosition = {
   ply: 0,
   fen: STARTING_FEN,
@@ -207,24 +209,60 @@ export function appendPositionPickerMove(
   return moveRecord ? appendMove(session, moveRecord) : null;
 }
 
-export function navigatePositionPickerSession(
+/** Returns the one represented line: the complete stored prefix then local continuation. */
+export function positionPickerHistory(session: PositionPickerSession): readonly GamePosition[] {
+  return [...session.prefix, ...session.localContinuation];
+}
+
+export function positionPickerHistoryBounds(session: PositionPickerSession): {
+  firstPly: Ply;
+  lastPly: Ply;
+} {
+  const history = positionPickerHistory(session);
+  return {
+    firstPly: history[0]!.ply,
+    lastPly: history.at(-1)!.ply,
+  };
+}
+
+/** Selects a represented position without changing the stored or local line. */
+export function selectPositionPickerPly(
   session: PositionPickerSession,
-  direction: "previous" | "next",
-): PositionPickerSession {
-  const delta = direction === "previous" ? -1 : 1;
-  const localCursor = Math.max(
-    0,
-    Math.min(session.localContinuation.length, session.localCursor + delta),
-  );
-  const currentPosition =
-    localCursor === 0 ? currentBasePosition(session) : session.localContinuation[localCursor - 1]!;
+  ply: Ply,
+): PositionPickerSession | null {
+  const currentPosition = positionPickerHistory(session).find((position) => position.ply === ply);
+  if (!currentPosition) {
+    return null;
+  }
+
+  const localIndex = session.localContinuation.findIndex((position) => position.ply === ply);
   return {
     ...session,
     currentPosition,
     currentPly: currentPosition.ply,
-    localCursor,
+    localCursor: localIndex < 0 ? 0 : localIndex + 1,
     stagedMove: null,
   };
+}
+
+export function navigatePositionPickerSession(
+  session: PositionPickerSession,
+  direction: PositionPickerNavigation,
+): PositionPickerSession {
+  const history = positionPickerHistory(session);
+  const currentIndex = Math.max(
+    0,
+    history.findIndex((position) => position.ply === session.currentPly),
+  );
+  const targetIndex =
+    direction === "previous"
+      ? Math.max(0, currentIndex - 1)
+      : direction === "next"
+        ? Math.min(history.length - 1, currentIndex + 1)
+        : direction === "home"
+          ? 0
+          : history.length - 1;
+  return selectPositionPickerPly(session, history[targetIndex]!.ply) ?? session;
 }
 
 export function flipPositionPickerSession(session: PositionPickerSession): PositionPickerSession {

@@ -9,6 +9,7 @@ const STORYBOOK_TEST_FILES = new Set([
   "viewer-branch.spec.ts",
   "viewer-branch-stage4.spec.ts",
   "viewer-storybook.spec.ts",
+  "line-library-storybook.spec.ts",
 ]);
 
 const APP_TEST_FILES = new Set([

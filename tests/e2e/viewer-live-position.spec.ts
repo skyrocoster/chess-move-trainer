@@ -28,9 +28,14 @@ test("loads the full corpus game and traverses all positions in memory", async (
     page.getByRole("group", { name: /ply 0, Black at the bottom/ }),
   ).toBeVisible();
   await expect(page.getByText("Ply 0 of 82", { exact: true })).toBeVisible();
+  const history = page.getByRole("navigation", { name: "Move history" });
+  const initial = history.getByRole("button", { name: "Initial position" });
+  await expect(initial).toBeVisible();
+  await expect(initial).toHaveAttribute("aria-current", "step");
   await expect(
-    page.getByText("Initial position", { exact: true }),
+    page.getByRole("heading", { name: "Position reach frequency" }),
   ).toBeVisible();
+  await expect(page.getByText("Black repertoire colour", { exact: true })).toBeVisible();
   await expect(
     page.getByRole("link", { name: "Chess.com game" }),
   ).toHaveAttribute("href", SOURCE_URL);
@@ -58,22 +63,28 @@ test("loads the full corpus game and traverses all positions in memory", async (
   await expect(page.getByTestId("branch-current-fen")).toHaveText(
     initialFen ?? "",
   );
-  await expect(
-    page.getByText("Initial position", { exact: true }),
-  ).toBeVisible();
+  await expect(initial).toBeVisible();
   await flip.click();
+
+  const firstMove = history.getByRole("button", { name: "White, move 1, e4" });
+  await firstMove.click();
+  await expect(page.getByText("Ply 1 of 82", { exact: true })).toBeVisible();
+  await expect(firstMove).toHaveAttribute("aria-current", "step");
+  await expect(firstMove).toBeFocused();
 
   const next = page.getByRole("button", { name: "Next" });
   await next.focus();
   await page.keyboard.press("Enter");
-  await expect(page.getByText("Ply 1 of 82", { exact: true })).toBeVisible();
-  await expect(page.getByText("e4", { exact: true })).toBeVisible();
-  await expect(next).toBeFocused();
+  await expect(page.getByText("Ply 2 of 82", { exact: true })).toBeVisible();
+  await expect(history.locator('[aria-current="step"]')).toHaveAttribute(
+    "data-ply",
+    "2",
+  );
   const plyOneFen = await page.getByTestId("branch-current-fen").textContent();
   await flip.focus();
   await page.keyboard.press("Enter");
   await expect(
-    page.getByRole("group", { name: /ply 1, White at the bottom/ }),
+    page.getByRole("group", { name: /ply 2, White at the bottom/ }),
   ).toBeVisible();
   await expect(page.getByRole("meter", { name: "Evaluation" })).toHaveAttribute(
     "data-orientation",
@@ -82,7 +93,7 @@ test("loads the full corpus game and traverses all positions in memory", async (
   await expect(page.getByTestId("branch-current-fen")).toHaveText(
     plyOneFen ?? "",
   );
-  await expect(page.getByText("Ply 1 of 82", { exact: true })).toBeVisible();
+  await expect(page.getByText("Ply 2 of 82", { exact: true })).toBeVisible();
   await expect(
     page.getByRole("textbox", { name: "Ply (optional)" }),
   ).toHaveValue("");
@@ -92,15 +103,21 @@ test("loads the full corpus game and traverses all positions in memory", async (
 
   await page.getByRole("button", { name: "Previous" }).focus();
   await page.keyboard.press("Space");
-  await expect(page.getByText("Ply 0 of 82", { exact: true })).toBeVisible();
+  await expect(page.getByText("Ply 1 of 82", { exact: true })).toBeVisible();
+  await expect(firstMove).toHaveAttribute("aria-current", "step");
+  await expect(firstMove).toBeFocused();
 
   await next.click();
-  for (let ply = 2; ply <= 82; ply += 1) {
+  for (let ply = 3; ply <= 82; ply += 1) {
     await next.click();
   }
   await expect(page.getByText("Ply 82 of 82", { exact: true })).toBeVisible();
   await expect(next).toBeDisabled();
   await expect(page.getByRole("button", { name: "Previous" })).toBeEnabled();
+  await expect(history.locator('[aria-current="step"]')).toHaveAttribute(
+    "data-ply",
+    "82",
+  );
   expect(positionRequests).toHaveLength(1);
 
   await page.locator("form").getByRole("button", { name: "Reset" }).click();
@@ -121,6 +138,15 @@ test("loads an explicit useful initial Ply and maps typed game and position fail
   await page.goto("/viewer");
   await loadGame(page, "41");
   await expect(page.getByText("Ply 41 of 82", { exact: true })).toBeVisible();
+  const history = page.getByRole("navigation", { name: "Move history" });
+  await expect(history.locator('[aria-current="step"]')).toHaveAttribute(
+    "data-ply",
+    "41",
+  );
+  await expect(
+    page.getByRole("heading", { name: "Position reach frequency" }),
+  ).toBeVisible();
+  await expect(page.getByText("Black repertoire colour", { exact: true })).toBeVisible();
   await expect(
     page.getByRole("textbox", { name: "Ply (optional)" }),
   ).toHaveValue("41");
@@ -136,6 +162,10 @@ test("loads an explicit useful initial Ply and maps typed game and position fail
   await expect(
     page.getByRole("group", { name: /ply 41, Black at the bottom/ }),
   ).toBeVisible();
+  await expect(history.locator('[aria-current="step"]')).toHaveAttribute(
+    "data-ply",
+    "41",
+  );
 
   await page.getByLabel("Game UUID").fill(GAME_UUID);
   await page.getByRole("textbox", { name: "Ply (optional)" }).fill("999999");
@@ -146,6 +176,10 @@ test("loads an explicit useful initial Ply and maps typed game and position fail
   await expect(
     page.getByRole("group", { name: /ply 41, Black at the bottom/ }),
   ).toBeVisible();
+  await expect(history.locator('[aria-current="step"]')).toHaveAttribute(
+    "data-ply",
+    "41",
+  );
 });
 
 test("keeps the root status page and proves the per-ply URL is unavailable", async ({

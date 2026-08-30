@@ -31,12 +31,15 @@ import {
   createStoredGameSession,
   flipPositionPickerSession,
   navigatePositionPickerSession,
+  positionPickerHistory,
+  selectPositionPickerPly,
   selectPositionPickerMove,
-  sessionSanHistory,
   type PositionPickerMove,
   type PositionPickerMoveRecord,
+  type PositionPickerNavigation,
   type PositionPickerSession,
 } from "./positionPickerSession";
+import type { Ply } from "../viewer/chessPrimitives";
 import styles from "./RepertoireBuilderWorkspace.module.css";
 import { RepertoireSessionPanel } from "./RepertoireSessionPanel";
 
@@ -177,6 +180,8 @@ export default function RepertoireBuilderWorkspace({
       setSession(result.session);
       if (result.disposition === "staged") {
         onStagedMove(result.move);
+      } else {
+        resetWorkflow();
       }
       setChessVersion((version) => version + 1);
       setSessionStatus(
@@ -185,7 +190,7 @@ export default function RepertoireBuilderWorkspace({
           : `Opponent move played locally: ${result.move.san}.`,
       );
     },
-    [onPlaySavedMove, onStagedMove, savedMove, savedMovePlayable, session],
+    [onPlaySavedMove, onStagedMove, resetWorkflow, savedMove, savedMovePlayable, session],
   );
 
   const handlePromotionReject = useCallback((reason: "illegal" | "stale") => {
@@ -209,18 +214,36 @@ export default function RepertoireBuilderWorkspace({
     selectPromotion,
     cancelPromotion,
   } = promotionController;
-  const hasLocalPrevious = session.localCursor > 0;
-  const hasLocalNext = session.localCursor < session.localContinuation.length;
+  const representedHistory = useMemo(
+    () => positionPickerHistory(session),
+    [session.localContinuation, session.prefix],
+  );
+  const historyInput = useMemo(
+    () => ({
+      initialPosition: { ply: representedHistory[0]!.ply },
+      moves: representedHistory.slice(1).map((position) => ({
+        ply: position.ply,
+        san: position.san!,
+      })),
+    }),
+    [representedHistory],
+  );
+  const hasPrevious = session.currentPly > representedHistory[0]!.ply;
+  const hasNext = session.currentPly < representedHistory.at(-1)!.ply;
   const label = boardLabel(session);
-  const sanHistory = sessionSanHistory(session);
   const localMoves = session.localMoves.slice(0, session.localCursor).map(branchMove);
   const localLastMove =
     session.localCursor > 0 ? session.localMoves[session.localCursor - 1] : null;
+  const currentHistoryIndex = representedHistory.findIndex(
+    (position) => position.ply === session.currentPly,
+  );
+  const previousHistoryPosition =
+    currentHistoryIndex > 0 ? representedHistory[currentHistoryIndex - 1] : undefined;
   const lastMove = session.stagedMove
     ? lastMoveFromSquares(session.stagedMove.sourceSquare, session.stagedMove.targetSquare)
     : localLastMove
       ? lastMoveFromSquares(localLastMove.sourceSquare, localLastMove.targetSquare)
-      : deriveLastMove(session.prefix.at(-2)?.fen, session.currentPosition.san);
+      : deriveLastMove(previousHistoryPosition?.fen, session.currentPosition.san);
 
   function invalidateRequest() {
     requestId.current += 1;
@@ -300,6 +323,8 @@ export default function RepertoireBuilderWorkspace({
       setSession(result.session);
       if (result.disposition === "staged") {
         onStagedMove(result.move);
+      } else {
+        resetWorkflow();
       }
       if (result.disposition === "staged") {
         setSessionStatus(`My move staged: ${result.move.san}.`);
@@ -308,7 +333,7 @@ export default function RepertoireBuilderWorkspace({
       setSessionStatus(`Opponent move played locally: ${result.move.san}.`);
       return true;
     },
-    [onPlaySavedMove, onStagedMove, savedMove, savedMovePlayable, session],
+    [onPlaySavedMove, onStagedMove, resetWorkflow, savedMove, savedMovePlayable, session],
   );
 
   const handleMoveIntent = useCallback(
@@ -358,19 +383,32 @@ export default function RepertoireBuilderWorkspace({
     setSessionStatus("Promotion cancelled; the current position is unchanged.");
   }, [cancelPromotion]);
 
+  const handleHistorySelection = useCallback(
+    (
+      selection: Ply | PositionPickerNavigation,
+      status = "Moved to the selected history position.",
+    ) => {
+      cancelPromotion();
+      resetWorkflow();
+      setSession((current) => {
+        const next =
+          typeof selection === "number"
+            ? selectPositionPickerPly(current, selection)
+            : navigatePositionPickerSession(current, selection);
+        return next ?? current;
+      });
+      setSessionStatus(status);
+    },
+    [cancelPromotion, resetWorkflow],
+  );
+
   const handlePrevious = useCallback(() => {
-    cancelPromotion();
-    resetWorkflow();
-    setSession((current) => navigatePositionPickerSession(current, "previous"));
-    setSessionStatus("Moved to the previous local position.");
-  }, [cancelPromotion, resetWorkflow]);
+    handleHistorySelection("previous", "Moved to the previous local position.");
+  }, [handleHistorySelection]);
 
   const handleNext = useCallback(() => {
-    cancelPromotion();
-    resetWorkflow();
-    setSession((current) => navigatePositionPickerSession(current, "next"));
-    setSessionStatus("Moved to the next local position.");
-  }, [cancelPromotion, resetWorkflow]);
+    handleHistorySelection("next", "Moved to the next local position.");
+  }, [handleHistorySelection]);
 
   const handleFlip = useCallback(() => {
     cancelPromotion();
@@ -431,8 +469,8 @@ export default function RepertoireBuilderWorkspace({
         <div className={styles.controls}>
           <BoardControl
             hasGame
-            canGoPrevious={hasLocalPrevious}
-            canGoNext={hasLocalNext}
+            canGoPrevious={hasPrevious}
+            canGoNext={hasNext}
             onPrevious={handlePrevious}
             onNext={handleNext}
             onFlip={handleFlip}
@@ -442,10 +480,14 @@ export default function RepertoireBuilderWorkspace({
           <PositionDescription model={positionModel} />
         </div>
         <RepertoireSessionPanel
-          sanHistory={sanHistory}
-          sessionStatus={sessionStatus}
-          model={workflow.positionModel}
-          sideToMove={sideToMoveColor}
+          initialPosition={historyInput.initialPosition}
+          moves={historyInput.moves}
+          activePly={session.currentPly}
+          onActivePlyChange={handleHistorySelection}
+           sessionStatus={sessionStatus}
+           model={workflow.positionModel}
+           positionContext={workflow.positionContext}
+           sideToMove={sideToMoveColor}
           stagedMove={workflow.stagedMove}
           draftMode={workflow.draftMode}
           date={workflow.date}

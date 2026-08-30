@@ -15,14 +15,20 @@ const SAVABLE_MODEL: RepertoirePositionModel = {
   personalCount: 3,
   contextMessage: "Seen in 3 games as White",
   saveability: "savable",
+  state: "no-saved",
   savedMove: null,
   savedMoveVisible: false,
+  effectiveAt: null,
+  lastPlayedMove: null,
+  lastPlayedPreferredMove: null,
 };
 
 const ASSIGNED_MODEL: RepertoirePositionModel = {
   ...SAVABLE_MODEL,
+  state: "saved",
   savedMove: { san: "e4", uci: "e2e4" },
   savedMoveVisible: true,
+  effectiveAt: "2025-01-15T00:00:00.000Z",
 };
 
 const UNSAVABLE_MODEL: RepertoirePositionModel = {
@@ -47,6 +53,31 @@ const STAGED_MOVE: PositionPickerMoveRecord = {
     ply: 1,
     fen: "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1",
     san: "e4",
+  },
+};
+
+const MATCHING_PLAYED_MODEL: RepertoirePositionModel = {
+  ...SAVABLE_MODEL,
+  state: "matching-played",
+  effectiveAt: "2025-01-15T00:00:00.000Z",
+  lastPlayedMove: STAGED_MOVE,
+  lastPlayedPreferredMove: {
+    fen: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+    state: "assigned",
+    move: { san: "e4", uci: "e2e4" },
+    effective_at: "2025-01-15T00:00:00.000Z",
+  },
+};
+
+const UNSAVED_PLAYED_MODEL: RepertoirePositionModel = {
+  ...SAVABLE_MODEL,
+  state: "unsaved-played",
+  lastPlayedMove: STAGED_MOVE,
+  lastPlayedPreferredMove: {
+    fen: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+    state: "unassigned",
+    move: null,
+    effective_at: null,
   },
 };
 
@@ -158,6 +189,11 @@ export const AssignedSaved: Story = {
   render: (args) => <PanelFixture {...args} />,
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement);
+    await expect(canvas.getByRole("region", { name: "Preferred move" })).toHaveAttribute(
+      "data-state",
+      "saved",
+    );
+    await expect(canvas.getByTestId("effective-date")).toHaveTextContent("Effective from 2025-01-15");
     const body = within(canvasElement.ownerDocument.body);
     await userEvent.click(canvas.getByRole("button", { name: "Edit" }));
     await expect(args.onEdit).toHaveBeenCalledTimes(1);
@@ -201,6 +237,64 @@ export const Unsavable: Story = {
     await expect(
       canvas.queryByRole("button", { name: "Effective date: Choose date" }),
     ).not.toBeInTheDocument();
+  },
+};
+
+export const MatchingPlayed: Story = {
+  name: "Matching played - last-played focus and persisted date",
+  args: panelArgs({
+    model: MATCHING_PLAYED_MODEL,
+    sideToMove: "black",
+    stagedMove: null,
+    draftMode: "idle",
+    date: new Date("2025-01-15T00:00:00.000Z"),
+  }),
+  render: (args) => <PanelFixture {...args} />,
+  play: async ({ args, canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByRole("region", { name: "Preferred move" })).toHaveAttribute(
+      "data-state",
+      "matching-played",
+    );
+    await expect(canvas.getByTestId("played-move")).toHaveTextContent("Played move: e4 (e2e4)");
+    await expect(canvas.getByText("This move matches your preferred move.")).toBeVisible();
+    await expect(canvas.getByTestId("effective-date")).toHaveTextContent("Effective from 2025-01-15");
+    await userEvent.click(canvas.getByRole("button", { name: "Edit" }));
+    await expect(args.onEdit).toHaveBeenCalledTimes(1);
+  },
+};
+
+export const UnsavedPlayed: Story = {
+  name: "Unsaved played - last-played focus and explicit Add",
+  args: panelArgs({
+    model: UNSAVED_PLAYED_MODEL,
+    stagedMove: STAGED_MOVE,
+    draftMode: "idle",
+    date: null,
+  }),
+  render: (args) => <PanelFixture {...args} />,
+  play: async ({ args, canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByRole("region", { name: "Preferred move" })).toHaveAttribute(
+      "data-state",
+      "unsaved-played",
+    );
+    await expect(canvas.getByTestId("played-move")).toHaveTextContent("Played move: e4 (e2e4)");
+    await expect(canvas.getByText("This move is not saved as your preferred move.")).toBeVisible();
+    await expect(canvas.getByRole("button", { name: "Add" })).toBeEnabled();
+    await userEvent.click(canvas.getByRole("button", { name: "Add" }));
+    await expect(args.onAdd).toHaveBeenCalledTimes(1);
+  },
+};
+
+export const AssignedToday: Story = {
+  name: "Assigned saved move - current UTC date shows Today",
+  args: panelArgs({ model: ASSIGNED_MODEL, draftMode: "idle", date: new Date() }),
+  render: (args) => <PanelFixture {...args} />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByTestId("effective-date")).toHaveTextContent("Effective from Today");
+    await expect(canvas.getByRole("button", { name: /Effective date: \d{4}-\d{2}-\d{2}/ })).toBeVisible();
   },
 };
 

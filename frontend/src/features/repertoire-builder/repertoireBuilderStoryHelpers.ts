@@ -19,6 +19,7 @@ const DEFAULT_MOVE: PreferredMoveValue = { uci: "e2e4", san: "e4" };
 export type StoryPreferredMoveOptions = {
   initialState?: PreferredMoveResponse["state"];
   initialMove?: PreferredMoveValue;
+  effectiveAt?: string;
   readFailure?: PreferredMoveFailureCode;
   putFailure?: PreferredMoveFailureCode;
   removeFailure?: PreferredMoveFailureCode;
@@ -55,6 +56,8 @@ export function storyPreferredMoveClient(
 ): PreferredMoveClient {
   let state = options.initialState ?? "unassigned";
   let move = options.initialMove ?? DEFAULT_MOVE;
+  let effectiveAt =
+    options.effectiveAt ?? (state === "assigned" ? "2026-01-01T00:00:00.000000Z" : null);
   let assignedFen: Fen | null = null;
 
   return {
@@ -72,7 +75,7 @@ export function storyPreferredMoveClient(
           fen,
           state: assigned ? ("assigned" as const) : ("unassigned" as const),
           move: assigned ? move : null,
-          effective_at: assigned ? "2026-01-01T00:00:00.000000Z" : null,
+          effective_at: assigned ? effectiveAt : null,
         },
       };
     }),
@@ -83,6 +86,7 @@ export function storyPreferredMoveClient(
       move = moveFromRequest(fen, move_uci);
       state = "assigned";
       assignedFen = fen;
+      effectiveAt = effective_at || "2026-08-29T00:00:00.000Z";
       return mutationResponse(fen, effective_at ?? "");
     }),
     remove: fn(async ({ fen, effective_at }) => {
@@ -90,6 +94,7 @@ export function storyPreferredMoveClient(
         return { status: options.removeFailure };
       }
       state = "unassigned";
+      effectiveAt = null;
       return mutationResponse(fen, effective_at ?? "");
     }),
   };

@@ -7,9 +7,10 @@ Main chess viewer frontend feature.
 Displays the chess board, loads and traverses games, and shows engine analysis. Each displayed
 analysis candidate (including Best) is an accessible pointer/keyboard control; activating one
 applies only the candidate's first UCI move through the existing branch/promotion path (no PV
-playback). Also shows position recurrence context (`Seen in N games as White/Black` / `Never
-seen as White/Black`) keyed to the displayed FEN, including temporary branches; Flip does not
-alter recurrence scope.
+playback). In the former Game Context location it composes the shared controlled Move History
+(retaining safe source attribution and truthful Ply) and the shared Position Reach Frequency
+keyed to the current analysis FEN and the loaded subject colour; Flip does not alter that
+scope.
 Board orientation follows the loaded game's `subject_color` (White at the bottom when no
 game is loaded) and can be flipped via the toolbar without changing position, navigation,
 or data.
@@ -20,15 +21,16 @@ or data.
 | ----------------- | ----------------------------------------------------------------------------------------------------------------------- |
 | `BoardControl`    | Renders the board toolbar: Previous/Next navigation and Flip                                                            |
 | `GameLoader`      | Loads games from the API, manages loading state                                                                         |
-| `GameContext`     | Provides game state (moves, current position, headers) to child components                                              |
 | `BoardEvalStage`  | Stages the board beside the eval rail; passes orientation to `EvalBar`                                                  |
-| `PositionContext` | Renders position recurrence text keyed to the displayed FEN, including temporary branches                               |
 | `ViewerWorkspace` | Top-level orchestrator — composes all viewer sub-components; owns orientation state (`subject_color` base, Flip toggle) |
 
-`EvalBar` and `AnalysisPanel` are not owned by viewer: they are presentation-only components
-imported from the `analysis` feature. Viewer derives all display values — evaluation-to-display
-in `evalBarDisplay.ts` and the analysis panel display in `analysisFormatting.ts` — and wires
-them into the components along with the callback intents (see `ViewerWorkspace`).
+`EvalBar`, `AnalysisPanel`, `MoveHistory`, and `PositionReachFrequency` are not owned by
+viewer: `EvalBar` and `AnalysisPanel` are presentation-only components imported from the
+`analysis` feature; `MoveHistory` and `PositionReachFrequency` are shared feature dependencies
+composed in the former Game Context location, with the history retaining source/Ply. Viewer
+derives all display values — evaluation-to-display in `evalBarDisplay.ts` and the analysis
+panel display in `analysisFormatting.ts` — and wires them into the components along with the
+callback intents (see `ViewerWorkspace`).
 
 ## Data layer
 

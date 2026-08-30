@@ -12,11 +12,12 @@ import { AnalysisPanel } from "../analysis/AnalysisPanel";
 import { BoardEvalStage } from "./BoardEvalStage";
 import { GameContext } from "./GameContext";
 import { GameLoader, type GameLoaderStatus, type GameLoaderValues } from "./GameLoader";
+import { MoveHistory } from "../move-history/MoveHistory";
+import { PositionReachFrequency } from "../position-reach-frequency/PositionReachFrequency";
 import { defaultAnalysisClient, type AnalysisClient } from "./analysisApi";
 import { useAnalysisState } from "./analysisState";
 import { analysisPanelDisplay } from "./analysisFormatting";
 import { evaluationDisplay } from "./evalBarDisplay";
-import { PositionContext } from "./PositionContext";
 import { fetchPositionContext, type PositionContextClient } from "./positionContextApi";
 import { usePositionContextState } from "./positionContextState";
 import {
@@ -111,6 +112,19 @@ export default function ViewerWorkspace({
   const currentPosition = game?.positions[currentIndex];
   const finalPly = game?.positions.at(-1)?.ply;
   const hasGame = currentPosition !== undefined && finalPly !== undefined;
+  const moveHistory = useMemo(() => {
+    if (!game || game.positions.length === 0) {
+      return null;
+    }
+
+    const [initialPosition, ...positions] = game.positions;
+    return {
+      initialPosition: { ply: initialPosition.ply },
+      moves: positions.flatMap((position) =>
+        position.san === null ? [] : [{ ply: position.ply, san: position.san }],
+      ),
+    };
+  }, [game]);
   const viewKey = game && currentPosition ? `${game.game_uuid}:${currentPosition.ply}` : "empty";
   const branchOriginFen = currentPosition?.fen ?? START_BOARD.fen;
   // branchChess is mutated in place by the branch handlers, so it must be
@@ -362,9 +376,7 @@ export default function ViewerWorkspace({
       return;
     }
     const nextIndex = currentIndex - 1;
-    setBranchNotice(DEFAULT_BRANCH_NOTICE);
-    setCurrentIndex(nextIndex);
-    setAnnouncement(announcementFor(game, nextIndex));
+    selectPosition(nextIndex);
   }
 
   function handleNext() {
@@ -376,9 +388,32 @@ export default function ViewerWorkspace({
       return;
     }
     const nextIndex = currentIndex + 1;
+    selectPosition(nextIndex);
+  }
+
+  function selectPosition(index: number) {
+    if (!game || index < 0 || index >= game.positions.length || index === currentIndex) {
+      return;
+    }
+
     setBranchNotice(DEFAULT_BRANCH_NOTICE);
-    setCurrentIndex(nextIndex);
-    setAnnouncement(announcementFor(game, nextIndex));
+    setCurrentIndex(index);
+    setAnnouncement(announcementFor(game, index));
+  }
+
+  function handleHistoryPlyChange(ply: number) {
+    if (branchForView?.active) {
+      discardBranch();
+      return;
+    }
+    if (!game) {
+      return;
+    }
+
+    const nextIndex = game.positions.findIndex((position) => position.ply === ply);
+    if (nextIndex >= 0) {
+      selectPosition(nextIndex);
+    }
   }
 
   const boardFen = analysisFen ?? START_BOARD.fen;
@@ -464,7 +499,18 @@ export default function ViewerWorkspace({
 
         <div className={styles.context}>
           <GameContext game={game} position={currentPosition}>
-            <PositionContext context={positionContextState.context} />
+            {moveHistory ? (
+              <MoveHistory
+                {...moveHistory}
+                className={styles.history}
+                activePly={currentPosition?.ply ?? moveHistory.initialPosition.ply}
+                onActivePlyChange={handleHistoryPlyChange}
+              />
+            ) : null}
+            <PositionReachFrequency
+              context={positionContextState.context}
+              selectedColor={game?.subject_color ?? "white"}
+            />
           </GameContext>
           <AnalysisPanel
             display={analysisDisplay}

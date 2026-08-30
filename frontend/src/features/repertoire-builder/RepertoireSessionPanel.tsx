@@ -1,26 +1,48 @@
+import { MoveHistory } from "../move-history/MoveHistory";
+import { PositionReachFrequency } from "../position-reach-frequency/PositionReachFrequency";
+import type { PositionContextResponse } from "../viewer/positionContextApi";
+import type {
+  MoveHistoryActivePlyChange,
+  MoveHistoryInitialPosition,
+  MoveHistoryMove,
+} from "../move-history/moveHistoryTypes";
 import { PreferredMovePanel, type PreferredMovePanelProps } from "./PreferredMovePanel";
 import styles from "./RepertoireSessionPanel.module.css";
 
 export type RepertoireSessionPanelProps = PreferredMovePanelProps & {
-  sanHistory: string;
+  positionContext?: PositionContextResponse | null;
+  initialPosition?: MoveHistoryInitialPosition;
+  moves?: readonly MoveHistoryMove[];
+  activePly?: number;
+  onActivePlyChange?: MoveHistoryActivePlyChange;
+  /** @deprecated The controlled Move History replaces this presentation-only value. */
+  sanHistory?: string;
   sessionStatus: string;
 };
 
 export function RepertoireSessionPanel({
-  sanHistory,
+  initialPosition = { ply: 0 },
+  moves = [],
+  activePly = initialPosition.ply,
+  onActivePlyChange = () => {},
+  positionContext = null,
   sessionStatus,
   ...preferredMoveProps
 }: RepertoireSessionPanelProps) {
   return (
     <div className={styles.session} data-testid="repertoire-session">
-      <p className={styles.historyLabel}>Local SAN history</p>
-      <p
-        className={styles.history}
-        data-testid="session-san-history"
-        aria-label="Local SAN history"
-      >
-        {sanHistory || "No local moves yet"}
-      </p>
+      <MoveHistory
+        data-testid="session-move-history"
+        initialPosition={initialPosition}
+        moves={moves}
+        activePly={activePly}
+        onActivePlyChange={onActivePlyChange}
+        ariaLabel="Repertoire move history"
+      />
+      <PositionReachFrequency
+        context={positionContext}
+        selectedColor={preferredMoveProps.model.bottomColor}
+      />
       <p
         className={styles.sessionStatus}
         data-testid="session-status"

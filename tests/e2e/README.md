@@ -22,4 +22,4 @@ Tests require both the backend and frontend to be available. If they are already
 
 ## Spec coverage
 
-Specs cover the status page, viewer (live, branch, storybook), responsive shell, board adapter, and design-system accessibility.
+Specs cover the status page, viewer (live, branch, storybook), responsive shell, board adapter, design-system accessibility, and the opening line-library Storybook surface (synthetic in-memory fixtures).

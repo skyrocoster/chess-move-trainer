@@ -20,6 +20,9 @@ const STORY_IDS = {
   absent: "application-repertoire-builder-workspace--absent-unsavable",
   assigned: "application-repertoire-builder-workspace--assigned-read-only",
   boardPlay: "application-repertoire-builder-workspace--assigned-board-play",
+  assignedToday: "application-repertoire-builder-workspace--assigned-today",
+  unsavedPlayed: "application-repertoire-builder-workspace--unsaved-played-constrained",
+  keyboard: "application-repertoire-builder-workspace--keyboard-and-accessibility",
   replacement: "application-repertoire-builder-workspace--edit-replacement",
   datedAdd: "application-repertoire-builder-workspace--dated-add",
   mutationFailure: "application-repertoire-builder-workspace--mutation-failure",
@@ -50,6 +53,59 @@ async function sharedPositionSummary(page: Page) {
   const summary = row.locator("[data-position-summary]");
   await expect(summary).toBeVisible();
   return summary;
+}
+
+async function expectSessionHistory(page: Page, entries: readonly string[]) {
+  const history = page.getByTestId("session-move-history");
+  await expect(history).toBeVisible();
+  const buttons = history.getByRole("button");
+  await expect(buttons).toHaveCount(entries.length);
+  for (const [index, name] of entries.entries()) {
+    await expect(buttons.nth(index)).toHaveAccessibleName(name);
+  }
+}
+
+async function expectPreferredMoveState(
+  page: Page,
+  state: "no-saved" | "saved" | "matching-played" | "unsaved-played",
+) {
+  await expect(page.getByRole("region", { name: "Preferred move" })).toHaveAttribute(
+    "data-state",
+    state,
+  );
+}
+
+async function expectPositionReachFrequency(
+  page: Page,
+  state: "available" | "absent" | "unavailable",
+  color: "White" | "Black",
+  fraction?: string,
+  percentage?: string,
+) {
+  const panel = page.locator(`section[data-state="${state}"]`).filter({
+    has: page.getByRole("heading", { name: "Position reach frequency" }),
+  });
+  await expect(panel).toHaveCount(1);
+  await expect(panel.getByText(`${color} repertoire colour`, { exact: true })).toBeVisible();
+  if (fraction !== undefined) {
+    await expect(panel.getByText(fraction, { exact: true })).toBeVisible();
+  }
+  if (percentage !== undefined) {
+    await expect(panel.getByText(percentage, { exact: true })).toBeVisible();
+  }
+  if (state === "available") {
+    await expect(
+      panel.getByRole("meter", { name: `Position reach frequency as ${color}` }),
+    ).toBeVisible();
+  } else {
+    await expect(panel.getByRole("meter")).toHaveCount(0);
+  }
+}
+
+async function expectActiveSessionHistoryEntry(page: Page, name: string) {
+  await expect(
+    page.getByTestId("session-move-history").getByRole("button", { name }),
+  ).toHaveAttribute("aria-current", "step");
 }
 
 async function expectNoHorizontalOverflow(page: Page) {
@@ -187,12 +243,15 @@ test.describe("Repertoire Builder Storybook surface", () => {
     ).toBeVisible();
     const session = page.getByTestId("repertoire-session");
     await expect(session).toBeVisible();
-    await expect(session.getByTestId("session-san-history")).toBeVisible();
+    await expect(session.getByTestId("session-move-history")).toBeVisible();
+    await expect(session.getByTestId("session-san-history")).toHaveCount(0);
     await expect(session.getByTestId("session-status")).toHaveAttribute(
       "role",
       "status",
     );
     await expect(session.getByRole("heading", { name: "Preferred move" })).toBeVisible();
+    await expectPreferredMoveState(page, "no-saved");
+    await expectPositionReachFrequency(page, "available", "White", "3 / 10 games", "30%");
     await expectRailGeometry(page, {
       orientation: "white",
       state: "neutral",
@@ -222,6 +281,8 @@ test.describe("Repertoire Builder Storybook surface", () => {
       accessibleValue: "No analysis yet; evaluation neutral.",
     });
     await expectSessionPlacement(page, "constrained");
+    await expectPreferredMoveState(page, "no-saved");
+    await expectPositionReachFrequency(page, "available", "White", "3 / 10 games", "30%");
     await expectNoHorizontalOverflow(page);
     await checkA11y(page);
 
@@ -231,7 +292,7 @@ test.describe("Repertoire Builder Storybook surface", () => {
     await expect(widePreview.locator('[data-position-square="e2"]')).toHaveCount(0);
     await expect(widePreview.locator('[data-position-square="e4"]')).toHaveCount(1);
     await expect(widePreview).toContainText("Side to moveBlack");
-    await expect(page.getByTestId("session-san-history")).toHaveText("No local moves yet");
+    await expectSessionHistory(page, ["Initial position"]);
     await expectRailGeometry(page, {
       orientation: "white",
       state: "best-line",
@@ -239,6 +300,10 @@ test.describe("Repertoire Builder Storybook surface", () => {
       shortValue: "+0.34",
       accessibleValue: "best-line evaluation +0.34.",
     });
+    await expectPreferredMoveState(page, "unsaved-played");
+    await expect(page.getByTestId("played-move")).toHaveText("Played move: e4 (e2e4)");
+    await expect(page.getByText("This move is not saved as your preferred move.")).toBeVisible();
+    await expectPositionReachFrequency(page, "available", "White", "3 / 10 games", "30%");
     await expectNoHorizontalOverflow(page);
     await checkA11y(page);
 
@@ -248,7 +313,7 @@ test.describe("Repertoire Builder Storybook surface", () => {
     await expect(constrainedPreview.locator('[data-position-square="e2"]')).toHaveCount(0);
     await expect(constrainedPreview.locator('[data-position-square="e4"]')).toHaveCount(1);
     await expect(constrainedPreview).toContainText("Side to moveBlack");
-    await expect(page.getByTestId("session-san-history")).toHaveText("No local moves yet");
+    await expectSessionHistory(page, ["Initial position"]);
     await expectRailGeometry(page, {
       orientation: "white",
       state: "best-line",
@@ -269,9 +334,14 @@ test.describe("Repertoire Builder Storybook surface", () => {
         name: `Chess board: game ${GAME_UUID}, ply 2, Black at the bottom`,
       }),
     ).toBeVisible();
-    await expect(page.getByTestId("session-san-history")).toHaveText(
-      "1. e4 1... e5",
-    );
+    await expectSessionHistory(page, [
+      "Initial position",
+      "White, move 1, e4",
+      "Black, move 1, e5",
+    ]);
+    await expectActiveSessionHistoryEntry(page, "Black, move 1, e5");
+    await expectPreferredMoveState(page, "no-saved");
+    await expectPositionReachFrequency(page, "available", "Black", "2 / 10 games", "20%");
     await expectRailGeometry(page, {
       orientation: "black",
       state: "neutral",
@@ -285,12 +355,27 @@ test.describe("Repertoire Builder Storybook surface", () => {
     await checkA11y(page);
 
     await openStory(page, STORY_IDS.opponent);
-    await expect(page.getByTestId("session-san-history")).toHaveText(
-      "1. e4 1... e5 2. Nf3",
-    );
+    await expectSessionHistory(page, [
+      "Initial position",
+      "White, move 1, e4",
+      "Black, move 1, e5",
+      "White, move 2, Nf3",
+    ]);
+    await expectActiveSessionHistoryEntry(page, "White, move 2, Nf3");
     await expect(page.getByTestId("session-status")).toHaveText(
       "Opponent move played locally: Nf3.",
     );
+    await expect(page.getByTestId("session-origin")).toHaveText(/Current Ply 3/);
+    await expect(
+      page.getByRole("group", {
+        name: `Chess board: game ${GAME_UUID}, ply 3, Black at the bottom`,
+      }),
+    ).toBeVisible();
+    await expect(page.getByTestId("preferred-context")).toHaveText(
+      "Seen in 2 games as Black",
+    );
+    await expectPreferredMoveState(page, "no-saved");
+    await expectPositionReachFrequency(page, "available", "Black", "2 / 10 games", "20%");
     await expectRailGeometry(page, {
       orientation: "black",
       state: "best-line",
@@ -298,15 +383,104 @@ test.describe("Repertoire Builder Storybook surface", () => {
       shortValue: "+0.34",
       accessibleValue: "best-line evaluation +0.34.",
     });
+    await expectNoHorizontalOverflow(page);
+    await checkA11y(page);
+    await page.screenshot({
+      path: "test-results/repertoire-r1-wide.png",
+      fullPage: true,
+    });
+
+    await openStory(page, STORY_IDS.opponent, 480, 1000);
+    await expectSessionHistory(page, [
+      "Initial position",
+      "White, move 1, e4",
+      "Black, move 1, e5",
+      "White, move 2, Nf3",
+    ]);
+    await expectActiveSessionHistoryEntry(page, "White, move 2, Nf3");
+    await expect(
+      page.getByRole("group", {
+        name: `Chess board: game ${GAME_UUID}, ply 3, Black at the bottom`,
+      }),
+    ).toBeVisible();
+    await expect(page.getByTestId("preferred-context")).toHaveText(
+      "Seen in 2 games as Black",
+    );
+    await expectNoHorizontalOverflow(page);
+    await checkA11y(page);
+    await page.screenshot({
+      path: "test-results/repertoire-r1-constrained.png",
+      fullPage: true,
+    });
   });
 
   test("proves navigation, replacement truncation, and Flip cancellation", async ({
     page,
   }) => {
-    await openStory(page, STORY_IDS.navigation);
-    await expect(page.getByTestId("session-san-history")).toHaveText(
-      "1. e4 1... e6",
+    await openStory(page, STORY_IDS.opponent);
+    await expectSessionHistory(page, [
+      "Initial position",
+      "White, move 1, e4",
+      "Black, move 1, e5",
+      "White, move 2, Nf3",
+    ]);
+    const storedPrefixEntry = page.getByRole("button", { name: "White, move 1, e4" });
+    await storedPrefixEntry.click();
+    await expectActiveSessionHistoryEntry(page, "White, move 1, e4");
+    await expect(storedPrefixEntry).toBeFocused();
+    await expect(storedPrefixEntry).toBeVisible();
+    await expect(page.getByTestId("session-origin")).toHaveText(/Current Ply 1/);
+    await expect(
+      page.getByRole("group", {
+        name: `Chess board: game ${GAME_UUID}, ply 1, Black at the bottom`,
+      }),
+    ).toBeVisible();
+    await page.getByRole("button", { name: "Position description" }).click();
+    await expect((await sharedPositionSummary(page))).toContainText("Side to moveBlack");
+    await expect(page.getByTestId("preferred-context")).toHaveText(
+      "Seen in 2 games as Black",
     );
+    await expectPreferredMoveState(page, "no-saved");
+    await expectPositionReachFrequency(page, "available", "Black", "2 / 10 games", "20%");
+
+    await storedPrefixEntry.press("ArrowRight");
+    const storedBlackEntry = page.getByRole("button", { name: "Black, move 1, e5" });
+    await expectActiveSessionHistoryEntry(page, "Black, move 1, e5");
+    await expect(storedBlackEntry).toBeFocused();
+    await expect(page.getByTestId("session-origin")).toHaveText(/Current Ply 2/);
+    await expect(
+      page.getByRole("group", {
+        name: `Chess board: game ${GAME_UUID}, ply 2, Black at the bottom`,
+      }),
+    ).toBeVisible();
+    await expect((await sharedPositionSummary(page))).toContainText("Side to moveWhite");
+
+    await storedBlackEntry.press("Home");
+    const initialEntry = page.getByRole("button", { name: "Initial position" });
+    await expectActiveSessionHistoryEntry(page, "Initial position");
+    await expect(initialEntry).toBeFocused();
+    await expect(page.getByRole("button", { name: "Previous" })).toBeDisabled();
+    await expect(page.getByTestId("session-origin")).toHaveText(/Current Ply 0/);
+    await expect(
+      page.getByRole("group", {
+        name: `Chess board: game ${GAME_UUID}, ply 0, Black at the bottom`,
+      }),
+    ).toBeVisible();
+
+    await initialEntry.press("End");
+    const localEntry = page.getByRole("button", { name: "White, move 2, Nf3" });
+    await expectActiveSessionHistoryEntry(page, "White, move 2, Nf3");
+    await expect(localEntry).toBeFocused();
+    await expect(page.getByRole("button", { name: "Next" })).toBeDisabled();
+    await page.getByRole("button", { name: "Previous" }).click();
+    await expectActiveSessionHistoryEntry(page, "Black, move 1, e5");
+    await page.getByRole("button", { name: "Next" }).click();
+    await expectActiveSessionHistoryEntry(page, "White, move 2, Nf3");
+    await expectNoHorizontalOverflow(page);
+
+    await openStory(page, STORY_IDS.navigation);
+    await expectSessionHistory(page, ["Initial position", "White, move 1, e4", "Black, move 1, e6"]);
+    await expectActiveSessionHistoryEntry(page, "Black, move 1, e6");
     await expect(page.getByRole("button", { name: "Next" })).toBeDisabled();
 
     await openStory(page, STORY_IDS.flip);
@@ -336,9 +510,7 @@ test.describe("Repertoire Builder Storybook surface", () => {
     page,
   }) => {
     await openStory(page, STORY_IDS.promotion);
-    await expect(page.getByTestId("session-san-history")).toHaveText(
-      "No local moves yet",
-    );
+    await expectSessionHistory(page, ["Initial position"]);
     await expect(page.getByTestId("session-origin")).toHaveText(
       /Current Ply 0/,
     );
@@ -386,16 +558,19 @@ test.describe("Repertoire Builder Storybook surface", () => {
   }) => {
     await openStory(page, STORY_IDS.unassigned);
     await expect(page.getByText("Seen in 3 games as White")).toBeVisible();
+    await expectPreferredMoveState(page, "saved");
     await expect(page.getByTestId("saved-move")).toHaveText(
       "Saved move: e4 (e2e4)",
     );
     await expect(
-      page.getByRole("button", { name: "Effective date: Choose date" }),
+      page.getByRole("button", { name: "Effective date: 2026-08-29" }),
     ).toBeVisible();
+    await expectPositionReachFrequency(page, "available", "White", "3 / 10 games", "30%");
     await checkA11y(page);
 
     await openStory(page, STORY_IDS.zeroPersonal);
     await expect(page.getByText("Never seen as White")).toBeVisible();
+    await expectPositionReachFrequency(page, "available", "White", "0 / 10 games", "0%");
     await expect(
       page.getByText(
         "This position cannot be saved because it is not in the corpus.",
@@ -403,6 +578,8 @@ test.describe("Repertoire Builder Storybook surface", () => {
     ).toHaveCount(0);
 
     await openStory(page, STORY_IDS.absent);
+    await expectPreferredMoveState(page, "no-saved");
+    await expectPositionReachFrequency(page, "absent", "White");
     await expect(
       page.getByText(
         "This position cannot be saved because it is not in the corpus.",
@@ -412,18 +589,44 @@ test.describe("Repertoire Builder Storybook surface", () => {
     await checkA11y(page);
 
     await openStory(page, STORY_IDS.assigned);
+    await expectPreferredMoveState(page, "matching-played");
+    await expect(page.getByTestId("played-move")).toHaveText(
+      "Played move: e4 (e2e4)",
+    );
+    await expect(page.getByText("This move matches your preferred move.")).toBeVisible();
+    await expect(page.getByTestId("effective-date")).toHaveText("Effective from 2026-01-01");
     await expect(page.getByTestId("session-status")).toHaveText(
       "Saved move played locally: e4.",
     );
-    await expect(page.getByTestId("session-san-history")).toHaveText("1. e4");
+    await expectSessionHistory(page, ["Initial position", "White, move 1, e4"]);
+    await expectActiveSessionHistoryEntry(page, "White, move 1, e4");
     await expect(page.getByTestId("saved-move")).toHaveCount(0);
 
     await openStory(page, STORY_IDS.boardPlay);
+    await expectPreferredMoveState(page, "matching-played");
     await expect(page.getByTestId("session-status")).toHaveText(
       "Saved move played locally: e4.",
     );
-    await expect(page.getByTestId("session-san-history")).toHaveText("1. e4");
+    await expectSessionHistory(page, ["Initial position", "White, move 1, e4"]);
+    await expectActiveSessionHistoryEntry(page, "White, move 1, e4");
     await expect(page.getByTestId("saved-move")).toHaveCount(0);
+
+    await openStory(page, STORY_IDS.unsavedPlayed, 412, 915);
+    await expectPreferredMoveState(page, "unsaved-played");
+    await expect(page.getByTestId("played-move")).toHaveText(
+      "Played move: d4 (d2d4)",
+    );
+    await expect(page.getByText("This move is not saved as your preferred move.")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Edit" })).toBeEnabled();
+    await expectPositionReachFrequency(page, "available", "White", "5 / 10 games", "50%");
+    await expect(page.getByTestId("session-origin")).toHaveText(/Current Ply 0/);
+    await expectSessionHistory(page, ["Initial position"]);
+    await expectNoHorizontalOverflow(page);
+
+    await openStory(page, STORY_IDS.assignedToday, 1280, 900);
+    await expectPreferredMoveState(page, "saved");
+    await expect(page.getByTestId("effective-date")).toHaveText("Effective from Today");
+    await expect(page.getByRole("button", { name: /Effective date: \d{4}-\d{2}-\d{2}/ })).toBeVisible();
 
     await openStory(page, STORY_IDS.replacement);
     await expect(page.getByText("Preferred move replaced.")).toBeVisible();
@@ -437,9 +640,7 @@ test.describe("Repertoire Builder Storybook surface", () => {
     await expect(
       replacementSummary.locator('[data-position-square="d4"]'),
     ).toHaveCount(0);
-    await expect(page.getByTestId("session-san-history")).toHaveText(
-      "No local moves yet",
-    );
+    await expectSessionHistory(page, ["Initial position"]);
     await checkA11y(page);
   });
 
@@ -449,8 +650,9 @@ test.describe("Repertoire Builder Storybook surface", () => {
     await openStory(page, STORY_IDS.datedAdd);
     await expect(page.getByText("Preferred move added.")).toBeVisible();
     await expect(
-      page.getByRole("button", { name: "Effective date: Choose date" }),
+      page.getByRole("button", { name: /Effective date: \d{4}-\d{2}-\d{2}/ }),
     ).toBeVisible();
+    await expect(page.getByTestId("effective-date")).toHaveText("Effective from Today");
 
     await openStory(page, STORY_IDS.mutationFailure);
     await expect(page.getByRole("alert")).toHaveText(
@@ -472,9 +674,7 @@ test.describe("Repertoire Builder Storybook surface", () => {
     await expect(
       failedSummary.locator('[data-position-square="e4"]'),
     ).toHaveCount(1);
-    await expect(page.getByTestId("session-san-history")).toHaveText(
-      "No local moves yet",
-    );
+    await expectSessionHistory(page, ["Initial position"]);
 
     await openStory(page, STORY_IDS.remove);
     await expect(page.getByText("Preferred move removed.")).toBeVisible();
@@ -486,16 +686,43 @@ test.describe("Repertoire Builder Storybook surface", () => {
 
     await openStory(page, STORY_IDS.readErrors);
     await expect(page.getByRole("alert")).toHaveCount(2);
+    await expectPreferredMoveState(page, "no-saved");
+    await expectPositionReachFrequency(page, "unavailable", "White");
 
     await openStory(page, STORY_IDS.opponentLocal);
-    await expect(page.getByTestId("session-san-history")).toHaveText(
-      "1. e4 1... e5 2. Nf3",
-    );
+    await expectSessionHistory(page, [
+      "Initial position",
+      "White, move 1, e4",
+      "Black, move 1, e5",
+      "White, move 2, Nf3",
+    ]);
+    await expectActiveSessionHistoryEntry(page, "White, move 2, Nf3");
     await expect(page.getByTestId("session-status")).toHaveText(
       "Opponent move played locally: Nf3.",
     );
     await expect(page.getByTestId("saved-move")).toHaveCount(0);
+    await expectPreferredMoveState(page, "no-saved");
+    await expectPositionReachFrequency(page, "available", "Black", "2 / 10 games", "20%");
     await expect(page.getByRole("alert")).toHaveCount(0);
+    await expectNoHorizontalOverflow(page);
+    await checkA11y(page);
+  });
+
+  test("proves constrained keyboard focus and visible synchronized controls", async ({ page }) => {
+    await openStory(page, STORY_IDS.keyboard, 412, 915);
+    await expectPreferredMoveState(page, "unsaved-played");
+    const candidate = page.getByRole("button", { name: "1. e4" });
+    await expect(candidate).toBeVisible();
+    await candidate.focus();
+    await candidate.press("Enter");
+    await expect(candidate).toBeFocused();
+    await expectPreferredMoveState(page, "unsaved-played");
+    await expect(page.getByTestId("played-move")).toHaveText("Played move: e4 (e2e4)");
+    await expect(page.getByTestId("session-origin")).toHaveText(/Current Ply 0/);
+    await expectSessionHistory(page, ["Initial position"]);
+    await expectActiveSessionHistoryEntry(page, "Initial position");
+    await expect(page.getByRole("button", { name: "Position description" })).toBeVisible();
+    await expectPositionReachFrequency(page, "available", "White", "3 / 10 games", "30%");
     await expectNoHorizontalOverflow(page);
     await checkA11y(page);
   });

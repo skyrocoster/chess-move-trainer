@@ -34,10 +34,13 @@ acceptance. Handle the case-worker result as follows:
   `PHASE: WRITE MASTER PLAN`. Do not implement or choose a slice.
 - `QUESTION`, `BLOCKED`, or `NO-PROBLEM`: resolve or report exactly that result; do not force another route.
 
-Before resuming a retained case-worker, call `context_budget`. Follow its default action. When it reports
-`DECISION-REQUIRED`, resume only if continuity is important and the remaining phase is small; otherwise start a
-fresh case-worker with a compact approved packet. When telemetry is unavailable, prefer a fresh case-worker unless
-untransferred reasoning makes a short resume safer.
+Before resuming a retained case-worker, call `context_budget`. When assessment returns `PLAN-CANDIDATE`, prefer
+resuming that case-worker with `PHASE: WRITE PLAN` while its assessment context is available; this priority applies
+through `DECISION-REQUIRED` because writing the Plan externalizes that context. Only start a fresh Plan writer when
+the tool reports `ROLLOVER-DEFAULT` or the retained session is unusable. For other results, follow the tool's default
+action. At `DECISION-REQUIRED`, resume only if continuity is important and the remaining phase is small; otherwise
+start a fresh case-worker with a compact approved packet. When telemetry is unavailable, prefer a fresh case-worker
+unless untransferred reasoning makes a short resume safer.
 
 ## 3. Execute
 

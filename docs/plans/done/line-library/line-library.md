@@ -1,6 +1,6 @@
 # Line Library - production opening API and Storybook selector
 
-> **Status:** in progress - Stages 1-4 accepted; awaiting Storybook visual breakpoint
+> **Status:** done - Stages 1-5 accepted; Storybook visual breakpoint accepted
 
 - **Read trigger:** Read before any Line Library API, opening-provider, reusable selector, Storybook fixture, or
   related documentation change.
@@ -116,7 +116,7 @@ action is added.
    - **Escalate if:** A story calls the live API, requires an application route, claims fixture data is authoritative,
      adds an opening filter, or changes the generic selector contract.
 
-5. **pending - focused browser proof and structural documentation route (ORDERED).**
+5. **done - focused browser proof and structural documentation route (ORDERED).**
    - **Ordered actions:** Add the Storybook-only browser spec and classify it in `tests/e2e/playwright.config.ts`
      so it starts only the Storybook server. Verify axe coverage, keyboard focus, no horizontal overflow at the
      selected responsive viewports, stale/error/empty states, and the opening specialization. Retain valid behavioral
@@ -154,8 +154,9 @@ the approved outcome or requiring a new product, API, data, dependency, ownershi
   explicitly synthetic in-memory opening stories cover selection/commit, all three approved filters, limits,
   disabled/reference nodes, loading, stale refresh, retry failure, and empty results. Story discovery was extended
   without adding an application route or live API consumer.
-- **Stage 5:** pending - focused proof retains valid earlier receipts and routes README maintenance to readme-updater when
-  structural changes make existing documentation stale.
+- **Stage 5:** done - focused Storybook-only browser proof was added and classified; valid earlier receipts remain retained,
+  the browser proof passed, the human visual breakpoint was accepted, and stale README maintenance is routed to
+  readme-updater.
 - **Decision:** Opening v1 `appears_in_my_games` is the existing accepted corpus selected by
   `SUBJECT_PLAYER_UUID`; authentication is explicitly out of scope. The API is production read-only, while the
   frontend has no application route or live API consumer.
@@ -173,9 +174,16 @@ the approved outcome or requiring a new product, API, data, dependency, ownershi
   passed `6` tests with bash tool timeout `120000 ms`; `timeout 300s npm.cmd run test-storybook --prefix frontend -- --run src/features/design-system/line-library src/features/openings`
   passed `10` tests with bash tool timeout `300000 ms`; the scoped Prettier check passed. Stage 1-3 focused receipts
   remain valid because their implementation files were unchanged.
+- **Proof receipt (Stage 5):** `timeout 600s node_modules/.bin/playwright.cmd test --config tests/e2e/playwright.config.ts tests/e2e/line-library-storybook.spec.ts`
+  passed `5` tests in `17.2s` with bash tool timeout `600000 ms`, covering the synthetic opening specialization,
+  keyboard focus and selection/commit, approved filters, disabled/reference/limit behavior, loading/stale/error-retry/
+  empty states, axe scans, and no horizontal overflow at 1280, 640, and 412 px.
 - **Maintenance note:** a separate TypeScript maintenance check previously reported an error in the Stage 3
   `LineLibrary.test.tsx`, and an attempted ESLint check found no repository `eslint.config.*`. Neither is Stage 5
   implementation proof or blocks this Plan; the separate complete test/fix workflow owns them.
+- **Closeout decision:** Human visual acceptance of the focused Storybook result is explicit. README maintenance for
+  `backend/README.md`, `frontend/src/features/design-system/README.md`, and `tests/e2e/README.md` is routed to
+  readme-updater; no README edits are included in this closeout.
 
 ## Proof
 

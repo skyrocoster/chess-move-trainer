@@ -208,7 +208,7 @@ describe("ViewerWorkspace temporary branch ownership", () => {
     expect(screen.getByTestId("interactive-board")).toHaveAttribute("data-last-move-source", "e2");
     expect(screen.getByTestId("interactive-board")).toHaveAttribute("data-last-move-target", "e4");
     expect(screen.getByText("Ply 0 of 3")).toBeVisible();
-    expect(screen.getByText("Initial position")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Initial position" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Previous" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Next" })).toBeDisabled();
     await waitFor(() =>
@@ -230,6 +230,32 @@ describe("ViewerWorkspace temporary branch ownership", () => {
         expect.any(AbortSignal),
       ),
     );
+  });
+
+  it("discards a temporary branch before history selection without moving the captured ply", async () => {
+    const user = userEvent.setup();
+    render(
+      <ViewerWorkspace
+        lookup={successfulLookup()}
+        analysisClient={analysisClient()}
+        positionContextClient={positionContextClient()}
+      />,
+    );
+
+    await loadGame(user);
+    await screen.findByText("Ply 0 of 3");
+    await user.click(screen.getByTestId("branch-test-move"));
+    expect(screen.getByTestId("branch-san")).toHaveTextContent("1. e4");
+
+    await user.click(screen.getByRole("button", { name: "Black, move 1, e5" }));
+
+    expect(screen.getByTestId("branch-san")).toHaveTextContent("No branch moves yet");
+    expect(screen.getByText("Ply 0 of 3")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Initial position" })).toHaveAttribute(
+      "aria-current",
+      "step",
+    );
+    expect(screen.getByRole("button", { name: "Next" })).toBeEnabled();
   });
 
   it("deliberately analyzes only the currently displayed branch FEN", async () => {

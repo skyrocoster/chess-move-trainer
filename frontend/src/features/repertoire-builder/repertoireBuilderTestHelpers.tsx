@@ -157,19 +157,28 @@ export function mutationResponse(fen: string): PreferredMoveMutationResult {
   };
 }
 
-export function testClients(initialState: PreferredMoveResponse["state"] = "unassigned") {
+export function testClients(
+  initialState: PreferredMoveResponse["state"] = "unassigned",
+  initialEffectiveAt = "2026-01-01T00:00:00.000000Z",
+) {
   let state = initialState;
+  let effectiveAt = state === "assigned" ? initialEffectiveAt : null;
   const preferredMoveClient: PreferredMoveClient = {
     get: vi.fn(async (fen) => ({
       status: "success" as const,
-      data: preferredMoveResponse(fen, state),
+      data: {
+        ...preferredMoveResponse(fen, state),
+        effective_at: state === "assigned" ? effectiveAt : null,
+      },
     })),
-    put: vi.fn(async ({ fen }) => {
+    put: vi.fn(async ({ fen, effective_at }) => {
       state = "assigned";
+      effectiveAt = effective_at || "2026-01-01T00:00:00.000000Z";
       return mutationResponse(fen);
     }),
     remove: vi.fn(async ({ fen }) => {
       state = "unassigned";
+      effectiveAt = null;
       return mutationResponse(fen);
     }),
   };

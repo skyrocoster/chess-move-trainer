@@ -25,6 +25,12 @@ export const constrainedViewport = {
   },
 };
 
+export const R2_ASSIGNED_CONTEXT = {
+  overall_exists: true,
+  white_count: 5,
+  black_count: 1,
+};
+
 function frame(children: ReactNode) {
   return <main>{children}</main>;
 }
@@ -46,5 +52,17 @@ export function workspace(
       preferredMoveClient={preferredMoveClient}
       positionContextClient={positionContextClient}
     />,
+  );
+}
+
+export function assignedWorkspace(
+  props: ComponentProps<typeof RepertoireBuilderWorkspace> = {},
+  preferredOptions: Omit<StoryPreferredMoveOptions, "initialState"> = {},
+  contextOptions: StoryPositionContextOptions = {},
+) {
+  return workspace(
+    props,
+    { initialState: "assigned", ...preferredOptions },
+    { ...R2_ASSIGNED_CONTEXT, ...contextOptions },
   );
 }

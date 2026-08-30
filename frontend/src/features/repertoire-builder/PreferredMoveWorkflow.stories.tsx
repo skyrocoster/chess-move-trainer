@@ -8,6 +8,7 @@ import {
 } from "../viewer/viewerStoryHelpers";
 import { VIEWER_GAME_UUID } from "../viewer/viewerFixtures";
 import RepertoireBuilderWorkspace from "./RepertoireBuilderWorkspace";
+import { expectActiveSessionHistoryEntry, expectSessionHistory } from "./repertoireBuilderStoryAssertions";
 import { BLACK_SUBJECT_GAME, workspace } from "./repertoireBuilderStoryRender";
 import { loadGame } from "./repertoireBuilderStoryHelpers";
 
@@ -63,9 +64,13 @@ export const OpponentLocalOnly: Story = {
     await expect(canvas.getByTestId("session-status")).toHaveTextContent(
       "Opponent move played locally: Nf3.",
     );
-    await expect(canvas.getByTestId("session-san-history")).toHaveTextContent(
-      "1. e4 1... e5 2. Nf3",
-    );
+    await expectSessionHistory(canvasElement, [
+      "Initial position",
+      "White, move 1, e4",
+      "Black, move 1, e5",
+      "White, move 2, Nf3",
+    ]);
+    await expectActiveSessionHistoryEntry(canvasElement, "White, move 2, Nf3");
     await expect(canvas.queryByRole("alert")).not.toBeInTheDocument();
   },
 };
