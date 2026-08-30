@@ -171,6 +171,8 @@ function positionContextClient(): PositionContextClient {
       overall_exists: true,
       white_count: 2,
       black_count: 1,
+      white_total: 10,
+      black_total: 10,
     },
   }));
 }

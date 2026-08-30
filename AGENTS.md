@@ -29,9 +29,9 @@ PowerShell commands must use backslash paths, `$(...)` for subexpressions, ASCII
 - `powershell -ExecutionPolicy Bypass -File .\setup.ps1` installs pinned Python, npm, and Playwright dependencies.
 - `powershell -ExecutionPolicy Bypass -File .\dev.ps1 backend|frontend|all` starts services.
 - `.venv/Scripts/python.exe scripts/check.py` runs the fast fail-first local suite: roughly two minutes,
-  stopping at the first failure with a short excerpt and a native rerun command. At workflow closeout, use
-  its selectors (for example `--only`) to run only required checks not already covered by still-valid proof.
-- `.venv/Scripts/python.exe scripts/check.py --full` runs the complete local closeout suite (builds,
+  stopping at the first failure with a short excerpt and a native rerun command. It is a maintenance command, not
+  Plan implementation proof.
+- `.venv/Scripts/python.exe scripts/check.py --full` runs the complete local maintenance suite (builds,
   Storybook, and E2E).
 - `.venv/Scripts/python.exe scripts/check.py --fix` runs deterministic formatters, then the same checks;
   `--fix` stays explicit and deterministic.
@@ -48,10 +48,10 @@ All checks are local. The existing GitHub workflow is documentation-only; do not
 
 ## Testing and module-size rules
 
-The testing layers are pytest/API tests, Vitest plus React Testing Library component tests, and Playwright
-end-to-end tests. Ruff, ESLint, and Prettier are required. Handwritten Python, TypeScript, and TSX source
-is limited to 500 lines per file; handwritten tests are limited to 700 lines. Generated manifests,
-lockfiles, and narrowly enumerated configuration files are excluded by `scripts/check_size.py`.
+The behavioral testing layers are pytest/API tests, Vitest plus React Testing Library component tests, and
+Playwright end-to-end tests. Maintenance requires Ruff, ESLint, Prettier, and source-size limits, but Plan
+implementation does not check or enforce them. A Plan may temporarily leave a source file above 500 lines or a
+test above 700 lines; the separate complete test/fix maintenance run detects and repairs those issues later.
 
 MANDATORY SAFETY: every test must have an explicit finite command-level timeout and finite tool-level timeout. Never run unbounded processes. 
 
@@ -60,9 +60,10 @@ MANDATORY SAFETY: every test must have an explicit finite command-level timeout 
 1. Open the [documentation router](docs/README.md).
 2. Read the relevant active Plan under `docs/plans/active/` when work is Plan-backed.
 3. Read only the files named by the approved case or Plan stage before exploring source.
-4. Use `scripts/check.py` for closeout gaps. It is read-only unless `--fix` is explicit. Do not rerun a
-   passing check when no later change affects its command, inputs, exercised behavior, configuration, or
-   environment; retain that proof and run only missing or invalidated checks.
+4. Run only finite tests or browser scenarios that directly prove the approved behavior. Do not run lint,
+   formatting, broad type/build, source-size, aggregate, or other repository-hygiene checks during Plan
+   implementation unless the Plan's outcome specifically changes that tool or constraint. Complete test/fix runs
+   are separate maintenance work outside the implementation workflow.
 
 `Scratch/` is user-owned temporary workspace. Preserve unrelated Scratch content. New mock-ups and
 prototypes belong under `experiments/`, which has its own manifests and ignored environments/artifacts.
@@ -81,11 +82,11 @@ These modes are when you are working as the coordinator or the coordinators suba
   proof, escalation boundaries, progress, breakpoint decisions, and one visible-result line. No stages run
   in parallel. Oversized stages may be split without human approval when the outcome is unchanged.
 - **Direct:** small, settled changes can execute without a Plan. The approved case-worker performs the
-  change and proof; Quality independently validates when selected.
-- **Quality:** validation is read-only. It independently audits retained proof and runs only missing or
-  invalidated checks. A coordinator-authorized repair uses the Quality fix route, followed by fresh-session
-  final validation of evidence invalidated by the repair. After one failed repair, return to the coordinator.
-  Unrelated failures are reported, not absorbed.
+  change and focused proof.
+- **Quality:** optional validation requested separately from implementation is read-only. It independently audits
+  retained proof and runs only missing or invalidated checks. A coordinator-authorized repair uses the Quality fix
+  route, followed by fresh-session final validation of evidence invalidated by the repair. After one failed repair,
+  return to the coordinator. Unrelated failures are reported, not absorbed.
 - **Exploration:** mock-ups and prototypes are noncanonical until explicitly adopted.
 
 The coordinator may approve scope expansion needed for the settled outcome unless behavior, direction,

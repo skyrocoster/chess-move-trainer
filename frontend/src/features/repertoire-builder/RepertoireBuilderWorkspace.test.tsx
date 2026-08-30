@@ -426,7 +426,12 @@ describe("RepertoireBuilderWorkspace", () => {
     const preferredMoveClient: PreferredMoveClient = {
       get: vi.fn(async (fen) => ({
         status: "success" as const,
-        data: { fen, state: "assigned" as const, move: { uci: "e7e8n", san: "e8=N" } },
+        data: {
+          fen,
+          state: "assigned" as const,
+          move: { uci: "e7e8n", san: "e8=N" },
+          effective_at: "2026-01-01T00:00:00.000000Z",
+        },
       })),
       put: vi.fn(),
       remove: vi.fn(),

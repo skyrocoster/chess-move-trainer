@@ -33,8 +33,10 @@ _REQUIRED_COLUMNS = {
         "color_scope",
         "distinct_game_count",
     ),
+    "opening_recurrence_game": ("manifest_hash", "corpus_id", "game_uuid", "game_color"),
 }
 _COLOR_SCOPES = frozenset(("overall", "white", "black"))
+_GAME_COLORS = frozenset(("white", "black"))
 
 
 @dataclass(frozen=True)
@@ -44,6 +46,8 @@ class PositionContext:
     overall_exists: bool
     white_count: int
     black_count: int
+    white_total: int
+    black_total: int
 
 
 def _database_uri(path, mode: str) -> str:
@@ -119,6 +123,7 @@ class PositionContextRepository:
 
     def lookup(self, key: PositionKey) -> PositionContext:
         manifest_hash, corpus_id = self._accepted_scope()
+        totals = self._game_totals(manifest_hash, corpus_id)
         try:
             rows = self._connection.execute(
                 "SELECT color_scope, distinct_game_count "
@@ -150,7 +155,35 @@ class PositionContextRepository:
             overall_exists="overall" in counts,
             white_count=counts.get("white", 0),
             black_count=counts.get("black", 0),
+            white_total=totals["white"],
+            black_total=totals["black"],
         )
+
+    def _game_totals(self, manifest_hash: str, corpus_id: int) -> dict[str, int]:
+        try:
+            rows = self._connection.execute(
+                "SELECT game_color, COUNT(*) AS game_count "
+                "FROM opening_recurrence_game "
+                "WHERE manifest_hash = ? AND corpus_id = ? "
+                "GROUP BY game_color",
+                (manifest_hash, corpus_id),
+            ).fetchall()
+        except sqlite3.Error as error:
+            raise PositionContextUnavailableError from error
+
+        totals = {color: 0 for color in _GAME_COLORS}
+        for row in rows:
+            color = row["game_color"]
+            count = row["game_count"]
+            if (
+                color not in _GAME_COLORS
+                or isinstance(count, bool)
+                or not isinstance(count, int)
+                or count < 0
+            ):
+                raise PositionContextUnavailableError
+            totals[color] = count
+        return totals
 
     def _accepted_scope(self) -> tuple[str, int]:
         try:

@@ -84,6 +84,8 @@ function positionContextClient(
       overall_exists: true,
       white_count: 2,
       black_count: 1,
+      white_total: 10,
+      black_total: 10,
     },
   }),
 ): PositionContextClient {
@@ -276,6 +278,8 @@ describe("ViewerWorkspace", () => {
         overall_exists: fen === VIEWER_GAME.positions[0].fen,
         white_count: 0,
         black_count: 0,
+        white_total: 10,
+        black_total: 10,
       },
     }));
     const user = userEvent.setup();

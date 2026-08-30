@@ -20,6 +20,8 @@ function context(fen: Fen, overallExists = true): PositionContextResponse {
     overall_exists: overallExists,
     white_count: overallExists ? 2 : 0,
     black_count: overallExists ? 1 : 0,
+    white_total: 3,
+    black_total: 2,
   };
 }
 

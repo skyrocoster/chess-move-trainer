@@ -18,6 +18,7 @@ from .api_schemas import (
 from .errors import PreferredMoveValidationError
 from .repository import (
     PositionKey,
+    PreferredMoveRead,
     PreferredMoveRepository,
     open_read_connection,
     open_write_connection,
@@ -78,7 +79,8 @@ def _canonical_move(fen: str, move_uci: str) -> str:
     return canonical
 
 
-def _response(fen: str, state: object) -> PreferredMoveResponse:
+def _response(fen: str, read: PreferredMoveRead) -> PreferredMoveResponse:
+    state = read.state
     move_uci = state.move_uci
     move_san = state.move_san
     if (move_uci is None) != (move_san is None):
@@ -88,6 +90,7 @@ def _response(fen: str, state: object) -> PreferredMoveResponse:
         fen=fen,
         state="unassigned" if move is None else "assigned",
         move=move,
+        effective_at=read.effective_at,
     )
 
 
@@ -98,8 +101,8 @@ def get_preferred_move(fen: str, as_of: str | None) -> PreferredMoveResponse:
     try:
         repository = PreferredMoveRepository(connection)
         position = repository.position(key)
-        state = repository.state_at(position, effective_at)
-        return _response(selected_fen, state)
+        read = repository.state_at(position, effective_at)
+        return _response(selected_fen, read)
     finally:
         connection.close()
 

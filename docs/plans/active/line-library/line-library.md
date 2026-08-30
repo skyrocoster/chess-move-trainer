@@ -116,24 +116,19 @@ action is added.
    - **Escalate if:** A story calls the live API, requires an application route, claims fixture data is authoritative,
      adds an opening filter, or changes the generic selector contract.
 
-5. **pending - focused browser proof, closeout, and structural documentation route (ORDERED).**
+5. **pending - focused browser proof and structural documentation route (ORDERED).**
    - **Ordered actions:** Add the Storybook-only browser spec and classify it in `tests/e2e/playwright.config.ts`
      so it starts only the Storybook server. Verify axe coverage, keyboard focus, no horizontal overflow at the
-     selected responsive viewports, stale/error/empty states, and the opening specialization. Run only affected
-     static/build checks, retain valid stage receipts, review the Plan and scoped changes, and route any stale
+     selected responsive viewports, stale/error/empty states, and the opening specialization. Retain valid behavioral
+     receipts, review the Plan and scoped changes, and route any stale
      `backend/README.md`, relevant frontend feature README, or E2E README maintenance to `readme-updater` after
-     structural changes. Do not run an aggregate suite merely to repeat valid focused proof.
+      structural changes. Do not run an aggregate suite as part of this Plan.
    - **Focused proof:** `timeout 600s node_modules/.bin/playwright.cmd test --config tests/e2e/playwright.config.ts tests/e2e/line-library-storybook.spec.ts`
-     (bash tool timeout: 600000 ms); `timeout 900s npm.cmd run build-storybook --prefix frontend`
-     (bash tool timeout: 900000 ms); and finite scoped Ruff, format, TypeScript, ESLint, Prettier, and source-size
-     commands for changed paths. At closeout, use only required invalidated selectors such as
-     `timeout 300s .venv/Scripts/python.exe scripts/check.py --only "TypeScript type check" -q`
-     (bash tool timeout: 300000 ms) or
-     `timeout 600s .venv/Scripts/python.exe scripts/check.py --only "Frontend tests" -q`
-     (bash tool timeout: 600000 ms); do not use `scripts/check.py --full` solely for repetition.
-   - **Breakpoint:** Fresh independent Quality validation and explicit human acceptance are required before
-     archival. Quality audits retained evidence and runs only missing or invalidated checks.
-   - **Escalate if:** Closeout requires `--fix`, an unrelated repair, route/API/data scope expansion, historical
+     (bash tool timeout: 600000 ms). Do not run Ruff, formatting, TypeScript-wide, ESLint, Prettier, source-size,
+     build, aggregate, or other repository-maintenance checks in this Plan.
+   - **Breakpoint:** Explicit human acceptance of the focused browser result is required before archival.
+   - **Escalate if:** Behavioral proof fails because of the implemented behavior, or work requires an unrelated
+     repair, route/API/data scope expansion, historical
      edits, or claiming runtime/database behavior not proven by the read-only API tests.
 
 Stages are sequential; no stages run in parallel. The coordinator may split an oversized stage without changing
@@ -159,7 +154,7 @@ the approved outcome or requiring a new product, API, data, dependency, ownershi
   explicitly synthetic in-memory opening stories cover selection/commit, all three approved filters, limits,
   disabled/reference nodes, loading, stale refresh, retry failure, and empty results. Story discovery was extended
   without adding an application route or live API consumer.
-- **Stage 5:** pending - closeout retains valid focused proof and routes README maintenance to readme-updater when
+- **Stage 5:** pending - focused proof retains valid earlier receipts and routes README maintenance to readme-updater when
   structural changes make existing documentation stale.
 - **Decision:** Opening v1 `appears_in_my_games` is the existing accepted corpus selected by
   `SUBJECT_PLAYER_UUID`; authentication is explicitly out of scope. The API is production read-only, while the
@@ -178,9 +173,9 @@ the approved outcome or requiring a new product, API, data, dependency, ownershi
   passed `6` tests with bash tool timeout `120000 ms`; `timeout 300s npm.cmd run test-storybook --prefix frontend -- --run src/features/design-system/line-library src/features/openings`
   passed `10` tests with bash tool timeout `300000 ms`; the scoped Prettier check passed. Stage 1-3 focused receipts
   remain valid because their implementation files were unchanged.
-- **Closeout gap:** a TypeScript check reports an error in the Stage 3 `LineLibrary.test.tsx`; Stage 5 must resolve
-  and re-prove this in-scope gap. The attempted ESLint check found no repository `eslint.config.*`, so Stage 5 must
-  use the repository-supported selector/configuration or report the configuration blocker precisely.
+- **Maintenance note:** a separate TypeScript maintenance check previously reported an error in the Stage 3
+  `LineLibrary.test.tsx`, and an attempted ESLint check found no repository `eslint.config.*`. Neither is Stage 5
+  implementation proof or blocks this Plan; the separate complete test/fix workflow owns them.
 
 ## Proof
 
@@ -193,8 +188,7 @@ the approved outcome or requiring a new product, API, data, dependency, ownershi
 - Storybook proof must cover the generic interaction contract and opening-specific display without calling the live
   API. Axe and browser assertions supplement, but do not replace, human visual/accessibility review.
 - Passing proof remains valid until a later change affects its command, inputs, exercised behavior, configuration,
-  dependencies, or environment. Quality runs only evidence gaps; closeout uses `scripts/check.py --only` selectors
-  only for required invalidated checks.
+  dependencies, or environment. Stage 5 runs only focused evidence gaps or checks invalidated by its changes.
 
 ## Acceptance
 
@@ -207,7 +201,7 @@ hierarchy navigation, controlled/default state, single/multi-selection, tri-stat
 semantics, filter-driven selection recomputation, stale/error/empty/loading states, references, disabled rows, and
 optional generic commit reporting. No application route, live frontend fetch, authentication, board behavior,
 training behavior, repertoire mutation, or downstream action exists. Focused proof passes, the visual breakpoint is
-accepted, independent Quality validation passes, and README maintenance is routed appropriately.
+accepted, and README maintenance is routed appropriately.
 
 ## Escalation boundaries
 

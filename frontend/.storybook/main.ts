@@ -10,6 +10,7 @@ const config: StorybookConfig = {
     "../src/features/board-adapter/**/*.stories.@(ts|tsx)",
     "../src/features/repertoire-builder/**/*.stories.@(ts|tsx)",
     "../src/features/openings/**/*.stories.@(ts|tsx)",
+    "../src/features/position-reach-frequency/**/*.stories.@(ts|tsx)",
     "../src/features/viewer/**/*.stories.@(ts|tsx)",
   ],
   addons: ["@storybook/addon-a11y", "@storybook/addon-vitest"],

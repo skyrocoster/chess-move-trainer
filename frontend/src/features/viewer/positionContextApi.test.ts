@@ -20,6 +20,8 @@ function context(fen: string, overrides: Record<string, unknown> = {}) {
     overall_exists: true,
     white_count: 2,
     black_count: 1,
+    white_total: 3,
+    black_total: 2,
     ...overrides,
   };
 }
@@ -73,6 +75,8 @@ describe("fetchPositionContext", () => {
     { ...context(FEN), extra: true },
     { ...context(FEN), white_count: -1 },
     { ...context(FEN), black_count: 1.5 },
+    { ...context(FEN), white_total: -1 },
+    { ...context(FEN), black_total: 1.5 },
     { ...context(FEN), overall_exists: 1 },
     { ...context(FEN), fen: "not a FEN" },
   ])("rejects malformed or extra response data", async (body) => {

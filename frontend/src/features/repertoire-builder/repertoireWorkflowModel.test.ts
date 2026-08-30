@@ -19,6 +19,8 @@ function context(overrides: Partial<PositionContextResponse> = {}): PositionCont
     overall_exists: true,
     white_count: 2,
     black_count: 0,
+    white_total: 3,
+    black_total: 2,
     ...overrides,
   };
 }
@@ -90,6 +92,7 @@ describe("repertoire position model", () => {
       fen: FEN,
       state: "assigned" as const,
       move: { uci: "e2e4", san: "e4" },
+      effective_at: "2026-01-01T00:00:00.000000Z",
     };
 
     expect(

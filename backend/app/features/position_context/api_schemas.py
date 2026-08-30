@@ -27,3 +27,5 @@ class PositionContextResponse(BaseModel):
     overall_exists: StrictBool
     white_count: StrictInt
     black_count: StrictInt
+    white_total: StrictInt
+    black_total: StrictInt

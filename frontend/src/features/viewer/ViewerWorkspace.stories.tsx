@@ -30,6 +30,8 @@ function storyPositionContextClient(
     overall_exists: true,
     white_count: 2,
     black_count: 1,
+    white_total: 10,
+    black_total: 10,
   }),
 ): PositionContextClient {
   return fn(async (fen) => ({
@@ -44,6 +46,8 @@ function viewerPositionContext(fen: string): Omit<PositionContextResponse, "fen"
     overall_exists: true,
     white_count: index + 2,
     black_count: index + 1,
+    white_total: 10,
+    black_total: 10,
   };
 }
 
@@ -51,8 +55,20 @@ const positionContextClient = storyPositionContextClient(viewerPositionContext);
 const blackGame: Game = { ...VIEWER_GAME, subject_color: "black" };
 const branchPositionContextClient = storyPositionContextClient((fen) =>
   fen === VIEWER_GAME.positions[0].fen
-    ? { overall_exists: true, white_count: 2, black_count: 1 }
-    : { overall_exists: true, white_count: 7, black_count: 6 },
+    ? {
+        overall_exists: true,
+        white_count: 2,
+        black_count: 1,
+        white_total: 10,
+        black_total: 10,
+      }
+    : {
+        overall_exists: true,
+        white_count: 7,
+        black_count: 6,
+        white_total: 10,
+        black_total: 10,
+      },
 );
 
 const meta = {
@@ -176,6 +192,8 @@ export const ZeroCounts: Story = {
       overall_exists: true,
       white_count: 0,
       black_count: 0,
+      white_total: 10,
+      black_total: 10,
     })),
   },
   render: (args) => frame(<ViewerWorkspace analysisClient={storyAnalysisClient()} {...args} />),
@@ -194,6 +212,8 @@ export const AbsentPosition: Story = {
       overall_exists: false,
       white_count: 4,
       black_count: 3,
+      white_total: 10,
+      black_total: 10,
     })),
   },
   render: (args) => frame(<ViewerWorkspace analysisClient={storyAnalysisClient()} {...args} />),

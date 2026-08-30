@@ -8,10 +8,13 @@ from pathlib import Path
 
 from backend.app.features.positions.repository import SUBJECT_PLAYER_UUID, database_path
 from scripts.opening_catalog.preferred_move import (
+    MOVE_TABLE,
     PreferredMoveError,
+    _latest_event,
     _set_preferred_move,
     _state_from_events,
 )
+from scripts.opening_catalog.preferred_move_contract import PreferredMoveState
 from scripts.opening_catalog.preferred_move_schema import (
     PREFERRED_MOVE_SCHEMA_TABLES,
     PREFERRED_MOVE_SCHEMA_TRIGGERS,
@@ -34,6 +37,12 @@ _BASE_TABLE_COLUMNS = {
 @dataclass(frozen=True)
 class PreferredPosition:
     key: PositionKey
+
+
+@dataclass(frozen=True)
+class PreferredMoveRead:
+    state: PreferredMoveState
+    effective_at: str | None
 
 
 def _database_uri(path: Path, mode: str) -> str:
@@ -153,9 +162,22 @@ class PreferredMoveRepository:
 
     def state_at(self, position: PreferredPosition, effective_at: str):
         try:
-            return _state_from_events(
+            state = _state_from_events(
                 self._connection, SUBJECT_PLAYER_UUID, position.key, effective_at
             )
+            move_event = _latest_event(
+                self._connection,
+                MOVE_TABLE,
+                SUBJECT_PLAYER_UUID,
+                position.key,
+                effective_at,
+            )
+            selected_effective_at = (
+                None
+                if move_event is None or move_event[7] is None
+                else str(move_event[9])
+            )
+            return PreferredMoveRead(state, selected_effective_at)
         except sqlite3.Error as error:
             raise PreferredMoveUnavailableError from error
 

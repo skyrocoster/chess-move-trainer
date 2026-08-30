@@ -30,6 +30,8 @@ export const CONTEXT = {
   overall_exists: true,
   white_count: 0,
   black_count: 0,
+  white_total: 10,
+  black_total: 10,
 };
 export const rawStyles = readFileSync(
   join(dirname(fileURLToPath(import.meta.url)), "RepertoireBuilderWorkspace.module.css"),
@@ -144,6 +146,7 @@ export function preferredMoveResponse(
     fen,
     state,
     move: state === "assigned" ? { uci: "e2e4", san: "e4" } : null,
+    effective_at: state === "assigned" ? "2026-01-01T00:00:00.000000Z" : null,
   };
 }
 

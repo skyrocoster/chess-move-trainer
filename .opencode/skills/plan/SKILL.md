@@ -23,9 +23,11 @@ Expected areas describe ownership; they are not exact executor authorization. Do
 transient execution logs, speculative work, or legacy records. Preserve truthful completed progress when refining
 an existing Plan. If outcome, scope, dependency, proof, or acceptance is unresolved, do not guess.
 
-Do not prescribe the same command for implementation, Quality, and closeout. State that passing proof is retained
-until an affecting change; Quality audits and fills evidence gaps; closeout uses `scripts/check.py` selectors only
-for required steps not already covered by valid proof.
+Prescribe only finite behavioral tests or browser scenarios that directly prove this Plan's outcome. Do not include
+lint, formatting, broad type/build, source-size, aggregate, or other repository-hygiene checks unless the outcome
+specifically changes that tool or constraint. Temporary maintenance violations do not block implementation or Plan
+acceptance. State that passing behavioral proof is retained until an affecting change. Independent validation and
+complete test/fix runs are separate workflows when requested.
 
 Run the coordinator-supplied documentation check when present, with an explicit finite `bash` tool timeout in
 milliseconds (missing, zero, or non-finite timeouts are forbidden because commands can hang); otherwise inspect

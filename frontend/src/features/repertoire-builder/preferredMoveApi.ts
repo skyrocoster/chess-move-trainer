@@ -17,6 +17,7 @@ export type PreferredMoveResponse = {
   fen: Fen;
   state: PreferredMoveState;
   move: PreferredMoveValue | null;
+  effective_at: string | null;
 };
 
 export type PreferredMoveMutationResponse = {
@@ -140,16 +141,20 @@ function isPreferredMoveResponse(
 ): value is PreferredMoveResponse {
   if (
     !isRecord(value) ||
-    !hasExactKeys(value, ["fen", "state", "move"]) ||
+    !hasExactKeys(value, ["fen", "state", "move", "effective_at"]) ||
     !samePositionFen(value.fen, requestedFen)
   ) {
     return false;
   }
 
   if (value.state === "unassigned") {
-    return value.move === null;
+    return value.move === null && value.effective_at === null;
   }
-  return value.state === "assigned" && isPreferredMoveValue(value.move, requestedFen);
+  return (
+    value.state === "assigned" &&
+    isPreferredMoveValue(value.move, requestedFen) &&
+    typeof value.effective_at === "string"
+  );
 }
 
 function isPreferredMoveMutationResponse(

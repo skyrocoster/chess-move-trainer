@@ -78,7 +78,12 @@ def test_lifecycle_returns_explicit_unassigned_state_and_preserves_append_only_h
 ) -> None:
     client, database = api_context
 
-    assert _get(client).json() == {"fen": START_FEN, "state": "unassigned", "move": None}
+    assert _get(client).json() == {
+        "fen": START_FEN,
+        "state": "unassigned",
+        "move": None,
+        "effective_at": None,
+    }
 
     assigned = _put(client)
     replaced = _put(client, move_uci="d2d4")
@@ -100,11 +105,13 @@ def test_lifecycle_returns_explicit_unassigned_state_and_preserves_append_only_h
         "fen": START_FEN,
         "state": "assigned",
         "move": {"uci": "d2d4", "san": "d4"},
+        "effective_at": "2026-01-01T00:00:00.000000Z",
     }
     assert _get(client, as_of="2026-01-03T00:00:00Z").json() == {
         "fen": START_FEN,
         "state": "unassigned",
         "move": None,
+        "effective_at": None,
     }
 
     with sqlite3.connect(database) as db:
@@ -153,6 +160,7 @@ def test_full_fen_counters_share_one_four_field_identity(api_context) -> None:
         "fen": COUNTER_FEN,
         "state": "assigned",
         "move": {"uci": "e2e4", "san": "e4"},
+        "effective_at": "2026-01-01T00:00:00.000000Z",
     }
     with sqlite3.connect(database) as db:
         assert db.execute(f"SELECT COUNT(*) FROM {MOVE_TABLE}").fetchone() == (1,)
@@ -171,10 +179,19 @@ def test_as_of_reads_backdated_and_same_effective_event_ordering(api_context) ->
         "uci": "d2d4",
         "san": "d4",
     }
+    assert _get(client, as_of="2026-01-06T00:00:00Z").json()["effective_at"] == (
+        "2026-01-05T00:00:00.000000Z"
+    )
     assert _get(client, as_of="2026-01-11T00:00:00Z").json()["move"] == {
         "uci": "e2e4",
         "san": "e4",
     }
+    assert _get(client, as_of="2026-01-11T00:00:00Z").json()["effective_at"] == (
+        "2026-01-10T00:00:00.000000Z"
+    )
+    assert _get(client, as_of=FUTURE).json()["effective_at"] == (
+        "2026-01-10T00:00:00.000000Z"
+    )
     assert _get(client, as_of=FUTURE).json()["move"] == {"uci": "e2e4", "san": "e4"}
 
 

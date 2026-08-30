@@ -15,7 +15,16 @@ function jsonResponse(body: unknown, status = 200): Response {
 }
 
 function assigned(fen = FEN) {
-  return { fen, state: "assigned", move: { uci: "e2e4", san: "e4" } };
+  return {
+    fen,
+    state: "assigned",
+    move: { uci: "e2e4", san: "e4" },
+    effective_at: "2026-01-01T00:00:00.000000Z",
+  };
+}
+
+function unassigned(fen = FEN) {
+  return { fen, state: "unassigned", move: null, effective_at: null };
 }
 
 function mutation(fen = FEN) {
@@ -52,20 +61,21 @@ describe("fetchPreferredMove", () => {
   });
 
   it("accepts the explicit unassigned response", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValue(jsonResponse({ fen: FEN, state: "unassigned", move: null })),
-    );
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(unassigned())));
 
     await expect(fetchPreferredMove(FEN)).resolves.toEqual({
       status: "success",
-      data: { fen: FEN, state: "unassigned", move: null },
+      data: unassigned(),
     });
   });
 
   it.each([
     { ...assigned(), extra: true },
     { ...assigned(), state: "unassigned" },
+    { ...assigned(), effective_at: null },
+    { ...assigned(), effective_at: 123 },
+    { fen: FEN, state: "assigned", move: { uci: "e2e4", san: "e4" } },
+    { ...unassigned(), effective_at: "2026-01-01T00:00:00.000000Z" },
     { ...assigned(), move: { uci: "e2e5", san: "e5" } },
     { ...assigned(), move: { uci: "e2e4", san: "" } },
     { fen: "not a FEN", state: "assigned", move: { uci: "e2e4", san: "e4" } },

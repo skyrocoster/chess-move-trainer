@@ -24,6 +24,8 @@ def test_valid_context_returns_overall_and_distinct_game_color_counts(
         "overall_exists": True,
         "white_count": 2,
         "black_count": 1,
+        "white_total": 3,
+        "black_total": 2,
     }
 
 
@@ -50,6 +52,8 @@ def test_full_fen_counters_do_not_change_the_four_field_identity(
         "overall_exists": True,
         "white_count": 2,
         "black_count": 1,
+        "white_total": 3,
+        "black_total": 2,
     }
 
 
@@ -67,6 +71,8 @@ def test_zero_personal_color_count_is_distinct_from_absent_overall_position(
         "overall_exists": True,
         "white_count": 2,
         "black_count": 0,
+        "white_total": 3,
+        "black_total": 2,
     }
     assert absent_response.status_code == 200
     assert absent_response.json() == {
@@ -74,6 +80,8 @@ def test_zero_personal_color_count_is_distinct_from_absent_overall_position(
         "overall_exists": False,
         "white_count": 0,
         "black_count": 0,
+        "white_total": 3,
+        "black_total": 2,
     }
 
 

@@ -14,7 +14,13 @@ const FEN: Fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 const NEXT_FEN: Fen = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1";
 
 function response(fen: Fen): PreferredMoveResponse {
-  return { fen, state: "assigned", move: { uci: "e2e4", san: "e4" } };
+  return {
+    fen,
+    state: "assigned",
+    move: { uci: "e2e4", san: "e4" },
+    effective_at:
+      fen === FEN ? "2026-01-01T00:00:00.000000Z" : "2026-01-02T00:00:00.000000Z",
+  };
 }
 
 function success(fen: Fen): PreferredMoveResult {
@@ -28,6 +34,7 @@ function Probe({ fen, client }: { fen: Fen | null; client: PreferredMoveReader }
     { "data-testid": "state" },
     JSON.stringify({
       fen: state.preferredMove?.fen ?? null,
+      effective_at: state.preferredMove?.effective_at ?? null,
       loading: state.loading,
       error: state.error,
     }),
@@ -43,7 +50,7 @@ describe("usePreferredMoveState", () => {
 
     await waitFor(() =>
       expect(screen.getByTestId("state")).toHaveTextContent(
-        JSON.stringify({ fen: null, loading: false, error: null }),
+        JSON.stringify({ fen: null, effective_at: null, loading: false, error: null }),
       ),
     );
     expect(client).not.toHaveBeenCalled();
@@ -99,16 +106,44 @@ describe("usePreferredMoveState", () => {
 
     await waitFor(() =>
       expect(screen.getByTestId("state")).toHaveTextContent(
-        JSON.stringify({ fen: null, loading: false, error: "position_not_found" }),
+        JSON.stringify({ fen: null, effective_at: null, loading: false, error: "position_not_found" }),
       ),
     );
 
     view.rerender(createElement(Probe, { fen: null, client }));
     await waitFor(() =>
       expect(screen.getByTestId("state")).toHaveTextContent(
-        JSON.stringify({ fen: null, loading: false, error: null }),
+        JSON.stringify({ fen: null, effective_at: null, loading: false, error: null }),
       ),
     );
     expect(client).toHaveBeenCalledTimes(1);
+  });
+
+  it("retains the effective date through an initial read and position reload", async () => {
+    const client = vi.fn<PreferredMoveReader>(async (fen) => success(fen));
+    const view = render(createElement(Probe, { fen: FEN, client }));
+
+    await waitFor(() =>
+      expect(screen.getByTestId("state")).toHaveTextContent(
+        JSON.stringify({
+          fen: FEN,
+          effective_at: "2026-01-01T00:00:00.000000Z",
+          loading: false,
+          error: null,
+        }),
+      ),
+    );
+
+    view.rerender(createElement(Probe, { fen: NEXT_FEN, client }));
+    await waitFor(() =>
+      expect(screen.getByTestId("state")).toHaveTextContent(
+        JSON.stringify({
+          fen: NEXT_FEN,
+          effective_at: "2026-01-02T00:00:00.000000Z",
+          loading: false,
+          error: null,
+        }),
+      ),
+    );
   });
 });

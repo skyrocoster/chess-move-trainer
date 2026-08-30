@@ -1,6 +1,6 @@
 ---
 name: coordinator-workflow
-description: Use for every repository-dependent request; routes decisions, assessment, Plans, execution, Exploration, and Quality.
+description: Use for every repository-dependent request; routes decisions, assessment, Plans, execution, Exploration, and optional validation.
 ---
 
 # Coordinator workflow
@@ -58,26 +58,27 @@ environment change could affect what it established. Before requesting any check
 reuse unaffected proof, rerun only invalidated proof, and add only genuinely missing coverage. A broader command
 must not be used merely to rerun already-covered tests.
 
-## 4. Validate and record
+## 4. Accept and record
 
-Use a fresh `quality` validation for observable product behavior, UI/browser work, data or schema changes,
-cross-layer/shared contracts, destructive effects, or whenever the Plan or proof requires independence. Focused
-case-worker proof may close low-risk documentation or workflow-only changes.
+Accept implementation when finite behavioral tests or browser scenarios establish the Plan or direct-change outcome
+and all required human or visual breakpoints pass. Do not use lint, formatting, broad type/build, source-size,
+aggregate, or other repository-hygiene checks as implementation proof unless the outcome specifically changes that
+tool or constraint. Temporary maintenance violations do not block Plan acceptance; do not append a Quality phase or
+complete repository-suite closeout.
 
-Launch Quality with `PHASE: VALIDATE`, the observable outcome, exact approved paths, baseline and diff facts,
-exclusions, acceptance, the proof ledger, changes since each proof item, and only the exact missing or invalidated
-checks. Include a bounded browser scenario only when live evidence is missing or invalidated. Quality's
-independence comes from auditing evidence applicability and acceptance, not from repeating unchanged commands.
+When the user separately requests independent validation, launch Quality with `PHASE: VALIDATE`, the observable
+outcome, exact approved paths, baseline and diff facts, exclusions, acceptance, the proof ledger, changes since
+each proof item, and only the exact missing or invalidated checks. This optional validation is not a Plan stage or
+an implementation closeout requirement.
 
 If validation fails, authorize at most one `PHASE: FIX` with the exact failed check, paths, intended semantics,
 and deterministic repair. Record the repair as invalidating only proof it could affect. Then run final validation
 in a fresh Quality session with unaffected proof retained and only invalidated checks requested. Stop after a
 failed repair or a second failed validation.
 
-After proof and any required human or visual breakpoint pass, update only the active Plan's progress, decisions,
-and concise proof. For closeout, map required `scripts/check.py` steps to the valid ledger, run only uncovered or
-invalidated steps using selectors such as `--only`, and do not invoke the unfiltered aggregate suite when that
-would repeat valid checks. When every stage is accepted, set the Plan to done, remove any transient `handoff.md`,
-and move its feature directory from `docs/plans/active/` to `docs/plans/done/`.
+After behavioral proof and any required human or visual breakpoint pass, update only the active Plan's progress,
+decisions, and concise proof. When every stage is accepted, set the Plan to done, remove any transient
+`handoff.md`, and move its feature directory from `docs/plans/active/` to `docs/plans/done/`. Complete test/fix
+runs belong to a separate maintenance workflow and do not block Plan completion.
 
 Never create legacy lifecycle artifacts, commit, push, rewrite completed records, or disturb unrelated changes.

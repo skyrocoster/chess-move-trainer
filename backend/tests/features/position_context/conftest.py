@@ -46,11 +46,27 @@ def create_context_database(path: Path, *, schema_version: int = 1) -> None:
                 color_scope TEXT NOT NULL,
                 distinct_game_count INTEGER NOT NULL
             );
+            CREATE TABLE opening_recurrence_game (
+                manifest_hash TEXT NOT NULL,
+                corpus_id INTEGER NOT NULL,
+                game_uuid TEXT NOT NULL,
+                game_color TEXT NOT NULL
+            );
             """
         )
         db.execute("INSERT INTO corpus VALUES (1, ?)", (SUBJECT_UUID,))
         db.execute("INSERT INTO opening_recurrence_schema VALUES (1, ?)", (schema_version,))
         db.execute("INSERT INTO opening_recurrence_state VALUES ('accepted-manifest', 1, 1)")
+        db.executemany(
+            "INSERT INTO opening_recurrence_game VALUES (?, ?, ?, ?)",
+            (
+                ("accepted-manifest", 1, "white-game-1", "white"),
+                ("accepted-manifest", 1, "white-game-2", "white"),
+                ("accepted-manifest", 1, "white-game-3", "white"),
+                ("accepted-manifest", 1, "black-game-1", "black"),
+                ("accepted-manifest", 1, "black-game-2", "black"),
+            ),
+        )
         db.executemany(
             "INSERT INTO opening_recurrence_position_projection VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
             (

@@ -1,0 +1,133 @@
+.panel {
+  box-sizing: border-box;
+  display: grid;
+  inline-size: 100%;
+  min-inline-size: 0;
+  gap: var(--cmt-spacing-12);
+  padding: var(--cmt-spacing-16);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--cmt-radius-default);
+  background: var(--md-sys-color-surface-container);
+  color: var(--md-sys-color-on-surface);
+}
+
+.header,
+.summary {
+  display: flex;
+  min-inline-size: 0;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--cmt-spacing-8) var(--cmt-spacing-12);
+}
+
+.heading,
+.detail,
+.message {
+  margin: 0;
+}
+
+.heading {
+  color: var(--md-sys-color-on-surface);
+  font: var(--md-sys-typescale-title-medium);
+  overflow-wrap: anywhere;
+}
+
+.color,
+.detail,
+.message {
+  color: var(--md-sys-color-on-surface-variant);
+  font: var(--md-sys-typescale-body-medium);
+}
+
+.content {
+  display: grid;
+  min-inline-size: 0;
+  gap: var(--cmt-spacing-8);
+}
+
+.fraction,
+.percentage {
+  color: var(--md-sys-color-on-surface);
+  font: var(--md-sys-typescale-label-large);
+  font-variant-numeric: tabular-nums;
+}
+
+.percentage {
+  color: var(--md-sys-color-primary);
+}
+
+.meter {
+  display: grid;
+  min-inline-size: 0;
+  gap: var(--cmt-spacing-4);
+}
+
+.track {
+  box-sizing: border-box;
+  display: block;
+  inline-size: 100%;
+  block-size: 12px;
+  min-inline-size: 0;
+  overflow: hidden;
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--cmt-radius-default);
+  background: var(--md-sys-color-surface-container-high);
+}
+
+.indicator {
+  display: block;
+  block-size: 100%;
+  min-inline-size: 0;
+  background: var(--md-sys-color-primary);
+  transition:
+    inline-size 180ms ease,
+    background-color 180ms ease;
+}
+
+.message {
+  overflow-wrap: anywhere;
+}
+
+.visuallyHidden {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  clip-path: inset(50%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .indicator {
+    transition: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .panel {
+    border-color: CanvasText;
+    background: Canvas;
+    color: CanvasText;
+  }
+
+  .heading,
+  .color,
+  .detail,
+  .message,
+  .fraction,
+  .percentage {
+    color: CanvasText;
+  }
+
+  .track {
+    border-color: CanvasText;
+    background: Canvas;
+  }
+
+  .indicator {
+    background: Highlight;
+  }
+}

@@ -25,7 +25,10 @@ export type StoryPreferredMoveOptions = {
 };
 
 export type StoryPositionContextOptions = Partial<
-  Pick<PositionContextResponse, "overall_exists" | "white_count" | "black_count">
+  Pick<
+    PositionContextResponse,
+    "overall_exists" | "white_count" | "black_count" | "white_total" | "black_total"
+  >
 > & {
   failure?: PositionContextFailureCode;
 };
@@ -69,6 +72,7 @@ export function storyPreferredMoveClient(
           fen,
           state: assigned ? ("assigned" as const) : ("unassigned" as const),
           move: assigned ? move : null,
+          effective_at: assigned ? "2026-01-01T00:00:00.000000Z" : null,
         },
       };
     }),
@@ -105,6 +109,8 @@ export function storyPositionContextClient(
         overall_exists: options.overall_exists ?? true,
         white_count: options.white_count ?? 3,
         black_count: options.black_count ?? 2,
+        white_total: options.white_total ?? 10,
+        black_total: options.black_total ?? 10,
       },
     };
   });

@@ -46,6 +46,7 @@ class PreferredMoveResponse(BaseModel):
     fen: StrictStr
     state: PreferredMoveState
     move: PreferredMoveValue | None
+    effective_at: StrictStr | None
 
 
 class PreferredMoveMutationResponse(BaseModel):

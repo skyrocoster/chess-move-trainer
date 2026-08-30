@@ -36,8 +36,7 @@ missing or invalidated proof.
 - **Stage 1:** pending - proof: <short proof>; breakpoint: <decision or none>
 
 ## Proof
-- <focused behavior, syntax, accessibility, or browser checks>
-- <remaining closeout steps selected with `scripts/check.py --only`; do not repeat valid proof>
+- <finite tests or browser scenarios that directly demonstrate the intended behavior>
 
 ## Escalation boundaries
 - <new product, visual, API, data, dependency, destructive, ownership, or acceptance decision>
@@ -53,7 +52,9 @@ missing or invalidated proof.
   breakpoint decisions.
 - Link upstream evidence and restate only implementation-critical facts.
 - Human pauses are for genuine product or visual decisions. User edits at a visual breakpoint are authoritative.
-- Do not prescribe duplicate implementation, Quality, and closeout runs. Quality independently audits retained
-  evidence and runs only gaps or checks invalidated by later changes.
+- Prescribe only finite behavioral tests or browser scenarios that directly prove this Plan's outcome. Exclude lint,
+  formatting, broad type/build, source-size, aggregate, and repository-hygiene checks unless the outcome specifically
+  changes that tool or constraint. Temporary maintenance violations do not block acceptance; complete test/fix runs
+  are separate workflows.
 - Use a transient `handoff.md` only while rolling context; overwrite it on rollover and delete it at closeout.
 - A Plan never records transient executor evidence or a parallel execution graph.

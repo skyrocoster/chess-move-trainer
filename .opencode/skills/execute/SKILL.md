@@ -14,9 +14,11 @@ ordered actions, proof commands, acceptance, exclusions, support skills if any, 
    source-text failure.
 3. Make the smallest approved change. Do not refactor, polish, or repair adjacent behavior.
 4. Reuse supplied passing proof unless an edit in this execution affects its command, inputs, exercised behavior,
-   configuration, dependencies, or environment. Run only missing or invalidated focused proof via the `bash` tool
-   with an explicit finite timeout in milliseconds (missing, zero, or non-finite timeouts are forbidden because
-   commands can hang). Use full-suite or browser proof only when it adds uncovered evidence.
+   configuration, dependencies, or environment. Run only missing or invalidated behavioral tests or browser
+   scenarios via the `bash` tool with an explicit finite timeout in milliseconds (missing, zero, or non-finite
+   timeouts are forbidden because commands can hang). Do not run lint, formatting, broad type/build, source-size,
+   aggregate, or repository-hygiene checks unless the approved outcome specifically changes that tool or constraint.
+   Temporary maintenance violations do not block execution acceptance.
 5. Perform one final changed-path and semantic scope audit against the packet. Do not repeatedly run `git status`
    or `git diff`. On a failed check, make at most one deterministic, in-scope repair and rerun that check once;
    never weaken proof.

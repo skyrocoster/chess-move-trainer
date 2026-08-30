@@ -17,6 +17,8 @@ function context(overrides: Partial<PositionContextResponse> = {}): PositionCont
     overall_exists: true,
     white_count: 2,
     black_count: 1,
+    white_total: 3,
+    black_total: 2,
     ...overrides,
   };
 }

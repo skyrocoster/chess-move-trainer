@@ -37,7 +37,7 @@ Work in this loop:
 1. Record the complete check inventory and maintain a concise ledger of passing, failing, warning, and invalidated
    proof. Inspect both standard output and standard error from tests, compilers, bundlers, linters, validators, and
    build tools even when a command exits successfully.
-2. Run the full suite until its first failure, build error, validation error, or warning. Treat every warning as a
+2. Run the full suite until its first failure, build error, validation error, coverage gap, or warning. Treat every warning or coverage gap as a
    failure, including warnings documented as non-fatal. Diagnose only that first issue. You may ask `scout` one
    bounded, read-only repository question when it will materially reduce investigation; no other subagent is
    available.

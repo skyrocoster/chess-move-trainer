@@ -32,6 +32,8 @@ def get_position_context(fen: str) -> PositionContextResponse:
             overall_exists=context.overall_exists,
             white_count=context.white_count,
             black_count=context.black_count,
+            white_total=context.white_total,
+            black_total=context.black_total,
         )
     finally:
         connection.close()

@@ -11,6 +11,8 @@ export type PositionContextResponse = {
   overall_exists: boolean;
   white_count: number;
   black_count: number;
+  white_total: number;
+  black_total: number;
 };
 
 export type PositionContextFailureCode =
@@ -61,11 +63,20 @@ function isPositionContextResponse(
 ): value is PositionContextResponse {
   return (
     isRecord(value) &&
-    hasExactKeys(value, ["fen", "overall_exists", "white_count", "black_count"]) &&
+    hasExactKeys(value, [
+      "fen",
+      "overall_exists",
+      "white_count",
+      "black_count",
+      "white_total",
+      "black_total",
+    ]) &&
     samePositionFen(value.fen, requestedFen) &&
     typeof value.overall_exists === "boolean" &&
     isNonnegativeInteger(value.white_count) &&
-    isNonnegativeInteger(value.black_count)
+    isNonnegativeInteger(value.black_count) &&
+    isNonnegativeInteger(value.white_total) &&
+    isNonnegativeInteger(value.black_total)
   );
 }
 
