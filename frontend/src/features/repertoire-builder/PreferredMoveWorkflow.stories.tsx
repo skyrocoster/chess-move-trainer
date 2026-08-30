@@ -8,7 +8,10 @@ import {
 } from "../viewer/viewerStoryHelpers";
 import { VIEWER_GAME_UUID } from "../viewer/viewerFixtures";
 import RepertoireBuilderWorkspace from "./RepertoireBuilderWorkspace";
-import { expectActiveSessionHistoryEntry, expectSessionHistory } from "./repertoireBuilderStoryAssertions";
+import {
+  expectActiveSessionHistoryEntry,
+  expectSessionHistory,
+} from "./repertoireBuilderStoryAssertions";
 import { BLACK_SUBJECT_GAME, workspace } from "./repertoireBuilderStoryRender";
 import { loadGame } from "./repertoireBuilderStoryHelpers";
 

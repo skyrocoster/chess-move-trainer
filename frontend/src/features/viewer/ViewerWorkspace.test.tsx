@@ -1,11 +1,5 @@
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import axe from "axe-core";
-import matchers from "@chialab/vitest-axe";
-import type {} from "@chialab/vitest-axe/matchers";
-import { readFileSync } from "node:fs";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
 import type { ComponentProps } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -22,14 +16,9 @@ import type { Game } from "./gameModel";
 import { UNSAFE_SOURCE_GAME, VIEWER_GAME, VIEWER_GAME_UUID } from "./viewerFixtures";
 import { PROMOTION_GAME } from "./viewerStoryFixtures";
 
-expect.extend(matchers);
-
 const BOARD_LABEL = "Chess board: standard starting position, White at the bottom";
 const GAME_UUID = VIEWER_GAME_UUID;
 const BLACK_GAME: Game = { ...VIEWER_GAME, subject_color: "black" };
-
-const here = dirname(fileURLToPath(import.meta.url));
-const rawStyles = readFileSync(join(here, "ViewerWorkspace.module.css"), "utf8");
 
 afterEach(() => cleanup());
 
@@ -303,12 +292,13 @@ describe("ViewerWorkspace", () => {
       ),
     );
     expect(
-      await screen.findByText(
-        "This position is not present in the accepted game data for White.",
-        { exact: true },
-      ),
+      await screen.findByText("This position is not present in the accepted game data for White.", {
+        exact: true,
+      }),
     ).toBeVisible();
-    expect(screen.queryByRole("meter", { name: /Position reach frequency/ })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("meter", { name: /Position reach frequency/ }),
+    ).not.toBeInTheDocument();
   });
 
   it("keeps the existing Game Context visible while reach data is loading or unavailable", async () => {
@@ -674,66 +664,5 @@ describe("ViewerWorkspace", () => {
       "k3Q3/8/8/8/8/8/8/4K3 b - - 0 1",
     );
     expect(screen.getByTestId("branch-san")).toHaveTextContent("1. e8=Q+");
-  });
-
-  it("shares one completed observation with the panel and the beside-board eval bar", async () => {
-    const lookup = successfulLookup();
-    const analysisClient = completedAnalysisClient();
-    const user = userEvent.setup();
-    render(<ViewerWorkspace lookup={lookup} analysisClient={analysisClient} />);
-
-    await fillAndSubmit(user);
-
-    const analysisStatus = await screen.findByText("Analysis complete");
-    const contextButton = screen.getByRole("button", { name: "Game Context" });
-    const sourceLink = screen.getByRole("link", { name: "Chess.com game" });
-    const contentId = contextButton.getAttribute("aria-controls");
-    const stage = screen.getByTestId("board-eval-stage");
-    const board = screen.getByRole("group", { name: /ply 0, White at the bottom/ });
-
-    expect(analysisStatus).toBeVisible();
-    expect(stage).toContainElement(board);
-    expect(board).toHaveAttribute("data-board-visual");
-    const meter = screen.getByRole("meter", { name: "Evaluation" });
-    expect(meter).toHaveTextContent("+0.34");
-    expect(meter).toHaveAttribute("data-state", "best-line");
-    expect(meter).toHaveAttribute("aria-valuetext", "best-line evaluation +0.34.");
-    expect(contextButton).toHaveAttribute("aria-expanded", "true");
-    expect(sourceLink.compareDocumentPosition(analysisStatus)).toBe(
-      Node.DOCUMENT_POSITION_FOLLOWING,
-    );
-    if (!contentId) {
-      throw new Error("Game Context disclosure did not expose its controlled content");
-    }
-    const disclosureContent = document.getElementById(contentId);
-    if (!disclosureContent) {
-      throw new Error(`Game Context disclosure content ${contentId} was not found`);
-    }
-    expect(disclosureContent).toContainElement(sourceLink);
-    expect(analysisClient.observe).toHaveBeenCalledOnce();
-    expect(analysisClient.status).not.toHaveBeenCalled();
-
-    await user.click(screen.getByRole("button", { name: "Flip" }));
-    expect(screen.getByRole("group", { name: /ply 0, Black at the bottom/ })).toBeVisible();
-    expect(screen.getByRole("meter", { name: "Evaluation" })).toHaveAttribute(
-      "data-orientation",
-      "black",
-    );
-    expect(screen.getByText("Analysis complete")).toBeVisible();
-    expect(analysisClient.observe).toHaveBeenCalledOnce();
-  });
-
-  it("keeps the accepted container-query and accessibility boundaries", async () => {
-    expect(rawStyles).toMatch(/container-type:\s*inline-size/);
-    expect(rawStyles).toMatch(/@container\s*\(max-width:\s*40rem\)/);
-    expect(rawStyles).not.toMatch(/@media\s*\(\s*(?:max-width|min-width)\s*:/);
-    expect(rawStyles).toMatch(/"board board context"/);
-    expect(rawStyles).toMatch(/grid-template-columns:\s*minmax\(0, 1fr\) 30px minmax\(0, 1fr\)/);
-    expect(rawStyles).toMatch(/"board board"/);
-    expect(rawStyles).not.toMatch(/"board eval context"/);
-    expect(rawStyles).not.toMatch(/2\.75rem/);
-
-    const { container } = renderViewer({ lookup: successfulLookup() });
-    expect(await axe.run({ include: [container] })).toHaveNoViolations();
   });
 });

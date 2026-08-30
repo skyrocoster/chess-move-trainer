@@ -8,13 +8,13 @@ Material Design-based component library used across the frontend.
 
 ## Components
 
-| Component      | Purpose                                                                                              |
-| -------------- | ---------------------------------------------------------------------------------------------------- |
-| `Button`       | Styled button with variants                                                                          |
-| `CalendarDate` | Controlled UTC date picker (Base UI Popover + react-day-picker); null allowed, future dates disabled |
-| `Disclosure`   | Expandable/collapsible content section                                                               |
-| `feedback/`    | Feedback display components: `Inline`, `Panel`, `Page`, `Core`                                       |
-| `line-library/`  | Tree-based opening line picker: `LineLibrary`, `LineLibraryFilters`, `LineLibraryTree`               |
+| Component       | Purpose                                                                                              |
+| --------------- | ---------------------------------------------------------------------------------------------------- |
+| `Button`        | Styled button with variants                                                                          |
+| `CalendarDate`  | Controlled UTC date picker (Base UI Popover + react-day-picker); null allowed, future dates disabled |
+| `Disclosure`    | Expandable/collapsible content section                                                               |
+| `feedback/`     | Feedback display components: `Inline`, `Panel`, `Page`, `Core`                                       |
+| `line-library/` | Tree-based opening line picker: `LineLibrary`, `LineLibraryFilters`, `LineLibraryTree`               |
 
 ## Storybook support components
 

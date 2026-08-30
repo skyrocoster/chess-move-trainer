@@ -615,7 +615,7 @@ test.describe("MP-11 Stage 3 temporary branch mechanics", () => {
     await expect(page.getByTestId("branch-san")).toContainText("1. e4");
     await expect(page.getByText("Ply 0 of 3", { exact: true })).toBeVisible();
     await expect(
-      page.getByText("Initial position", { exact: true }),
+      page.getByRole("definition").getByText("Initial position", { exact: true }),
     ).toBeVisible();
     await expect(page.getByRole("button", { name: "Previous" })).toBeDisabled();
     await expect(page.getByRole("button", { name: "Next" })).toBeDisabled();
@@ -642,7 +642,7 @@ test.describe("MP-11 Stage 3 temporary branch mechanics", () => {
       page.locator('[data-square="e5"]'),
     );
     await expect(page.getByTestId("branch-san")).toContainText("1... e5");
-    await expect(page.getByText("e4", { exact: true })).toBeVisible();
+    await expect(page.getByRole("definition").getByText("e4", { exact: true })).toBeVisible();
     await expect(page.getByRole("button", { name: "Previous" })).toBeDisabled();
     await expect(page.getByRole("button", { name: "Next" })).toBeDisabled();
 
@@ -673,7 +673,7 @@ test.describe("MP-11 Stage 3 temporary branch mechanics", () => {
     await expect(page.getByTestId("branch-san")).toContainText("1. e8=N");
     await expect(piece(page, "e7")).toHaveCount(0);
     await expect(
-      page.getByText("Initial position", { exact: true }),
+      page.getByRole("definition").getByText("Initial position", { exact: true }),
     ).toBeVisible();
   });
 

@@ -22,16 +22,16 @@ move tree or separate chess Undo/Reset UI.
 
 ## Component
 
-| Component                    | Responsibility                                                                                              |
-| ---------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `RepertoireBuilderWorkspace` | Page/state/workflow orchestration — loader, board, callbacks, board notice                                  |
+| Component                    | Responsibility                                                                                                                                                             |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `RepertoireBuilderWorkspace` | Page/state/workflow orchestration — loader, board, callbacks, board notice                                                                                                 |
 | `RepertoireSessionPanel`     | Right-side session composition — shared controlled Move History for the combined stored prefix and local SAN line, single live session status, nested `PreferredMovePanel` |
-| `positionPickerSession`      | In-memory session model — standard/stored origins, history, move staging                                    |
-| `PreferredMovePanel`         | Nested preferred-move UI — private behavior/presentation; context/saveability, date, add/save/play/remove   |
-| `preferredMoveApi`           | Typed `/api/preferred-move` client — GET/PUT/DELETE, failure codes                                          |
-| `preferredMoveState`         | `usePreferredMoveState` read hook — preferred move, loading, error                                          |
-| `preferredMoveWorkflowState` | `usePreferredMoveWorkflow` hook — draft, date, mutations, play, reset                                       |
-| `repertoireWorkflowModel`    | Pure position model — saveability, saved move, draft state                                                  |
+| `positionPickerSession`      | In-memory session model — standard/stored origins, history, move staging                                                                                                   |
+| `PreferredMovePanel`         | Nested preferred-move UI — private behavior/presentation; context/saveability, date, add/save/play/remove                                                                  |
+| `preferredMoveApi`           | Typed `/api/preferred-move` client — GET/PUT/DELETE, failure codes                                                                                                         |
+| `preferredMoveState`         | `usePreferredMoveState` read hook — preferred move, loading, error                                                                                                         |
+| `preferredMoveWorkflowState` | `usePreferredMoveWorkflow` hook — draft, date, mutations, play, reset                                                                                                      |
+| `repertoireWorkflowModel`    | Pure position model — saveability, saved move, draft state                                                                                                                 |
 
 ## API contract
 

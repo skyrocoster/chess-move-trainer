@@ -1,7 +1,7 @@
 import { Chess } from "chess.js";
 import { useCallback, useMemo, useRef, useState } from "react";
 
-import { BoardAdapter, STARTING_FEN, type BoardOrientation } from "../board-adapter/BoardAdapter";
+import { BoardAdapter } from "../board-adapter/BoardAdapter";
 import {
   InteractiveBoardAdapter,
   type InteractiveBoardMoveIntent,
@@ -25,61 +25,20 @@ import {
   type PromotionColor,
   usePromotionController,
 } from "../board-adapter/PromotionPicker";
-import type { BranchMove, BranchSnapshot } from "../board-adapter/branchModel";
+import type { BranchSnapshot } from "../board-adapter/branchModel";
 import type { Game } from "./gameModel";
 import { fetchGame, type GameLookup } from "./positionApi";
 import styles from "./ViewerWorkspace.module.css";
 import { strictFen } from "./chessPrimitives";
-
-const BOARD_LABEL = "Chess board: standard starting position, White at the bottom";
-
-const START_BOARD = {
-  fen: STARTING_FEN,
-  orientation: "white" as BoardOrientation,
-  label: BOARD_LABEL,
-};
-
-const DEFAULT_BRANCH_NOTICE = "Make a legal move to start a temporary branch.";
-
-function historyMoves(chess: Chess): BranchMove[] {
-  return chess.history({ verbose: true }).map((move) => ({
-    color: move.color,
-    from: move.from,
-    to: move.to,
-    san: move.san,
-    ...(move.promotion ? { promotion: move.promotion } : {}),
-  }));
-}
-
-function terminalDescription(chess: Chess) {
-  if (chess.isCheckmate()) {
-    return "Checkmate";
-  }
-  if (chess.isStalemate()) {
-    return "Stalemate";
-  }
-  if (chess.isInsufficientMaterial()) {
-    return "Draw by insufficient material";
-  }
-  if (chess.isDrawByFiftyMoves()) {
-    return "Draw by fifty-move rule";
-  }
-  return null;
-}
-
-function oppositeOrientation(orientation: BoardOrientation): BoardOrientation {
-  return orientation === "white" ? "black" : "white";
-}
-
-function orientationDescription(orientation: BoardOrientation): string {
-  return orientation === "white" ? "White at the bottom" : "Black at the bottom";
-}
-
-function announcementFor(game: Game, index: number): string {
-  const position = game.positions[index];
-  const finalPly = game.positions.at(-1)?.ply ?? 0;
-  return `Ply ${position.ply} of ${finalPly}: ${position.san ?? "Initial position"}`;
-}
+import {
+  DEFAULT_BRANCH_NOTICE,
+  START_BOARD,
+  announcementFor,
+  historyMoves,
+  oppositeOrientation,
+  orientationDescription,
+  terminalDescription,
+} from "./viewerWorkspaceModel";
 
 export type ViewerWorkspaceProps = {
   lookup?: GameLookup;

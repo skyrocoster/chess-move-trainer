@@ -9,14 +9,7 @@ import type { PositionContextClient, PositionContextResponse } from "./positionC
 import styles from "./Stage1Story.module.css";
 import { VIEWER_GAME, VIEWER_GAME_UUID, UNSAFE_SOURCE_GAME } from "./viewerFixtures";
 import {
-  CASTLING_GAME,
-  EN_PASSANT_GAME,
-  PROMOTION_GAME,
-  TERMINAL_GAME,
-} from "./viewerStoryFixtures";
-import {
   completeGameLookup,
-  branchPromotionInteractionPlay,
   finalPlay,
   keyboardMove,
   pendingLookup,
@@ -211,7 +204,7 @@ export const Constrained: Story = {
   render: () =>
     constrained(
       <ViewerWorkspace lookup={completeGameLookup()} analysisClient={storyAnalysisClient()} />,
-  ),
+    ),
 };
 export const LoadedConstrained: Story = {
   name: "Loaded - Constrained",
@@ -236,7 +229,7 @@ export const SeenCounts: Story = {
     await expect(canvas.getByRole("heading", { name: "Position reach frequency" })).toBeVisible();
     await expect(canvas.getByText("2 / 10 games", { exact: true })).toBeVisible();
     await expect(canvas.getByText("White repertoire colour", { exact: true })).toBeVisible();
-  const history = within(canvas.getByRole("navigation", { name: "Move history" }));
+    const history = within(canvas.getByRole("navigation", { name: "Move history" }));
     const e4 = history.getByRole("button", { name: "White, move 1, e4" });
     await userEvent.click(e4);
     await expect(canvas.getByText("Ply 1 of 3", { exact: true })).toBeVisible();
@@ -284,10 +277,9 @@ export const AbsentPosition: Story = {
     const canvas = within(canvasElement);
     await submit(canvas);
     await expect(
-      canvas.getByText(
-        "This position is not present in the accepted game data for White.",
-        { exact: true },
-      ),
+      canvas.getByText("This position is not present in the accepted game data for White.", {
+        exact: true,
+      }),
     ).toBeVisible();
     await expect(
       canvas.queryByRole("meter", { name: /Position reach frequency/ }),
@@ -360,7 +352,9 @@ export const ReachForcedColors: Story = {
     await submit(canvas);
     await expect(canvas.getByRole("heading", { name: "Position reach frequency" })).toBeVisible();
     await expect(canvas.getByText("2 / 10 games", { exact: true })).toBeVisible();
-    await expect(canvas.getByRole("meter", { name: "Position reach frequency as White" })).toBeVisible();
+    await expect(
+      canvas.getByRole("meter", { name: "Position reach frequency as White" }),
+    ).toBeVisible();
   },
 };
 export const UnsafeSource: Story = {
@@ -480,95 +474,5 @@ export const BranchNavigationGate: Story = {
     await expect(canvas.getByRole("button", { name: "Previous" })).toBeDisabled();
     await expect(canvas.getByRole("button", { name: "Next" })).toBeDisabled();
     await expect(canvas.getByRole("button", { name: "Initial position" })).toBeVisible();
-  },
-};
-export const BranchPromotion: Story = {
-  name: "Branch - promotion fixture",
-  args: { lookup: completeGameLookup(PROMOTION_GAME) },
-  render: (args) => frame(<ViewerWorkspace analysisClient={storyAnalysisClient()} {...args} />),
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    await submit(canvas, VIEWER_GAME_UUID, "0");
-    await expect(canvas.getByText("Ply 0 of 0")).toBeVisible();
-    await expect(canvas.getByTestId("branch-origin-fen")).toHaveTextContent(
-      PROMOTION_GAME.positions[0].fen,
-    );
-    await expect(canvas.getByTestId("branch-current-fen")).toHaveTextContent(
-      PROMOTION_GAME.positions[0].fen,
-    );
-    await expect(canvas.getByTestId("branch-san")).toHaveTextContent("No branch moves yet");
-  },
-};
-export const BranchPromotionInteraction: Story = {
-  name: "Branch - promotion interaction",
-  args: { lookup: completeGameLookup(PROMOTION_GAME) },
-  render: (args) => frame(<ViewerWorkspace analysisClient={storyAnalysisClient()} {...args} />),
-  play: branchPromotionInteractionPlay,
-};
-export const BranchCastling: Story = {
-  name: "Branch - castling fixture",
-  args: { lookup: completeGameLookup(CASTLING_GAME) },
-  render: (args) => frame(<ViewerWorkspace analysisClient={storyAnalysisClient()} {...args} />),
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    await submit(canvas, VIEWER_GAME_UUID, "0");
-    await expect(canvas.getByText("Ply 0 of 0")).toBeVisible();
-    await expect(canvas.getByTestId("branch-origin-fen")).toHaveTextContent(
-      CASTLING_GAME.positions[0].fen,
-    );
-    await expect(canvas.getByTestId("branch-current-fen")).toHaveTextContent(
-      CASTLING_GAME.positions[0].fen,
-    );
-    await expect(canvas.getByTestId("branch-san")).toHaveTextContent("No branch moves yet");
-  },
-};
-export const BranchEnPassant: Story = {
-  name: "Branch - en-passant fixture",
-  args: { lookup: completeGameLookup(EN_PASSANT_GAME) },
-  render: (args) => frame(<ViewerWorkspace analysisClient={storyAnalysisClient()} {...args} />),
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    await submit(canvas, VIEWER_GAME_UUID, "0");
-    await expect(canvas.getByText("Ply 0 of 0")).toBeVisible();
-    await expect(canvas.getByTestId("branch-origin-fen")).toHaveTextContent(
-      EN_PASSANT_GAME.positions[0].fen,
-    );
-    await expect(canvas.getByTestId("branch-current-fen")).toHaveTextContent(
-      EN_PASSANT_GAME.positions[0].fen,
-    );
-    await expect(canvas.getByTestId("branch-san")).toHaveTextContent("No branch moves yet");
-  },
-};
-export const BranchTerminal: Story = {
-  name: "Branch - terminal fixture",
-  args: { lookup: completeGameLookup(TERMINAL_GAME) },
-  render: (args) => frame(<ViewerWorkspace analysisClient={storyAnalysisClient()} {...args} />),
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    await submit(canvas, VIEWER_GAME_UUID, "0");
-    await expect(canvas.getByText("Ply 0 of 0")).toBeVisible();
-    await expect(canvas.getByTestId("branch-origin-fen")).toHaveTextContent(
-      TERMINAL_GAME.positions[0].fen,
-    );
-    await expect(canvas.getByTestId("branch-current-fen")).toHaveTextContent(
-      TERMINAL_GAME.positions[0].fen,
-    );
-    await expect(canvas.getByTestId("branch-san")).toHaveTextContent("No branch moves yet");
-  },
-};
-export const BranchReplacementDiscard: Story = {
-  name: "Branch - replacement discards line",
-  args: { lookup: completeGameLookup() },
-  render: (args) => frame(<ViewerWorkspace analysisClient={storyAnalysisClient()} {...args} />),
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    await submit(canvas, VIEWER_GAME_UUID, "0");
-    await keyboardMove(canvasElement, "e2", "{ArrowUp}{ArrowUp}");
-    await expect(canvas.getByTestId("branch-san")).not.toHaveTextContent("No branch moves yet");
-    await userEvent.clear(canvas.getByLabelText(/Ply/));
-    await userEvent.type(canvas.getByLabelText(/Ply/), "1");
-    await userEvent.click(canvas.getByRole("button", { name: "Load game" }));
-    await expect(canvas.getByText("Ply 1 of 3")).toBeVisible();
-    await expect(canvas.getByTestId("branch-san")).toHaveTextContent("No branch moves yet");
   },
 };

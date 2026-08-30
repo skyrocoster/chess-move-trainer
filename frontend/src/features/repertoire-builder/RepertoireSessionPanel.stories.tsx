@@ -262,7 +262,9 @@ export const SavedMove: Story = {
     const canvas = within(canvasElement);
     await expectPreferredMoveState(canvasElement, "saved");
     await expect(canvas.getByTestId("saved-move")).toHaveTextContent("Saved move: e4 (e2e4)");
-    await expect(canvas.getByTestId("effective-date")).toHaveTextContent("Effective from 2025-01-15");
+    await expect(canvas.getByTestId("effective-date")).toHaveTextContent(
+      "Effective from 2025-01-15",
+    );
     await expect(canvas.getByRole("button", { name: "Edit" })).toBeEnabled();
     await expect(canvas.getByRole("button", { name: "Play saved move" })).toBeEnabled();
     await expect(canvas.getByRole("button", { name: "Remove" })).toBeEnabled();
@@ -336,7 +338,9 @@ export const FrequencyAbsent: Story = {
   render: (args) => <SessionPanelFixture {...args} />,
   play: async ({ canvasElement }) => {
     await expectPositionReachFrequency(canvasElement, "absent", "White");
-    await expect(within(canvasElement).getByText(/not present in the accepted game data/)).toBeVisible();
+    await expect(
+      within(canvasElement).getByText(/not present in the accepted game data/),
+    ).toBeVisible();
   },
 };
 
@@ -346,6 +350,8 @@ export const FrequencyUnavailable: Story = {
   render: (args) => <SessionPanelFixture {...args} />,
   play: async ({ canvasElement }) => {
     await expectPositionReachFrequency(canvasElement, "unavailable", "White");
-    await expect(within(canvasElement).getByText("Position reach data is unavailable.")).toBeVisible();
+    await expect(
+      within(canvasElement).getByText("Position reach data is unavailable."),
+    ).toBeVisible();
   },
 };

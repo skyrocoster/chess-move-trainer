@@ -127,10 +127,6 @@ function sideFromColor(color: "w" | "b"): ChessSide {
   return color === "w" ? "white" : "black";
 }
 
-function currentBasePosition(session: PositionPickerSession): GamePosition {
-  return session.prefix.at(-1)!;
-}
-
 function positionAfterMove(
   session: PositionPickerSession,
   move: PositionPickerMove,

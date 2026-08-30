@@ -217,12 +217,7 @@ export function usePreferredMoveWorkflow({
         return current;
       });
     },
-    [
-      draft.mode,
-      positionModel.saveability,
-      preferredState.preferredMove,
-      session.bottomColor,
-    ],
+    [positionModel.saveability, preferredState.preferredMove, session.bottomColor],
   );
 
   const onEdit = useCallback(() => {
@@ -253,13 +248,7 @@ export function usePreferredMoveWorkflow({
       (current) => selectPositionPickerPly(current, focusedMove.position.ply - 1) ?? current,
     );
     setWorkflowError(null);
-  }, [
-    playedMoveFocus,
-    positionModel.savedMove,
-    positionModel.state,
-    session,
-    setSession,
-  ]);
+  }, [playedMoveFocus, positionModel.savedMove, positionModel.state, session, setSession]);
 
   const onCancelEdit = useCallback(() => {
     setPendingEditPositionFen(null);
@@ -388,7 +377,13 @@ export function usePreferredMoveWorkflow({
     }
     setSession(next);
     setSessionStatus(`Saved move played locally: ${savedMove!.san}.`);
-  }, [positionModel.savedMove, preferredState.preferredMove, session, setSession, setSessionStatus]);
+  }, [
+    positionModel.savedMove,
+    preferredState.preferredMove,
+    session,
+    setSession,
+    setSessionStatus,
+  ]);
 
   return {
     positionModel,

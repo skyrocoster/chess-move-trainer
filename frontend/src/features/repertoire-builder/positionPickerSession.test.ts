@@ -145,8 +145,12 @@ describe("position picker session", () => {
     expect(navigatePositionPickerSession(session, "home").currentPly).toBe(0);
     expect(navigatePositionPickerSession(session, "previous").currentPly).toBe(3);
     expect(navigatePositionPickerSession(session, "end").currentPly).toBe(4);
-    expect(navigatePositionPickerSession(selectPositionPickerPly(session, 0)!, "previous").currentPly).toBe(0);
-    expect(navigatePositionPickerSession(selectPositionPickerPly(session, 4)!, "next").currentPly).toBe(4);
+    expect(
+      navigatePositionPickerSession(selectPositionPickerPly(session, 0)!, "previous").currentPly,
+    ).toBe(0);
+    expect(
+      navigatePositionPickerSession(selectPositionPickerPly(session, 4)!, "next").currentPly,
+    ).toBe(4);
 
     const staged = selectPositionPickerMove(createStandardStartSession(), {
       sourceSquare: "e2",

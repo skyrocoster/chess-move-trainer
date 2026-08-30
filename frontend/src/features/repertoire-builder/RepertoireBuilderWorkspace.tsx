@@ -12,7 +12,6 @@ import { createPositionModel } from "../board-adapter/positionDescriptionModel";
 import {
   isPromotionTarget,
   type PromotionCommit,
-  type PromotionPiece,
   usePromotionController,
 } from "../board-adapter/PromotionPicker";
 import { BoardControl } from "../viewer/BoardControl";
@@ -24,8 +23,16 @@ import { GameLoader, type GameLoaderStatus, type GameLoaderValues } from "../vie
 import { fetchGame, type GameLookup } from "../viewer/positionApi";
 import type { PositionContextClient } from "../viewer/positionContextApi";
 import { evaluationDisplay } from "../viewer/evalBarDisplay";
-import { type PreferredMoveClient, type PreferredMoveValue } from "./preferredMoveApi";
+import type { PreferredMoveClient } from "./preferredMoveApi";
 import { usePreferredMoveWorkflow } from "./preferredMoveWorkflowState";
+import {
+  boardLabel,
+  branchMove,
+  isPlayedSavedMove,
+  originDescription,
+  promotionPiece,
+  sessionViewKey,
+} from "./repertoireBuilderWorkspaceModel";
 import {
   createStandardStartSession,
   createStoredGameSession,
@@ -35,62 +42,12 @@ import {
   selectPositionPickerPly,
   selectPositionPickerMove,
   type PositionPickerMove,
-  type PositionPickerMoveRecord,
   type PositionPickerNavigation,
   type PositionPickerSession,
 } from "./positionPickerSession";
 import type { Ply } from "../viewer/chessPrimitives";
 import styles from "./RepertoireBuilderWorkspace.module.css";
 import { RepertoireSessionPanel } from "./RepertoireSessionPanel";
-
-function orientationDescription(orientation: PositionPickerSession["orientation"]): string {
-  return orientation === "white" ? "White at the bottom" : "Black at the bottom";
-}
-
-function boardLabel(session: PositionPickerSession): string {
-  const orientation = orientationDescription(session.orientation);
-  if (session.origin.kind === "standard") {
-    return `Chess board: standard starting position, ${orientation}`;
-  }
-  return `Chess board: game ${session.origin.gameUuid}, ply ${session.currentPly}, ${orientation}`;
-}
-
-function originDescription(session: PositionPickerSession): string {
-  if (session.origin.kind === "standard") {
-    return "Standard starting position; local session begins at Ply 0.";
-  }
-  return `Game ${session.origin.gameUuid}; complete prefix through Ply ${session.origin.selectedPly}.`;
-}
-
-function sessionViewKey(session: PositionPickerSession): string {
-  return session.origin.kind === "standard"
-    ? "repertoire:standard"
-    : `repertoire:${session.origin.gameUuid}:${session.origin.selectedPly}`;
-}
-
-function branchMove(move: PositionPickerMoveRecord) {
-  return {
-    color: move.color === "white" ? ("w" as const) : ("b" as const),
-    from: move.sourceSquare,
-    to: move.targetSquare,
-    san: move.san,
-    ...(move.promotion ? { promotion: move.promotion } : {}),
-  };
-}
-
-function promotionPiece(value: string | undefined): PromotionPiece | undefined {
-  return value === "q" || value === "r" || value === "b" || value === "n" ? value : undefined;
-}
-
-function isPlayedSavedMove(
-  move: PositionPickerMoveRecord,
-  savedMove: PreferredMoveValue | null,
-): boolean {
-  return (
-    savedMove !== null &&
-    `${move.sourceSquare}${move.targetSquare}${move.promotion ?? ""}` === savedMove.uci
-  );
-}
 
 export type RepertoireBuilderWorkspaceProps = {
   lookup?: GameLookup;
@@ -214,10 +171,7 @@ export default function RepertoireBuilderWorkspace({
     selectPromotion,
     cancelPromotion,
   } = promotionController;
-  const representedHistory = useMemo(
-    () => positionPickerHistory(session),
-    [session.localContinuation, session.prefix],
-  );
+  const representedHistory = useMemo(() => positionPickerHistory(session), [session]);
   const historyInput = useMemo(
     () => ({
       initialPosition: { ply: representedHistory[0]!.ply },
@@ -484,10 +438,10 @@ export default function RepertoireBuilderWorkspace({
           moves={historyInput.moves}
           activePly={session.currentPly}
           onActivePlyChange={handleHistorySelection}
-           sessionStatus={sessionStatus}
-           model={workflow.positionModel}
-           positionContext={workflow.positionContext}
-           sideToMove={sideToMoveColor}
+          sessionStatus={sessionStatus}
+          model={workflow.positionModel}
+          positionContext={workflow.positionContext}
+          sideToMove={sideToMoveColor}
           stagedMove={workflow.stagedMove}
           draftMode={workflow.draftMode}
           date={workflow.date}

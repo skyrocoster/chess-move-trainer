@@ -240,7 +240,11 @@ export function PreferredMovePanel({
         </p>
       ) : null}
 
-      {model.state === "saved" && ownTurn && !preferredLoading && preferredError === null && savedMove ? (
+      {model.state === "saved" &&
+      ownTurn &&
+      !preferredLoading &&
+      preferredError === null &&
+      savedMove ? (
         <>
           <DateControl value={date} onChange={onDateChange} />
           <p className={styles.savedMove} data-testid="saved-move">
@@ -322,9 +326,7 @@ export function PreferredMovePanel({
             </>
           ) : (
             <>
-              {ownTurn ? (
-                <DateControl value={date} onChange={onDateChange} />
-              ) : null}
+              {ownTurn ? <DateControl value={date} onChange={onDateChange} /> : null}
               {ownTurn ? (
                 <div className={styles.actions}>
                   {hasPersistedPreferredMove ? (

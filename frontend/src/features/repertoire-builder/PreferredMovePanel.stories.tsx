@@ -193,7 +193,9 @@ export const AssignedSaved: Story = {
       "data-state",
       "saved",
     );
-    await expect(canvas.getByTestId("effective-date")).toHaveTextContent("Effective from 2025-01-15");
+    await expect(canvas.getByTestId("effective-date")).toHaveTextContent(
+      "Effective from 2025-01-15",
+    );
     const body = within(canvasElement.ownerDocument.body);
     await userEvent.click(canvas.getByRole("button", { name: "Edit" }));
     await expect(args.onEdit).toHaveBeenCalledTimes(1);
@@ -258,7 +260,9 @@ export const MatchingPlayed: Story = {
     );
     await expect(canvas.getByTestId("played-move")).toHaveTextContent("Played move: e4 (e2e4)");
     await expect(canvas.getByText("This move matches your preferred move.")).toBeVisible();
-    await expect(canvas.getByTestId("effective-date")).toHaveTextContent("Effective from 2025-01-15");
+    await expect(canvas.getByTestId("effective-date")).toHaveTextContent(
+      "Effective from 2025-01-15",
+    );
     await userEvent.click(canvas.getByRole("button", { name: "Edit" }));
     await expect(args.onEdit).toHaveBeenCalledTimes(1);
   },
@@ -294,7 +298,9 @@ export const AssignedToday: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await expect(canvas.getByTestId("effective-date")).toHaveTextContent("Effective from Today");
-    await expect(canvas.getByRole("button", { name: /Effective date: \d{4}-\d{2}-\d{2}/ })).toBeVisible();
+    await expect(
+      canvas.getByRole("button", { name: /Effective date: \d{4}-\d{2}-\d{2}/ }),
+    ).toBeVisible();
   },
 };
 

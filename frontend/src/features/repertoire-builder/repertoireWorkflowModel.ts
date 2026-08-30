@@ -5,11 +5,7 @@ import type { PositionPickerMoveRecord } from "./positionPickerSession";
 
 export type PositionSaveability = "unknown" | "savable" | "unsavable";
 
-export type RepertoirePositionState =
-  | "no-saved"
-  | "saved"
-  | "matching-played"
-  | "unsaved-played";
+export type RepertoirePositionState = "no-saved" | "saved" | "matching-played" | "unsaved-played";
 
 export type RepertoirePositionModel = {
   bottomColor: ChessSide;
