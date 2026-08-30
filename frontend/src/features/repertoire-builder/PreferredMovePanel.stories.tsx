@@ -329,6 +329,9 @@ export const ErrorFeedback: Story = {
   play: async ({ canvasElement }) => {
     const alerts = within(canvasElement).getAllByRole("alert");
     await expect(alerts).toHaveLength(3);
+    for (const alert of alerts) {
+      await expect(alert).toHaveRole("alert");
+    }
     await expect(alerts[0]).toHaveTextContent("Preferred move data is unavailable. Try again.");
     await expect(alerts[1]).toHaveTextContent("Position context is temporarily unavailable.");
     await expect(alerts[2]).toHaveTextContent(
@@ -348,7 +351,10 @@ export const SavingMutation: Story = {
   render: (args) => <PanelFixture {...args} />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await expect(canvas.getByRole("status")).toHaveTextContent("Saving preferred move...");
+    const status = canvas.getByRole("status");
+    await expect(status).toHaveRole("status");
+    await expect(status).toHaveAttribute("aria-live", "polite");
+    await expect(status).toHaveTextContent("Saving preferred move...");
     await expect(canvas.getByRole("button", { name: "Save replacement" })).toBeDisabled();
     await expect(canvas.getByRole("button", { name: "Cancel edit" })).toBeDisabled();
     await expect(canvas.getByRole("button", { name: "Remove" })).toBeDisabled();

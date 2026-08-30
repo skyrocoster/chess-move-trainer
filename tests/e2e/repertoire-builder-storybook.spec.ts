@@ -605,7 +605,7 @@ test.describe("Repertoire Builder Storybook surface", () => {
     await openStory(page, STORY_IDS.boardPlay);
     await expectPreferredMoveState(page, "matching-played");
     await expect(page.getByTestId("session-status")).toHaveText(
-      "Saved move played locally: e4.",
+      "Moved to the next local position.",
     );
     await expectSessionHistory(page, ["Initial position", "White, move 1, e4"]);
     await expectActiveSessionHistoryEntry(page, "White, move 1, e4");

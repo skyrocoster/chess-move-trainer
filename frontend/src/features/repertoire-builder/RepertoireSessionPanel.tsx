@@ -1,3 +1,4 @@
+import { InlineFeedback } from "../design-system/feedback/InlineFeedback";
 import { MoveHistory } from "../move-history/MoveHistory";
 import { PositionReachFrequency } from "../position-reach-frequency/PositionReachFrequency";
 import type { PositionContextResponse } from "../viewer/positionContextApi";
@@ -43,14 +44,13 @@ export function RepertoireSessionPanel({
         context={positionContext}
         selectedColor={preferredMoveProps.model.bottomColor}
       />
-      <p
-        className={styles.sessionStatus}
+      <div
         data-testid="session-status"
         role="status"
         aria-live="polite"
       >
-        {sessionStatus}
-      </p>
+        <InlineFeedback severity="information" message={sessionStatus} />
+      </div>
       <PreferredMovePanel {...preferredMoveProps} />
     </div>
   );

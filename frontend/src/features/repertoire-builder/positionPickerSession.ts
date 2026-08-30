@@ -47,6 +47,11 @@ export type PositionPickerMoveRecord = PositionPickerMove & {
   position: GamePosition;
 };
 
+export type PositionPickerTransition = {
+  move: PositionPickerMoveRecord;
+  sourcePosition: GamePosition;
+};
+
 export type PositionPickerMoveResult =
   | {
       disposition: "staged";
@@ -219,6 +224,35 @@ export function positionPickerHistoryBounds(session: PositionPickerSession): {
     firstPly: history[0]!.ply,
     lastPly: history.at(-1)!.ply,
   };
+}
+
+/** Returns the staged preview or the committed local move at the displayed position. */
+export function positionPickerSelectedTransition(
+  session: PositionPickerSession,
+): PositionPickerTransition | null {
+  if (session.stagedMove !== null) {
+    return {
+      move: session.stagedMove,
+      sourcePosition: session.currentPosition,
+    };
+  }
+
+  const localIndex = session.localCursor - 1;
+  const move = session.localMoves[localIndex];
+  if (
+    localIndex < 0 ||
+    move === undefined ||
+    move.position.ply !== session.currentPosition.ply ||
+    move.position.fen !== session.currentPosition.fen
+  ) {
+    return null;
+  }
+
+  const sourcePosition =
+    localIndex === 0
+      ? session.prefix.find((position) => position.ply === move.position.ply - 1)
+      : session.localContinuation[localIndex - 1];
+  return sourcePosition === undefined ? null : { move, sourcePosition };
 }
 
 /** Selects a represented position without changing the stored or local line. */

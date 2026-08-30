@@ -4,6 +4,8 @@ import { useState } from "react";
 import { Button } from "../design-system/Button";
 import { CalendarDate, type CalendarDateValue } from "../design-system/CalendarDate";
 import { formatUtcDate } from "../design-system/CalendarDateUtils";
+import { InlineFeedback } from "../design-system/feedback/InlineFeedback";
+import { PanelFeedback } from "../design-system/feedback/PanelFeedback";
 import type { ChessSide } from "../viewer/chessPrimitives";
 import type { PositionContextFailureCode } from "../viewer/positionContextApi";
 import type { PreferredMoveFailureCode } from "./preferredMoveApi";
@@ -220,24 +222,25 @@ export function PreferredMovePanel({
         </p>
       ) : null}
       {preferredError ? (
-        <p className={styles.error} role="alert">
-          {failureMessage(preferredError)}
-        </p>
+        <PanelFeedback severity="error" role="alert" message={failureMessage(preferredError)} />
       ) : null}
       {contextError ? (
-        <p className={styles.error} role="alert">
-          {contextFailureMessage(contextError)}
-        </p>
+        <PanelFeedback
+          severity="error"
+          role="alert"
+          message={contextFailureMessage(contextError)}
+        />
       ) : null}
       {workflowError ? (
-        <p className={styles.error} role="alert">
-          {failureMessage(workflowError)}
-        </p>
+        <PanelFeedback severity="error" role="alert" message={failureMessage(workflowError)} />
       ) : null}
       {mutation ? (
-        <p className={styles.status} role="status" aria-live="polite">
-          {mutationLabel(mutation)}
-        </p>
+        <InlineFeedback
+          severity="information"
+          role="status"
+          aria-live="polite"
+          message={mutationLabel(mutation)}
+        />
       ) : null}
 
       {model.state === "saved" &&

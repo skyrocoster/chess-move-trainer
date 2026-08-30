@@ -36,6 +36,9 @@ export const ReadErrors: Story = {
     const canvas = within(canvasElement);
     const alerts = await canvas.findAllByRole("alert");
     await expect(alerts).toHaveLength(2);
+    for (const alert of alerts) {
+      await expect(alert).toHaveRole("alert");
+    }
     await expect(alerts[0]).toHaveTextContent("Preferred move data is unavailable. Try again.");
     await expect(alerts[1]).toHaveTextContent("Position context is temporarily unavailable.");
     await expect(canvas.queryByRole("button", { name: "Add" })).not.toBeInTheDocument();

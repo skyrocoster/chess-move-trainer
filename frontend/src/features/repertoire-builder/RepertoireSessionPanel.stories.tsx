@@ -195,8 +195,11 @@ export const LocalLineSession: Story = {
       "White, move 2, Nf3",
     ]);
     await expectActiveSessionHistoryEntry(canvasElement, "White, move 2, Nf3");
-    await expect(canvas.getByTestId("session-status")).toHaveRole("status");
-    await expect(canvas.getByTestId("session-status")).toHaveTextContent("My move staged: e4.");
+    const status = canvas.getByTestId("session-status");
+    await expect(status).toHaveAttribute("data-testid", "session-status");
+    await expect(status).toHaveRole("status");
+    await expect(status).toHaveAttribute("aria-live", "polite");
+    await expect(status).toHaveTextContent("My move staged: e4.");
     await expect(canvas.getByRole("heading", { name: "Preferred move" })).toBeVisible();
     await expect(canvas.getByRole("button", { name: "Add" })).toBeVisible();
     await expectPreferredMoveState(canvasElement, "no-saved");

@@ -271,6 +271,23 @@ describe("RepertoireBuilderWorkspace", () => {
       }),
     ).toBeVisible();
   });
+  it("keeps preferred move and position context failures as separate alerts", async () => {
+    const clients = testClients();
+    clients.preferredMoveClient.get = vi.fn(async () => ({
+      status: "preferred_move_unavailable" as const,
+    }));
+    clients.positionContextClient = vi.fn(async () => ({
+      status: "position_context_unavailable" as const,
+    }));
+    renderWorkspace(clients);
+
+    const alerts = await screen.findAllByRole("alert");
+    expect(alerts).toHaveLength(2);
+    expect(alerts[0]).toHaveAttribute("role", "alert");
+    expect(alerts[0]).toHaveTextContent("Preferred move data is unavailable. Try again.");
+    expect(alerts[1]).toHaveAttribute("role", "alert");
+    expect(alerts[1]).toHaveTextContent("Position context is temporarily unavailable.");
+  });
   it("keeps the current session safe when loading fails and Reset returns to standard start", async () => {
     const lookup = vi.fn().mockResolvedValue({ status: "game_not_found" as const });
     const user = userEvent.setup();
@@ -551,6 +568,61 @@ describe("RepertoireBuilderWorkspace", () => {
     );
     expect(screen.getByTestId("session-origin")).toHaveTextContent("Current Ply 0.");
   });
+
+  it("reconstructs the matching played panel through local navigation and history selection", async () => {
+    const user = userEvent.setup();
+    const clients = testClients("assigned");
+    renderWorkspace(clients);
+
+    await waitFor(() => expect(screen.getByTestId("saved-move")).toBeVisible());
+
+    async function expectMatchingPlayedPanel() {
+      await waitFor(() => {
+        const panel = screen.getByRole("region", { name: "Preferred move" });
+        expect(panel).toHaveAttribute("data-state", "matching-played");
+        expect(within(panel).getByTestId("played-move")).toHaveTextContent(
+          "Played move: e4 (e2e4)",
+        );
+        expect(panel).toHaveTextContent("This move matches your preferred move.");
+        expect(within(panel).getByTestId("effective-date")).toHaveTextContent(
+          "Effective from 2026-01-01",
+        );
+        expect(within(panel).getByRole("button", { name: "Edit" })).toBeVisible();
+        expect(within(panel).getByRole("button", { name: "Remove" })).toBeVisible();
+      });
+      expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", AFTER_E4_FEN);
+    }
+
+    async function expectSavedParentPanel() {
+      await waitFor(() => {
+        const panel = screen.getByRole("region", { name: "Preferred move" });
+        expect(panel).toHaveAttribute("data-state", "saved");
+        expect(within(panel).getByTestId("saved-move")).toHaveTextContent("Saved move: e4");
+        expect(within(panel).queryByTestId("played-move")).not.toBeInTheDocument();
+      });
+      expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", STARTING_FEN);
+    }
+
+    await user.click(screen.getByTestId("move-e2-e4"));
+    await expectMatchingPlayedPanel();
+
+    await user.click(screen.getByRole("button", { name: "Previous" }));
+    await expectSavedParentPanel();
+    await user.click(screen.getByRole("button", { name: "Next" }));
+    await expectMatchingPlayedPanel();
+
+    await user.click(historyEntry("Initial position"));
+    await expectSavedParentPanel();
+    await user.click(historyEntry("White, move 1, e4"));
+    await expectMatchingPlayedPanel();
+
+    await user.click(historyEntry("Initial position"));
+    await expectSavedParentPanel();
+    historyEntry("Initial position").focus();
+    await user.keyboard("{ArrowRight}");
+    await expectMatchingPlayedPanel();
+  });
+
   it("recognizes the saved move played on the board and advances the local session", async () => {
     const user = userEvent.setup();
     const clients = testClients("assigned");

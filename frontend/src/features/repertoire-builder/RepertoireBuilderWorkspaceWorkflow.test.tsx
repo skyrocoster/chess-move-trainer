@@ -4,7 +4,7 @@ import { cleanup, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import axeMatchers from "@chialab/vitest-axe";
 import type {} from "@chialab/vitest-axe/matchers";
-import type { PreferredMoveClient } from "./preferredMoveApi";
+import type { PreferredMoveClient, PreferredMoveMutationResult } from "./preferredMoveApi";
 import { PROMOTION_GAME } from "../viewer/viewerStoryFixtures";
 import { VIEWER_GAME_UUID } from "../viewer/viewerFixtures";
 import {
@@ -162,9 +162,13 @@ describe("RepertoireBuilderWorkspace workflow", () => {
     vi.setSystemTime(new Date("2026-01-15T23:59:59.999Z"));
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     const clients = testClients();
-    clients.preferredMoveClient.put = vi.fn(async () => ({
-      status: "future_effective_time" as const,
-    }));
+    let resolveMutation!: (result: PreferredMoveMutationResult) => void;
+    clients.preferredMoveClient.put = vi.fn(
+      () =>
+        new Promise<PreferredMoveMutationResult>((resolve) => {
+          resolveMutation = resolve;
+        }),
+    );
     renderWorkspace(clients);
 
     await waitFor(() => expect(screen.getByText("Never seen as White")).toBeVisible());
@@ -174,9 +178,24 @@ describe("RepertoireBuilderWorkspace workflow", () => {
     await user.click(screen.getByTestId("move-e2-e4"));
     await user.click(screen.getByRole("button", { name: "Add" }));
 
+    const mutationMessage = await screen.findByText("Adding preferred move...", { exact: true });
+    const mutationStatus = mutationMessage.closest('[role="status"]');
+    if (!(mutationStatus instanceof HTMLElement)) {
+      throw new Error("The preferred move mutation status region is missing.");
+    }
+    expect(mutationStatus).toHaveAttribute("role", "status");
+    expect(mutationStatus).toHaveAttribute("aria-live", "polite");
+    const sessionStatus = screen.getByTestId("session-status");
+    expect(sessionStatus).toHaveAttribute("data-testid", "session-status");
+    expect(sessionStatus).toHaveRole("status");
+    expect(sessionStatus).toHaveAttribute("aria-live", "polite");
+    expect(sessionStatus).toHaveTextContent("My move staged: e4.");
+
+    resolveMutation({ status: "future_effective_time" });
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "The selected date cannot be in the future.",
     );
+    expect(screen.getAllByRole("alert")).toHaveLength(1);
     expect(clients.preferredMoveClient.put).toHaveBeenCalledWith(
       { fen: STARTING_FEN, move_uci: "e2e4", effective_at: "2026-01-10T00:00:00.000Z" },
       { signal: expect.any(AbortSignal) },

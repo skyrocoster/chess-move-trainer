@@ -21,8 +21,7 @@
 .instruction,
 .savedMove,
 .stagedMove,
-.effectiveDate,
-.status {
+.effectiveDate {
   color: var(--md-sys-color-on-surface-variant);
   font: var(--md-sys-typescale-body-medium);
 }
@@ -37,12 +36,6 @@
 
 .effectiveDate strong {
   color: var(--md-sys-color-on-surface);
-}
-
-.error {
-  margin: 0;
-  color: var(--md-sys-color-error);
-  font: var(--md-sys-typescale-body-medium);
 }
 
 .actions {
@@ -126,7 +119,6 @@
 
   .context,
   .instruction,
-  .status,
   .effectiveDate,
   .dialogDescription,
   .dateLabel {

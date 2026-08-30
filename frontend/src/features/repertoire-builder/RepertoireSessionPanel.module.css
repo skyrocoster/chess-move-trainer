@@ -6,22 +6,13 @@
   min-inline-size: 0;
 }
 
-.session > p {
-  margin: 0;
-}
-
 .historyLabel {
   color: var(--md-sys-color-on-surface-variant);
   font: var(--cmt-typescale-label-large, var(--md-sys-typescale-label-large));
 }
 
-.history,
-.sessionStatus {
+.history {
   color: var(--md-sys-color-on-surface);
   font: var(--md-sys-typescale-body-medium);
   overflow-wrap: anywhere;
-}
-
-.sessionStatus {
-  color: var(--md-sys-color-on-surface-variant);
 }

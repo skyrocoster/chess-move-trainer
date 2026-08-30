@@ -9,6 +9,7 @@ import {
   appendPositionPickerMove,
   positionPickerHistory,
   positionPickerHistoryBounds,
+  positionPickerSelectedTransition,
   selectPositionPickerPly,
   selectPositionPickerMove,
   sessionSanHistory,
@@ -179,6 +180,39 @@ describe("position picker session", () => {
         fen: "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1",
       },
     });
+  });
+
+  it("derives a committed local transition and its source after leaving and returning", () => {
+    let session = flipPositionPickerSession(createStandardStartSession());
+    session = selectPositionPickerMove(session, {
+      sourceSquare: "e2",
+      targetSquare: "e4",
+    })!.session;
+
+    const selected = positionPickerSelectedTransition(session);
+    expect(selected).toMatchObject({
+      move: { sourceSquare: "e2", targetSquare: "e4", san: "e4" },
+      sourcePosition: session.prefix[0],
+    });
+
+    const returned = navigatePositionPickerSession(
+      navigatePositionPickerSession(session, "previous"),
+      "next",
+    );
+    expect(positionPickerSelectedTransition(returned)).toEqual(selected);
+  });
+
+  it("derives a staged transition from its current parent without committing it", () => {
+    const session = selectPositionPickerMove(createStandardStartSession(), {
+      sourceSquare: "e2",
+      targetSquare: "e4",
+    })!.session;
+
+    expect(positionPickerSelectedTransition(session)).toEqual({
+      move: session.stagedMove,
+      sourcePosition: session.currentPosition,
+    });
+    expect(session.localMoves).toEqual([]);
   });
 
   it("advances opposing moves, records SAN, and rejects illegal moves without mutation", () => {

@@ -43,8 +43,37 @@ export const AssignedBoardPlay: Story = {
     await expect(canvas.getByTestId("session-status")).toHaveTextContent(
       "Saved move played locally: e4.",
     );
-    await expectPreferredMoveState(canvasElement, "matching-played");
-    await expect(canvas.queryByTestId("saved-move")).not.toBeInTheDocument();
+    async function expectMatchingPlayedPanel() {
+      await expectPreferredMoveState(canvasElement, "matching-played");
+      await expect(canvas.getByTestId("played-move")).toHaveTextContent(
+        "Played move: e4 (e2e4)",
+      );
+      await expect(canvas.getByText("This move matches your preferred move.")).toBeVisible();
+      await expect(canvas.getByTestId("effective-date")).toHaveTextContent(
+        "Effective from 2026-01-01",
+      );
+      await expect(canvas.getByRole("button", { name: "Edit" })).toBeVisible();
+      await expect(canvas.getByRole("button", { name: "Remove" })).toBeVisible();
+      await expect(canvas.queryByTestId("saved-move")).not.toBeInTheDocument();
+      await expectPositionSquares(canvasElement, "e2", 0);
+      await expectPositionSquares(canvasElement, "e4", 1);
+    }
+
+    await expectMatchingPlayedPanel();
+
+    await userEvent.click(canvas.getByRole("button", { name: "Previous" }));
+    await expectPreferredMoveState(canvasElement, "saved");
+    await expect(canvas.getByTestId("saved-move")).toHaveTextContent("Saved move: e4 (e2e4)");
+    await expect(canvas.queryByTestId("played-move")).not.toBeInTheDocument();
+    await expect(canvas.getByTestId("session-status")).toHaveTextContent(
+      "Moved to the previous local position.",
+    );
+    await expectPositionSquares(canvasElement, "e2", 1);
+    await expectPositionSquares(canvasElement, "e4", 0);
+
+    await userEvent.click(canvas.getByRole("button", { name: "Next" }));
+    await expectActiveSessionHistoryEntry(canvasElement, "White, move 1, e4");
+    await expectMatchingPlayedPanel();
   },
 };
 
@@ -152,10 +181,17 @@ export const MutationFailure: Story = {
     const date = await selectCurrentUtcDate(canvasElement);
     await userEvent.click(await canvas.findByRole("button", { name: "1. e4" }));
     await userEvent.click(canvas.getByRole("button", { name: "Add" }));
-    await expect(canvas.getByRole("alert")).toHaveTextContent(
+    const alert = canvas.getByRole("alert");
+    await expect(alert).toHaveRole("alert");
+    await expect(alert).toHaveTextContent(
       "The selected date cannot be in the future.",
     );
+    await expect(canvas.getAllByRole("alert")).toHaveLength(1);
     await expectSingleStagedStatus(canvasElement);
+    const status = canvas.getByTestId("session-status");
+    await expect(status).toHaveAttribute("data-testid", "session-status");
+    await expect(status).toHaveRole("status");
+    await expect(status).toHaveAttribute("aria-live", "polite");
     await expectPositionSquares(canvasElement, "e2", 0);
     await expectPositionSquares(canvasElement, "e4", 1);
     await expect(canvas.getByTestId("session-origin")).toHaveTextContent("Current Ply 0");
