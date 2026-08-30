@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Panel redesign</title>
+<style>
+  :root{
+    --bg-app:#12141c;
+    --bg-card:#1b1e29;
+    --bg-card-alt:#242836;
+    --bg-inset:#0f1119;
+    --border:rgba(255,255,255,0.08);
+    --border-strong:rgba(255,255,255,0.14);
+    --text-primary:#e7e9f5;
+    --text-secondary:#9aa0b4;
+    --text-muted:#666c82;
+    --accent:#8b90e8;
+    --accent-strong:#a3a7ee;
+    --accent-text:#c9ccf5;
+    --accent-bg:#2a2c4a;
+    --confirm-bg:#1f2e28;
+    --confirm-text:#8fd8ae;
+    --confirm-border:#2d4a3c;
+    --square-light:#e8c99b;
+    --square-dark:#b78654;
+    --square-highlight:#e8c349;
+    --font-ui:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
+    --font-mono:'IBM Plex Mono',ui-monospace,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{
+    background:var(--bg-app); color:var(--text-primary); font-family:var(--font-ui);
+    padding:40px 24px; display:flex; flex-direction:column; align-items:center; gap:20px;
+  }
+  .toggle-bar{ display:flex; flex-wrap:wrap; gap:6px; background:var(--bg-card); border:1px solid var(--border); border-radius:10px; padding:4px; max-width:700px; }
+  .toggle-bar button{
+    font-family:var(--font-ui); font-size:11.5px; font-weight:600; color:var(--text-secondary);
+    background:none; border:none; padding:8px 12px; border-radius:7px; cursor:pointer;
+  }
+  .toggle-bar button.active{ background:var(--accent); color:#12141c; }
+
+  .stage{ display:flex; gap:28px; align-items:flex-start; }
+
+  .board-wrap{ position:relative; }
+  .board{ display:grid; grid-template-columns:repeat(8,52px); grid-template-rows:repeat(8,52px); border:1px solid var(--border-strong); }
+  .sq{ display:flex; align-items:center; justify-content:center; font-size:34px; user-select:none; }
+  .sq.light{ background:var(--square-light); }
+  .sq.dark{ background:var(--square-dark); }
+  .sq.hl{ background:var(--square-highlight) !important; }
+  .sq .pw{ color:#fff; filter:drop-shadow(0 1px 1px rgba(0,0,0,0.5)); }
+  .sq .pb{ color:#1a1a1a; }
+  .eval-tag{
+    position:absolute; top:-10px; right:-14px; background:var(--accent-bg); color:var(--accent-text);
+    font-family:var(--font-mono); font-size:11px; font-weight:600; padding:3px 7px; border-radius:5px; border:1px solid var(--border-strong);
+  }
+
+  .panel{ width:340px; display:flex; flex-direction:column; gap:14px; }
+
+  .status-strip{
+    display:flex; align-items:center; justify-content:space-between; padding:10px 14px;
+    background:var(--bg-card); border:1px solid var(--border); border-radius:10px; font-size:12px;
+  }
+  .status-strip .eyebrow{ letter-spacing:0.06em; text-transform:uppercase; color:var(--text-muted); font-weight:600; font-size:11px; }
+  .status-strip .turn{ color:var(--text-secondary); font-family:var(--font-mono); }
+  .status-strip .dot{ width:6px;height:6px;border-radius:50%;background:var(--accent); display:inline-block; margin-right:6px; }
+
+  .card{ background:var(--bg-card); border:1px solid var(--border); border-radius:12px; padding:14px; }
+  .card-label{
+    font-size:11px; letter-spacing:0.06em; text-transform:uppercase; color:var(--text-muted);
+    font-weight:600; margin-bottom:10px; display:flex; align-items:center; justify-content:space-between;
+  }
+
+  .history-body{ max-height:120px; overflow-y:auto; }
+  table.moves{ width:100%; border-collapse:collapse; font-family:var(--font-mono); font-size:13px; }
+  table.moves td{ padding:4px 6px; color:var(--text-primary); }
+  table.moves td.num{ color:var(--text-muted); width:28px; }
+  table.moves tr:nth-child(odd){ background:var(--bg-inset); }
+
+  .log-row{ display:flex; align-items:center; gap:10px; background:transparent; border:1px solid var(--border); border-radius:10px; padding:9px 12px; }
+  .log-row .icon{
+    width:20px; height:20px; border-radius:50%; background:var(--bg-inset); color:var(--text-muted);
+    display:flex; align-items:center; justify-content:center; font-size:11px; flex-shrink:0; border:1px solid var(--border);
+  }
+  .log-row .text{ font-size:12.5px; color:var(--text-secondary); }
+  .log-row .text strong{ color:var(--text-primary); font-family:var(--font-mono); font-weight:600; }
+
+  .book-badge{ font-size:10px; font-weight:600; padding:2px 7px; border-radius:5px; background:var(--accent-bg); color:var(--accent-text); letter-spacing:0.03em; }
+  .book-move-row{ display:flex; align-items:baseline; gap:10px; margin:2px 0 10px; }
+  .book-move{ font-family:var(--font-mono); font-size:22px; font-weight:600; }
+  .book-eval{ font-family:var(--font-mono); font-size:12px; color:var(--accent-text); }
+
+  .freq-bar-wrap{ margin-bottom:12px; }
+  .freq-bar-track{ height:8px; border-radius:4px; background:var(--bg-inset); overflow:hidden; border:1px solid var(--border); }
+  .freq-bar-fill{ height:100%; background:var(--accent); border-radius:4px 0 0 4px; }
+  .freq-bar-meta{ display:flex; justify-content:space-between; margin-top:5px; font-size:11px; color:var(--text-muted); font-family:var(--font-mono); }
+
+  .effective-row{
+    display:flex; align-items:center; justify-content:space-between; padding:8px 10px; margin-bottom:12px;
+    background:var(--bg-inset); border:1px solid var(--border); border-radius:8px; font-size:12px; color:var(--text-secondary);
+  }
+  .effective-row button{ background:none; border:none; color:var(--accent-text); font-size:12px; cursor:pointer; font-weight:600; }
+  .effective-row button:hover{ text-decoration:underline; }
+
+  .actions-row{ display:flex; align-items:center; gap:10px; }
+  .btn-primary{
+    flex:1; background:var(--accent); color:#12141c; border:none; border-radius:8px;
+    padding:10px 0; font-weight:600; font-size:13px; cursor:pointer; font-family:var(--font-ui);
+  }
+  .btn-primary:hover{ background:var(--accent-strong); }
+  .btn-secondary{
+    background:transparent; border:1px solid var(--border-strong); color:var(--text-secondary);
+    border-radius:8px; padding:10px 14px; font-size:13px; cursor:pointer; font-family:var(--font-ui);
+  }
+  .btn-secondary:hover{ background:var(--bg-inset); color:var(--text-primary); }
+  .btn-text-danger{ background:none; border:none; color:var(--text-muted); font-size:12px; cursor:pointer; padding:6px 4px; }
+  .btn-text-danger:hover{ color:#e08585; }
+  .btn-ghost{ background:none; border:none; color:var(--text-muted); font-size:12px; cursor:pointer; padding:6px 4px; }
+  .btn-ghost:hover{ color:var(--text-primary); }
+
+  .empty-slot{ border:1px dashed var(--border-strong); border-radius:8px; padding:14px 10px; text-align:center; color:var(--text-muted); font-size:12.5px; margin-bottom:8px; }
+  .hint{ font-size:11.5px; color:var(--text-muted); text-align:center; }
+
+  .confirm-banner{
+    display:flex; align-items:center; gap:10px; background:var(--confirm-bg); border:1px solid var(--confirm-border);
+    border-radius:10px; padding:10px 12px; margin-bottom:10px;
+  }
+  .confirm-banner .icon{
+    width:20px; height:20px; border-radius:50%; background:var(--confirm-border); color:var(--confirm-text);
+    display:flex; align-items:center; justify-content:center; font-size:11px; flex-shrink:0;
+  }
+  .confirm-banner .text{ font-size:13px; color:var(--confirm-text); }
+  .confirm-banner .text strong{ font-family:var(--font-mono); font-weight:600; }
+  .ghost-row{ display:flex; justify-content:flex-end; gap:4px; }
+
+  [data-panelstate] .panel-variant{ display:none; }
+  [data-panelstate="a"] .variant-a,
+  [data-panelstate="b"] .variant-b,
+  [data-panelstate="c"] .variant-c,
+  [data-panelstate="d"] .variant-d{ display:block; }
+</style>
+</head>
+<body>
+
+<div class="toggle-bar">
+  <button id="btn-a" class="active">A · Your turn, nothing saved</button>
+  <button id="btn-b">B · Your turn, d5 saved</button>
+  <button id="btn-c">C · Just played e4, matches prep</button>
+  <button id="btn-d">D · Just played Nc3, not saved</button>
+</div>
+
+<div class="stage" id="stage" data-panelstate="a">
+
+  <div class="board-wrap">
+    <div class="eval-tag" id="eval-tag">+0.32</div>
+    <div class="board" id="board"></div>
+  </div>
+
+  <div class="panel">
+
+    <div class="status-strip">
+      <span class="eyebrow">Local session</span>
+      <span class="turn"><span class="dot"></span><span id="turn-text">Ply 0 · White to move</span></span>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Move history</div>
+      <div class="history-body">
+        <table class="moves" id="history-table"></table>
+      </div>
+    </div>
+
+    <div class="log-row" id="log-row" style="display:none;">
+      <div class="icon">&#8635;</div>
+      <div class="text" id="log-text"></div>
+    </div>
+
+    <div class="card">
+
+      <div class="panel-variant variant-a">
+        <div class="card-label">Next move</div>
+        <div class="empty-slot">No move saved for this position yet</div>
+        <div class="hint">Play a move on the board, then save it as your prep.</div>
+      </div>
+
+      <div class="panel-variant variant-b">
+        <div class="card-label">Next move <span class="book-badge">Prep</span></div>
+        <div class="book-move-row"><span class="book-move">d5</span><span class="book-eval">c6d5 &middot; &minus;0.18</span></div>
+        <div class="freq-bar-wrap">
+          <div class="freq-bar-track"><div class="freq-bar-fill" style="width:52%;"></div></div>
+          <div class="freq-bar-meta"><span>Seen in 940 games as Black</span></div>
+        </div>
+        <div class="effective-row"><span>Effective from <strong style="color:var(--text-primary)">Today</strong></span><button>Change date</button></div>
+        <div class="actions-row">
+          <button class="btn-primary">Go to</button>
+          <button class="btn-secondary">Edit</button>
+        </div>
+        <div class="ghost-row"><button class="btn-text-danger">Remove</button></div>
+      </div>
+
+      <div class="panel-variant variant-c">
+        <div class="card-label">Your move</div>
+        <div class="confirm-banner">
+          <div class="icon">&#10003;</div>
+          <div class="text"><strong>e4</strong> is your preferred move here</div>
+        </div>
+        <div class="ghost-row"><button class="btn-ghost">Edit</button><button class="btn-text-danger">Remove</button></div>
+      </div>
+
+      <div class="panel-variant variant-d">
+        <div class="card-label">Your move <span class="book-badge" style="background:var(--bg-card-alt); color:var(--text-secondary);">Not saved</span></div>
+        <div class="book-move-row"><span class="book-move">Nc3</span></div>
+        <div class="effective-row"><span>Effective from <strong style="color:var(--text-primary)">Today</strong></span><button>Change date</button></div>
+        <div class="actions-row">
+          <button class="btn-primary">Save as preferred move</button>
+        </div>
+        <div class="ghost-row"><button class="btn-ghost">Not now</button></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+const boards = {
+  bTurn: [
+    ['r','n','b','q','k','b','n','r'],
+    ['p','p','','p','p','p','p','p'],
+    ['','','p','','','','',''],
+    ['','','','','','','',''],
+    ['','','','P','P','','',''],
+    ['','','','','','','',''],
+    ['P','P','P','','','P','P','P'],
+    ['R','N','B','Q','K','B','N','R'],
+  ],
+  wJustMoved: [
+    ['r','n','b','q','k','b','n','r'],
+    ['p','p','p','p','','p','p','p'],
+    ['','','','','','','',''],
+    ['','','','','p','','',''],
+    ['','','','','P','','',''],
+    ['','','n','','','','',''],
+    ['P','P','P','P','','P','P','P'],
+    ['R','','B','Q','K','B','N','R'],
+  ]
+};
+const highlightsMap = {
+  bTurn: [[6,3],[4,3]],
+  wJustMoved: [[5,2]]
+};
+const glyphs = {
+  r:'&#9820;',n:'&#9822;',b:'&#9821;',q:'&#9819;',k:'&#9818;',p:'&#9823;',
+  R:'&#9814;',N:'&#9816;',B:'&#9815;',Q:'&#9813;',K:'&#9812;',P:'&#9817;'
+};
+const board = document.getElementById('board');
+function renderBoard(key){
+  board.innerHTML = '';
+  const layout = boards[key];
+  const hl = highlightsMap[key];
+  for(let r=0;r<8;r++){
+    for(let c=0;c<8;c++){
+      const cell = document.createElement('div');
+      const isLight = (r+c)%2===0;
+      let cls = 'sq ' + (isLight ? 'light':'dark');
+      if(hl.some(h=>h[0]===r&&h[1]===c)) cls += ' hl';
+      cell.className = cls;
+      const piece = layout[r][c];
+      if(piece){
+        const span = document.createElement('span');
+        span.className = piece === piece.toUpperCase() ? 'pw' : 'pb';
+        span.innerHTML = glyphs[piece];
+        cell.appendChild(span);
+      }
+      board.appendChild(cell);
+    }
+  }
+}
+
+const historyTable = document.getElementById('history-table');
+function renderHistory(rows){
+  historyTable.innerHTML = rows.map(r =>
+    '<tr><td class="num">'+r[0]+'.</td><td>'+r[1]+'</td><td>'+(r[2]||'')+'</td></tr>'
+  ).join('');
+}
+
+const configs = {
+  a: { board:'bTurn', turn:'Ply 4 &middot; Black to move', evalTag:'+0.20',
+       history:[['1','e4','c6'],['2','d4','']], log:'White played <strong>d4</strong>' },
+  b: { board:'bTurn', turn:'Ply 4 &middot; Black to move', evalTag:'+0.20',
+       history:[['1','e4','c6'],['2','d4','']], log:'White played <strong>d4</strong>' },
+  c: { board:'wJustMoved', turn:'Ply 3 &middot; Black to move', evalTag:'+0.31',
+       history:[['1','e4','e5']], log:null },
+  d: { board:'wJustMoved', turn:'Ply 3 &middot; Black to move', evalTag:'+0.31',
+       history:[['1','e4','e5'],['2','Nc3','']], log:null }
+};
+
+const stage = document.getElementById('stage');
+const turnText = document.getElementById('turn-text');
+const evalTag = document.getElementById('eval-tag');
+const logRow = document.getElementById('log-row');
+const logText = document.getElementById('log-text');
+const buttons = { a: btn('btn-a'), b: btn('btn-b'), c: btn('btn-c'), d: btn('btn-d') };
+function btn(id){ return document.getElementById(id); }
+
+function setState(key){
+  const cfg = configs[key];
+  stage.setAttribute('data-panelstate', key);
+  renderBoard(cfg.board);
+  renderHistory(cfg.history);
+  turnText.innerHTML = cfg.turn;
+  evalTag.textContent = cfg.evalTag;
+  if(cfg.log){ logRow.style.display = 'flex'; logText.innerHTML = cfg.log; }
+  else { logRow.style.display = 'none'; }
+  Object.keys(buttons).forEach(k => buttons[k].classList.toggle('active', k===key));
+}
+Object.keys(buttons).forEach(k => buttons[k].addEventListener('click', ()=>setState(k)));
+setState('a');
+</script>
+</body>
+</html>

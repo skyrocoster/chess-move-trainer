@@ -29,8 +29,7 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 const STARTING_FEN = VIEWER_GAME.positions[0].fen;
-const STAGED_E4_FEN =
-  "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1";
+const STAGED_E4_FEN = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1";
 const stagedIdentityClient = storyCandidateAnalysisClient(["e2e4"]);
 const stagedObservedFens: string[] = [];
 const stagedIdentityObserve = stagedIdentityClient.observe;
@@ -69,6 +68,7 @@ async function verifyStandardWorkspace(canvasElement: HTMLElement) {
   await expectSessionBoundary(canvasElement);
   await expectNoHorizontalOverflow(canvasElement);
 }
+
 export const Wide: Story = {
   name: "Standard starting position - Wide",
   render: () => workspace(),
@@ -127,6 +127,7 @@ export const StagedMy: Story = {
     await expect(canvas.getByRole("button", { name: "1. e4" })).toBeVisible();
   },
 };
+
 export const OpponentImmediate: Story = {
   name: "Local line - immediate opponent move",
   render: () =>
@@ -146,6 +147,7 @@ export const OpponentImmediate: Story = {
     );
   },
 };
+
 export const CandidateActivation: Story = {
   name: "Candidate - Best line uses local move path",
   render: () =>
@@ -164,6 +166,7 @@ export const CandidateActivation: Story = {
     );
   },
 };
+
 export const NavigationAndReplacement: Story = {
   name: "Navigation - local history and replacement truncation",
   render: () =>
@@ -248,7 +251,6 @@ export const Promotion: Story = {
     await expect(canvas.getByTestId("session-san-history")).toHaveTextContent("No local moves yet");
   },
 };
-
 export const KeyboardAndAccessibility: Story = {
   name: "Keyboard and accessibility - bounded workspace",
   parameters: constrainedViewport,
@@ -273,7 +275,6 @@ export const KeyboardAndAccessibility: Story = {
     await expectNoHorizontalOverflow(canvasElement);
   },
 };
-
 export const Accessibility: Story = {
   name: "Accessibility - semantic controls and no overflow",
   render: () => workspace(),
@@ -288,7 +289,6 @@ export const Accessibility: Story = {
     await expectNoHorizontalOverflow(canvasElement);
   },
 };
-
 export const UnassignedSavable: Story = {
   name: "Preferred move - unassigned, seen, and Add",
   render: () =>
@@ -316,7 +316,6 @@ export const UnassignedSavable: Story = {
     await expect(canvas.getByRole("button", { name: "Effective date: Choose date" })).toBeVisible();
   },
 };
-
 export const ZeroPersonalCount: Story = {
   name: "Preferred move - zero personal count remains savable",
   render: () =>
@@ -336,7 +335,6 @@ export const ZeroPersonalCount: Story = {
     await expect(canvas.getByRole("button", { name: "Add" })).toBeEnabled();
   },
 };
-
 export const AbsentUnsavable: Story = {
   name: "Preferred move - absent overall and unsavable",
   render: () =>
@@ -357,7 +355,6 @@ export const AbsentUnsavable: Story = {
     ).not.toBeInTheDocument();
   },
 };
-
 export const AssignedReadOnly: Story = {
   name: "Preferred move - assigned read-only own turn",
   render: () =>
@@ -382,7 +379,26 @@ export const AssignedReadOnly: Story = {
     await expect(canvas.queryByTestId("saved-move")).not.toBeInTheDocument();
   },
 };
-
+export const AssignedBoardPlay: Story = {
+  name: "Preferred move - board plays the saved move",
+  render: () =>
+    workspace(
+      { analysisClient: storyCandidateAnalysisClient(["e2e4"]) },
+      { initialState: "assigned" },
+      { overall_exists: true, white_count: 5, black_count: 1 },
+    ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByTestId("saved-move")).toHaveTextContent("Saved move: e4 (e2e4)");
+    await userEvent.click(await canvas.findByRole("button", { name: "1. e4" }));
+    await expectPositionSquares(canvasElement, "e4", 1);
+    await expect(canvas.getByTestId("session-san-history")).toHaveTextContent("1. e4");
+    await expect(canvas.getByTestId("session-status")).toHaveTextContent(
+      "Saved move played locally: e4.",
+    );
+    await expect(canvas.queryByTestId("saved-move")).not.toBeInTheDocument();
+  },
+};
 export const EditReplacement: Story = {
   name: "Preferred move - Edit and Save replacement",
   render: () =>
@@ -410,7 +426,6 @@ export const EditReplacement: Story = {
     await expect(canvas.getByRole("button", { name: "Effective date: Choose date" })).toBeVisible();
   },
 };
-
 export const DatedAdd: Story = {
   name: "Preferred move - selected UTC date clears after Add",
   render: () =>
@@ -434,7 +449,6 @@ export const DatedAdd: Story = {
     await expect(canvas.getByRole("button", { name: "Effective date: Choose date" })).toBeVisible();
   },
 };
-
 export const MutationFailure: Story = {
   name: "Preferred move - failed Add retains staged move and date",
   render: () =>
@@ -458,7 +472,6 @@ export const MutationFailure: Story = {
     await expect(canvas.getByRole("button", { name: `Effective date: ${date}` })).toBeVisible();
   },
 };
-
 export const RemoveConfirmation: Story = {
   name: "Preferred move - confirmed Remove clears date",
   render: () =>

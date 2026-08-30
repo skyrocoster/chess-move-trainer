@@ -19,6 +19,7 @@ const STORY_IDS = {
   zeroPersonal: "application-repertoire-builder-workspace--zero-personal-count",
   absent: "application-repertoire-builder-workspace--absent-unsavable",
   assigned: "application-repertoire-builder-workspace--assigned-read-only",
+  boardPlay: "application-repertoire-builder-workspace--assigned-board-play",
   replacement: "application-repertoire-builder-workspace--edit-replacement",
   datedAdd: "application-repertoire-builder-workspace--dated-add",
   mutationFailure: "application-repertoire-builder-workspace--mutation-failure",
@@ -411,6 +412,13 @@ test.describe("Repertoire Builder Storybook surface", () => {
     await checkA11y(page);
 
     await openStory(page, STORY_IDS.assigned);
+    await expect(page.getByTestId("session-status")).toHaveText(
+      "Saved move played locally: e4.",
+    );
+    await expect(page.getByTestId("session-san-history")).toHaveText("1. e4");
+    await expect(page.getByTestId("saved-move")).toHaveCount(0);
+
+    await openStory(page, STORY_IDS.boardPlay);
     await expect(page.getByTestId("session-status")).toHaveText(
       "Saved move played locally: e4.",
     );

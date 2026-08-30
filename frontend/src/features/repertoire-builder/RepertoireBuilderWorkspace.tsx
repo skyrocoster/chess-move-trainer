@@ -6,6 +6,7 @@ import {
   InteractiveBoardAdapter,
   type InteractiveBoardMoveIntent,
 } from "../board-adapter/InteractiveBoardAdapter";
+import { deriveLastMove, lastMoveFromSquares } from "../board-adapter/lastMove";
 import { PositionDescription } from "../board-adapter/PositionDescription";
 import { createPositionModel } from "../board-adapter/positionDescriptionModel";
 import {
@@ -23,7 +24,7 @@ import { GameLoader, type GameLoaderStatus, type GameLoaderValues } from "../vie
 import { fetchGame, type GameLookup } from "../viewer/positionApi";
 import type { PositionContextClient } from "../viewer/positionContextApi";
 import { evaluationDisplay } from "../viewer/evalBarDisplay";
-import type { PreferredMoveClient } from "./preferredMoveApi";
+import { type PreferredMoveClient, type PreferredMoveValue } from "./preferredMoveApi";
 import { usePreferredMoveWorkflow } from "./preferredMoveWorkflowState";
 import {
   createStandardStartSession,
@@ -76,6 +77,16 @@ function branchMove(move: PositionPickerMoveRecord) {
 
 function promotionPiece(value: string | undefined): PromotionPiece | undefined {
   return value === "q" || value === "r" || value === "b" || value === "n" ? value : undefined;
+}
+
+function isPlayedSavedMove(
+  move: PositionPickerMoveRecord,
+  savedMove: PreferredMoveValue | null,
+): boolean {
+  return (
+    savedMove !== null &&
+    `${move.sourceSquare}${move.targetSquare}${move.promotion ?? ""}` === savedMove.uci
+  );
 }
 
 export type RepertoireBuilderWorkspaceProps = {
@@ -138,7 +149,10 @@ export default function RepertoireBuilderWorkspace({
     setSession,
     setSessionStatus,
   });
-  const { onStagedMove, reset: resetWorkflow } = workflow;
+  const { onStagedMove, onPlaySavedMove, reset: resetWorkflow } = workflow;
+  const savedMove = workflow.positionModel.savedMove;
+  const savedMovePlayable =
+    savedMove !== null && workflow.draftMode !== "edit" && workflow.mutation === null;
 
   const handlePromotionCommit = useCallback(
     (commit: PromotionCommit) => {
@@ -152,6 +166,14 @@ export default function RepertoireBuilderWorkspace({
         setSessionStatus("Move rejected because it is illegal.");
         return;
       }
+      if (
+        result.disposition === "staged" &&
+        savedMovePlayable &&
+        isPlayedSavedMove(result.move, savedMove)
+      ) {
+        onPlaySavedMove();
+        return;
+      }
       setSession(result.session);
       if (result.disposition === "staged") {
         onStagedMove(result.move);
@@ -163,7 +185,7 @@ export default function RepertoireBuilderWorkspace({
           : `Opponent move played locally: ${result.move.san}.`,
       );
     },
-    [onStagedMove, session],
+    [onPlaySavedMove, onStagedMove, savedMove, savedMovePlayable, session],
   );
 
   const handlePromotionReject = useCallback((reason: "illegal" | "stale") => {
@@ -192,6 +214,13 @@ export default function RepertoireBuilderWorkspace({
   const label = boardLabel(session);
   const sanHistory = sessionSanHistory(session);
   const localMoves = session.localMoves.slice(0, session.localCursor).map(branchMove);
+  const localLastMove =
+    session.localCursor > 0 ? session.localMoves[session.localCursor - 1] : null;
+  const lastMove = session.stagedMove
+    ? lastMoveFromSquares(session.stagedMove.sourceSquare, session.stagedMove.targetSquare)
+    : localLastMove
+      ? lastMoveFromSquares(localLastMove.sourceSquare, localLastMove.targetSquare)
+      : deriveLastMove(session.prefix.at(-2)?.fen, session.currentPosition.san);
 
   function invalidateRequest() {
     requestId.current += 1;
@@ -259,6 +288,15 @@ export default function RepertoireBuilderWorkspace({
         return false;
       }
 
+      if (
+        result.disposition === "staged" &&
+        savedMovePlayable &&
+        isPlayedSavedMove(result.move, savedMove)
+      ) {
+        onPlaySavedMove();
+        return true;
+      }
+
       setSession(result.session);
       if (result.disposition === "staged") {
         onStagedMove(result.move);
@@ -270,7 +308,7 @@ export default function RepertoireBuilderWorkspace({
       setSessionStatus(`Opponent move played locally: ${result.move.san}.`);
       return true;
     },
-    [onStagedMove, session],
+    [onPlaySavedMove, onStagedMove, savedMove, savedMovePlayable, session],
   );
 
   const handleMoveIntent = useCallback(
@@ -377,6 +415,7 @@ export default function RepertoireBuilderWorkspace({
             label={label}
             notice={sessionStatus}
             terminal={null}
+            lastMove={lastMove}
             promotionPending={promotionPending}
             promotionColor={chess.turn()}
             promotionSourceElement={promotionSourceElement}

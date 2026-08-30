@@ -119,7 +119,7 @@ const initialPlay: NonNullable<Story["play"]> = async ({ canvasElement }) => {
   await expect(sourceLink.compareDocumentPosition(analysis)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
   await userEvent.click(contextButton);
   await expect(contextButton).toHaveAttribute("aria-expanded", "false");
-  await expect(canvas.queryByText("Analysis available on request")).not.toBeInTheDocument();
+  await expect(canvas.getByText("Analysis available on request")).toBeVisible();
   await userEvent.click(contextButton);
   await expect(canvas.getByText("Analysis available on request")).toBeVisible();
 };

@@ -14,6 +14,7 @@ import {
   usePromotionController,
 } from "./PromotionPicker";
 import type { BranchSnapshot } from "./branchModel";
+import { lastMoveFromSquares } from "./lastMove";
 
 vi.mock("react-chessboard", () => ({
   defaultPieces: Object.fromEntries(
@@ -29,6 +30,7 @@ vi.mock("react-chessboard", () => ({
       position: string;
       pieces: Record<string, (props?: { square?: string }) => React.JSX.Element>;
       onPieceDrop: (args: { sourceSquare: string; targetSquare: string | null }) => boolean;
+      squareStyles?: Record<string, React.CSSProperties>;
     };
   }) => (
     <div data-testid="mock-chessboard" data-position={options.position}>
@@ -56,6 +58,32 @@ vi.mock("react-chessboard", () => ({
         >
           {options.pieces[pieceType]?.({ square: source })}
         </button>
+      ))}
+      {[
+        "e2",
+        "e4",
+        "e7",
+        "e5",
+        "g8",
+        "f6",
+        "g1",
+        "f3",
+        "e8",
+        "e1",
+        "c8",
+        "d7",
+        "d5",
+        "d6",
+        "a6",
+        "a5",
+        "f7",
+        "g7",
+      ].map((square) => (
+        <span
+          key={`square-${square}`}
+          data-testid={`board-square-${square}`}
+          data-highlighted={options.squareStyles?.[square] ? "true" : "false"}
+        />
       ))}
     </div>
   ),
@@ -225,6 +253,11 @@ function ControlledAdapterHarness({
   return (
     <InteractiveBoardAdapter
       branchSnapshot={branchSnapshot}
+      lastMove={
+        branchSnapshot.moves.at(-1)
+          ? lastMoveFromSquares(branchSnapshot.moves.at(-1)!.from, branchSnapshot.moves.at(-1)!.to)
+          : null
+      }
       label="Interactive analysis board"
       notice={notice}
       terminal={terminalDescription(chess)}
@@ -269,6 +302,8 @@ describe("InteractiveBoardAdapter", () => {
     renderAdapter();
 
     expect(screen.getByTestId("branch-san")).toHaveTextContent("No branch moves yet");
+    expect(screen.getByTestId("board-square-e2")).toHaveAttribute("data-highlighted", "false");
+    expect(screen.getByTestId("board-square-e4")).toHaveAttribute("data-highlighted", "false");
     expect(screen.getByTestId("branch-origin-fen")).toHaveTextContent(STARTING_FEN);
     expect(screen.getByTestId("branch-current-fen")).toHaveTextContent(STARTING_FEN);
     expect(screen.getByRole("button", { name: "Undo" })).toBeDisabled();
@@ -279,6 +314,8 @@ describe("InteractiveBoardAdapter", () => {
     expect(screen.getByTestId("branch-current-fen")).toHaveTextContent(
       "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1",
     );
+    expect(screen.getByTestId("board-square-e2")).toHaveAttribute("data-highlighted", "true");
+    expect(screen.getByTestId("board-square-e4")).toHaveAttribute("data-highlighted", "true");
     const branchFen = screen.getByTestId("mock-chessboard").getAttribute("data-position");
     expect(branchFen).not.toBe(STARTING_FEN);
 
@@ -290,12 +327,16 @@ describe("InteractiveBoardAdapter", () => {
     fireEvent.click(screen.getByRole("button", { name: "Undo" }));
     expect(screen.getByTestId("branch-san")).toHaveTextContent("No branch moves yet");
     expect(screen.getByTestId("branch-current-fen")).toHaveTextContent(STARTING_FEN);
+    expect(screen.getByTestId("board-square-e2")).toHaveAttribute("data-highlighted", "false");
+    expect(screen.getByTestId("board-square-e4")).toHaveAttribute("data-highlighted", "false");
     expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", STARTING_FEN);
 
     fireEvent.click(screen.getByTestId("move-e2-e4"));
     fireEvent.click(screen.getByRole("button", { name: "Reset" }));
     expect(screen.getByTestId("branch-san")).toHaveTextContent("No branch moves yet");
     expect(screen.getByTestId("branch-current-fen")).toHaveTextContent(STARTING_FEN);
+    expect(screen.getByTestId("board-square-e2")).toHaveAttribute("data-highlighted", "false");
+    expect(screen.getByTestId("board-square-e4")).toHaveAttribute("data-highlighted", "false");
     expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", STARTING_FEN);
   });
 
@@ -371,6 +412,8 @@ describe("InteractiveBoardAdapter", () => {
     expect(screen.getByTestId("branch-current-fen")).toHaveTextContent(fen);
     expect(screen.getByTestId("branch-current-fen").textContent?.split(" ")).toHaveLength(6);
     expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", fen);
+    expect(screen.getByTestId("board-square-e7")).toHaveAttribute("data-highlighted", "true");
+    expect(screen.getByTestId("board-square-e8")).toHaveAttribute("data-highlighted", "true");
   });
 
   it("commits both legal castling transitions with exact SAN and FEN", () => {
@@ -381,12 +424,16 @@ describe("InteractiveBoardAdapter", () => {
     expect(screen.getByTestId("branch-current-fen")).toHaveTextContent(
       "r3k2r/8/8/8/8/8/8/R4RK1 b kq - 1 1",
     );
+    expect(screen.getByTestId("board-square-e1")).toHaveAttribute("data-highlighted", "true");
+    expect(screen.getByTestId("board-square-g1")).toHaveAttribute("data-highlighted", "true");
 
     fireEvent.click(screen.getByTestId("move-e8-c8"));
     expect(screen.getByTestId("branch-san")).toHaveTextContent("1. O-O 1... O-O-O");
     expect(screen.getByTestId("branch-current-fen")).toHaveTextContent(
       "2kr3r/8/8/8/8/8/8/R4RK1 w - - 2 2",
     );
+    expect(screen.getByTestId("board-square-e8")).toHaveAttribute("data-highlighted", "true");
+    expect(screen.getByTestId("board-square-c8")).toHaveAttribute("data-highlighted", "true");
   });
 
   it("commits the en-passant target and capture with exact SAN and FEN", () => {
@@ -397,12 +444,16 @@ describe("InteractiveBoardAdapter", () => {
     expect(screen.getByTestId("branch-current-fen")).toHaveTextContent(
       "4k3/8/8/3pP3/8/8/8/4K3 w - d6 0 2",
     );
+    expect(screen.getByTestId("board-square-d7")).toHaveAttribute("data-highlighted", "true");
+    expect(screen.getByTestId("board-square-d5")).toHaveAttribute("data-highlighted", "true");
 
     fireEvent.click(screen.getByTestId("move-e5-d6"));
     expect(screen.getByTestId("branch-san")).toHaveTextContent("1... d5 2. exd6");
     expect(screen.getByTestId("branch-current-fen")).toHaveTextContent(
       "4k3/8/3P4/8/8/8/8/4K3 b - - 0 2",
     );
+    expect(screen.getByTestId("board-square-e5")).toHaveAttribute("data-highlighted", "true");
+    expect(screen.getByTestId("board-square-d6")).toHaveAttribute("data-highlighted", "true");
   });
 
   it("presents a verified terminal classification after a complete self-play branch", () => {
@@ -436,6 +487,7 @@ describe("InteractiveBoardAdapter", () => {
     render(
       <InteractiveBoardAdapter
         branchSnapshot={branchSnapshot}
+        lastMove={lastMoveFromSquares("e7", "e5")}
         label="Interactive analysis board"
         notice="Branch move committed: e5."
         terminal={null}
@@ -455,6 +507,8 @@ describe("InteractiveBoardAdapter", () => {
     expect(screen.getByTestId("branch-current-fen")).toHaveTextContent(branchSnapshot.currentFen);
     expect(screen.getByTestId("branch-current-ply")).toHaveTextContent("Current ply 3");
     expect(screen.getByRole("button", { name: "Reset" })).toBeEnabled();
+    expect(screen.getByTestId("board-square-e7")).toHaveAttribute("data-highlighted", "true");
+    expect(screen.getByTestId("board-square-e5")).toHaveAttribute("data-highlighted", "true");
 
     fireEvent.click(screen.getByTestId("move-e7-e5"));
     expect(onMoveIntent).toHaveBeenCalledWith(

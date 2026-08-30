@@ -629,7 +629,7 @@ describe("ViewerWorkspace", () => {
     if (!disclosureContent) {
       throw new Error(`Game Context disclosure content ${contentId} was not found`);
     }
-    expect(disclosureContent).toContainElement(analysisStatus);
+    expect(disclosureContent).toContainElement(sourceLink);
     expect(analysisClient.observe).toHaveBeenCalledOnce();
     expect(analysisClient.status).not.toHaveBeenCalled();
 

@@ -16,6 +16,7 @@ import {
   usePromotionController,
 } from "./PromotionPicker";
 import type { BranchSnapshot } from "./branchModel";
+import { lastMoveFromSquares } from "./lastMove";
 import styles from "./PromotionPicker.module.css";
 
 const STARTING_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
@@ -185,6 +186,11 @@ function InteractiveBoardStoryHarness({
   return (
     <InteractiveBoardAdapter
       branchSnapshot={branchSnapshot}
+      lastMove={
+        branchSnapshot.moves.at(-1)
+          ? lastMoveFromSquares(branchSnapshot.moves.at(-1)!.from, branchSnapshot.moves.at(-1)!.to)
+          : null
+      }
       label={label}
       notice={notice}
       terminal={terminalDescription(chess)}

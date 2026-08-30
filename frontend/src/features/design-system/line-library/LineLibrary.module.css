@@ -1,0 +1,286 @@
+/*
+ * Generic Line Library surface. The component owns interaction structure;
+ * consumers supply domain display through row slots. Geometry, focus, and
+ * color roles use the shared design-system tokens only.
+ */
+.library {
+  box-sizing: border-box;
+  min-inline-size: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--cmt-spacing-16);
+  color: var(--md-sys-color-on-surface);
+}
+
+.panel {
+  padding: var(--cmt-spacing-16);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--cmt-radius-default);
+  background: var(--md-sys-color-surface-container-low);
+}
+
+.embedded {
+  padding: 0;
+  background: transparent;
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cmt-spacing-4);
+}
+
+.title,
+.description {
+  margin: 0;
+}
+
+.description,
+.kindLabel,
+.disabledReason,
+.referenceTarget {
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: var(--cmt-spacing-12);
+}
+
+.filterField,
+.booleanFilter {
+  display: flex;
+  align-items: center;
+  gap: var(--cmt-spacing-8);
+}
+
+.filterField {
+  flex-direction: column;
+  align-items: stretch;
+  min-inline-size: 0;
+}
+
+.filterLabel {
+  color: var(--md-sys-color-on-surface-variant);
+  font-family: var(--md-sys-typescale-label-large-font);
+  font-size: var(--md-sys-typescale-label-large-size);
+  line-height: var(--md-sys-typescale-label-large-line-height);
+}
+
+.input,
+.selectTrigger {
+  box-sizing: border-box;
+  min-inline-size: 0;
+  border: 1px solid var(--md-sys-color-outline);
+  border-radius: var(--cmt-radius-default);
+  background: var(--md-sys-color-surface);
+  color: var(--md-sys-color-on-surface);
+  font: inherit;
+}
+
+.input {
+  padding: var(--cmt-spacing-8) var(--cmt-spacing-12);
+}
+
+.selectTrigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--cmt-spacing-12);
+  padding: var(--cmt-spacing-8) var(--cmt-spacing-12);
+  text-align: start;
+}
+
+.input:focus-visible,
+.selectTrigger:focus-visible,
+.checkbox:focus-visible,
+.referenceButton:focus-visible,
+.treeItem:focus-visible {
+  outline: var(--cmt-focus-ring-width) solid var(--cmt-focus-ring-color);
+  outline-offset: var(--cmt-focus-ring-separation);
+}
+
+.selectPositioner {
+  z-index: 1;
+}
+
+.selectPopup {
+  min-inline-size: 12rem;
+  padding: var(--cmt-spacing-4);
+  border: 1px solid var(--md-sys-color-outline);
+  border-radius: var(--cmt-radius-default);
+  background: var(--md-sys-color-surface-container);
+  color: var(--md-sys-color-on-surface);
+}
+
+.selectItem {
+  display: block;
+  padding: var(--cmt-spacing-8) var(--cmt-spacing-12);
+  border-radius: var(--cmt-radius-4);
+  cursor: pointer;
+}
+
+.selectItem[data-highlighted] {
+  background: var(--md-sys-color-surface-container-high);
+}
+
+.checkbox {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  inline-size: var(--cmt-spacing-24);
+  block-size: var(--cmt-spacing-24);
+  padding: 0;
+  border: 1px solid var(--md-sys-color-outline);
+  border-radius: var(--cmt-radius-4);
+  background: var(--md-sys-color-surface);
+  color: var(--md-sys-color-on-surface);
+  cursor: pointer;
+}
+
+.checkbox[data-checked],
+.checkbox[data-indeterminate] {
+  border-color: var(--md-sys-color-primary);
+  background: var(--md-sys-color-primary);
+  color: var(--md-sys-color-on-primary);
+}
+
+.checkbox:disabled,
+.input:disabled,
+.selectTrigger:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.checkboxIndicator {
+  font-size: var(--md-sys-typescale-label-small-size);
+  line-height: 1;
+}
+
+.tree {
+  min-inline-size: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--cmt-spacing-4);
+}
+
+.treeItem {
+  min-inline-size: 0;
+  padding-inline-start: calc(var(--cmt-spacing-24) * var(--line-library-level));
+  border-radius: var(--cmt-radius-default);
+}
+
+.treeItem:hover {
+  background: var(--md-sys-color-surface-container);
+}
+
+.row {
+  min-inline-size: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--cmt-spacing-8);
+  padding: var(--cmt-spacing-8);
+}
+
+.disclosure {
+  inline-size: var(--cmt-spacing-16);
+  flex: none;
+  color: var(--md-sys-color-on-surface-variant);
+  text-align: center;
+}
+
+.rowContent {
+  min-inline-size: 0;
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--cmt-spacing-8);
+}
+
+.primaryLabel {
+  overflow-wrap: anywhere;
+}
+
+.kindLabel {
+  font-family: var(--md-sys-typescale-label-medium-font);
+  font-size: var(--md-sys-typescale-label-medium-size);
+  line-height: var(--md-sys-typescale-label-medium-line-height);
+}
+
+.disabledReason {
+  flex-basis: 100%;
+  font-size: var(--md-sys-typescale-body-small-size);
+  line-height: var(--md-sys-typescale-body-small-line-height);
+}
+
+.referenceButton {
+  padding: var(--cmt-spacing-4) var(--cmt-spacing-8);
+  border: 1px solid var(--md-sys-color-outline);
+  border-radius: var(--cmt-radius-default);
+  background: transparent;
+  color: var(--md-sys-color-primary);
+  font: inherit;
+  cursor: pointer;
+}
+
+.status,
+.empty,
+.error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--cmt-spacing-12);
+  padding: var(--cmt-spacing-12);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--cmt-radius-default);
+  background: var(--md-sys-color-surface-container);
+}
+
+.error {
+  border-color: var(--cmt-error-accent);
+  color: var(--cmt-error-on-container);
+}
+
+.commitBar {
+  display: flex;
+  justify-content: flex-end;
+  padding-block-start: var(--cmt-spacing-4);
+}
+
+@media (forced-colors: active) {
+  .library,
+  .panel,
+  .input,
+  .selectTrigger,
+  .selectPopup,
+  .checkbox,
+  .status,
+  .empty,
+  .error,
+  .referenceButton {
+    background: Canvas;
+    color: CanvasText;
+    border-color: CanvasText;
+  }
+
+  .referenceButton {
+    color: LinkText;
+  }
+}
+
+@media (max-width: 640px) {
+  .filters,
+  .filterField,
+  .input,
+  .selectTrigger {
+    inline-size: 100%;
+  }
+
+  .filters {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}

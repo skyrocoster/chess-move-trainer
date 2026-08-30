@@ -1,0 +1,177 @@
+.history {
+  box-sizing: border-box;
+  min-inline-size: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--cmt-spacing-8);
+  padding: var(--cmt-spacing-8);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--cmt-radius-default);
+  background: var(--md-sys-color-surface-container-low);
+  color: var(--md-sys-color-on-surface);
+}
+
+.list {
+  min-inline-size: 0;
+  max-block-size: 24rem;
+  overflow-y: auto;
+  margin: 0;
+  padding: 0;
+  scroll-behavior: smooth;
+}
+
+.table {
+  inline-size: calc(100% - (2 * var(--cmt-spacing-4)));
+  margin-inline: var(--cmt-spacing-4);
+  border-collapse: separate;
+  border-spacing: 0 var(--cmt-spacing-4);
+  table-layout: fixed;
+  text-align: start;
+}
+
+.numberColumn {
+  inline-size: 3rem;
+}
+
+.table thead {
+  position: sticky;
+  z-index: 1;
+  inset-block-start: 0;
+  background: var(--md-sys-color-surface-container-low);
+}
+
+.table thead th {
+  padding: 0 var(--cmt-spacing-8) var(--cmt-spacing-4);
+  color: var(--md-sys-color-on-surface-variant);
+  font: var(--md-sys-typescale-label-medium);
+  text-align: start;
+}
+
+.table thead th:first-child {
+  text-align: end;
+}
+
+.table tbody th,
+.table tbody td {
+  min-inline-size: 0;
+  padding: 0;
+  vertical-align: middle;
+}
+
+.table tbody td {
+  padding-inline: var(--cmt-spacing-4);
+}
+
+.table tbody tr:nth-child(odd) > th,
+.table tbody tr:nth-child(odd) > td {
+  background: var(--md-sys-color-surface-container);
+}
+
+.table tbody tr:nth-child(odd) > :first-child {
+  border-start-start-radius: var(--cmt-radius-default);
+  border-end-start-radius: var(--cmt-radius-default);
+}
+
+.table tbody tr:nth-child(odd) > :last-child {
+  border-start-end-radius: var(--cmt-radius-default);
+  border-end-end-radius: var(--cmt-radius-default);
+}
+
+.entry {
+  box-sizing: border-box;
+  display: flex;
+  align-items: baseline;
+  gap: var(--cmt-spacing-12);
+  inline-size: 100%;
+  min-block-size: 48px;
+  padding: var(--cmt-spacing-8) var(--cmt-spacing-12);
+  border: 1px solid transparent;
+  border-radius: var(--cmt-radius-default);
+  background: transparent;
+  color: var(--md-sys-color-on-surface);
+  font: var(--md-sys-typescale-body-medium);
+  text-align: start;
+  cursor: pointer;
+  transition:
+    background-color var(--cmt-motion-duration-short) ease,
+    border-color var(--cmt-motion-duration-short) ease;
+}
+
+.moveNumber {
+  padding-inline-end: var(--cmt-spacing-8) !important;
+  color: var(--md-sys-color-on-surface-variant);
+  font: var(--md-sys-typescale-label-medium);
+  font-variant-numeric: tabular-nums;
+  text-align: end;
+}
+
+.emptyMove {
+  display: block;
+  min-block-size: 48px;
+  padding: var(--cmt-spacing-8) var(--cmt-spacing-12);
+  color: var(--md-sys-color-on-surface-variant);
+  font: var(--md-sys-typescale-body-medium);
+  text-align: start;
+}
+
+.entry:hover {
+  background: var(--md-sys-color-surface-container);
+}
+
+.entry:focus-visible {
+  outline: var(--cmt-focus-ring-width) solid var(--cmt-focus-ring-color);
+  outline-offset: var(--cmt-focus-ring-separation);
+}
+
+.entry[aria-current="step"] {
+  border-color: var(--md-sys-color-primary);
+  background: var(--md-sys-color-primary-container);
+  color: var(--md-sys-color-on-primary-container);
+}
+
+.visuallyHidden {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  clip-path: inset(50%);
+}
+
+.entry {
+  overflow-wrap: anywhere;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .list {
+    scroll-behavior: auto;
+  }
+
+  .entry {
+    animation-duration: 0.01ms;
+    transition-duration: 0.01ms;
+  }
+}
+
+@media (forced-colors: active) {
+  .history,
+  .entry,
+  .table thead,
+  .table tbody tr:nth-child(odd) > th,
+  .table tbody tr:nth-child(odd) > td {
+    border-color: CanvasText;
+    background: Canvas;
+    color: CanvasText;
+  }
+
+  .entry[aria-current="step"] {
+    border-color: Highlight;
+    background: Highlight;
+    color: HighlightText;
+  }
+
+  .entry:focus-visible {
+    outline-color: Highlight;
+  }
+}

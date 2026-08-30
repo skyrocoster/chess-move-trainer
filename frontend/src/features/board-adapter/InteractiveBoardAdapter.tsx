@@ -25,6 +25,7 @@ import {
 import styles from "./InteractiveBoardAdapter.module.css";
 import type { BoardOrientation } from "./BoardAdapter";
 import type { BranchMove, BranchSnapshot } from "./branchModel";
+import { lastMoveSquareStyles, type LastMove } from "./lastMove";
 
 export type { BranchMove, BranchSnapshot } from "./branchModel";
 
@@ -34,6 +35,7 @@ export type InteractiveBoardAdapterProps = {
   label: string;
   notice: string;
   terminal: string | null;
+  lastMove: LastMove | null;
   promotionPending: PendingPromotion | null;
   promotionColor: PromotionColor;
   promotionSourceElement: HTMLElement | null;
@@ -125,6 +127,7 @@ export function InteractiveBoardAdapter({
   label,
   notice,
   terminal,
+  lastMove,
   promotionPending,
   promotionColor,
   promotionSourceElement,
@@ -167,6 +170,7 @@ export function InteractiveBoardAdapter({
     [onMoveIntent],
   );
   const san = branchSan(branchSnapshot.originFen, branchSnapshot.moves);
+  const squareStyles = lastMoveSquareStyles(lastMove);
   const showCopyFeedback = useCallback((message: string) => {
     if (copyFeedbackTimerRef.current !== null) {
       window.clearTimeout(copyFeedbackTimerRef.current);
@@ -199,6 +203,7 @@ export function InteractiveBoardAdapter({
     onPieceDrop: handlePieceDrop,
     pieces: accessiblePieces,
     position: branchSnapshot.currentFen,
+    squareStyles,
     showAnimations: false,
     showNotation: true,
   } as const;

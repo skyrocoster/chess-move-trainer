@@ -5,6 +5,8 @@ mode: subagent
 #variant: medium
 model: opencode/mimo-v2.5-free
 #variant: max
+#model: opencode-go/hy3
+#variant: high
 permission:
   edit: deny
   bash: allow

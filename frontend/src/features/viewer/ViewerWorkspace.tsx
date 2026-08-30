@@ -6,6 +6,7 @@ import {
   InteractiveBoardAdapter,
   type InteractiveBoardMoveIntent,
 } from "../board-adapter/InteractiveBoardAdapter";
+import { deriveLastMove, lastMoveFromSquares } from "../board-adapter/lastMove";
 import { BoardControl } from "./BoardControl";
 import { AnalysisPanel } from "../analysis/AnalysisPanel";
 import { BoardEvalStage } from "./BoardEvalStage";
@@ -383,6 +384,14 @@ export default function ViewerWorkspace({
   const boardFen = analysisFen ?? START_BOARD.fen;
   const baseOrientation = game?.subject_color ?? START_BOARD.orientation;
   const boardOrientation = flipped ? oppositeOrientation(baseOrientation) : baseOrientation;
+  const historicalLastMove =
+    game && currentPosition && currentIndex > 0
+      ? deriveLastMove(game.positions[currentIndex - 1]?.fen, currentPosition.san)
+      : null;
+  const branchLastMove = branchForView?.active ? branchForView.moves.at(-1) : null;
+  const lastMove = branchLastMove
+    ? lastMoveFromSquares(branchLastMove.from, branchLastMove.to)
+    : historicalLastMove;
   const branchTerminal = terminalDescription(branchChess);
   const boardLabel =
     branchForView && currentPosition
@@ -421,6 +430,7 @@ export default function ViewerWorkspace({
               label={boardLabel}
               notice={branchNotice}
               terminal={branchTerminal}
+              lastMove={lastMove}
               promotionPending={promotionPending}
               promotionColor={promotionColor}
               promotionSourceElement={promotionSourceElement}
@@ -455,15 +465,15 @@ export default function ViewerWorkspace({
         <div className={styles.context}>
           <GameContext game={game} position={currentPosition}>
             <PositionContext context={positionContextState.context} />
-            <AnalysisPanel
-              display={analysisDisplay}
-              onAnalyze={() => analysisState.handleAction("analyze")}
-              onUpdate={() => analysisState.handleAction("update")}
-              onRetry={() => analysisState.handleAction("retry")}
-              onRetryObservation={analysisState.retryObservation}
-              onCandidateMove={handleCandidateMove}
-            />
           </GameContext>
+          <AnalysisPanel
+            display={analysisDisplay}
+            onAnalyze={() => analysisState.handleAction("analyze")}
+            onUpdate={() => analysisState.handleAction("update")}
+            onRetry={() => analysisState.handleAction("retry")}
+            onRetryObservation={analysisState.retryObservation}
+            onCandidateMove={handleCandidateMove}
+          />
         </div>
 
         <p className={styles.announcement} role="status" aria-live="polite" aria-atomic="true">

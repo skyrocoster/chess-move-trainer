@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { InteractiveBoardMoveIntent } from "../board-adapter/InteractiveBoardAdapter";
 import type { BranchSnapshot } from "../board-adapter/branchModel";
+import type { LastMove } from "../board-adapter/lastMove";
 import type { AnalysisClient } from "./analysisApi";
 import ViewerWorkspace from "./ViewerWorkspace";
 import type { GameLookup } from "./positionApi";
@@ -19,16 +20,24 @@ vi.mock("../board-adapter/InteractiveBoardAdapter", () => ({
     onReset,
     label,
     notice,
+    lastMove,
   }: {
     branchSnapshot: BranchSnapshot;
     onMoveIntent: (intent: InteractiveBoardMoveIntent) => boolean;
     onReset: () => void;
     label: string;
     notice: string;
+    lastMove: LastMove | null;
   }) => {
     return (
       <section data-testid="interactive-board-adapter">
-        <div role="img" aria-label={label} data-testid="interactive-board" />
+        <div
+          role="img"
+          aria-label={label}
+          data-testid="interactive-board"
+          data-last-move-source={lastMove?.sourceSquare}
+          data-last-move-target={lastMove?.targetSquare}
+        />
         <p data-testid="branch-san">
           {branchSnapshot.moves.length > 0 ? "1. e4" : "No branch moves yet"}
         </p>
@@ -189,9 +198,13 @@ describe("ViewerWorkspace temporary branch ownership", () => {
 
     await loadGame(user);
     await screen.findByText("Ply 0 of 3");
+    expect(screen.getByTestId("interactive-board")).not.toHaveAttribute("data-last-move-source");
+    expect(screen.getByTestId("interactive-board")).not.toHaveAttribute("data-last-move-target");
     await user.click(screen.getByTestId("branch-test-move"));
 
     expect(screen.getByTestId("branch-san")).toHaveTextContent("1. e4");
+    expect(screen.getByTestId("interactive-board")).toHaveAttribute("data-last-move-source", "e2");
+    expect(screen.getByTestId("interactive-board")).toHaveAttribute("data-last-move-target", "e4");
     expect(screen.getByText("Ply 0 of 3")).toBeVisible();
     expect(screen.getByText("Initial position")).toBeVisible();
     expect(screen.getByRole("button", { name: "Previous" })).toBeDisabled();
@@ -206,6 +219,8 @@ describe("ViewerWorkspace temporary branch ownership", () => {
 
     await user.click(screen.getByRole("button", { name: "Reset branch" }));
     expect(screen.getByTestId("branch-san")).toHaveTextContent("No branch moves yet");
+    expect(screen.getByTestId("interactive-board")).not.toHaveAttribute("data-last-move-source");
+    expect(screen.getByTestId("interactive-board")).not.toHaveAttribute("data-last-move-target");
     expect(screen.getByRole("button", { name: "Next" })).toBeEnabled();
     await waitFor(() =>
       expect(contextClient).toHaveBeenCalledWith(
@@ -253,10 +268,21 @@ describe("ViewerWorkspace temporary branch ownership", () => {
 
     await loadGame(user, "1");
     await screen.findByText("Ply 1 of 3");
+    expect(screen.getByTestId("interactive-board")).toHaveAttribute("data-last-move-source", "e2");
+    expect(screen.getByTestId("interactive-board")).toHaveAttribute("data-last-move-target", "e4");
     await user.click(screen.getByTestId("branch-test-black-move"));
 
+    expect(screen.getByTestId("interactive-board")).toHaveAttribute("data-last-move-source", "e7");
+    expect(screen.getByTestId("interactive-board")).toHaveAttribute("data-last-move-target", "e5");
     expect(screen.getByTestId("branch-current-fen")).toHaveTextContent(
       "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq e6 0 2",
+    );
+    await user.click(screen.getByRole("button", { name: "Reset branch" }));
+    expect(screen.getByTestId("interactive-board")).toHaveAttribute("data-last-move-source", "e2");
+    expect(screen.getByTestId("interactive-board")).toHaveAttribute("data-last-move-target", "e4");
+
+    expect(screen.getByTestId("branch-current-fen")).toHaveTextContent(
+      "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1",
     );
   });
 
