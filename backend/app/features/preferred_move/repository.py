@@ -173,9 +173,7 @@ class PreferredMoveRepository:
                 effective_at,
             )
             selected_effective_at = (
-                None
-                if move_event is None or move_event[7] is None
-                else str(move_event[9])
+                None if move_event is None or move_event[7] is None else str(move_event[9])
             )
             return PreferredMoveRead(state, selected_effective_at)
         except sqlite3.Error as error:

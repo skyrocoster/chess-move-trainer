@@ -189,9 +189,7 @@ def test_as_of_reads_backdated_and_same_effective_event_ordering(api_context) ->
     assert _get(client, as_of="2026-01-11T00:00:00Z").json()["effective_at"] == (
         "2026-01-10T00:00:00.000000Z"
     )
-    assert _get(client, as_of=FUTURE).json()["effective_at"] == (
-        "2026-01-10T00:00:00.000000Z"
-    )
+    assert _get(client, as_of=FUTURE).json()["effective_at"] == ("2026-01-10T00:00:00.000000Z")
     assert _get(client, as_of=FUTURE).json()["move"] == {"uci": "e2e4", "san": "e4"}
 
 

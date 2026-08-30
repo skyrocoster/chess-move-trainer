@@ -18,8 +18,7 @@ function response(fen: Fen): PreferredMoveResponse {
     fen,
     state: "assigned",
     move: { uci: "e2e4", san: "e4" },
-    effective_at:
-      fen === FEN ? "2026-01-01T00:00:00.000000Z" : "2026-01-02T00:00:00.000000Z",
+    effective_at: fen === FEN ? "2026-01-01T00:00:00.000000Z" : "2026-01-02T00:00:00.000000Z",
   };
 }
 
@@ -106,7 +105,12 @@ describe("usePreferredMoveState", () => {
 
     await waitFor(() =>
       expect(screen.getByTestId("state")).toHaveTextContent(
-        JSON.stringify({ fen: null, effective_at: null, loading: false, error: "position_not_found" }),
+        JSON.stringify({
+          fen: null,
+          effective_at: null,
+          loading: false,
+          error: "position_not_found",
+        }),
       ),
     );
 

@@ -107,10 +107,9 @@ export const AvailableZero: Story = {
     const canvas = within(canvasElement);
     await expect(canvas.getByText("0 / 5 games", { exact: true })).toBeVisible();
     await expect(canvas.getByText("0%", { exact: true })).toBeVisible();
-    await expect(canvas.getByRole("meter", { name: "Position reach frequency as White" })).toHaveAttribute(
-      "aria-valuetext",
-      "0 of 5 games as White; 0% reached.",
-    );
+    await expect(
+      canvas.getByRole("meter", { name: "Position reach frequency as White" }),
+    ).toHaveAttribute("aria-valuetext", "0 of 5 games as White; 0% reached.");
   },
 };
 
@@ -162,10 +161,7 @@ export const Accessibility: Story = {
     await expect(meter).toHaveAttribute("aria-valuemin", "0");
     await expect(meter).toHaveAttribute("aria-valuemax", "100");
     await expect(meter).toHaveAttribute("aria-valuenow", "42.857142857142854");
-    await expect(meter).toHaveAttribute(
-      "aria-valuetext",
-      "3 of 7 games as Black; 42.9% reached.",
-    );
+    await expect(meter).toHaveAttribute("aria-valuetext", "3 of 7 games as Black; 42.9% reached.");
   },
 };
 

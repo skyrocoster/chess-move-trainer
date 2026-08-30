@@ -54,12 +54,7 @@ describe("PositionReachFrequency", () => {
   });
 
   it("renders an existing zero count as an available zero meter", () => {
-    render(
-      <PositionReachFrequency
-        context={context({ white_count: 0 })}
-        selectedColor="white"
-      />,
-    );
+    render(<PositionReachFrequency context={context({ white_count: 0 })} selectedColor="white" />);
 
     expect(screen.getByTestId("position-reach-indicator")).toBeInTheDocument();
     expect(screen.getByText("0 / 5 games", { exact: true })).toBeVisible();
@@ -77,7 +72,9 @@ describe("PositionReachFrequency", () => {
         selectedColor="white"
       />,
     );
-    expect(screen.getByText("This position is not present in the accepted game data for White.")).toBeVisible();
+    expect(
+      screen.getByText("This position is not present in the accepted game data for White."),
+    ).toBeVisible();
     expect(screen.queryByRole("meter")).not.toBeInTheDocument();
     expect(screen.queryByText(/0%|0 \/ /)).not.toBeInTheDocument();
 

@@ -5,16 +5,15 @@ import { useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import axeMatchers from "@chialab/vitest-axe";
 
+import { CalendarDate, type CalendarDateValue } from "./CalendarDate";
 import {
-  CalendarDate,
   formatUtcDate,
   getUtcCalendarDay,
   isFutureUtcDate,
   normalizeToUtcMidnight,
   toUtcMidnight,
-  type CalendarDateValue,
   type UtcCalendarDay,
-} from "./CalendarDate";
+} from "./CalendarDateUtils";
 
 expect.extend(axeMatchers);
 

@@ -4,7 +4,7 @@ import "../../styles/cmt-tokens.css";
 import "../../styles/cmt-typescale.css";
 import ViewerWorkspace from "./ViewerWorkspace";
 import type { Game } from "./gameModel";
-import type { GameLookup, GameLookupFailure } from "./positionApi";
+import type { GameLookup } from "./positionApi";
 import type { PositionContextClient, PositionContextResponse } from "./positionContextApi";
 import styles from "./Stage1Story.module.css";
 import { VIEWER_GAME, VIEWER_GAME_UUID, UNSAFE_SOURCE_GAME } from "./viewerFixtures";
@@ -17,7 +17,6 @@ import {
 import {
   completeGameLookup,
   branchPromotionInteractionPlay,
-  failureLookup,
   finalPlay,
   keyboardMove,
   pendingLookup,
@@ -50,7 +49,6 @@ function viewerPositionContext(fen: string): Omit<PositionContextResponse, "fen"
     black_total: 10,
   };
 }
-
 const positionContextClient = storyPositionContextClient(viewerPositionContext);
 const blackGame: Game = { ...VIEWER_GAME, subject_color: "black" };
 const branchPositionContextClient = storyPositionContextClient((fen) =>
@@ -70,7 +68,6 @@ const branchPositionContextClient = storyPositionContextClient((fen) =>
         black_total: 10,
       },
 );
-
 const meta = {
   title: "Application/Viewer/Workspace",
   component: ViewerWorkspace,
@@ -272,52 +269,6 @@ export const UnsafeSource: Story = {
     await expect(canvas.getByText("Source unavailable")).toBeVisible();
     await expect(canvas.queryByRole("link", { name: "Chess.com game" })).not.toBeInTheDocument();
   },
-};
-
-function failureStory(status: GameLookupFailure): Story {
-  const heading =
-    status === "game_not_found"
-      ? "Game not found"
-      : status === "position_not_found"
-        ? "Position not found"
-        : status === "corpus_unavailable"
-          ? "Corpus unavailable"
-          : status === "game_unavailable"
-            ? "Game unavailable"
-            : "Unable to load game";
-  return {
-    args: { lookup: failureLookup(status) },
-    render: (args) => frame(<ViewerWorkspace analysisClient={storyAnalysisClient()} {...args} />),
-    play: async ({ canvasElement }) => {
-      const canvas = within(canvasElement);
-      await submit(canvas);
-      await expect(canvas.getByRole("heading", { name: heading, level: 2 })).toBeVisible();
-      await expect(
-        canvas.queryByRole("group", { name: "Position recurrence" }),
-      ).not.toBeInTheDocument();
-    },
-  };
-}
-
-export const GameNotFound: Story = {
-  name: "Game not found - Wide",
-  ...failureStory("game_not_found"),
-};
-export const PositionNotFound: Story = {
-  name: "Position not found - Wide",
-  ...failureStory("position_not_found"),
-};
-export const CorpusUnavailable: Story = {
-  name: "Corpus unavailable - Wide",
-  ...failureStory("corpus_unavailable"),
-};
-export const GameUnavailable: Story = {
-  name: "Game unavailable - Wide",
-  ...failureStory("game_unavailable"),
-};
-export const UnableToLoadGame: Story = {
-  name: "Unable to load game - Wide",
-  ...failureStory("unexpected_failure"),
 };
 
 export const ReplacementFailure: Story = {

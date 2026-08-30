@@ -55,3 +55,5 @@ Use internet search or fetch when external documentation is needed, but prefer r
 behavior. Preserve unrelated worktree changes. Never commit, push, alter dependencies, change product behavior,
 or perform destructive Git operations unless the user explicitly requests it. Report each repaired failure or
 warning, the files changed, all final proof, and any unresolved blocker.
+
+Blank line removal is not preferred - this is hiding the root cause which is overflowing code. Only remove blank lines if it improves readability.

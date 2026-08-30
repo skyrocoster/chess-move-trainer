@@ -11,10 +11,7 @@ export type PositionReachFrequencyProps = {
   selectedColor: ChessSide;
 };
 
-export function PositionReachFrequency({
-  context,
-  selectedColor,
-}: PositionReachFrequencyProps) {
+export function PositionReachFrequency({ context, selectedColor }: PositionReachFrequencyProps) {
   const model = derivePositionReachFrequencyModel(context, selectedColor);
   const headingId = useId();
 

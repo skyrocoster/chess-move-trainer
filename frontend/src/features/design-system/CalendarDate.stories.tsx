@@ -4,14 +4,8 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect, fn, userEvent, within } from "storybook/test";
 import { useState, type ReactNode } from "react";
 
-import {
-  CalendarDate,
-  getUtcCalendarDay,
-  toUtcMidnight,
-  type CalendarDateProps,
-  type CalendarDateValue,
-  type UtcCalendarDay,
-} from "./CalendarDate";
+import { CalendarDate, type CalendarDateProps, type CalendarDateValue } from "./CalendarDate";
+import { getUtcCalendarDay, toUtcMidnight, type UtcCalendarDay } from "./CalendarDateUtils";
 
 const meta = {
   title: "Design System/Components/Calendar Date",

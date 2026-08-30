@@ -44,9 +44,7 @@ describe("derivePositionReachFrequencyModel", () => {
   });
 
   it("keeps an existing zero-count position available at zero percent", () => {
-    expect(
-      derivePositionReachFrequencyModel(context({ white_count: 0 }), "white"),
-    ).toMatchObject({
+    expect(derivePositionReachFrequencyModel(context({ white_count: 0 }), "white")).toMatchObject({
       state: "available",
       reached: 0,
       total: 5,
@@ -88,16 +86,12 @@ describe("derivePositionReachFrequencyModel", () => {
 
   it("bounds an unsafe percentage and avoids division by zero", () => {
     expect(
-      derivePositionReachFrequencyModel(
-        context({ white_count: 9, white_total: 4 }),
-        "white",
-      ).percentage,
+      derivePositionReachFrequencyModel(context({ white_count: 9, white_total: 4 }), "white")
+        .percentage,
     ).toBe(100);
     expect(
-      derivePositionReachFrequencyModel(
-        context({ black_count: 1, black_total: 0 }),
-        "black",
-      ).percentage,
+      derivePositionReachFrequencyModel(context({ black_count: 1, black_total: 0 }), "black")
+        .percentage,
     ).toBe(0);
   });
 });

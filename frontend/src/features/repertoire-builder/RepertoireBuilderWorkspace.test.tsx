@@ -453,7 +453,6 @@ describe("RepertoireBuilderWorkspace", () => {
     );
     expect(preferredMoveClient.put).not.toHaveBeenCalled();
   });
-
   it("requires confirmation before Remove and only clears the saved move after success", async () => {
     const user = userEvent.setup();
     const clients = testClients("assigned");
@@ -475,7 +474,6 @@ describe("RepertoireBuilderWorkspace", () => {
     );
     await waitFor(() => expect(screen.queryByTestId("saved-move")).not.toBeInTheDocument());
   });
-
   it("uses UTC-midnight for a selected date and clears it only after success", async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     vi.setSystemTime(new Date("2026-01-15T23:59:59.999Z"));
@@ -498,7 +496,6 @@ describe("RepertoireBuilderWorkspace", () => {
     );
     expect(screen.getByRole("button", { name: "Effective date: Choose date" })).toBeVisible();
   });
-
   it("retains the staged move and date when a mutation fails", async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     vi.setSystemTime(new Date("2026-01-15T23:59:59.999Z"));
@@ -532,7 +529,6 @@ describe("RepertoireBuilderWorkspace", () => {
     expect(screen.getAllByText("My move staged: e4.", { exact: true })).toHaveLength(1);
     expect(screen.getByRole("button", { name: "Effective date: 2026-01-10" })).toBeVisible();
   });
-
   it("activates a displayed Best candidate through the same local move path", async () => {
     const user = userEvent.setup();
     const client = displayAnalysisClient("completed-cp");
@@ -578,7 +574,6 @@ describe("RepertoireBuilderWorkspace", () => {
       });
     },
   );
-
   it("flips rail orientation and fill direction without changing the evaluated score", async () => {
     const user = userEvent.setup();
     const analysisClient = displayAnalysisClient("completed-cp");

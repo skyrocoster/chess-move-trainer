@@ -137,7 +137,7 @@ export function LineLibrary({
     [renderedData, visibleNodeIds],
   );
   const visibleIdsKey = [...visibleIds].join("\u0000");
-  const definitions = renderedData?.filters ?? [];
+  const definitions = useMemo(() => renderedData?.filters ?? [], [renderedData]);
   const filterApplyMode = filterApplyModeProp ?? renderedData?.filter_apply_mode ?? "immediate";
   const initialFilters = useMemo(
     () => getFilterDefaults(definitions, defaultFilterValues),
@@ -160,11 +160,13 @@ export function LineLibrary({
 
   const activeFilters = filterValuesProp ?? uncontrolledAppliedFilters;
   const draftFilters = filterValuesProp ?? uncontrolledFilters;
-  const selectedSource =
-    selectedIdsProp !== undefined ? [...selectedIdsProp] : uncontrolledSelectedIds;
+  const selectedSource = useMemo(
+    () => (selectedIdsProp !== undefined ? [...selectedIdsProp] : uncontrolledSelectedIds),
+    [selectedIdsProp, uncontrolledSelectedIds],
+  );
   const selectedIds = useMemo(
     () => normalizeSelection(renderedData, selectedSource, visibleIds, selectionMode),
-    [renderedData, selectedSource, selectionMode, visibleIdsKey],
+    [renderedData, selectedSource, selectionMode, visibleIds],
   );
   const expandedIds =
     expandedIdsProp !== undefined ? [...expandedIdsProp] : uncontrolledExpandedIds;
@@ -197,7 +199,7 @@ export function LineLibrary({
       selectedIdsProp,
       selectionMode,
       uncontrolledSelectedIds,
-      visibleIdsKey,
+      visibleIds,
     ],
   );
 
@@ -279,7 +281,15 @@ export function LineLibrary({
       selectionReasonRef.current = "user";
       tree.setSelectedItems(next);
     },
-    [commitSelection, renderedData, selectedIds, selectionDisabled, selectionMode, visibleIdsKey],
+    [
+      onSelectionLimitReached,
+      renderedData,
+      selectedIds,
+      selectionDisabled,
+      selectionMode,
+      tree,
+      visibleIds,
+    ],
   );
   selectionActionRef.current = (id) => {
     const node = renderedData?.nodes[id];
