@@ -74,7 +74,7 @@ export async function expectSingleStagedStatus(canvasElement: HTMLElement): Prom
 
 export async function expectPreferredMoveState(
   canvasElement: HTMLElement,
-  state: "no-saved" | "saved" | "matching-played" | "unsaved-played",
+  state: "empty" | "first-choice" | "saved" | "replacement" | "matching",
 ): Promise<void> {
   const panel = canvasElement.querySelector(`section[aria-labelledby="preferred-move-heading"]`);
   if (!(panel instanceof HTMLElement)) {

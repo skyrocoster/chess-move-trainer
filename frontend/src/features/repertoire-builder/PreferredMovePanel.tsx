@@ -234,7 +234,6 @@ export function PreferredMovePanel({
           {ownTurn ? <DateControl value={date} onChange={onDateChange} /> : null}
           {ownTurn ? (
             <Button
-              className={styles.savedMove}
               data-testid="saved-move"
               onClick={onPlaySavedMove}
               disabled={disabled}

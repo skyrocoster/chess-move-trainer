@@ -35,58 +35,42 @@ export const AssignedBoardPlay: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await expectPreferredMoveState(canvasElement, "saved");
-    await expect(canvas.getByTestId("saved-move")).toHaveTextContent("Saved move: e4 (e2e4)");
+    await expect(canvas.getByTestId("saved-move")).toHaveTextContent(
+      "Current saved choice: e4 (e2e4)",
+    );
     await userEvent.click(await canvas.findByRole("button", { name: "1. e4" }));
     await expectPositionSquares(canvasElement, "e4", 1);
-    await expectSessionHistory(canvasElement, ["Initial position", "White, move 1, e4"]);
-    await expectActiveSessionHistoryEntry(canvasElement, "White, move 1, e4");
-    await expect(canvas.getByTestId("session-status")).toHaveTextContent(
-      "Saved move played locally: e4.",
-    );
-    async function expectMatchingPlayedPanel() {
-      await expectPreferredMoveState(canvasElement, "matching-played");
-      await expect(canvas.getByTestId("played-move")).toHaveTextContent("Played move: e4 (e2e4)");
-      await expect(canvas.getByText("This move matches your preferred move.")).toBeVisible();
+    await expectSessionHistory(canvasElement, ["Initial position"]);
+    await expectActiveSessionHistoryEntry(canvasElement, "Initial position");
+    await expect(canvas.getByTestId("session-status")).toHaveTextContent("My move staged: e4.");
+
+    async function expectMatchingStagedPanel() {
+      await expectPreferredMoveState(canvasElement, "matching");
+      await expect(canvas.getByTestId("staged-move")).toHaveTextContent("Staged move: e4 (e2e4)");
       await expect(canvas.getByTestId("effective-date")).toHaveTextContent(
         "Effective from 2026-01-01",
       );
-      await expect(canvas.getByRole("button", { name: "Edit" })).toBeVisible();
       await expect(canvas.getByRole("button", { name: "Remove" })).toBeVisible();
-      await expect(canvas.queryByTestId("saved-move")).not.toBeInTheDocument();
+      await expect(canvas.getByTestId("saved-move")).toBeVisible();
       await expectPositionSquares(canvasElement, "e2", 0);
       await expectPositionSquares(canvasElement, "e4", 1);
     }
 
-    await expectMatchingPlayedPanel();
-
-    await userEvent.click(canvas.getByRole("button", { name: "Previous" }));
-    await expectPreferredMoveState(canvasElement, "saved");
-    await expect(canvas.getByTestId("saved-move")).toHaveTextContent("Saved move: e4 (e2e4)");
-    await expect(canvas.queryByTestId("played-move")).not.toBeInTheDocument();
-    await expect(canvas.getByTestId("session-status")).toHaveTextContent(
-      "Moved to the previous local position.",
-    );
-    await expectPositionSquares(canvasElement, "e2", 1);
-    await expectPositionSquares(canvasElement, "e4", 0);
-
-    await userEvent.click(canvas.getByRole("button", { name: "Next" }));
-    await expectActiveSessionHistoryEntry(canvasElement, "White, move 1, e4");
-    await expectMatchingPlayedPanel();
+    await expectMatchingStagedPanel();
   },
 };
 
 export const UnsavedPlayedConstrained: Story = {
-  name: "Preferred move - unsaved played alternative, constrained",
+  name: "Preferred move - staged replacement alternative, constrained",
   parameters: constrainedViewport,
   render: () => assignedWorkspace({ analysisClient: storyCandidateAnalysisClient(["d2d4"]) }),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await expectPreferredMoveState(canvasElement, "saved");
     await userEvent.click(await canvas.findByRole("button", { name: "1. d4" }));
-    await expectPreferredMoveState(canvasElement, "unsaved-played");
-    await expect(canvas.getByTestId("played-move")).toHaveTextContent("Played move: d4 (d2d4)");
-    await expect(canvas.getByText("This move is not saved as your preferred move.")).toBeVisible();
-    await expect(canvas.getByRole("button", { name: "Edit" })).toBeEnabled();
+    await expectPreferredMoveState(canvasElement, "replacement");
+    await expect(canvas.getByTestId("staged-move")).toHaveTextContent("Staged move: d4 (d2d4)");
+    await expect(canvas.getByRole("button", { name: "Save" })).toBeEnabled();
     await expect(canvas.getByRole("button", { name: "Effective date: 2026-01-01" })).toBeVisible();
     await expect(canvas.getByTestId("session-origin")).toHaveTextContent("Current Ply 0");
     await expectSessionHistory(canvasElement, ["Initial position"]);
@@ -113,7 +97,7 @@ export const AssignedToday: Story = {
 };
 
 export const EditReplacement: Story = {
-  name: "Preferred move - Edit and Save replacement",
+  name: "Preferred move - Save replacement",
   render: () =>
     workspace(
       { analysisClient: storyCandidateAnalysisClient(["d2d4"]) },
@@ -123,16 +107,17 @@ export const EditReplacement: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await expect(canvas.getByTestId("saved-move")).toBeVisible();
-    await userEvent.click(canvas.getByRole("button", { name: "Edit" }));
     await userEvent.click(await canvas.findByRole("button", { name: "1. d4" }));
-    await expect(canvas.getByTestId("replacement-move")).toHaveTextContent("d4");
+    await expect(canvas.getByTestId("staged-move")).toHaveTextContent("Staged move: d4 (d2d4)");
     await expectPositionSquares(canvasElement, "d2", 0);
     await expectPositionSquares(canvasElement, "d4", 1);
     await expect(canvas.getByTestId("session-origin")).toHaveTextContent("Current Ply 0");
     await expectSessionHistory(canvasElement, ["Initial position"]);
-    await userEvent.click(canvas.getByRole("button", { name: "Save replacement" }));
-    await expect(canvas.getByText("Preferred move replaced.")).toBeVisible();
-    await expect(canvas.getByTestId("saved-move")).toHaveTextContent("Saved move: d4 (d2d4)");
+    await userEvent.click(canvas.getByRole("button", { name: "Save" }));
+    await expect(canvas.getByTestId("session-status")).toHaveTextContent("Preferred move saved.");
+    await expect(canvas.getByTestId("saved-move")).toHaveTextContent(
+      "Current saved choice: d4 (d2d4)",
+    );
     await expectPositionSquares(canvasElement, "d2", 1);
     await expectPositionSquares(canvasElement, "d4", 0);
     await expectSessionHistory(canvasElement, ["Initial position"]);
@@ -141,7 +126,7 @@ export const EditReplacement: Story = {
 };
 
 export const DatedAdd: Story = {
-  name: "Preferred move - selected UTC date clears after Add",
+  name: "Preferred move - selected UTC date persists after Save",
   render: () =>
     workspace(
       { analysisClient: storyCandidateAnalysisClient(["e2e4"]) },
@@ -150,14 +135,13 @@ export const DatedAdd: Story = {
     ),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
+    await userEvent.click(await canvas.findByRole("button", { name: "1. e4" }));
+    await expectSingleStagedStatus(canvasElement);
     const date = await selectCurrentUtcDate(canvasElement);
     await expect(canvas.getByRole("button", { name: `Effective date: ${date}` })).toBeVisible();
     await expect(canvas.getByTestId("effective-date")).toHaveTextContent("Effective from Today");
-    await userEvent.click(await canvas.findByRole("button", { name: "1. e4" }));
-    await expectPositionSquares(canvasElement, "e2", 0);
-    await expectPositionSquares(canvasElement, "e4", 1);
-    await userEvent.click(canvas.getByRole("button", { name: "Add" }));
-    await expect(canvas.getByText("Preferred move added.")).toBeVisible();
+    await userEvent.click(canvas.getByRole("button", { name: "Save" }));
+    await expect(canvas.getByTestId("session-status")).toHaveTextContent("Preferred move saved.");
     await expectPositionSquares(canvasElement, "e2", 1);
     await expectPositionSquares(canvasElement, "e4", 0);
     await expectSessionHistory(canvasElement, ["Initial position"]);
@@ -167,7 +151,7 @@ export const DatedAdd: Story = {
 };
 
 export const MutationFailure: Story = {
-  name: "Preferred move - failed Add retains staged move and date",
+  name: "Preferred move - failed Save retains staged move and date",
   render: () =>
     workspace(
       { analysisClient: storyCandidateAnalysisClient(["e2e4"]) },
@@ -176,9 +160,9 @@ export const MutationFailure: Story = {
     ),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    const date = await selectCurrentUtcDate(canvasElement);
     await userEvent.click(await canvas.findByRole("button", { name: "1. e4" }));
-    await userEvent.click(canvas.getByRole("button", { name: "Add" }));
+    const date = await selectCurrentUtcDate(canvasElement);
+    await userEvent.click(canvas.getByRole("button", { name: "Save" }));
     const alert = canvas.getByRole("alert");
     await expect(alert).toHaveRole("alert");
     await expect(alert).toHaveTextContent("The selected date cannot be in the future.");
@@ -217,6 +201,7 @@ export const RemoveConfirmation: Story = {
     await userEvent.click(within(openDialog).getByRole("button", { name: "Remove" }));
     await expect(canvas.getByText("Preferred move removed.")).toBeVisible();
     await expect(canvas.queryByTestId("saved-move")).not.toBeInTheDocument();
-    await expect(canvas.getByRole("button", { name: "Effective date: Choose date" })).toBeVisible();
+    await expect(canvas.queryByTestId("effective-date")).not.toBeInTheDocument();
+    await expect(canvas.queryByRole("button", { name: /Effective date/ })).not.toBeInTheDocument();
   },
 };

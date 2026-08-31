@@ -72,6 +72,18 @@ const meta = {
   title: "Application/Repertoire Builder/Session Panel",
   component: RepertoireSessionPanel,
   parameters: { layout: "fullscreen" },
+  render: (args) => (
+    <main
+      style={{
+        minHeight: "100vh",
+        padding: "var(--cmt-spacing-24)",
+        backgroundColor: "var(--md-sys-color-surface)",
+        color: "var(--md-sys-color-on-surface)",
+      }}
+    >
+      <RepertoireSessionPanel {...args} />
+    </main>
+  ),
 } satisfies Meta<typeof RepertoireSessionPanel>;
 
 export default meta;
