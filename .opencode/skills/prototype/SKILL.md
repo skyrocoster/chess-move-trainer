@@ -10,6 +10,12 @@ experiment under `experiments/prototypes/<topic>/`; use the experiments workspac
 manifests. Keep small reusable inputs in `experiments/fixtures/` and downloads or generated output in the topic's
 ignored `.artifacts/` directory.
 
+For a TypeScript or React prototype, run npm from the repository root: use `npm.cmd ci` for the committed
+workspace lockfile, or `npm.cmd install <package>@<version> --workspace=experiments` to add a dependency only to
+experiments. If the frontend also needs that package, target both explicitly with
+`npm.cmd install <package>@<version> --workspace=frontend --workspace=experiments`; npm does not add a declaration
+to both workspaces automatically.
+
 Do not import application code or modify product source. Run the experiment via the `bash` tool with an explicit
 finite timeout in milliseconds (missing, zero, or non-finite timeouts are forbidden because commands can hang)
 and report observation separately from conclusion.

@@ -7,6 +7,7 @@ import {
   flipPositionPickerSession,
   navigatePositionPickerSession,
   appendPositionPickerMove,
+  playAndStagePositionPickerMove,
   positionPickerHistory,
   positionPickerHistoryBounds,
   positionPickerSelectedTransition,
@@ -328,5 +329,22 @@ describe("position picker session", () => {
     expect(next?.currentPosition.fen).toBe(
       "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1",
     );
+  });
+
+  it("plays and stages a saved owner move without advancing Move History", () => {
+    const staged = selectPositionPickerMove(createStandardStartSession(), {
+      sourceSquare: "d2",
+      targetSquare: "d4",
+    })!.session;
+    const result = playAndStagePositionPickerMove(staged, {
+      sourceSquare: "e2",
+      targetSquare: "e4",
+    });
+
+    expect(result?.disposition).toBe("staged");
+    expect(result?.session.currentPosition).toEqual(staged.currentPosition);
+    expect(result?.session.localMoves).toEqual([]);
+    expect(result?.session.stagedMove).toMatchObject({ san: "e4" });
+    expect(positionPickerHistory(result!.session)).toHaveLength(1);
   });
 });

@@ -44,11 +44,7 @@ export function RepertoireSessionPanel({
         context={positionContext}
         selectedColor={preferredMoveProps.model.bottomColor}
       />
-      <div
-        data-testid="session-status"
-        role="status"
-        aria-live="polite"
-      >
+      <div data-testid="session-status" role="status" aria-live="polite">
         <InlineFeedback severity="information" message={sessionStatus} />
       </div>
       <PreferredMovePanel {...preferredMoveProps} />

@@ -1,4 +1,3 @@
-import type { PreferredMoveValue } from "./preferredMoveApi";
 import type { PositionPickerMoveRecord, PositionPickerSession } from "./positionPickerSession";
 import type { PromotionPiece } from "../board-adapter/PromotionPicker";
 
@@ -39,14 +38,4 @@ export function branchMove(move: PositionPickerMoveRecord) {
 
 export function promotionPiece(value: string | undefined): PromotionPiece | undefined {
   return value === "q" || value === "r" || value === "b" || value === "n" ? value : undefined;
-}
-
-export function isPlayedSavedMove(
-  move: PositionPickerMoveRecord,
-  savedMove: PreferredMoveValue | null,
-): boolean {
-  return (
-    savedMove !== null &&
-    `${move.sourceSquare}${move.targetSquare}${move.promotion ?? ""}` === savedMove.uci
-  );
 }

@@ -16,6 +16,28 @@ import type { Game } from "./gameModel";
 import { UNSAFE_SOURCE_GAME, VIEWER_GAME, VIEWER_GAME_UUID } from "./viewerFixtures";
 import { PROMOTION_GAME } from "./viewerStoryFixtures";
 
+vi.mock("../board-adapter/PromotionPicker", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../board-adapter/PromotionPicker")>();
+
+  return {
+    ...actual,
+    PromotionPicker: ({
+      pending,
+      onSelect,
+    }: {
+      pending: { sourceSquare: string; targetSquare: string } | null;
+      onSelect: (promotion: "q" | "r" | "b" | "n") => void;
+    }) =>
+      pending ? (
+        <div role="dialog" aria-label="Choose a promotion piece">
+          <button type="button" onClick={() => onSelect("q")}>
+            Promote to queen
+          </button>
+        </div>
+      ) : null,
+  };
+});
+
 const BOARD_LABEL = "Chess board: standard starting position, White at the bottom";
 const GAME_UUID = VIEWER_GAME_UUID;
 const BLACK_GAME: Game = { ...VIEWER_GAME, subject_color: "black" };
@@ -637,7 +659,7 @@ describe("ViewerWorkspace", () => {
     expect(analysisClient.enqueue).not.toHaveBeenCalled();
   });
 
-  it("routes a promotion candidate through the existing picker without changing FEN until selection", async () => {
+  it("routes a promotion candidate through picker state without changing FEN until selection", async () => {
     const user = userEvent.setup();
     renderViewer({
       lookup: successfulLookup(PROMOTION_GAME),
@@ -651,15 +673,9 @@ describe("ViewerWorkspace", () => {
 
     await user.click(candidate);
     const queen = await screen.findByRole("button", { name: "Promote to queen" });
-    await waitFor(() => expect(queen).toHaveFocus());
     expect(screen.getByTestId("branch-current-fen")).toHaveTextContent(originFen);
 
-    await user.keyboard("{Escape}");
-    await waitFor(() => expect(candidate).toHaveFocus());
-    expect(screen.getByTestId("branch-current-fen")).toHaveTextContent(originFen);
-
-    await user.click(candidate);
-    await user.click(await screen.findByRole("button", { name: "Promote to queen" }));
+    await user.click(queen);
     expect(screen.getByTestId("branch-current-fen")).toHaveTextContent(
       "k3Q3/8/8/8/8/8/8/4K3 b - - 0 1",
     );

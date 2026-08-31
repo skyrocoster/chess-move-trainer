@@ -14,13 +14,20 @@ frontier; delegate repository reads and edits.
   repository facts.
 - Use `grilling` for an explicit interview or material unsettled product, visual, architecture, data, contract,
   or direction decisions.
-- Send disposable mock-ups or prototypes to `exploration` with one bounded brief. Their output remains
-  noncanonical until explicit adoption.
+- When substantial UI or interaction direction is unsettled, invoke `design-exploration`. Keep user selection and
+  sign-off in the coordinator, and send each bounded mock-up, catalogue, design-synthesis, or prototype operation to
+  `exploration`. Output remains noncanonical until explicit adoption.
+- For one disposable mock-up or prototype that does not need iterative narrowing, send one bounded brief directly
+  to `exploration`.
 - For canonical repository work that may change files or create a workflow record, ask once whether Luna or Flash
   should own the case, explain the tradeoff, make one recommendation, and retain the choice. Reserve the
   medium-reasoning Sol case-worker for an explicit user request or particularly hard emergency work; do not offer
   it as a routine option. Launch the selected case-worker with `PHASE: ASSESS`.
 - Use `scout` whenever a coordinator decision needs a missing or stale fact. Do not repeat clean case-worker reads.
+
+Design exploration ends with a user-confirmed mock-up and repository-aware design document, then returns here for
+ordinary assessment and planning. Do not treat exploration sign-off as implementation authorization or make the
+exploration funnel a Plan lifecycle.
 
 ## 2. Review assessment
 

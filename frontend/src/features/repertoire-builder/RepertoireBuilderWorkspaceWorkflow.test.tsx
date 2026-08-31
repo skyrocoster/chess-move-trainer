@@ -66,6 +66,54 @@ vi.mock("react-chessboard", () => ({
     </div>
   ),
 }));
+vi.mock("../design-system/CalendarDate", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../design-system/CalendarDate")>();
+
+  return {
+    ...actual,
+    CalendarDate: ({
+      value,
+      onChange,
+      label = "Date",
+    }: {
+      value: Date | null;
+      onChange: (value: Date | null) => void;
+      label?: string;
+    }) => {
+      const displayValue = value ? value.toISOString().slice(0, 10) : "Choose date";
+      return (
+        <button
+          type="button"
+          aria-label={`${label}: ${displayValue}`}
+          onClick={() => onChange(new Date("2026-01-10T00:00:00.000Z"))}
+        >
+          {displayValue}
+        </button>
+      );
+    },
+  };
+});
+vi.mock("../board-adapter/PromotionPicker", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../board-adapter/PromotionPicker")>();
+
+  return {
+    ...actual,
+    PromotionPicker: ({
+      pending,
+      onSelect,
+    }: {
+      pending: { sourceSquare: string; targetSquare: string } | null;
+      onSelect: (piece: "q" | "r" | "b" | "n") => void;
+    }) =>
+      pending ? (
+        <div role="dialog" aria-label="Choose a promotion piece">
+          <button type="button" onClick={() => onSelect("n")}>
+            Promote to knight
+          </button>
+        </div>
+      ) : null,
+  };
+});
 
 expect.extend(axeMatchers);
 afterEach(() => {
@@ -78,7 +126,7 @@ function historyEntry(name: string) {
 }
 
 describe("RepertoireBuilderWorkspace workflow", () => {
-  it("plays a saved promotion move selected on the board without staging", async () => {
+  it("stages a saved promotion move selected on the board without a history entry", async () => {
     const user = userEvent.setup();
     const lookup = vi.fn().mockResolvedValue({ status: "success", game: PROMOTION_GAME });
     const preferredMoveClient: PreferredMoveClient = {
@@ -105,10 +153,8 @@ describe("RepertoireBuilderWorkspace workflow", () => {
       "data-position",
       AFTER_E8_KNIGHT_FEN,
     );
-    expect(historyEntry("White, move 1, e8=N")).toHaveAttribute("aria-current", "step");
-    expect(screen.getByTestId("session-status")).toHaveTextContent(
-      "Saved move played locally: e8=N.",
-    );
+    expect(historyEntry("Initial position")).toHaveAttribute("aria-current", "step");
+    expect(screen.getByTestId("session-status")).toHaveTextContent("My move staged: e8=N.");
     expect(preferredMoveClient.put).not.toHaveBeenCalled();
   });
 
@@ -142,13 +188,11 @@ describe("RepertoireBuilderWorkspace workflow", () => {
     renderWorkspace(clients);
 
     await waitFor(() => expect(screen.getByText("Never seen as White")).toBeVisible());
+    await user.click(screen.getByTestId("move-e2-e4"));
     await user.click(screen.getByRole("button", { name: "Effective date: Choose date" }));
-    const calendar = await screen.findByRole("dialog", { name: "Effective date" });
-    await user.click(within(calendar).getByRole("button", { name: /January 10th, 2026/ }));
     expect(screen.getByRole("button", { name: "Effective date: 2026-01-10" })).toBeVisible();
 
-    await user.click(screen.getByTestId("move-e2-e4"));
-    await user.click(screen.getByRole("button", { name: "Add" }));
+    await user.click(screen.getByRole("button", { name: "Save" }));
     await waitFor(() => expect(clients.preferredMoveClient.put).toHaveBeenCalledTimes(1));
     expect(clients.preferredMoveClient.put).toHaveBeenCalledWith(
       { fen: STARTING_FEN, move_uci: "e2e4", effective_at: "2026-01-10T00:00:00.000Z" },
@@ -172,13 +216,11 @@ describe("RepertoireBuilderWorkspace workflow", () => {
     renderWorkspace(clients);
 
     await waitFor(() => expect(screen.getByText("Never seen as White")).toBeVisible());
-    await user.click(screen.getByRole("button", { name: "Effective date: Choose date" }));
-    const calendar = await screen.findByRole("dialog", { name: "Effective date" });
-    await user.click(within(calendar).getByRole("button", { name: /January 10th, 2026/ }));
     await user.click(screen.getByTestId("move-e2-e4"));
-    await user.click(screen.getByRole("button", { name: "Add" }));
+    await user.click(screen.getByRole("button", { name: "Effective date: Choose date" }));
+    await user.click(screen.getByRole("button", { name: "Save" }));
 
-    const mutationMessage = await screen.findByText("Adding preferred move...", { exact: true });
+    const mutationMessage = await screen.findByText("Saving preferred move...", { exact: true });
     const mutationStatus = mutationMessage.closest('[role="status"]');
     if (!(mutationStatus instanceof HTMLElement)) {
       throw new Error("The preferred move mutation status region is missing.");

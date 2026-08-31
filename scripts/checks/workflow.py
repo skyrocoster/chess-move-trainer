@@ -29,7 +29,6 @@ REQUIRED_WORKFLOW_PATHS = (
     Path("experiments/.gitignore"),
     Path("experiments/pyproject.toml"),
     Path("experiments/package.json"),
-    Path("experiments/package-lock.json"),
     Path("experiments/mock-ups/README.md"),
     Path("experiments/prototypes/README.md"),
     Path("experiments/fixtures/README.md"),
@@ -49,6 +48,9 @@ REQUIRED_SKILL_NAMES = {
     "assess-case",
     "browser-validation-invoke",
     "coordinator-workflow",
+    "design-catalogue",
+    "design-exploration",
+    "design-synthesis",
     "execute",
     "fix",
     "frontend-component-iteration",
@@ -110,7 +112,6 @@ def check_workflow_contract() -> bool:
         Path("package.json"),
         Path("frontend/package.json"),
         Path("experiments/package.json"),
-        Path("experiments/package-lock.json"),
     )
     for relative in json_paths:
         path = REPO_ROOT / relative

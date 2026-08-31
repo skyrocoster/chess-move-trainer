@@ -66,6 +66,54 @@ vi.mock("react-chessboard", () => ({
     </div>
   ),
 }));
+vi.mock("../design-system/CalendarDate", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../design-system/CalendarDate")>();
+
+  return {
+    ...actual,
+    CalendarDate: ({
+      value,
+      onChange,
+      label = "Date",
+    }: {
+      value: Date | null;
+      onChange: (value: Date | null) => void;
+      label?: string;
+    }) => {
+      const displayValue = value ? value.toISOString().slice(0, 10) : "Choose date";
+      return (
+        <button
+          type="button"
+          aria-label={`${label}: ${displayValue}`}
+          onClick={() => onChange(new Date("2026-01-10T00:00:00.000Z"))}
+        >
+          {displayValue}
+        </button>
+      );
+    },
+  };
+});
+vi.mock("../board-adapter/PromotionPicker", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../board-adapter/PromotionPicker")>();
+
+  return {
+    ...actual,
+    PromotionPicker: ({
+      pending,
+      onSelect,
+    }: {
+      pending: { sourceSquare: string; targetSquare: string } | null;
+      onSelect: (piece: "q" | "r" | "b" | "n") => void;
+    }) =>
+      pending ? (
+        <div role="dialog" aria-label="Choose a promotion piece">
+          <button type="button" onClick={() => onSelect("n")}>
+            Promote to knight
+          </button>
+        </div>
+      ) : null,
+  };
+});
 expect.extend(axeMatchers);
 afterEach(() => {
   cleanup();
@@ -355,9 +403,9 @@ describe("RepertoireBuilderWorkspace", () => {
     );
     expect(screen.getByRole("region", { name: "Preferred move" })).toHaveAttribute(
       "data-state",
-      "unsaved-played",
+      "first-choice",
     );
-    expect(screen.getByTestId("played-move")).toHaveTextContent("Played move: e4 (e2e4)");
+    expect(screen.getByTestId("staged-move")).toHaveTextContent("Staged move: e4 (e2e4)");
     expect(historyEntry("Initial position")).toBeVisible();
     expect(clients.preferredMoveClient.put).not.toHaveBeenCalled();
     expect(clients.preferredMoveClient.get).toHaveBeenCalledWith(STARTING_FEN, {
@@ -408,7 +456,7 @@ describe("RepertoireBuilderWorkspace", () => {
     expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", AFTER_E4_FEN);
     expect(screen.getByRole("button", { name: "Previous" })).toBeEnabled();
   });
-  it("adds a staged move only after explicit Add and sends blank effective-now date", async () => {
+  it("saves an owner move that was staged immediately and sends blank effective-now date", async () => {
     const user = userEvent.setup();
     const clients = testClients();
     renderWorkspace(clients);
@@ -419,7 +467,7 @@ describe("RepertoireBuilderWorkspace", () => {
     expect(sharedPositionSummary().querySelectorAll('[data-position-square="e4"]')).toHaveLength(1);
     expect(screen.getByTestId("session-origin")).toHaveTextContent("Current Ply 0.");
     expect(historyEntry("Initial position")).toBeVisible();
-    await user.click(screen.getByRole("button", { name: "Add" }));
+    await user.click(screen.getByRole("button", { name: "Save" }));
     await waitFor(() => expect(clients.preferredMoveClient.put).toHaveBeenCalledTimes(1));
     expect(clients.preferredMoveClient.put).toHaveBeenCalledWith(
       { fen: STARTING_FEN, move_uci: "e2e4", effective_at: "" },
@@ -434,33 +482,22 @@ describe("RepertoireBuilderWorkspace", () => {
     expect(historyEntry("Initial position")).toBeVisible();
     expect(screen.getByRole("button", { name: "Effective date: 2026-01-01" })).toBeVisible();
   });
-  it("edits a saved move and saves one staged replacement explicitly", async () => {
+  it("stages a saved replacement immediately and saves it explicitly", async () => {
     const user = userEvent.setup();
     const clients = testClients("assigned");
     renderWorkspace(clients);
 
     await waitFor(() => expect(screen.getByTestId("saved-move")).toHaveTextContent("e4"));
     expect(screen.getByRole("button", { name: "Effective date: 2026-01-01" })).toBeVisible();
-    await user.click(screen.getByRole("button", { name: "Edit" }));
     await user.click(screen.getByTestId("move-d2-d4"));
-    expect(screen.getByTestId("replacement-move")).toHaveTextContent("d4");
+    expect(screen.getByTestId("staged-move")).toHaveTextContent("d4");
     expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", AFTER_D4_FEN);
     expect(sharedPositionSummary().querySelectorAll('[data-position-square="d2"]')).toHaveLength(0);
     expect(sharedPositionSummary().querySelectorAll('[data-position-square="d4"]')).toHaveLength(1);
     expect(screen.getByTestId("session-origin")).toHaveTextContent("Current Ply 0.");
     expect(historyEntry("Initial position")).toBeVisible();
     expect(clients.preferredMoveClient.put).not.toHaveBeenCalled();
-    await user.click(screen.getByRole("button", { name: "Cancel edit" }));
-    await waitFor(() =>
-      expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", STARTING_FEN),
-    );
-    expect(screen.queryByTestId("replacement-move")).not.toBeInTheDocument();
-    expect(sharedPositionSummary().querySelectorAll('[data-position-square="d2"]')).toHaveLength(1);
-    expect(sharedPositionSummary().querySelectorAll('[data-position-square="d4"]')).toHaveLength(0);
-    expect(historyEntry("Initial position")).toBeVisible();
-    await user.click(screen.getByRole("button", { name: "Edit" }));
-    await user.click(screen.getByTestId("move-d2-d4"));
-    await user.click(screen.getByRole("button", { name: "Save replacement" }));
+    await user.click(screen.getByRole("button", { name: "Save" }));
     await waitFor(() => expect(clients.preferredMoveClient.put).toHaveBeenCalledTimes(1));
     expect(clients.preferredMoveClient.put).toHaveBeenCalledWith(
       { fen: STARTING_FEN, move_uci: "d2d4", effective_at: "" },
@@ -485,16 +522,13 @@ describe("RepertoireBuilderWorkspace", () => {
   it("presents a persisted current UTC date as Today and keeps date changes explicit", async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     vi.setSystemTime(new Date("2026-01-15T23:59:59.999Z"));
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     const clients = testClients("assigned", "2026-01-15T12:00:00.000000Z");
     renderWorkspace(clients);
 
     await waitFor(() => expect(screen.getByTestId("saved-move")).toHaveTextContent("e4"));
     expect(screen.getByTestId("effective-date")).toHaveTextContent("Effective from Today");
 
-    await user.click(screen.getByRole("button", { name: "Effective date: 2026-01-15" }));
-    const calendar = await screen.findByRole("dialog", { name: "Effective date" });
-    await user.click(within(calendar).getByRole("button", { name: /January 10th, 2026/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Effective date: 2026-01-15" }));
 
     expect(screen.getByTestId("effective-date")).toHaveTextContent("Effective from 2026-01-10");
     expect(clients.preferredMoveClient.put).not.toHaveBeenCalled();
@@ -516,16 +550,12 @@ describe("RepertoireBuilderWorkspace", () => {
     );
 
     await user.click(screen.getByTestId("move-e7-e8"));
-    await screen.findByRole("dialog", { name: "Choose a promotion piece" });
-    await user.keyboard("{Escape}");
-    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    const dialog = await screen.findByRole("dialog", { name: "Choose a promotion piece" });
     expect(screen.getByTestId("mock-chessboard")).toHaveAttribute(
       "data-position",
       PROMOTION_GAME.positions[0].fen,
     );
     expect(historyEntry("Initial position")).toBeVisible();
-    await user.click(screen.getByTestId("move-e7-e8"));
-    const dialog = await screen.findByRole("dialog", { name: "Choose a promotion piece" });
     await user.click(within(dialog).getByRole("button", { name: "Promote to knight" }));
 
     expect(screen.getByTestId("mock-chessboard")).toHaveAttribute(
@@ -539,103 +569,79 @@ describe("RepertoireBuilderWorkspace", () => {
     expect(screen.getByTestId("session-origin")).toHaveTextContent("Current Ply 0.");
     expect(historyEntry("Initial position")).toBeVisible();
   });
-  it("plays the saved move through the local W1 path without a mutation", async () => {
+  it("plays and stages the saved move without a mutation or history entry", async () => {
     const user = userEvent.setup();
     const clients = testClients("assigned");
     renderWorkspace(clients);
     await waitFor(() => expect(screen.getByTestId("saved-move")).toBeVisible());
-    await user.click(screen.getByRole("button", { name: "Play saved move" }));
+    await user.click(
+      screen.getByRole("button", {
+        name: "Current saved choice: e4; play and stage this move.",
+      }),
+    );
 
     expect(sharedPositionSummary().querySelectorAll('[data-position-square="e2"]')).toHaveLength(0);
     expect(sharedPositionSummary().querySelectorAll('[data-position-square="e4"]')).toHaveLength(1);
     expect(screen.getByTestId("board-square-e2")).toHaveAttribute("data-highlighted", "true");
     expect(screen.getByTestId("board-square-e4")).toHaveAttribute("data-highlighted", "true");
     expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", AFTER_E4_FEN);
-    expect(historyEntry("White, move 1, e4")).toHaveAttribute("aria-current", "step");
+    expect(historyEntry("Initial position")).toHaveAttribute("aria-current", "step");
+    expect(screen.getByTestId("session-origin")).toHaveTextContent("Current Ply 0.");
     expect(screen.getByRole("region", { name: "Preferred move" })).toHaveAttribute(
       "data-state",
-      "matching-played",
+      "matching",
     );
-    expect(screen.getByTestId("played-move")).toHaveTextContent("Played move: e4 (e2e4)");
-    expect(screen.getByRole("button", { name: "Edit" })).toBeVisible();
+    expect(screen.getByTestId("staged-move")).toHaveTextContent("Staged move: e4 (e2e4)");
     expect(screen.getByRole("button", { name: "Remove" })).toBeVisible();
     expect(clients.preferredMoveClient.put).not.toHaveBeenCalled();
     expect(clients.preferredMoveClient.remove).not.toHaveBeenCalled();
-
-    await user.click(screen.getByRole("button", { name: "Edit" }));
-    await waitFor(() =>
-      expect(screen.getByRole("button", { name: "Save replacement" })).toBeVisible(),
-    );
-    expect(screen.getByTestId("session-origin")).toHaveTextContent("Current Ply 0.");
   });
 
-  it("reconstructs the matching played panel through local navigation and history selection", async () => {
+  it("keeps the saved source read while staged previews replace locally", async () => {
     const user = userEvent.setup();
     const clients = testClients("assigned");
     renderWorkspace(clients);
 
     await waitFor(() => expect(screen.getByTestId("saved-move")).toBeVisible());
 
-    async function expectMatchingPlayedPanel() {
+    async function expectMatchingStagedPanel() {
       await waitFor(() => {
         const panel = screen.getByRole("region", { name: "Preferred move" });
-        expect(panel).toHaveAttribute("data-state", "matching-played");
-        expect(within(panel).getByTestId("played-move")).toHaveTextContent(
-          "Played move: e4 (e2e4)",
+        expect(panel).toHaveAttribute("data-state", "matching");
+        expect(within(panel).getByTestId("staged-move")).toHaveTextContent(
+          "Staged move: e4 (e2e4)",
         );
-        expect(panel).toHaveTextContent("This move matches your preferred move.");
-        expect(within(panel).getByTestId("effective-date")).toHaveTextContent(
-          "Effective from 2026-01-01",
-        );
-        expect(within(panel).getByRole("button", { name: "Edit" })).toBeVisible();
         expect(within(panel).getByRole("button", { name: "Remove" })).toBeVisible();
       });
       expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", AFTER_E4_FEN);
     }
 
-    async function expectSavedParentPanel() {
-      await waitFor(() => {
-        const panel = screen.getByRole("region", { name: "Preferred move" });
-        expect(panel).toHaveAttribute("data-state", "saved");
-        expect(within(panel).getByTestId("saved-move")).toHaveTextContent("Saved move: e4");
-        expect(within(panel).queryByTestId("played-move")).not.toBeInTheDocument();
-      });
-      expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", STARTING_FEN);
-    }
-
     await user.click(screen.getByTestId("move-e2-e4"));
-    await expectMatchingPlayedPanel();
+    await expectMatchingStagedPanel();
+    expect(screen.getByRole("button", { name: "Previous" })).toBeDisabled();
 
-    await user.click(screen.getByRole("button", { name: "Previous" }));
-    await expectSavedParentPanel();
-    await user.click(screen.getByRole("button", { name: "Next" }));
-    await expectMatchingPlayedPanel();
-
-    await user.click(historyEntry("Initial position"));
-    await expectSavedParentPanel();
-    await user.click(historyEntry("White, move 1, e4"));
-    await expectMatchingPlayedPanel();
-
-    await user.click(historyEntry("Initial position"));
-    await expectSavedParentPanel();
-    historyEntry("Initial position").focus();
-    await user.keyboard("{ArrowRight}");
-    await expectMatchingPlayedPanel();
+    await user.click(screen.getByTestId("move-d2-d4"));
+    expect(screen.getByRole("region", { name: "Preferred move" })).toHaveAttribute(
+      "data-state",
+      "replacement",
+    );
+    expect(screen.getByTestId("staged-move")).toHaveTextContent("Staged move: d4 (d2d4)");
+    expect(historyEntry("Initial position")).toHaveAttribute("aria-current", "step");
+    expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", AFTER_D4_FEN);
   });
 
-  it("recognizes the saved move played on the board and advances the local session", async () => {
+  it("stages a saved move selected on the board without advancing the local session", async () => {
     const user = userEvent.setup();
     const clients = testClients("assigned");
     renderWorkspace(clients);
     await waitFor(() => expect(screen.getByTestId("saved-move")).toBeVisible());
     await user.click(screen.getByTestId("move-e2-e4"));
     expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", AFTER_E4_FEN);
-    expect(historyEntry("White, move 1, e4")).toHaveAttribute("aria-current", "step");
-    expect(screen.getByTestId("session-status")).toHaveTextContent(
-      "Saved move played locally: e4.",
-    );
-    expect(screen.getByRole("button", { name: "Previous" })).toBeEnabled();
-    expect(screen.queryByTestId("saved-move")).not.toBeInTheDocument();
+    expect(historyEntry("Initial position")).toHaveAttribute("aria-current", "step");
+    expect(screen.getByTestId("session-status")).toHaveTextContent("My move staged: e4.");
+    expect(screen.getByRole("button", { name: "Previous" })).toBeDisabled();
+    expect(screen.getByTestId("saved-move")).toBeInTheDocument();
+    expect(screen.getByTestId("staged-move")).toHaveTextContent("Staged move: e4 (e2e4)");
     expect(clients.preferredMoveClient.put).not.toHaveBeenCalled();
     expect(clients.preferredMoveClient.remove).not.toHaveBeenCalled();
 
@@ -643,10 +649,8 @@ describe("RepertoireBuilderWorkspace", () => {
     await waitFor(() => expect(screen.getByTestId("saved-move")).toBeVisible());
     expect(screen.getByRole("button", { name: "Effective date: 2026-01-01" })).toBeVisible();
     await user.click(screen.getByTestId("move-e2-e4"));
-    expect(screen.queryByTestId("saved-move")).not.toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Previous" }));
-    await waitFor(() => expect(screen.getByTestId("saved-move")).toBeVisible());
-    expect(screen.getByRole("button", { name: "Effective date: 2026-01-01" })).toBeVisible();
+    expect(screen.getByTestId("saved-move")).toBeInTheDocument();
+    expect(screen.getByTestId("staged-move")).toHaveTextContent("Staged move: e4 (e2e4)");
   });
   it("stages an own-color move that is not the saved move", async () => {
     const user = userEvent.setup();
@@ -659,9 +663,8 @@ describe("RepertoireBuilderWorkspace", () => {
     expect(screen.getByTestId("session-status")).toHaveTextContent("My move staged: d4.");
     expect(screen.getByRole("region", { name: "Preferred move" })).toHaveAttribute(
       "data-state",
-      "unsaved-played",
+      "replacement",
     );
-    expect(screen.getByTestId("played-move")).toHaveTextContent("Played move: d4 (d2d4)");
-    expect(screen.getByRole("button", { name: "Edit" })).toBeVisible();
+    expect(screen.getByTestId("staged-move")).toHaveTextContent("Staged move: d4 (d2d4)");
   });
 });

@@ -34,10 +34,10 @@ class Step:
 
 
 _NPM = lambda *a: ["npm.cmd", *a]  # noqa: E731
-_PRETTIER = [r"frontend\node_modules\.bin\prettier.cmd"]
+_PRETTIER = [r"node_modules\.bin\prettier.cmd"]
 _PW = [r"node_modules\.bin\playwright.cmd"]
 _RUFF = [sys.executable, "-m", "ruff"]
-_TSC = [r"frontend\node_modules\.bin\tsc.cmd"]
+_TSC = [r"node_modules\.bin\tsc.cmd"]
 
 FIX_STEPS: list[Step] = [
     Step("Ruff lint fix", [sys.executable, "-m", "ruff", "check", "--fix", "."], timeout=120),

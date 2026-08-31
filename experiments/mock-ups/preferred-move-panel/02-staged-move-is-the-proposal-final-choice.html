@@ -1,0 +1,1739 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="data:," />
+    <title>02 / The staged move is the proposal — final choice mock-up</title>
+    <style>
+      :root {
+        --ink: #f4f0e8;
+        --ink-soft: #d0ccc2;
+        --ink-muted: #969894;
+        --ink-faint: #626b68;
+        --bg: #0f1516;
+        --surface: #182223;
+        --surface-raised: #202d2d;
+        --surface-inset: #0a1011;
+        --line: #3b4a49;
+        --line-soft: rgba(205, 216, 211, 0.15);
+        --blue: #a8c9ff;
+        --blue-ink: #122a46;
+        --blue-wash: #172b45;
+        --mint: #a9df99;
+        --mint-ink: #17321e;
+        --mint-wash: #173324;
+        --amber: #f6c976;
+        --amber-ink: #3b2911;
+        --amber-wash: #392a15;
+        --coral: #ffaaa0;
+        --coral-wash: #3b211f;
+        --font: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+        --radius: 12px;
+        --radius-lg: 18px;
+        --shadow: 0 22px 55px rgba(0, 0, 0, 0.24);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        min-width: 320px;
+        margin: 0;
+        overflow-x: hidden;
+        background:
+          radial-gradient(circle at 85% -5%, rgba(56, 98, 103, 0.28), transparent 31rem),
+          radial-gradient(circle at 0% 42%, rgba(55, 67, 35, 0.13), transparent 27rem),
+          var(--bg);
+        color: var(--ink);
+        font-family: var(--font);
+        font-size: 15px;
+        line-height: 1.45;
+      }
+
+      button {
+        color: inherit;
+        font: inherit;
+      }
+
+      button:focus-visible,
+      summary:focus-visible,
+      a:focus-visible {
+        outline: 2px solid var(--blue);
+        outline-offset: 3px;
+      }
+
+      h1,
+      h2,
+      h3,
+      h4,
+      p {
+        margin: 0;
+      }
+
+      code,
+      .move,
+      .mono {
+        font-family: var(--mono);
+      }
+
+      .page {
+        width: min(100% - 36px, 1160px);
+        margin: 0 auto;
+        padding: 24px 0 68px;
+      }
+
+      .eyebrow,
+      .section-kicker,
+      .micro-label,
+      .state-counter,
+      .state-label,
+      .box-status,
+      .panel-kicker,
+      .action-kicker,
+      .annotation-label,
+      .coverage-label,
+      .status-pill {
+        font-size: 0.66rem;
+        font-weight: 800;
+        letter-spacing: 0.1em;
+        line-height: 1.2;
+        text-transform: uppercase;
+      }
+
+      .eyebrow,
+      .section-kicker,
+      .micro-label,
+      .state-counter,
+      .coverage-label,
+      .annotation-label,
+      .action-kicker {
+        color: var(--ink-muted);
+      }
+
+      .topline {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        border-bottom: 1px solid var(--line-soft);
+        padding: 4px 0 14px;
+      }
+
+      .wordmark {
+        display: inline-flex;
+        align-items: center;
+        gap: 9px;
+        color: var(--ink-soft);
+        font-size: 0.72rem;
+        font-weight: 760;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+
+      .wordmark-mark {
+        display: grid;
+        width: 24px;
+        height: 24px;
+        place-items: center;
+        border: 1px solid var(--blue);
+        border-radius: 8px 8px 8px 2px;
+        color: var(--blue);
+        font-family: Georgia, serif;
+        font-size: 1rem;
+      }
+
+      .noncanonical-stamp {
+        border: 1px solid rgba(246, 201, 118, 0.55);
+        border-radius: 999px;
+        padding: 6px 10px;
+        background: var(--amber-wash);
+        color: var(--amber);
+        font-size: 0.64rem;
+        font-weight: 850;
+        letter-spacing: 0.1em;
+        line-height: 1;
+        text-transform: uppercase;
+        white-space: nowrap;
+      }
+
+      .hero {
+        display: grid;
+        grid-template-columns: minmax(0, 1.2fr) minmax(250px, 0.8fr);
+        gap: 48px;
+        align-items: end;
+        padding: 54px 0 38px;
+      }
+
+      .hero h1 {
+        max-width: 780px;
+        font-size: clamp(2.7rem, 7vw, 5.8rem);
+        font-weight: 420;
+        letter-spacing: -0.075em;
+        line-height: 0.92;
+      }
+
+      .hero h1 em {
+        color: var(--amber);
+        font-style: normal;
+      }
+
+      .hero-copy {
+        max-width: 700px;
+        margin-top: 21px;
+        color: var(--ink-soft);
+        font-size: clamp(1rem, 1.7vw, 1.2rem);
+        line-height: 1.5;
+      }
+
+      .hero-copy strong {
+        color: var(--ink);
+        font-weight: 720;
+      }
+
+      .hero-note {
+        border-top: 3px solid var(--amber);
+        padding-top: 13px;
+        color: var(--ink-soft);
+        font-size: 0.88rem;
+      }
+
+      .hero-note strong {
+        display: block;
+        margin-bottom: 5px;
+        color: var(--ink);
+        font-size: 1rem;
+      }
+
+      .hero-note .formula {
+        display: block;
+        margin-top: 12px;
+        color: var(--amber);
+        font-family: var(--mono);
+        font-size: 0.74rem;
+      }
+
+      .mental-model {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr);
+        gap: 15px;
+        align-items: center;
+        border: 1px solid rgba(169, 223, 153, 0.3);
+        border-radius: var(--radius);
+        padding: 14px 16px;
+        background: rgba(23, 51, 36, 0.52);
+      }
+
+      .mental-model-mark {
+        display: grid;
+        width: 32px;
+        height: 32px;
+        place-items: center;
+        border-radius: 9px;
+        background: var(--mint);
+        color: var(--mint-ink);
+        font-size: 1.05rem;
+        font-weight: 900;
+      }
+
+      .mental-model p {
+        color: var(--ink-soft);
+        font-size: 0.84rem;
+      }
+
+      .mental-model strong {
+        color: var(--ink);
+      }
+
+      .section {
+        margin-top: 40px;
+      }
+
+      .section-heading {
+        display: flex;
+        align-items: end;
+        justify-content: space-between;
+        gap: 24px;
+        margin-bottom: 15px;
+      }
+
+      .section-heading h2 {
+        margin-top: 5px;
+        font-size: clamp(1.55rem, 3vw, 2.2rem);
+        font-weight: 540;
+        letter-spacing: -0.04em;
+      }
+
+      .section-intro {
+        max-width: 570px;
+        color: var(--ink-muted);
+        font-size: 0.86rem;
+      }
+
+      .review-shell {
+        display: grid;
+        gap: 15px;
+      }
+
+      .demo-controls {
+        border: 1px solid rgba(168, 201, 255, 0.26);
+        border-radius: var(--radius-lg);
+        padding: 14px;
+        background: rgba(23, 43, 69, 0.5);
+      }
+
+      .demo-controls-head {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 10px;
+      }
+
+      .demo-controls-head strong {
+        color: var(--blue);
+        font-size: 0.84rem;
+        font-weight: 780;
+      }
+
+      .demo-controls-head span {
+        color: var(--ink-muted);
+        font-size: 0.74rem;
+      }
+
+      .demo-control-grid {
+        display: grid;
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+        gap: 6px;
+      }
+
+      .demo-control {
+        min-width: 0;
+        min-height: 54px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 9px 8px;
+        background: transparent;
+        color: var(--ink-muted);
+        cursor: pointer;
+        font-size: 0.72rem;
+        font-weight: 730;
+        line-height: 1.25;
+        text-align: left;
+      }
+
+      .demo-control small {
+        display: block;
+        margin-top: 3px;
+        color: var(--ink-faint);
+        font-size: 0.62rem;
+        font-weight: 550;
+      }
+
+      .demo-control:hover {
+        border-color: var(--ink-muted);
+        color: var(--ink);
+      }
+
+      .demo-control[aria-pressed="true"] {
+        border-color: var(--blue);
+        background: var(--blue);
+        color: var(--blue-ink);
+      }
+
+      .demo-control[aria-pressed="true"] small {
+        color: var(--blue-ink);
+        opacity: 0.75;
+      }
+
+      .demo-state-summary {
+        display: grid;
+        grid-template-columns: minmax(180px, 0.55fr) minmax(0, 1.45fr);
+        gap: 18px;
+        align-items: center;
+        border-top: 1px solid rgba(168, 201, 255, 0.18);
+        margin-top: 13px;
+        padding: 12px 2px 0;
+      }
+
+      .demo-state-summary h3 {
+        font-size: 0.98rem;
+        font-weight: 720;
+      }
+
+      .demo-state-summary p {
+        color: var(--ink-soft);
+        font-size: 0.8rem;
+      }
+
+      .mockup-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1.28fr) minmax(270px, 0.72fr);
+        gap: 16px;
+        align-items: start;
+      }
+
+      .panel-card,
+      .side-card,
+      .coverage-card {
+        border: 1px solid var(--line-soft);
+        border-radius: var(--radius-lg);
+        background: rgba(24, 34, 35, 0.94);
+        box-shadow: var(--shadow);
+      }
+
+      .panel-card {
+        --panel-accent: var(--blue);
+        overflow: hidden;
+      }
+
+      .panel-card[data-tone="ready"] {
+        --panel-accent: var(--amber);
+      }
+
+      .panel-card[data-tone="match"] {
+        --panel-accent: var(--mint);
+      }
+
+      .panel-card[data-tone="blocked"] {
+        --panel-accent: var(--coral);
+      }
+
+      .pointless-message {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr);
+        gap: 14px;
+        align-items: start;
+        min-height: 320px;
+        align-content: center;
+        padding: 24px;
+        color: var(--ink-soft);
+        font-size: 0.86rem;
+        line-height: 1.5;
+      }
+
+      .pointless-message[hidden] {
+        display: none;
+      }
+
+      .pointless-mark {
+        display: grid;
+        width: 34px;
+        height: 34px;
+        place-items: center;
+        border-radius: 10px;
+        background: var(--coral);
+        color: #3b211f;
+        font-size: 1.2rem;
+        font-weight: 900;
+      }
+
+      .pointless-message strong {
+        display: block;
+        margin-bottom: 6px;
+        color: var(--coral);
+        font-size: 1.05rem;
+        font-weight: 760;
+        letter-spacing: -0.02em;
+      }
+
+      .panel-card::before {
+        display: block;
+        height: 4px;
+        background: var(--panel-accent);
+        content: "";
+      }
+
+      .panel-inner {
+        display: grid;
+        gap: 17px;
+        min-height: 580px;
+        padding: 20px;
+      }
+
+      .panel-head,
+      .box-top,
+      .panel-footer-head,
+      .action-row,
+      .date-row,
+      .side-card-head,
+      .coverage-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      .panel-head {
+        align-items: flex-start;
+      }
+
+      .panel-kicker {
+        color: var(--ink-faint);
+      }
+
+      .panel-title {
+        margin-top: 4px;
+        font-size: 1.08rem;
+        font-weight: 720;
+        letter-spacing: -0.02em;
+      }
+
+      .status-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 6px 8px;
+        color: var(--ink-muted);
+        font-size: 0.59rem;
+        white-space: nowrap;
+      }
+
+      .status-pill::before {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: currentColor;
+        content: "";
+      }
+
+      .status-pill.ready {
+        border-color: rgba(246, 201, 118, 0.55);
+        color: var(--amber);
+      }
+
+      .status-pill.saved,
+      .status-pill.match {
+        border-color: rgba(169, 223, 153, 0.48);
+        color: var(--mint);
+      }
+
+      .status-pill.blocked {
+        border-color: rgba(255, 170, 160, 0.5);
+        color: var(--coral);
+      }
+
+      .panel-lead {
+        border-left: 2px solid var(--panel-accent);
+        padding: 9px 0 9px 13px;
+        color: var(--ink-soft);
+        font-size: 0.79rem;
+      }
+
+      .panel-lead strong {
+        display: block;
+        margin-bottom: 2px;
+        color: var(--ink);
+        font-size: 0.96rem;
+        font-weight: 740;
+      }
+
+      .two-boxes {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+        gap: 10px;
+        align-items: stretch;
+      }
+
+      .choice-box {
+        display: grid;
+        align-content: start;
+        gap: 9px;
+        min-width: 0;
+        min-height: 213px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 15px;
+        background: var(--surface);
+      }
+
+      .choice-box.saved-box {
+        border-color: rgba(169, 223, 153, 0.45);
+      }
+
+      .choice-box.proposal-box {
+        border-color: rgba(246, 201, 118, 0.58);
+        background: var(--amber-wash);
+      }
+
+      .choice-box.proposal-box.match-box {
+        border-color: rgba(169, 223, 153, 0.45);
+        background: var(--mint-wash);
+      }
+
+      .choice-box.proposal-box.blocked-box {
+        border-color: rgba(255, 170, 160, 0.46);
+        background: var(--coral-wash);
+      }
+
+      .choice-box.empty-box {
+        border-style: dashed;
+        background: rgba(24, 34, 35, 0.42);
+      }
+
+      .box-top {
+        align-items: flex-start;
+      }
+
+      .box-label {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+        color: var(--ink-soft);
+        font-size: 0.73rem;
+        font-weight: 760;
+      }
+
+      .box-status {
+        color: var(--panel-accent);
+        font-size: 0.55rem;
+        text-align: right;
+      }
+
+      .box-icon {
+        display: inline-grid;
+        flex: 0 0 auto;
+        width: 21px;
+        height: 21px;
+        place-items: center;
+        border-radius: 7px;
+        background: var(--mint);
+        color: var(--mint-ink);
+        font-size: 0.75rem;
+        font-weight: 900;
+      }
+
+      .proposal-box .box-icon {
+        background: var(--amber);
+        color: var(--amber-ink);
+      }
+
+      .match-box .box-icon {
+        background: var(--mint);
+      }
+
+      .blocked-box .box-icon {
+        background: var(--coral);
+        color: #3b211f;
+      }
+
+      .empty-box .box-icon {
+        background: var(--surface-raised);
+        color: var(--ink-muted);
+      }
+
+      .move {
+        display: block;
+        color: var(--ink);
+        font-size: 2.35rem;
+        font-weight: 780;
+        letter-spacing: -0.1em;
+        line-height: 1;
+      }
+
+      .proposal-box .move {
+        color: var(--amber);
+      }
+
+      .match-box .move {
+        color: var(--mint);
+      }
+
+      .move-detail {
+        display: block;
+        margin-top: 6px;
+        color: var(--ink-muted);
+        font-family: var(--font);
+        font-size: 0.68rem;
+        letter-spacing: 0;
+      }
+
+      .box-explanation {
+        margin-top: auto;
+        border-top: 1px solid var(--line-soft);
+        padding-top: 10px;
+        color: var(--ink-muted);
+        font-size: 0.7rem;
+      }
+
+      .box-explanation strong {
+        color: var(--ink-soft);
+        font-weight: 720;
+      }
+
+      .empty-copy {
+        display: grid;
+        align-content: center;
+        min-height: 100px;
+        color: var(--ink-muted);
+        font-size: 0.74rem;
+      }
+
+      .empty-copy strong {
+        display: block;
+        margin-bottom: 4px;
+        color: var(--ink-soft);
+        font-size: 0.82rem;
+      }
+
+      .box-date {
+        display: grid;
+        gap: 2px;
+        margin-top: 3px;
+        color: var(--ink-muted);
+        font-size: 0.68rem;
+      }
+
+      .box-date strong {
+        color: var(--ink-soft);
+        font-size: 0.76rem;
+        font-weight: 700;
+      }
+
+      .box-date.empty-date strong {
+        color: var(--ink-muted);
+        font-weight: 600;
+      }
+
+      .connector {
+        display: grid;
+        align-content: center;
+        justify-items: center;
+        gap: 4px;
+        min-width: 62px;
+        color: var(--amber);
+        font-family: var(--mono);
+        font-size: 1.25rem;
+        text-align: center;
+      }
+
+      .connector .arrow::before {
+        content: "→";
+      }
+
+      .connector span {
+        color: var(--ink-faint);
+        font-family: var(--font);
+        font-size: 0.55rem;
+        font-weight: 800;
+        letter-spacing: 0.06em;
+        line-height: 1.15;
+        text-transform: uppercase;
+      }
+
+      .consequence {
+        display: grid;
+        gap: 3px;
+        border: 1px solid var(--line-soft);
+        border-radius: 10px;
+        padding: 11px 13px 11px 42px;
+        background: rgba(10, 16, 17, 0.48);
+        color: var(--ink-muted);
+        font-size: 0.74rem;
+        position: relative;
+      }
+
+      .consequence[hidden] {
+        display: none;
+      }
+
+      .consequence::before {
+        position: absolute;
+        top: 12px;
+        left: 13px;
+        display: grid;
+        width: 20px;
+        height: 20px;
+        place-items: center;
+        border-radius: 50%;
+        background: var(--panel-accent);
+        color: var(--bg);
+        content: "→";
+        font-family: var(--mono);
+        font-size: 0.75rem;
+        font-weight: 900;
+      }
+
+      .consequence strong {
+        color: var(--ink-soft);
+        font-size: 0.81rem;
+        font-weight: 740;
+      }
+
+      .consequence.ready strong {
+        color: var(--amber);
+      }
+
+      .consequence.match strong {
+        color: var(--mint);
+      }
+
+      .consequence.blocked strong {
+        color: var(--coral);
+      }
+
+      .panel-footer {
+        display: grid;
+        gap: 12px;
+        align-content: end;
+        margin-top: auto;
+        border-top: 1px solid var(--line-soft);
+        padding-top: 15px;
+      }
+
+      .panel-footer-head {
+        align-items: flex-end;
+      }
+
+      .panel-footer-head strong {
+        color: var(--ink-soft);
+        font-size: 0.78rem;
+        font-weight: 700;
+      }
+
+      .panel-footer-head span {
+        color: var(--ink-muted);
+        font-size: 0.68rem;
+      }
+
+      .action-row {
+        align-items: flex-end;
+      }
+
+      .date-row {
+        align-items: flex-start;
+        min-width: 0;
+        color: var(--ink-muted);
+        font-size: 0.68rem;
+      }
+
+      .date-row strong {
+        display: block;
+        margin-top: 2px;
+        color: var(--ink-soft);
+        font-size: 0.77rem;
+        font-weight: 700;
+      }
+
+      .button-group {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 8px;
+      }
+
+      /* Shared panel action rule: every icon has the same box and text gap. */
+      .panel-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        min-height: 38px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 9px 12px;
+        background: transparent;
+        color: var(--ink-soft);
+        cursor: pointer;
+        font-size: 0.7rem;
+        font-weight: 780;
+        line-height: 1.1;
+        white-space: nowrap;
+      }
+
+      .panel-button .button-icon {
+        display: block;
+        flex: 0 0 16px;
+        width: 16px;
+        height: 16px;
+      }
+
+      .panel-button:hover:not(:disabled) {
+        border-color: var(--ink-muted);
+        color: var(--ink);
+      }
+
+      .panel-button.primary {
+        border-color: var(--blue);
+        background: var(--blue);
+        color: var(--blue-ink);
+      }
+
+      .panel-button.secondary {
+        background: rgba(32, 45, 45, 0.72);
+      }
+
+      .panel-button.danger {
+        border-color: rgba(255, 170, 160, 0.32);
+        color: var(--coral);
+      }
+
+      .panel-button:disabled {
+        border-style: dashed;
+        border-color: var(--line);
+        background: rgba(32, 45, 45, 0.35);
+        color: var(--ink-faint);
+        cursor: not-allowed;
+      }
+
+      .action-withheld {
+        color: var(--ink-faint);
+        font-size: 0.68rem;
+      }
+
+      .action-withheld strong {
+        color: var(--ink-muted);
+        font-weight: 700;
+      }
+
+      .demo-feedback {
+        min-height: 18px;
+        color: var(--ink-faint);
+        font-size: 0.67rem;
+      }
+
+      .side-stack {
+        display: grid;
+        gap: 12px;
+      }
+
+      .side-card {
+        padding: 17px;
+        box-shadow: none;
+      }
+
+      .side-card.accent {
+        border-color: rgba(246, 201, 118, 0.38);
+        background: rgba(57, 42, 21, 0.46);
+      }
+
+      .side-card-head {
+        align-items: flex-start;
+        margin-bottom: 12px;
+      }
+
+      .side-card h3 {
+        font-size: 0.98rem;
+        font-weight: 730;
+        letter-spacing: -0.02em;
+      }
+
+      .side-card p {
+        color: var(--ink-muted);
+        font-size: 0.77rem;
+      }
+
+      .side-card p + p {
+        margin-top: 9px;
+      }
+
+      .side-card strong {
+        color: var(--ink-soft);
+        font-weight: 720;
+      }
+
+      .two-box-key {
+        display: grid;
+        gap: 8px;
+        margin-top: 13px;
+      }
+
+      .key-row {
+        display: grid;
+        grid-template-columns: 9px minmax(0, 1fr);
+        gap: 8px;
+        align-items: start;
+        color: var(--ink-muted);
+        font-size: 0.73rem;
+      }
+
+      .key-row::before {
+        width: 9px;
+        height: 9px;
+        margin-top: 4px;
+        border-radius: 3px;
+        background: var(--mint);
+        content: "";
+      }
+
+      .key-row.proposal::before {
+        background: var(--amber);
+      }
+
+      .key-row strong {
+        display: block;
+        color: var(--ink-soft);
+        font-size: 0.74rem;
+      }
+
+      .button-spec {
+        display: grid;
+        gap: 7px;
+        margin-top: 13px;
+        border-top: 1px solid var(--line-soft);
+        padding-top: 12px;
+      }
+
+      .button-spec-row {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        color: var(--ink-muted);
+        font-size: 0.69rem;
+      }
+
+      .mini-swatch {
+        width: 10px;
+        height: 10px;
+        border-radius: 3px;
+        background: var(--blue);
+      }
+
+      .mini-swatch.secondary {
+        border: 1px solid var(--line);
+        background: var(--surface-raised);
+      }
+
+      .mini-swatch.danger {
+        border: 1px solid rgba(255, 170, 160, 0.52);
+        background: transparent;
+      }
+
+      .handoff {
+        border-left: 3px solid var(--amber);
+        padding-left: 13px;
+      }
+
+      .handoff .annotation-label {
+        color: var(--amber);
+      }
+
+      .handoff p {
+        margin-top: 6px;
+        color: var(--ink-soft);
+        font-size: 0.76rem;
+      }
+
+      .handoff code {
+        color: var(--amber);
+        font-size: 0.72rem;
+      }
+
+      .coverage-card {
+        overflow: hidden;
+        box-shadow: none;
+      }
+
+      .coverage-card summary {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        padding: 16px 18px;
+        color: var(--ink-soft);
+        cursor: pointer;
+        font-size: 0.81rem;
+        font-weight: 720;
+        list-style: none;
+      }
+
+      .coverage-card summary::-webkit-details-marker {
+        display: none;
+      }
+
+      .coverage-card summary::after {
+        color: var(--blue);
+        content: "+";
+        font-family: var(--mono);
+        font-size: 1rem;
+      }
+
+      .coverage-card[open] summary::after {
+        content: "−";
+      }
+
+      .coverage-list {
+        display: grid;
+        gap: 8px;
+        padding: 0 18px 18px;
+      }
+
+      .coverage-row {
+        display: grid;
+        grid-template-columns: minmax(165px, 0.65fr) minmax(0, 1.1fr) minmax(0, 1fr);
+        gap: 12px;
+        align-items: start;
+        border-top: 1px solid var(--line-soft);
+        padding-top: 10px;
+        font-size: 0.69rem;
+      }
+
+      .coverage-row > div {
+        min-width: 0;
+      }
+
+      .coverage-row .state-label {
+        color: var(--blue);
+        font-size: 0.6rem;
+      }
+
+      .coverage-row p {
+        color: var(--ink-muted);
+        line-height: 1.4;
+      }
+
+      .coverage-row strong {
+        display: block;
+        margin-bottom: 3px;
+        color: var(--ink-soft);
+        font-size: 0.59rem;
+        letter-spacing: 0.07em;
+        text-transform: uppercase;
+      }
+
+      .document-footer {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: 12px;
+        margin-top: 30px;
+        border-top: 1px solid var(--line-soft);
+        padding-top: 15px;
+        color: var(--ink-faint);
+        font-size: 0.7rem;
+      }
+
+      .document-footer strong {
+        color: var(--ink-muted);
+      }
+
+      @media (max-width: 1000px) {
+        .demo-control-grid {
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
+        .mockup-layout {
+          grid-template-columns: minmax(0, 1fr) minmax(240px, 0.72fr);
+        }
+      }
+
+      @media (max-width: 800px) {
+        .page {
+          width: min(100% - 22px, 680px);
+          padding-top: 17px;
+        }
+
+        .hero,
+        .section-heading,
+        .mockup-layout {
+          display: grid;
+          grid-template-columns: 1fr;
+        }
+
+        .hero {
+          gap: 25px;
+          padding-top: 40px;
+        }
+
+        .section-heading {
+          align-items: start;
+          gap: 8px;
+        }
+
+        .section-intro {
+          max-width: none;
+        }
+
+        .side-stack {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .side-card.accent {
+          grid-column: 1 / -1;
+        }
+      }
+
+      @media (max-width: 560px) {
+        body {
+          font-size: 14px;
+        }
+
+        .page {
+          width: min(100% - 16px, 440px);
+          padding-bottom: 44px;
+        }
+
+        .topline {
+          align-items: flex-start;
+          flex-direction: column;
+          gap: 10px;
+        }
+
+        .hero h1 {
+          font-size: 3.2rem;
+        }
+
+        .mental-model {
+          align-items: start;
+        }
+
+        .demo-controls-head,
+        .panel-head,
+        .panel-footer-head,
+        .action-row,
+        .document-footer {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+
+        .demo-control-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .demo-state-summary {
+          grid-template-columns: 1fr;
+          gap: 7px;
+        }
+
+        .panel-inner {
+          min-height: 0;
+          padding: 14px;
+        }
+
+        .two-boxes {
+          grid-template-columns: 1fr;
+        }
+
+        .connector {
+          min-width: 0;
+          min-height: 24px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+        }
+
+        .connector .arrow::before {
+          content: "↓";
+        }
+
+        .choice-box {
+          min-height: 180px;
+          padding: 13px;
+        }
+
+        .button-group {
+          justify-content: flex-start;
+          width: 100%;
+        }
+
+        .panel-button {
+          flex: 1 1 auto;
+        }
+
+        .side-stack {
+          grid-template-columns: 1fr;
+        }
+
+        .side-card.accent {
+          grid-column: auto;
+        }
+
+        .coverage-list {
+          padding-right: 13px;
+          padding-left: 13px;
+        }
+
+        .coverage-row {
+          grid-template-columns: 1fr;
+          gap: 5px;
+        }
+
+        .coverage-row > div + div {
+          border-left: 2px solid var(--line-soft);
+          padding-left: 9px;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        html {
+          scroll-behavior: auto;
+        }
+      }
+
+      @media (forced-colors: active) {
+        .mental-model,
+        .demo-controls,
+        .panel-card,
+        .side-card,
+        .coverage-card,
+        .choice-box,
+        .consequence,
+        .panel-button,
+        .demo-control {
+          border-color: CanvasText;
+          background: Canvas;
+          color: CanvasText;
+        }
+
+        .panel-card::before {
+          background: Highlight;
+        }
+
+        .panel-button.primary,
+        .demo-control[aria-pressed="true"] {
+          border-color: Highlight;
+          background: Highlight;
+          color: HighlightText;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <header>
+        <div class="topline">
+          <div class="wordmark"><span class="wordmark-mark" aria-hidden="true">♞</span> Chess Move Trainer / Repertoire</div>
+          <div class="noncanonical-stamp">Exploratory · noncanonical</div>
+        </div>
+
+        <div class="hero">
+          <div>
+            <div class="eyebrow">02 / The staged move is the proposal · final-choice mock-up</div>
+            <h1>The staged move is the <em>proposal.</em></h1>
+            <p class="hero-copy"><strong>This sheet isolates the selected direction.</strong> Keep two facts in view: the current saved choice and the move staged now. When the staged move differs, it is also the proposal that <strong>Save</strong> would make current.</p>
+          </div>
+          <aside class="hero-note">
+            <strong>Design thesis</strong>
+            Do not repeat the staged move in a third box. Give the right-hand box a clear consequence sentence instead.
+            <span class="formula">Current saved choice ↔ Staged move / proposal</span>
+          </aside>
+        </div>
+
+        <div class="mental-model" aria-label="Chosen two-box mental model">
+          <span class="mental-model-mark" aria-hidden="true">2</span>
+          <p><strong>Two boxes, one honest mutation.</strong> The left box is persisted now. The right box is staged and not persisted until <strong>Save</strong>; if it differs, saving makes it the current choice and replaces the old one.</p>
+        </div>
+      </header>
+
+      <section class="section" aria-labelledby="preview-heading">
+        <div class="section-heading">
+          <div>
+            <div class="section-kicker">Live review surface</div>
+            <h2 id="preview-heading">One panel, six state readings</h2>
+          </div>
+          <p class="section-intro">The controls below are document-only demo controls. They switch the illustration; they are not panel actions.</p>
+        </div>
+
+        <div class="review-shell">
+          <div class="demo-controls" aria-label="Demo controls for switching the illustrated state">
+            <div class="demo-controls-head">
+              <strong>Demo controls · change the illustrated state</strong>
+              <span id="state-counter">1 of 6</span>
+            </div>
+            <div class="demo-control-grid" role="group" aria-label="Choose a mock-up state">
+              <button class="demo-control" type="button" data-state="saved-no-stage" aria-pressed="true">Saved choice<small>no staged move</small></button>
+              <button class="demo-control" type="button" data-state="staged-differs" aria-pressed="false">Staged differs<small>will replace saved</small></button>
+              <button class="demo-control" type="button" data-state="staged-matches" aria-pressed="false">Staged matches<small>no change</small></button>
+              <button class="demo-control" type="button" data-state="no-saved-staged" aria-pressed="false">No saved choice<small>staged move ready</small></button>
+              <button class="demo-control" type="button" data-state="unsavable" aria-pressed="false">Unsavable position<small>flagged for removal</small></button>
+              <button class="demo-control" type="button" data-state="opponent-turn" aria-pressed="false">Opponent turn<small>flagged for removal</small></button>
+            </div>
+          </div>
+
+          <div class="mockup-layout">
+            <article class="panel-card" id="live-panel" data-tone="saved" aria-labelledby="panel-title">
+              <div class="panel-inner" id="panel-inner">
+                <div class="panel-head">
+                  <div>
+                    <div class="panel-kicker">Preferred move</div>
+                    <h3 class="panel-title" id="panel-title">What is saved, and what is staged?</h3>
+                  </div>
+                  <span class="status-pill saved" id="panel-status">Ready</span>
+                </div>
+
+                <div class="two-boxes" id="two-boxes">
+                  <section class="choice-box saved-box" id="saved-box" aria-labelledby="saved-box-label">
+                    <div class="box-top">
+                      <div class="box-label" id="saved-box-label"><span class="box-icon" aria-hidden="true">✓</span> Current saved choice</div>
+                    </div>
+                    <div class="move" id="saved-move">e4<span class="move-detail">e2e4</span></div>
+                    <div class="box-date" id="saved-date">Effective date<strong>29 Aug 2026</strong></div>
+                  </section>
+                  <div class="connector" aria-hidden="true"><b class="arrow"></b><span id="connector-copy">stage a move</span></div>
+                  <section class="choice-box proposal-box empty-box" id="proposal-box" aria-labelledby="proposal-box-label">
+                    <div class="box-top">
+                      <div class="box-label" id="proposal-box-label"><span class="box-icon" aria-hidden="true">—</span> Staged move</div>
+                    </div>
+                    <div class="empty-copy" id="proposal-content"><strong>No move staged.</strong><span>Stage a legal move to propose replacing e4.</span></div>
+                  </section>
+                </div>
+
+                <div class="consequence" id="consequence" hidden>
+                  <strong id="consequence-title"></strong>
+                </div>
+
+                <div class="panel-footer">
+                  <div class="button-group" id="button-group"></div>
+                  <p class="demo-feedback" id="demo-feedback" role="status" aria-live="polite"></p>
+                </div>
+              </div>
+
+              <div class="pointless-message" id="pointless-message" hidden>
+                <span class="pointless-mark" aria-hidden="true">✕</span>
+                <div>
+                  <strong id="pointless-title">This state is pointless and should be removed.</strong>
+                  <span id="pointless-note"></span>
+                </div>
+              </div>
+            </article>
+
+            <aside class="side-stack" aria-label="Design notes for the selected direction">
+              <section class="side-card accent">
+                <div class="side-card-head">
+                  <h3>What the right box means</h3>
+                  <span class="annotation-label">Chosen model</span>
+                </div>
+                <p>When the staged move differs and the state is saveable, it carries two truths at once: it is the move currently staged, and it is the proposal that <strong>Save</strong> would persist.</p>
+                <div class="two-box-key">
+                  <div class="key-row"><div><strong>Current saved choice</strong>The move the record uses now; its effective date belongs here.</div></div>
+                  <div class="key-row proposal"><div><strong>Staged move</strong>Temporary board choice; the consequence sentence says whether it can become current.</div></div>
+                </div>
+              </section>
+
+              <section class="side-card">
+                <div class="side-card-head">
+                  <h3>Action hierarchy</h3>
+                  <span class="annotation-label">Three labels</span>
+                </div>
+                <p><strong>Save</strong> leads when a staged difference can become the saved choice. <strong>Change effective date</strong> stays secondary. <strong>Remove</strong> is destructive but visually quiet.</p>
+                <div class="button-spec" aria-label="Shared button visual rules">
+                  <div class="button-spec-row"><span class="mini-swatch"></span><span>Primary · one next step</span></div>
+                  <div class="button-spec-row"><span class="mini-swatch secondary"></span><span>Secondary · date maintenance</span></div>
+                  <div class="button-spec-row"><span class="mini-swatch danger"></span><span>Subordinate danger · remove</span></div>
+                </div>
+              </section>
+
+              <section class="side-card handoff">
+                <div class="annotation-label">Implementation hand-off · future canonical Plan</div>
+                <p>Make <code>Save</code> and <code>Remove</code> reusable button components in the future canonical implementation. This exploratory file uses only inline mock-up controls; it does not implement those canonical components.</p>
+                <p>Use one shared action-button layout rule: <code>inline-flex · align-items:center · gap:8px</code>. Every icon is decorative support beside visible text.</p>
+              </section>
+            </aside>
+          </div>
+
+          <details class="coverage-card" open>
+            <summary>State coverage · what appears and what is withheld</summary>
+            <div class="coverage-list">
+              <div class="coverage-row">
+                <div class="state-label">Saved choice · no stage</div>
+                <div><strong>Appears</strong><p>Current saved choice, effective date, and empty Staged move.</p></div>
+                <div><strong>Withheld</strong><p>No mutation until a move is staged.</p></div>
+              </div>
+              <div class="coverage-row">
+                <div class="state-label">Staged differs</div>
+                <div><strong>Appears</strong><p>Both boxes, d4, one replacement consequence, and all three panel labels.</p></div>
+                <div><strong>Withheld</strong><p>None.</p></div>
+              </div>
+              <div class="coverage-row">
+                <div class="state-label">Staged matches</div>
+                <div><strong>Appears</strong><p>e4 in both boxes, one no-change consequence, effective date, and maintenance labels.</p></div>
+                <div><strong>Withheld</strong><p><b>Save</b>.</p></div>
+              </div>
+              <div class="coverage-row">
+                <div class="state-label">No saved choice</div>
+                <div><strong>Appears</strong><p>Empty Current saved choice, staged d4, first-choice consequence, and <b>Save</b>.</p></div>
+                <div><strong>Withheld</strong><p><b>Change effective date</b> and <b>Remove</b>.</p></div>
+              </div>
+              <div class="coverage-row">
+                <div class="state-label">Unsavable position</div>
+                <div><strong>Appears</strong><p>A message that this state is pointless and should be removed.</p></div>
+                <div><strong>Withheld</strong><p>The entire panel — only legal moves are allowed on the board anyway.</p></div>
+              </div>
+              <div class="coverage-row">
+                <div class="state-label">Opponent turn</div>
+                <div><strong>Appears</strong><p>A message that this state is pointless and should be removed.</p></div>
+                <div><strong>Withheld</strong><p>The entire panel — there is no idle opponent-turn state.</p></div>
+              </div>
+            </div>
+          </details>
+        </div>
+      </section>
+
+      <footer class="document-footer">
+        <span><strong>Exploration only.</strong> No canonical product behavior or components are changed.</span>
+        <span>Source concept: <code>decision-stack-replacement.html</code> · option 02.</span>
+      </footer>
+    </main>
+
+    <script>
+      const facts = {
+        saved: { move: "e4", code: "e2e4", date: "29 Aug 2026" },
+        staged: { move: "d4", code: "d2d4" },
+      };
+
+      const states = {
+        "saved-no-stage": {
+          counter: "1 of 6",
+          tone: "saved",
+          status: "Ready",
+          statusClass: "saved",
+          saved: true,
+          staged: false,
+          canSave: false,
+          showDate: true,
+          showRemove: true,
+          ownTurn: true,
+        },
+        "staged-differs": {
+          counter: "2 of 6",
+          tone: "ready",
+          status: "Ready to save",
+          statusClass: "ready",
+          saved: true,
+          staged: true,
+          canSave: true,
+          showDate: true,
+          showRemove: true,
+          ownTurn: true,
+        },
+        "staged-matches": {
+          counter: "3 of 6",
+          tone: "match",
+          status: "No change",
+          statusClass: "match",
+          saved: true,
+          staged: "match",
+          canSave: false,
+          showDate: true,
+          showRemove: true,
+          ownTurn: true,
+        },
+        "no-saved-staged": {
+          counter: "4 of 6",
+          tone: "ready",
+          status: "First choice",
+          statusClass: "ready",
+          saved: false,
+          staged: true,
+          canSave: true,
+          showDate: false,
+          showRemove: false,
+          ownTurn: true,
+        },
+        unsavable: {
+          counter: "5 of 6",
+          tone: "blocked",
+          status: "Saving blocked",
+          statusClass: "blocked",
+          saved: true,
+          staged: true,
+          canSave: false,
+          showDate: false,
+          showRemove: false,
+          ownTurn: true,
+        },
+        "opponent-turn": {
+          counter: "6 of 6",
+          tone: "blocked",
+          status: "Opponent turn",
+          statusClass: "blocked",
+          saved: false,
+          staged: false,
+          canSave: false,
+          showDate: false,
+          showRemove: false,
+          ownTurn: false,
+        },
+      };
+
+      const panel = document.getElementById("live-panel");
+      const stateCounter = document.getElementById("state-counter");
+      const demoFeedback = document.getElementById("demo-feedback");
+
+      function icon(name) {
+        const icons = {
+          save: '<svg class="button-icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3 2.5h7.8L13 4.7v8.8H3z" fill="none" stroke="currentColor" stroke-linejoin="round"/><path d="M5 2.5v3h5v-3M5.1 13.5V9.7h5.8v3.8" fill="none" stroke="currentColor" stroke-linejoin="round"/></svg>',
+          date: '<svg class="button-icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><rect x="2.5" y="3.5" width="11" height="10" rx="1.5" fill="none" stroke="currentColor"/><path d="M5 2.5v3M11 2.5v3M2.5 6.5h11" fill="none" stroke="currentColor" stroke-linecap="round"/><path d="M5 9h2M9 9h2M5 11.5h2" fill="none" stroke="currentColor" stroke-linecap="round"/></svg>',
+          remove: '<svg class="button-icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3.5 4.5h9M6 4.5v-2h4v2M5 6.5v5.8M8 6.5v5.8M11 6.5v5.8M4.3 4.5l.5 9h6.4l.5-9" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+        };
+        return icons[name];
+      }
+
+      function panelButton(label, iconName, variant, disabled = false) {
+        const disabledAttribute = disabled ? " disabled" : "";
+        return `<button class="panel-button ${variant}" type="button" data-panel-action="${label}"${disabledAttribute}>${icon(iconName)}<span>${label}</span></button>`;
+      }
+
+      function savedBox(state) {
+        if (!state.saved) {
+          return `
+            <div class="box-top">
+              <div class="box-label" id="saved-box-label"><span class="box-icon" aria-hidden="true">—</span> Current saved choice</div>
+            </div>
+            <div class="empty-copy"><strong>No saved choice yet.</strong></div>`;
+        }
+
+        return `
+          <div class="box-top">
+            <div class="box-label" id="saved-box-label"><span class="box-icon" aria-hidden="true">✓</span> Current saved choice</div>
+          </div>
+          <div class="move">${facts.saved.move}<span class="move-detail">${facts.saved.code}</span></div>
+          <div class="box-date">Effective date<strong>${facts.saved.date}</strong></div>`;
+      }
+
+      function proposalBox(state) {
+        if (!state.staged) {
+          const destination = state.saved ? "replacing e4" : "the first saved choice";
+          return `
+            <div class="box-top">
+              <div class="box-label" id="proposal-box-label"><span class="box-icon" aria-hidden="true">—</span> Staged move</div>
+            </div>
+            <div class="empty-copy"><strong>No move staged.</strong><span>Stage a legal move to propose ${destination}.</span></div>`;
+        }
+
+        const isMatch = state.staged === "match";
+        const boxIcon = isMatch ? "=" : state.statusClass === "blocked" ? "!" : "↗";
+        const move = isMatch ? facts.saved : facts.staged;
+
+        return `
+          <div class="box-top">
+            <div class="box-label" id="proposal-box-label"><span class="box-icon" aria-hidden="true">${boxIcon}</span> Staged move</div>
+          </div>
+          <div class="move">${move.move}<span class="move-detail">${move.code}</span></div>`;
+      }
+
+      function stateContent(state) {
+        if (!state.ownTurn) {
+          return {
+            connector: "your turn next",
+            consequenceClass: "blocked",
+            consequenceTitle: "It is the opponent's turn; you cannot stage or save a move now.",
+          };
+        }
+
+        if (state.staged === "match") {
+          return {
+            connector: "matches",
+            consequenceClass: "match",
+            consequenceTitle: "e4 is already the current saved choice.",
+          };
+        }
+
+        if (state.staged === true && state.statusClass === "ready" && state.saved) {
+          return {
+            connector: "replace",
+            consequenceClass: "ready",
+            consequenceTitle: "Save d4 to replace e4.",
+          };
+        }
+
+        if (state.staged === true && !state.saved) {
+          return {
+            connector: "first choice",
+            consequenceClass: "ready",
+            consequenceTitle: "Save d4 as the current saved choice.",
+          };
+        }
+
+        if (state.staged === true && state.statusClass === "blocked") {
+          return {
+            connector: state.ownTurn ? "blocked" : "waits",
+            consequenceClass: "blocked",
+            consequenceTitle: state.ownTurn ? "d4 is staged, but this position cannot save it." : "d4 is staged; save when it is your turn.",
+          };
+        }
+
+        return {
+          connector: "stage a move",
+          consequenceClass: "",
+        };
+      }
+
+      function renderActions(state) {
+        const actions = [];
+        actions.push(panelButton("Save", "save", "primary", !state.canSave));
+        if (state.showDate) {
+          actions.push(panelButton("Change effective date", "date", "secondary"));
+        }
+        if (state.showRemove) {
+          actions.push(panelButton("Remove", "remove", "danger"));
+        }
+        return actions.join("");
+      }
+
+      const pointlessMessages = {
+        "opponent-turn": {
+          title: "This state is pointless and should be removed.",
+          note: "Opponent-turn staging makes no sense: you always either have a staged move or need to stage one. There is no idle opponent-turn panel.",
+        },
+        "unsavable": {
+          title: "This state is pointless and should be removed.",
+          note: "Only legal moves are allowed on the board anyway.",
+        },
+      };
+
+      function renderPanel(stateKey) {
+        const state = states[stateKey];
+        const pointless = pointlessMessages[stateKey];
+        document.getElementById("panel-inner").hidden = Boolean(pointless);
+        document.getElementById("pointless-message").hidden = !pointless;
+        if (pointless) {
+          document.getElementById("pointless-title").textContent = pointless.title;
+          document.getElementById("pointless-note").textContent = pointless.note;
+          demoFeedback.textContent = "";
+          return;
+        }
+        const content = stateContent(state);
+        const savedElement = document.getElementById("saved-box");
+        const proposalElement = document.getElementById("proposal-box");
+        const proposalClass = state.staged === "match" ? "match-box" : state.statusClass === "blocked" ? "blocked-box" : state.staged ? "" : "empty-box";
+
+        panel.dataset.tone = state.tone;
+        document.getElementById("panel-status").className = `status-pill ${state.statusClass}`;
+        document.getElementById("panel-status").textContent = state.status;
+        savedElement.className = `choice-box saved-box${state.saved ? "" : " empty-box"}`;
+        savedElement.innerHTML = savedBox(state);
+        proposalElement.className = `choice-box proposal-box ${proposalClass}`;
+        proposalElement.innerHTML = proposalBox(state);
+        document.getElementById("connector-copy").textContent = content.connector;
+        const consequence = document.getElementById("consequence");
+        consequence.className = `consequence ${content.consequenceClass}`;
+        consequence.hidden = !content.consequenceTitle;
+        document.getElementById("consequence-title").textContent = content.consequenceTitle;
+        document.getElementById("button-group").innerHTML = renderActions(state);
+        demoFeedback.textContent = "";
+      }
+
+      function selectState(stateKey) {
+        const state = states[stateKey];
+        document.querySelectorAll("[data-state]").forEach((button) => {
+          button.setAttribute("aria-pressed", String(button.dataset.state === stateKey));
+        });
+        stateCounter.textContent = state.counter;
+        renderPanel(stateKey);
+      }
+
+      document.querySelectorAll("[data-state]").forEach((button) => {
+        button.addEventListener("click", () => selectState(button.dataset.state));
+      });
+
+      document.getElementById("button-group").addEventListener("click", (event) => {
+        const button = event.target.closest("[data-panel-action]");
+        if (!button || button.disabled) return;
+        demoFeedback.textContent = `Demo only: ${button.dataset.panelAction} is illustrative here; no product data changed.`;
+      });
+
+      selectState("saved-no-stage");
+    </script>
+  </body>
+</html>

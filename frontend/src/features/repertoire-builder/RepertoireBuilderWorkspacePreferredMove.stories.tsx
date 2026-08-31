@@ -45,9 +45,7 @@ export const AssignedBoardPlay: Story = {
     );
     async function expectMatchingPlayedPanel() {
       await expectPreferredMoveState(canvasElement, "matching-played");
-      await expect(canvas.getByTestId("played-move")).toHaveTextContent(
-        "Played move: e4 (e2e4)",
-      );
+      await expect(canvas.getByTestId("played-move")).toHaveTextContent("Played move: e4 (e2e4)");
       await expect(canvas.getByText("This move matches your preferred move.")).toBeVisible();
       await expect(canvas.getByTestId("effective-date")).toHaveTextContent(
         "Effective from 2026-01-01",
@@ -183,9 +181,7 @@ export const MutationFailure: Story = {
     await userEvent.click(canvas.getByRole("button", { name: "Add" }));
     const alert = canvas.getByRole("alert");
     await expect(alert).toHaveRole("alert");
-    await expect(alert).toHaveTextContent(
-      "The selected date cannot be in the future.",
-    );
+    await expect(alert).toHaveTextContent("The selected date cannot be in the future.");
     await expect(canvas.getAllByRole("alert")).toHaveLength(1);
     await expectSingleStagedStatus(canvasElement);
     const status = canvas.getByTestId("session-status");

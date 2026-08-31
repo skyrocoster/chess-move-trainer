@@ -202,6 +202,15 @@ export function selectPositionPickerMove(
   };
 }
 
+/** Plays a saved owner move as a child preview without committing it to history. */
+export function playAndStagePositionPickerMove(
+  session: PositionPickerSession,
+  move: PositionPickerMove,
+): Extract<PositionPickerMoveResult, { disposition: "staged" }> | null {
+  const result = selectPositionPickerMove(session, move);
+  return result?.disposition === "staged" ? result : null;
+}
+
 export function appendPositionPickerMove(
   session: PositionPickerSession,
   move: PositionPickerMove,

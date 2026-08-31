@@ -5,26 +5,43 @@ import type { PositionPickerMoveRecord } from "./positionPickerSession";
 
 export type PositionSaveability = "unknown" | "savable" | "unsavable";
 
-export type RepertoirePositionState = "no-saved" | "saved" | "matching-played" | "unsaved-played";
+export type RepertoirePositionRelationship =
+  | "unknown"
+  | "empty"
+  | "first-choice"
+  | "saved"
+  | "replacement"
+  | "matching";
+
+export type PreferredMoveComparison = "unknown" | "not-applicable" | "different" | "matching";
+
+export type RepertoireSavedMoveFact = {
+  move: PreferredMoveValue;
+  effectiveAt: string;
+  sourceFen: string;
+};
+
+export type RepertoireStagedMoveFact = {
+  move: PositionPickerMoveRecord;
+  uci: string;
+};
 
 export type RepertoirePositionModel = {
+  sourceFen: string;
   bottomColor: ChessSide;
+  ownTurn: boolean;
   personalCount: number | null;
   contextMessage: string | null;
   saveability: PositionSaveability;
-  state: RepertoirePositionState;
+  savedPresence: "unknown" | "absent" | "present";
+  saved: RepertoireSavedMoveFact | null;
+  staged: RepertoireStagedMoveFact | null;
+  comparison: PreferredMoveComparison;
+  relationship: RepertoirePositionRelationship;
   savedMove: PreferredMoveValue | null;
   savedMoveVisible: boolean;
-  effectiveAt: string | null;
-  lastPlayedMove: PositionPickerMoveRecord | null;
-  lastPlayedPreferredMove: PreferredMoveResponse | null;
-};
-
-export type PreferredMoveDraftMode = "add" | "edit";
-
-export type PreferredMoveDraftState = {
-  mode: "idle" | PreferredMoveDraftMode;
   stagedMove: PositionPickerMoveRecord | null;
+  effectiveAt: string | null;
 };
 
 function colorLabel(color: ChessSide): "White" | "Black" {
@@ -36,40 +53,62 @@ export function deriveRepertoirePositionModel({
   preferredMove,
   sideToMove,
   bottomColor,
-  lastPlayedMove = null,
-  lastPlayedPreferredMove = null,
+  sourceFen = preferredMove?.fen ?? "",
+  stagedMove = null,
+  preferredMoveKnown = true,
 }: {
   context: PositionContextResponse | null;
   preferredMove: PreferredMoveResponse | null;
   sideToMove: ChessSide;
   bottomColor: ChessSide;
-  lastPlayedMove?: PositionPickerMoveRecord | null;
-  lastPlayedPreferredMove?: PreferredMoveResponse | null;
+  sourceFen?: string;
+  stagedMove?: PositionPickerMoveRecord | null;
+  preferredMoveKnown?: boolean;
 }): RepertoirePositionModel {
   const personalCount =
     context === null ? null : bottomColor === "white" ? context.white_count : context.black_count;
   const color = colorLabel(bottomColor);
   const ownTurn = sideToMove === bottomColor;
-  const savedMove = ownTurn && preferredMove?.state === "assigned" ? preferredMove.move : null;
-  const hasLastPlayedFocus = lastPlayedMove?.color === bottomColor;
-  const lastPlayedMatches =
-    hasLastPlayedFocus &&
-    lastPlayedPreferredMove?.state === "assigned" &&
-    lastPlayedPreferredMove.move !== null &&
-    moveUci(lastPlayedMove) === lastPlayedPreferredMove.move.uci;
-  const state: RepertoirePositionState = hasLastPlayedFocus
-    ? lastPlayedMatches
-      ? "matching-played"
-      : "unsaved-played"
-    : savedMove === null
-      ? "no-saved"
-      : "saved";
-  const effectiveAtSource = hasLastPlayedFocus ? lastPlayedPreferredMove : preferredMove;
-  const effectiveAt =
-    effectiveAtSource?.state === "assigned" ? effectiveAtSource.effective_at : null;
+  const savedPresence = !preferredMoveKnown
+    ? "unknown"
+    : preferredMove?.state === "assigned"
+      ? "present"
+      : "absent";
+  const savedMove = savedPresence === "present" ? (preferredMove?.move ?? null) : null;
+  const stagedFact =
+    stagedMove !== null && stagedMove.color === bottomColor
+      ? { move: stagedMove, uci: canonicalMoveUci(stagedMove)! }
+      : null;
+  const saved =
+    savedMove !== null && preferredMove !== null
+      ? { move: savedMove, effectiveAt: preferredMove.effective_at!, sourceFen }
+      : null;
+  const comparison: PreferredMoveComparison =
+    savedPresence === "unknown"
+      ? "unknown"
+      : saved === null || stagedFact === null
+        ? "not-applicable"
+        : stagedFact.uci === saved.move.uci
+          ? "matching"
+          : "different";
+  const relationship: RepertoirePositionRelationship =
+    savedPresence === "unknown"
+      ? "unknown"
+      : saved === null
+        ? stagedFact === null
+          ? "empty"
+          : "first-choice"
+        : stagedFact === null
+          ? "saved"
+          : comparison === "matching"
+            ? "matching"
+            : "replacement";
+  const effectiveAt = saved?.effectiveAt ?? null;
 
   return {
+    sourceFen,
     bottomColor,
+    ownTurn,
     personalCount,
     contextMessage:
       context === null
@@ -78,40 +117,20 @@ export function deriveRepertoirePositionModel({
           ? `Seen in ${personalCount} games as ${color}`
           : `Never seen as ${color}`,
     saveability: context === null ? "unknown" : context.overall_exists ? "savable" : "unsavable",
-    state,
+    savedPresence,
+    saved,
+    staged: stagedFact,
+    comparison,
+    relationship,
     savedMove,
     savedMoveVisible: savedMove !== null,
+    stagedMove: stagedFact?.move ?? null,
     effectiveAt,
-    lastPlayedMove,
-    lastPlayedPreferredMove,
   };
 }
 
-function moveUci(move: PositionPickerMoveRecord | null | undefined): string | null {
+export function canonicalMoveUci(move: PositionPickerMoveRecord | null | undefined): string | null {
   return move === null || move === undefined
     ? null
     : `${move.sourceSquare}${move.targetSquare}${move.promotion ?? ""}`;
-}
-
-export function emptyPreferredMoveDraft(): PreferredMoveDraftState {
-  return { mode: "idle", stagedMove: null };
-}
-
-export function beginPreferredMoveDraft(mode: PreferredMoveDraftMode): PreferredMoveDraftState {
-  return { mode, stagedMove: null };
-}
-
-export function stagePreferredMoveDraft(
-  draft: PreferredMoveDraftState,
-  move: PositionPickerMoveRecord,
-  bottomColor: ChessSide,
-): PreferredMoveDraftState | null {
-  if (draft.mode === "idle" || move.color !== bottomColor) {
-    return null;
-  }
-  return { ...draft, stagedMove: move };
-}
-
-export function cancelPreferredMoveDraft(): PreferredMoveDraftState {
-  return emptyPreferredMoveDraft();
 }

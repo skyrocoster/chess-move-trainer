@@ -89,6 +89,32 @@ vi.mock("react-chessboard", () => ({
   ),
 }));
 
+vi.mock("./PromotionPicker", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./PromotionPicker")>();
+  const choices = ["queen", "rook", "bishop", "knight"] as const;
+  const pieces = { queen: "q", rook: "r", bishop: "b", knight: "n" } as const;
+
+  return {
+    ...actual,
+    PromotionPicker: ({
+      pending,
+      onSelect,
+    }: {
+      pending: { sourceSquare: string; targetSquare: string } | null;
+      onSelect: (piece: "q" | "r" | "b" | "n") => void;
+    }) =>
+      pending ? (
+        <div role="dialog" aria-label="Choose a promotion piece">
+          {choices.map((choice) => (
+            <button key={choice} type="button" onClick={() => onSelect(pieces[choice])}>
+              Promote to {choice}
+            </button>
+          ))}
+        </div>
+      ) : null,
+  };
+});
+
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();

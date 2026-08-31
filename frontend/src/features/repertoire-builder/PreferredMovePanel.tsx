@@ -6,20 +6,16 @@ import { CalendarDate, type CalendarDateValue } from "../design-system/CalendarD
 import { formatUtcDate } from "../design-system/CalendarDateUtils";
 import { InlineFeedback } from "../design-system/feedback/InlineFeedback";
 import { PanelFeedback } from "../design-system/feedback/PanelFeedback";
-import type { ChessSide } from "../viewer/chessPrimitives";
 import type { PositionContextFailureCode } from "../viewer/positionContextApi";
 import type { PreferredMoveFailureCode } from "./preferredMoveApi";
-import type { PreferredMoveDraftMode, RepertoirePositionModel } from "./repertoireWorkflowModel";
+import type { RepertoirePositionModel } from "./repertoireWorkflowModel";
 import type { PositionPickerMoveRecord } from "./positionPickerSession";
 import styles from "./PreferredMovePanel.module.css";
 
-export type PreferredMoveMutationKind = "add" | "save" | "remove";
+export type PreferredMoveMutationKind = "save" | "remove";
 
 export type PreferredMovePanelProps = {
   model: RepertoirePositionModel;
-  sideToMove: ChessSide;
-  stagedMove: PositionPickerMoveRecord | null;
-  draftMode: "idle" | PreferredMoveDraftMode;
   date: CalendarDateValue;
   mutation: PreferredMoveMutationKind | null;
   preferredLoading: boolean;
@@ -28,10 +24,7 @@ export type PreferredMovePanelProps = {
   contextError: PositionContextFailureCode | null;
   workflowError: PreferredMoveFailureCode | null;
   onDateChange: (value: CalendarDateValue) => void;
-  onAdd: () => void;
-  onEdit: () => void;
   onSave: () => void;
-  onCancelEdit: () => void;
   onPlaySavedMove: () => void;
   onRemove: () => void;
 };
@@ -68,8 +61,6 @@ function contextFailureMessage(code: PositionContextFailureCode): string {
 
 function mutationLabel(mutation: PreferredMoveMutationKind): string {
   switch (mutation) {
-    case "add":
-      return "Adding preferred move...";
     case "save":
       return "Saving preferred move...";
     case "remove":
@@ -79,10 +70,6 @@ function mutationLabel(mutation: PreferredMoveMutationKind): string {
 
 function stagedLabel(move: PositionPickerMoveRecord): string {
   return `Staged move: ${move.san} (${move.sourceSquare}${move.targetSquare}${move.promotion ?? ""})`;
-}
-
-function playedLabel(move: PositionPickerMoveRecord): string {
-  return `Played move: ${move.san} (${move.sourceSquare}${move.targetSquare}${move.promotion ?? ""})`;
 }
 
 function effectiveDateLabel(value: CalendarDateValue): string | null {
@@ -168,9 +155,6 @@ function RemoveConfirmation({
 
 export function PreferredMovePanel({
   model,
-  sideToMove,
-  stagedMove,
-  draftMode,
   date,
   mutation,
   preferredLoading,
@@ -179,30 +163,29 @@ export function PreferredMovePanel({
   contextError,
   workflowError,
   onDateChange,
-  onAdd,
-  onEdit,
   onSave,
-  onCancelEdit,
   onPlaySavedMove,
   onRemove,
 }: PreferredMovePanelProps) {
-  const ownTurn = sideToMove === model.bottomColor;
+  const ownTurn = model.ownTurn;
   const canSave =
     ownTurn &&
     model.saveability === "savable" &&
+    model.savedPresence !== "unknown" &&
+    (model.relationship === "first-choice" || model.relationship === "replacement") &&
+    model.stagedMove !== null &&
     !preferredLoading &&
     preferredError === null &&
     !contextLoading &&
     contextError === null;
   const savedMove = model.savedMove;
-  const playedMove = model.lastPlayedMove;
-  const hasPersistedPreferredMove = model.lastPlayedPreferredMove?.state === "assigned";
+  const stagedMove = model.stagedMove ?? model.staged?.move ?? null;
   const disabled = mutation !== null;
 
   return (
     <section
       className={styles.panel}
-      data-state={model.state}
+      data-state={model.relationship}
       aria-labelledby="preferred-move-heading"
     >
       <h2 className={styles.heading} id="preferred-move-heading">
@@ -243,125 +226,57 @@ export function PreferredMovePanel({
         />
       ) : null}
 
-      {model.state === "saved" &&
-      ownTurn &&
+      {savedMove &&
+      model.savedPresence === "present" &&
       !preferredLoading &&
-      preferredError === null &&
-      savedMove ? (
+      preferredError === null ? (
         <>
-          <DateControl value={date} onChange={onDateChange} />
-          <p className={styles.savedMove} data-testid="saved-move">
-            Saved move: {savedMove.san} ({savedMove.uci})
-          </p>
-          {draftMode === "edit" ? (
-            <>
-              <p className={styles.instruction}>
-                Select one legal replacement, then save it explicitly.
-              </p>
-              {stagedMove ? (
-                <p className={styles.stagedMove} data-testid="replacement-move">
-                  {stagedLabel(stagedMove)}
-                </p>
-              ) : null}
-              <div className={styles.actions}>
-                <Button onClick={onSave} disabled={!canSave || !stagedMove || disabled}>
-                  Save replacement
-                </Button>
-                <Button variant="ghost" onClick={onCancelEdit} disabled={disabled}>
-                  Cancel edit
-                </Button>
-                <RemoveConfirmation onRemove={onRemove} disabled={disabled} />
-              </div>
-            </>
+          {ownTurn ? <DateControl value={date} onChange={onDateChange} /> : null}
+          {ownTurn ? (
+            <Button
+              className={styles.savedMove}
+              data-testid="saved-move"
+              onClick={onPlaySavedMove}
+              disabled={disabled}
+              aria-label={`Current saved choice: ${savedMove.san}; play and stage this move.`}
+            >
+              Current saved choice: {savedMove.san} ({savedMove.uci})
+            </Button>
           ) : (
-            <div className={styles.actions}>
-              <Button variant="secondary" onClick={onEdit} disabled={!canSave || disabled}>
-                Edit
-              </Button>
-              <Button onClick={onPlaySavedMove} disabled={disabled}>
-                Play saved move
-              </Button>
-              <RemoveConfirmation onRemove={onRemove} disabled={disabled} />
-            </div>
+            <p className={styles.savedMove} data-testid="saved-move">
+              Current saved choice: {savedMove.san} ({savedMove.uci})
+            </p>
           )}
-        </>
-      ) : model.state === "matching-played" && playedMove ? (
-        <>
-          <p className={styles.savedMove} data-testid="played-move">
-            {playedLabel(playedMove)}
-          </p>
-          <p className={styles.instruction}>This move matches your preferred move.</p>
-          {date ? (
-            <p className={styles.effectiveDate} data-testid="effective-date">
-              Effective from <strong>{effectiveDateLabel(date)}</strong>
+          {stagedMove ? (
+            <p className={styles.stagedMove} data-testid="staged-move">
+              {stagedLabel(stagedMove)}
             </p>
           ) : null}
           <div className={styles.actions}>
-            <Button variant="secondary" onClick={onEdit} disabled={disabled}>
-              Edit
-            </Button>
-            <RemoveConfirmation onRemove={onRemove} disabled={disabled} />
+            {canSave ? (
+              <Button onClick={onSave} disabled={disabled}>
+                Save
+              </Button>
+            ) : null}
+            {ownTurn ? <RemoveConfirmation onRemove={onRemove} disabled={disabled} /> : null}
           </div>
         </>
-      ) : model.state === "unsaved-played" && playedMove ? (
+      ) : model.savedPresence === "absent" && ownTurn && stagedMove ? (
         <>
-          <p className={styles.savedMove} data-testid="played-move">
-            {playedLabel(playedMove)}
-          </p>
-          <p className={styles.instruction}>This move is not saved as your preferred move.</p>
-          {draftMode === "edit" ? (
-            <>
-              <DateControl value={date} onChange={onDateChange} />
-              {stagedMove ? (
-                <p className={styles.stagedMove} data-testid="replacement-move">
-                  {stagedLabel(stagedMove)}
-                </p>
-              ) : null}
-              <div className={styles.actions}>
-                <Button onClick={onSave} disabled={!canSave || !stagedMove || disabled}>
-                  Save replacement
-                </Button>
-                <Button variant="ghost" onClick={onCancelEdit} disabled={disabled}>
-                  Cancel edit
-                </Button>
-                <RemoveConfirmation onRemove={onRemove} disabled={disabled} />
-              </div>
-            </>
-          ) : (
-            <>
-              {ownTurn ? <DateControl value={date} onChange={onDateChange} /> : null}
-              {ownTurn ? (
-                <div className={styles.actions}>
-                  {hasPersistedPreferredMove ? (
-                    <Button variant="secondary" onClick={onEdit} disabled={disabled}>
-                      Edit
-                    </Button>
-                  ) : (
-                    <Button onClick={onAdd} disabled={!canSave || !stagedMove || disabled}>
-                      Add
-                    </Button>
-                  )}
-                  {hasPersistedPreferredMove ? (
-                    <RemoveConfirmation onRemove={onRemove} disabled={disabled} />
-                  ) : null}
-                </div>
-              ) : null}
-            </>
-          )}
-        </>
-      ) : ownTurn && model.state === "no-saved" && canSave ? (
-        <>
-          <p className={styles.instruction}>No preferred move is saved for this position.</p>
           <DateControl value={date} onChange={onDateChange} />
-          <p className={styles.instruction}>
-            {stagedMove ? stagedLabel(stagedMove) : "Select a legal move to stage it."}
+          <p className={styles.instruction} data-testid="staged-move">
+            {stagedLabel(stagedMove)}
           </p>
           <div className={styles.actions}>
-            <Button onClick={onAdd} disabled={!stagedMove || disabled}>
-              Add
-            </Button>
+            {canSave ? (
+              <Button onClick={onSave} disabled={disabled}>
+                Save
+              </Button>
+            ) : null}
           </div>
         </>
+      ) : model.savedPresence === "absent" && ownTurn && !stagedMove ? (
+        <p className={styles.instruction}>Select a legal move to stage it.</p>
       ) : null}
     </section>
   );

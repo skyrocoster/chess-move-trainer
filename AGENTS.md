@@ -1,4 +1,4 @@
-# AI Instructions - Chess Move Trainer
+# AI Instructions: Chess Move Trainer
 
 Windows-only FastAPI + Vite React TypeScript application for training chess moves. The repository also
 contains a small, role-based coordinator workflow. Use plain English and do not assume the user is an
@@ -38,8 +38,8 @@ PowerShell commands must use backslash paths, `$(...)` for subexpressions, ASCII
 - An AI may invoke `scripts/check.py --fix` without asking again only after a read-only check identifies
   deterministic formatting or lint issues; it must inspect the resulting diff and must not use `--fix` for
   semantic repair.
-- Python dependencies are pinned in `requirements.txt` and configured in `pyproject.toml`; npm uses
-  `frontend\package-lock.json`.
+- Python dependencies are pinned in `requirements.txt` and configured in `pyproject.toml`. The repository-root
+  `package-lock.json` is authoritative for the npm workspaces.
 
 Local Node may exceed the `>=24 <25` engines pin. Ignore that warning and the non-fatal Storybook
 `build-storybook` teardown libuv assertion.
@@ -53,7 +53,8 @@ Playwright end-to-end tests. Maintenance requires Ruff, ESLint, Prettier, and so
 implementation does not check or enforce them. A Plan may temporarily leave a source file above 500 lines or a
 test above 700 lines; the separate complete test/fix maintenance run detects and repairs those issues later.
 
-MANDATORY SAFETY: every test must have an explicit finite command-level timeout and finite tool-level timeout. Never run unbounded processes. 
+**Mandatory safety:** every test must have an explicit finite command-level timeout and finite tool-level timeout.
+Never run an unbounded process.
 
 ## Start here
 
@@ -65,16 +66,19 @@ MANDATORY SAFETY: every test must have an explicit finite command-level timeout 
    implementation unless the Plan's outcome specifically changes that tool or constraint. Complete test/fix runs
    are separate maintenance work outside the implementation workflow.
 
-`Scratch/` is user-owned temporary workspace. Preserve unrelated Scratch content. New mock-ups and
-prototypes belong under `experiments/`, which has its own manifests and ignored environments/artifacts.
-Do not read or alter unrelated Scratch paths.
+`Scratch/` is a user-owned temporary workspace. Preserve unrelated content and do not read or alter unrelated
+paths. New mock-ups, catalogues, design documents, and prototypes belong under `experiments/`, which has its own
+manifests and ignored environments and artifacts. Mock-ups may be self-contained HTML/CSS/JavaScript or isolated
+React, using the lowest fidelity sufficient for the current design decision.
 
 ## Working modes
 
-These modes are when you are working as the coordinator or the coordinators subagents. If you in a regular build mode, you do not need to follow this workflow.
+These modes apply when working as the coordinator or one of its subagents. Regular build mode does not use this
+role-based workflow.
 
 - **Coordinator workflow:** repository-dependent work enters through `.opencode/agents/coordinator.md`.
-  The coordinator owns routing, scope, workflow records, acceptance, and repair-loop interruption. If you are not set to this agent, do not assume the role.
+  The coordinator owns routing, scope, workflow records, design-exploration decisions and sign-off, acceptance,
+  and repair-loop interruption. If you are not set to this agent, do not assume the role.
 - **Grilling:** substantial research or decisions may produce one freely structured synthesis under
   `docs/grilling-docs/`; there is no mandatory grilling or document chain.
 - **Plan:** nontrivial implementation uses one focused Plan as an implementation instrument. It records
@@ -87,12 +91,16 @@ These modes are when you are working as the coordinator or the coordinators suba
   retained proof and runs only missing or invalidated checks. A coordinator-authorized repair uses the Quality fix
   route, followed by fresh-session final validation of evidence invalidated by the repair. After one failed repair,
   return to the coordinator. Unrelated failures are reported, not absorbed.
-- **Exploration:** mock-ups and prototypes are noncanonical until explicitly adopted.
+- **Exploration:** when substantial UI or interaction direction is unsettled, the coordinator may run a flexible
+  narrowing funnel through broad catalogues, selected branches, focused grilling, final sign-off, and repository-
+  aware design synthesis. The Exploration Agent produces bounded mock-ups, catalogues, design documents, and
+  prototypes under `experiments/`; it does not select the winning design or authorize implementation. Exploration
+  output remains noncanonical until explicitly adopted and hands off to the existing assessment and planning system.
 
-The coordinator may approve scope expansion needed for the settled outcome unless behavior, direction,
-contracts, destructive effects, or dependencies change. Human pauses are reserved for genuine product or
-visual decisions. User edits during a visual breakpoint are authoritative and must be bounded, incorporated,
-validated, and continued.
+The coordinator may approve scope expansion needed for the settled outcome unless behavior, direction, contracts,
+destructive effects, or dependencies change. Human pauses are reserved for genuine product or visual decisions.
+User edits during exploration or a visual breakpoint are authoritative and must be bounded, incorporated,
+validated when applicable, and carried forward.
 
 ## Documentation contract
 
@@ -102,6 +110,8 @@ validated, and continued.
   belongs in the planning skills.
 - Active Plans may contain one transient `handoff.md` during context rollover. It is coordinator-reviewed,
   overwritten on rollover, and deleted at closeout.
+- A signed-off mock-up and repository-aware `DESIGN.md` under `experiments/` may provide upstream planning
+  evidence, but neither is a Plan or implementation authorization.
 - Completed historical Plans, grilling records, and the existing master-plan records are preserved unchanged.
 
 ## Safety
@@ -113,5 +123,7 @@ validated, and continued.
 
 ## Workflow assets
 
-`.opencode/` contains the coordinator, cheap Scout, selectable Flash/Luna case-workers, one Quality Agent,
-one Exploration Agent, browser-proof guidance, and planning skills.
+`.opencode/` contains the coordinator, cheap Scout, selectable Flash/Luna case-workers, one Quality Agent, one
+Exploration Agent, browser-proof guidance, and planning skills. Design exploration is coordinator-owned through
+`design-exploration`; the Exploration Agent uses `mock-up`, `design-catalogue`, `design-synthesis`, `prototype`, and
+optional `frontend-design` support to produce noncanonical evidence.

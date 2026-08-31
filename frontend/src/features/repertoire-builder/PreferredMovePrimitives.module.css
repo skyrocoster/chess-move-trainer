@@ -1,0 +1,256 @@
+.choiceBox {
+  display: grid;
+  gap: var(--cmt-spacing-12);
+  min-width: 0;
+  padding: var(--cmt-spacing-16);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--cmt-radius-12);
+  background: var(--md-sys-color-surface-container);
+  color: var(--md-sys-color-on-surface);
+  text-align: start;
+}
+
+.choiceBoxProposal {
+  border-color: var(--cmt-warning-accent);
+  background: var(--cmt-warning-container);
+  color: var(--cmt-warning-on-container);
+}
+
+.choiceBoxMatching {
+  border-color: var(--cmt-success-accent);
+  background: var(--cmt-success-container);
+  color: var(--cmt-success-on-container);
+}
+
+.choiceBoxBlocked {
+  border-color: var(--cmt-error-accent);
+  background: var(--cmt-error-container);
+  color: var(--cmt-error-on-container);
+}
+
+.choiceBoxEmpty {
+  border-style: dashed;
+}
+
+.choiceBoxInteractive {
+  inline-size: 100%;
+  font: inherit;
+  cursor: pointer;
+}
+
+.choiceBoxInteractive:focus-visible {
+  outline: var(--cmt-focus-ring-width) solid var(--cmt-focus-ring-color);
+  outline-offset: var(--cmt-focus-ring-separation);
+}
+
+.choiceBoxInteractive:disabled {
+  cursor: not-allowed;
+}
+
+.boxTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--cmt-spacing-12);
+}
+
+.boxLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--cmt-spacing-8);
+  min-width: 0;
+  color: var(--md-sys-color-on-surface-variant);
+  font-family: var(--md-sys-typescale-label-medium-font);
+  font-size: var(--md-sys-typescale-label-medium-size);
+  font-weight: var(--md-sys-typescale-label-medium-weight);
+  line-height: var(--md-sys-typescale-label-medium-line-height);
+}
+
+.boxIcon {
+  display: inline-grid;
+  flex: 0 0 var(--cmt-spacing-24);
+  inline-size: var(--cmt-spacing-24);
+  block-size: var(--cmt-spacing-24);
+  place-items: center;
+  border-radius: var(--cmt-radius-8);
+  background: var(--cmt-success-container);
+  color: var(--cmt-success-on-container);
+}
+
+.boxIcon svg {
+  inline-size: var(--cmt-spacing-16);
+  block-size: var(--cmt-spacing-16);
+}
+
+.boxIconproposal {
+  background: var(--cmt-warning-accent);
+  color: var(--cmt-warning-on-accent);
+}
+
+.boxIconmatching {
+  background: var(--cmt-success-accent);
+  color: var(--cmt-success-on-accent);
+}
+
+.boxIconempty {
+  background: var(--md-sys-color-surface-container-high);
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.boxIconblocked {
+  background: var(--cmt-error-accent);
+  color: var(--cmt-error-on-accent);
+}
+
+.moveValue {
+  display: grid;
+  gap: var(--cmt-spacing-4);
+  min-width: 0;
+}
+
+.san {
+  overflow-wrap: anywhere;
+  color: var(--md-sys-color-on-surface);
+  font-family: var(--md-sys-typescale-headline-small-font);
+  font-size: var(--md-sys-typescale-headline-small-size);
+  font-weight: var(--md-sys-typescale-headline-small-weight);
+  letter-spacing: var(--md-sys-typescale-headline-small-letter-spacing);
+  line-height: var(--md-sys-typescale-headline-small-line-height);
+}
+
+.uci {
+  overflow-wrap: anywhere;
+  color: var(--md-sys-color-on-surface-variant);
+  font-family: var(--md-sys-typescale-body-small-font);
+  font-size: var(--md-sys-typescale-body-small-size);
+  line-height: var(--md-sys-typescale-body-small-line-height);
+}
+
+.emptyContent {
+  display: grid;
+  gap: var(--cmt-spacing-4);
+  min-width: 0;
+  color: var(--md-sys-color-on-surface-variant);
+  font: var(--md-sys-typescale-body-medium);
+}
+
+.emptyContent strong {
+  color: var(--md-sys-color-on-surface);
+  font: var(--md-sys-typescale-title-small);
+}
+
+.dateValue {
+  display: grid;
+  gap: var(--cmt-spacing-4);
+  color: var(--md-sys-color-on-surface-variant);
+  font: var(--md-sys-typescale-body-small);
+}
+
+.dateValue strong {
+  color: var(--md-sys-color-on-surface);
+  font: var(--md-sys-typescale-label-medium);
+}
+
+.connector {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--cmt-spacing-4);
+  min-inline-size: var(--cmt-spacing-48);
+  color: var(--cmt-warning-accent);
+  text-align: center;
+}
+
+.connectorIcon {
+  flex: 0 0 var(--cmt-spacing-16);
+  inline-size: var(--cmt-spacing-16);
+  block-size: var(--cmt-spacing-16);
+}
+
+.connector span {
+  color: var(--md-sys-color-on-surface-variant);
+  font: var(--md-sys-typescale-label-small);
+  text-transform: uppercase;
+}
+
+.consequence {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--cmt-spacing-8);
+  margin: 0;
+  padding: var(--cmt-spacing-12) var(--cmt-spacing-16);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--cmt-radius-8);
+  background: var(--md-sys-color-surface-container-high);
+  color: var(--md-sys-color-on-surface-variant);
+  font: var(--md-sys-typescale-body-small);
+}
+
+.consequenceReady {
+  border-color: var(--cmt-warning-accent);
+}
+
+.consequenceMatching {
+  border-color: var(--cmt-success-accent);
+}
+
+.consequenceIcon {
+  flex: 0 0 var(--cmt-spacing-16);
+  inline-size: var(--cmt-spacing-16);
+  block-size: var(--cmt-spacing-16);
+  color: var(--cmt-warning-accent);
+}
+
+.consequenceMatching .consequenceIcon {
+  color: var(--cmt-success-accent);
+}
+
+.dateControl {
+  display: inline-flex;
+  min-width: 0;
+}
+
+.actionLayout {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--cmt-spacing-8);
+}
+
+@media (max-width: 40rem) {
+  .connector {
+    flex-direction: column;
+  }
+
+  .connectorIcon {
+    transform: rotate(90deg);
+  }
+}
+
+@media (forced-colors: active) {
+  .choiceBox,
+  .consequence {
+    border-color: ButtonBorder;
+    background: Canvas;
+    color: CanvasText;
+  }
+
+  .choiceBoxInteractive:focus-visible {
+    outline-color: Highlight;
+  }
+
+  .boxIcon {
+    border: 1px solid ButtonBorder;
+    background: Canvas;
+    color: CanvasText;
+  }
+
+  .boxLabel,
+  .san,
+  .uci,
+  .emptyContent,
+  .dateValue,
+  .connector span {
+    color: CanvasText;
+  }
+}

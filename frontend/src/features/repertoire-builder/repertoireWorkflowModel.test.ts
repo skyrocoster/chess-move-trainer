@@ -1,13 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { PositionContextResponse } from "../viewer/positionContextApi";
-import {
-  beginPreferredMoveDraft,
-  cancelPreferredMoveDraft,
-  deriveRepertoirePositionModel,
-  emptyPreferredMoveDraft,
-  stagePreferredMoveDraft,
-} from "./repertoireWorkflowModel";
+import { canonicalMoveUci, deriveRepertoirePositionModel } from "./repertoireWorkflowModel";
 import type { PositionPickerMoveRecord } from "./positionPickerSession";
 
 const FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
@@ -33,12 +27,11 @@ const WHITE_MOVE: PositionPickerMoveRecord = {
   position: { ply: 1, fen: AFTER_E4_FEN, san: "e4" },
 };
 
-const BLACK_MOVE: PositionPickerMoveRecord = {
-  sourceSquare: "e7",
-  targetSquare: "e5",
-  color: "black",
-  san: "e5",
-  position: { ply: 1, fen: AFTER_E4_FEN, san: "e5" },
+const DIFFERENT_MOVE: PositionPickerMoveRecord = {
+  ...WHITE_MOVE,
+  sourceSquare: "d2",
+  targetSquare: "d4",
+  san: "d4",
 };
 
 describe("repertoire position model", () => {
@@ -50,30 +43,100 @@ describe("repertoire position model", () => {
   };
 
   it.each([
-    ["no-saved", null, null, null],
-    ["saved", assignedPreferredMove, null, null],
-    ["matching-played", assignedPreferredMove, WHITE_MOVE, assignedPreferredMove],
-    [
-      "unsaved-played",
-      { ...assignedPreferredMove, move: { uci: "d2d4", san: "d4" } },
-      WHITE_MOVE,
-      { ...assignedPreferredMove, move: { uci: "d2d4", san: "d4" } },
-    ],
-  ])(
-    "derives the %s state from saved and last-played workflow data",
-    (state, preferredMove, lastPlayedMove, lastPlayedPreferredMove) => {
-      expect(
-        deriveRepertoirePositionModel({
-          context: context(),
-          preferredMove,
-          sideToMove: "white",
-          bottomColor: "white",
-          lastPlayedMove,
-          lastPlayedPreferredMove,
-        }),
-      ).toMatchObject({ state });
+    ["empty", null, null, "not-applicable"],
+    ["first-choice", null, WHITE_MOVE, "not-applicable"],
+    ["saved", assignedPreferredMove, null, "not-applicable"],
+    ["replacement", assignedPreferredMove, DIFFERENT_MOVE, "different"],
+    ["matching", assignedPreferredMove, WHITE_MOVE, "matching"],
+  ] as const)(
+    "derives the %s relationship from confirmed saved and local staged facts",
+    (relationship, preferredMove, stagedMove, comparison) => {
+      const model = deriveRepertoirePositionModel({
+        context: context(),
+        preferredMove,
+        sideToMove: "white",
+        bottomColor: "white",
+        sourceFen: FEN,
+        stagedMove,
+      });
+
+      expect(model).toMatchObject({
+        sourceFen: FEN,
+        ownTurn: true,
+        relationship,
+        comparison,
+        savedPresence: preferredMove ? "present" : "absent",
+        savedMove: preferredMove?.move ?? null,
+        stagedMove,
+      });
+      expect(model.saved?.sourceFen ?? null).toBe(preferredMove ? FEN : null);
+      expect(model.staged?.uci ?? null).toBe(stagedMove ? canonicalMoveUci(stagedMove) : null);
     },
   );
+
+  it("uses canonical UCI, including promotion, rather than SAN for identity", () => {
+    const promoted: PositionPickerMoveRecord = {
+      ...WHITE_MOVE,
+      sourceSquare: "e7",
+      targetSquare: "e8",
+      san: "e8=Q",
+      promotion: "q",
+    };
+
+    expect(canonicalMoveUci(promoted)).toBe("e7e8q");
+    expect(
+      deriveRepertoirePositionModel({
+        context: context(),
+        preferredMove: {
+          ...assignedPreferredMove,
+          move: { uci: "e7e8n", san: "e8=N" },
+        },
+        sideToMove: "white",
+        bottomColor: "white",
+        sourceFen: FEN,
+        stagedMove: { ...promoted, san: "e8=N" },
+      }),
+    ).toMatchObject({ relationship: "replacement", comparison: "different" });
+  });
+
+  it("keeps saved facts visible as read-only context on the opponent turn", () => {
+    expect(
+      deriveRepertoirePositionModel({
+        context: context(),
+        preferredMove: assignedPreferredMove,
+        sideToMove: "black",
+        bottomColor: "white",
+        sourceFen: FEN,
+      }),
+    ).toMatchObject({
+      ownTurn: false,
+      savedPresence: "present",
+      savedMove: assignedPreferredMove.move,
+      savedMoveVisible: true,
+      relationship: "saved",
+    });
+  });
+
+  it("withholds relationship facts until the preferred read is confirmed", () => {
+    expect(
+      deriveRepertoirePositionModel({
+        context: context(),
+        preferredMove: null,
+        preferredMoveKnown: false,
+        sideToMove: "white",
+        bottomColor: "white",
+        sourceFen: FEN,
+        stagedMove: WHITE_MOVE,
+      }),
+    ).toMatchObject({
+      savedPresence: "unknown",
+      relationship: "unknown",
+      comparison: "unknown",
+      saved: null,
+      savedMove: null,
+      stagedMove: WHITE_MOVE,
+    });
+  });
 
   it("maps bottom color to its personal count and keeps zero savable", () => {
     expect(
@@ -82,6 +145,7 @@ describe("repertoire position model", () => {
         preferredMove: null,
         sideToMove: "white",
         bottomColor: "black",
+        sourceFen: FEN,
       }),
     ).toMatchObject({
       personalCount: 0,
@@ -97,6 +161,7 @@ describe("repertoire position model", () => {
         preferredMove: null,
         sideToMove: "white",
         bottomColor: "white",
+        sourceFen: FEN,
       }),
     ).toMatchObject({
       personalCount: 2,
@@ -112,75 +177,12 @@ describe("repertoire position model", () => {
         preferredMove: null,
         sideToMove: "white",
         bottomColor: "white",
+        sourceFen: FEN,
       }),
     ).toMatchObject({
       personalCount: null,
       contextMessage: null,
       saveability: "unknown",
     });
-  });
-
-  it("only exposes an assigned saved move on the bottom-color turn", () => {
-    const preferredMove = assignedPreferredMove;
-
-    expect(
-      deriveRepertoirePositionModel({
-        context: context(),
-        preferredMove,
-        sideToMove: "white",
-        bottomColor: "white",
-      }),
-    ).toMatchObject({ savedMove: preferredMove.move, savedMoveVisible: true });
-    expect(
-      deriveRepertoirePositionModel({
-        context: context(),
-        preferredMove,
-        sideToMove: "black",
-        bottomColor: "white",
-      }),
-    ).toMatchObject({ savedMove: null, savedMoveVisible: false });
-  });
-
-  it("retains the focused preferred response and its persisted effective timestamp", () => {
-    expect(
-      deriveRepertoirePositionModel({
-        context: context(),
-        preferredMove: null,
-        sideToMove: "black",
-        bottomColor: "white",
-        lastPlayedMove: WHITE_MOVE,
-        lastPlayedPreferredMove: assignedPreferredMove,
-      }),
-    ).toMatchObject({
-      state: "matching-played",
-      lastPlayedMove: WHITE_MOVE,
-      lastPlayedPreferredMove: assignedPreferredMove,
-      effectiveAt: assignedPreferredMove.effective_at,
-    });
-  });
-});
-
-describe("preferred move draft model", () => {
-  it("starts and cancels explicit Add/Edit drafts without persistence", () => {
-    expect(emptyPreferredMoveDraft()).toEqual({ mode: "idle", stagedMove: null });
-    expect(beginPreferredMoveDraft("add")).toEqual({ mode: "add", stagedMove: null });
-    expect(beginPreferredMoveDraft("edit")).toEqual({ mode: "edit", stagedMove: null });
-    expect(cancelPreferredMoveDraft()).toEqual({ mode: "idle", stagedMove: null });
-  });
-
-  it("stages only a bottom-color move and preserves the Add/Edit mode", () => {
-    const add = beginPreferredMoveDraft("add");
-    const edit = beginPreferredMoveDraft("edit");
-
-    expect(stagePreferredMoveDraft(add, WHITE_MOVE, "white")).toEqual({
-      mode: "add",
-      stagedMove: WHITE_MOVE,
-    });
-    expect(stagePreferredMoveDraft(edit, WHITE_MOVE, "white")).toEqual({
-      mode: "edit",
-      stagedMove: WHITE_MOVE,
-    });
-    expect(stagePreferredMoveDraft(add, BLACK_MOVE, "white")).toBeNull();
-    expect(stagePreferredMoveDraft(emptyPreferredMoveDraft(), WHITE_MOVE, "white")).toBeNull();
   });
 });

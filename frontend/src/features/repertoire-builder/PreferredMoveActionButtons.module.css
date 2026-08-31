@@ -1,0 +1,26 @@
+.actionButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--cmt-spacing-8);
+}
+
+.actionIcon {
+  display: block;
+  flex: 0 0 var(--cmt-spacing-16);
+  inline-size: var(--cmt-spacing-16);
+  block-size: var(--cmt-spacing-16);
+}
+
+.removeButton {
+  border-color: var(--cmt-error-accent);
+  color: var(--cmt-error-accent);
+}
+
+@media (forced-colors: active) {
+  .actionButton {
+    border-color: ButtonBorder;
+    background: ButtonFace;
+    color: ButtonText;
+  }
+}

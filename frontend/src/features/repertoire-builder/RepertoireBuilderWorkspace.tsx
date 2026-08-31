@@ -28,7 +28,6 @@ import { usePreferredMoveWorkflow } from "./preferredMoveWorkflowState";
 import {
   boardLabel,
   branchMove,
-  isPlayedSavedMove,
   originDescription,
   promotionPiece,
   sessionViewKey,
@@ -109,10 +108,7 @@ export default function RepertoireBuilderWorkspace({
     setSession,
     setSessionStatus,
   });
-  const { onStagedMove, onPlaySavedMove, reset: resetWorkflow } = workflow;
-  const savedMove = workflow.positionModel.savedMove;
-  const savedMovePlayable =
-    savedMove !== null && workflow.draftMode !== "edit" && workflow.mutation === null;
+  const { reset: resetWorkflow } = workflow;
 
   const handlePromotionCommit = useCallback(
     (commit: PromotionCommit) => {
@@ -126,18 +122,8 @@ export default function RepertoireBuilderWorkspace({
         setSessionStatus("Move rejected because it is illegal.");
         return;
       }
-      if (
-        result.disposition === "staged" &&
-        savedMovePlayable &&
-        isPlayedSavedMove(result.move, savedMove)
-      ) {
-        onPlaySavedMove();
-        return;
-      }
       setSession(result.session);
-      if (result.disposition === "staged") {
-        onStagedMove(result.move);
-      } else {
+      if (result.disposition === "advanced") {
         resetWorkflow();
       }
       setChessVersion((version) => version + 1);
@@ -147,7 +133,7 @@ export default function RepertoireBuilderWorkspace({
           : `Opponent move played locally: ${result.move.san}.`,
       );
     },
-    [onPlaySavedMove, onStagedMove, resetWorkflow, savedMove, savedMovePlayable, session],
+    [resetWorkflow, session],
   );
 
   const handlePromotionReject = useCallback((reason: "illegal" | "stale") => {
@@ -265,19 +251,8 @@ export default function RepertoireBuilderWorkspace({
         return false;
       }
 
-      if (
-        result.disposition === "staged" &&
-        savedMovePlayable &&
-        isPlayedSavedMove(result.move, savedMove)
-      ) {
-        onPlaySavedMove();
-        return true;
-      }
-
       setSession(result.session);
-      if (result.disposition === "staged") {
-        onStagedMove(result.move);
-      } else {
+      if (result.disposition === "advanced") {
         resetWorkflow();
       }
       if (result.disposition === "staged") {
@@ -287,7 +262,7 @@ export default function RepertoireBuilderWorkspace({
       setSessionStatus(`Opponent move played locally: ${result.move.san}.`);
       return true;
     },
-    [onPlaySavedMove, onStagedMove, resetWorkflow, savedMove, savedMovePlayable, session],
+    [resetWorkflow, session],
   );
 
   const handleMoveIntent = useCallback(
@@ -441,9 +416,6 @@ export default function RepertoireBuilderWorkspace({
           sessionStatus={sessionStatus}
           model={workflow.positionModel}
           positionContext={workflow.positionContext}
-          sideToMove={sideToMoveColor}
-          stagedMove={workflow.stagedMove}
-          draftMode={workflow.draftMode}
           date={workflow.date}
           mutation={workflow.mutation}
           preferredLoading={workflow.preferredLoading}
@@ -452,10 +424,7 @@ export default function RepertoireBuilderWorkspace({
           contextError={workflow.contextError}
           workflowError={workflow.workflowError}
           onDateChange={workflow.onDateChange}
-          onAdd={workflow.onAdd}
-          onEdit={workflow.onEdit}
           onSave={workflow.onSave}
-          onCancelEdit={workflow.onCancelEdit}
           onPlaySavedMove={workflow.onPlaySavedMove}
           onRemove={workflow.onRemove}
         />

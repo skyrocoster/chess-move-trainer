@@ -23,18 +23,10 @@ import {
   type PreferredMoveFailureCode,
 } from "./preferredMoveApi";
 import { usePreferredMoveState } from "./preferredMoveState";
+import { deriveRepertoirePositionModel } from "./repertoireWorkflowModel";
 import {
-  beginPreferredMoveDraft,
-  cancelPreferredMoveDraft,
-  deriveRepertoirePositionModel,
-  emptyPreferredMoveDraft,
-  stagePreferredMoveDraft,
-  type PreferredMoveDraftState,
-} from "./repertoireWorkflowModel";
-import {
-  appendPositionPickerMove,
+  playAndStagePositionPickerMove,
   positionPickerSelectedTransition,
-  selectPositionPickerPly,
   type PositionPickerMove,
   type PositionPickerSession,
 } from "./positionPickerSession";
@@ -57,16 +49,11 @@ export type PreferredMoveWorkflowState = {
   contextLoading: boolean;
   contextError: ReturnType<typeof usePositionContextState>["error"];
   stagedMove: PositionPickerSession["stagedMove"];
-  draftMode: PreferredMoveDraftState["mode"];
   date: CalendarDateValue;
   mutation: PreferredMoveMutationKind | null;
   workflowError: PreferredMoveFailureCode | null;
   onDateChange: (value: CalendarDateValue) => void;
-  onStagedMove: (move: PositionPickerSession["stagedMove"]) => void;
-  onAdd: () => void;
-  onEdit: () => void;
   onSave: () => void;
-  onCancelEdit: () => void;
   onPlaySavedMove: () => void;
   onRemove: () => void;
   reset: () => void;
@@ -94,12 +81,10 @@ export function usePreferredMoveWorkflow({
   setSessionStatus,
 }: WorkflowArgs): PreferredMoveWorkflowState {
   const [refreshToken, setRefreshToken] = useState(0);
-  const [draft, setDraft] = useState<PreferredMoveDraftState>(emptyPreferredMoveDraft);
   const [explicitDate, setExplicitDate] = useState<CalendarDateValue>(null);
   const [hasExplicitDate, setHasExplicitDate] = useState(false);
   const [mutation, setMutation] = useState<PreferredMoveMutationKind | null>(null);
   const [workflowError, setWorkflowError] = useState<PreferredMoveFailureCode | null>(null);
-  const [pendingEditPositionFen, setPendingEditPositionFen] = useState<string | null>(null);
   const mutationId = useRef(0);
   const mutationController = useRef<AbortController | null>(null);
   const preferredReader = useCallback(
@@ -117,10 +102,10 @@ export function usePreferredMoveWorkflow({
     [positionContextClient, refreshToken],
   );
   const selectedTransition = useMemo(() => positionPickerSelectedTransition(session), [session]);
-  const playedTransition =
+  const focusedOwnerTransition =
     selectedTransition?.move.color === session.bottomColor ? selectedTransition : null;
   const preferredPositionFen =
-    playedTransition?.sourcePosition.fen ?? session.currentPosition.fen;
+    focusedOwnerTransition?.sourcePosition.fen ?? session.currentPosition.fen;
   const preferredState = usePreferredMoveState(preferredPositionFen, preferredReader);
   const contextState = usePositionContextState(session.currentPosition.fen, contextReader);
   const positionModel = useMemo(
@@ -130,14 +115,18 @@ export function usePreferredMoveWorkflow({
         preferredMove: preferredState.preferredMove,
         sideToMove,
         bottomColor: session.bottomColor,
-        lastPlayedMove: playedTransition?.move,
-        lastPlayedPreferredMove: playedTransition ? preferredState.preferredMove : null,
+        sourceFen: preferredPositionFen,
+        stagedMove: session.stagedMove,
+        preferredMoveKnown: !preferredState.loading && preferredState.error === null,
       }),
     [
       contextState.context,
-      playedTransition,
+      preferredPositionFen,
+      preferredState.error,
+      preferredState.loading,
       preferredState.preferredMove,
       session.bottomColor,
+      session.stagedMove,
       sideToMove,
     ],
   );
@@ -148,40 +137,17 @@ export function usePreferredMoveWorkflow({
     mutationController.current = null;
     setMutation(null);
     setWorkflowError(null);
-    setDraft(cancelPreferredMoveDraft());
     setExplicitDate(null);
     setHasExplicitDate(false);
   }, []);
 
   const reset = useCallback(() => {
-    setPendingEditPositionFen(null);
     resetPositionState();
   }, [resetPositionState]);
 
   useEffect(() => {
     resetPositionState();
   }, [resetPositionState, session.currentPosition.fen, session.bottomColor]);
-
-  useEffect(() => {
-    if (
-      pendingEditPositionFen === null ||
-      session.currentPosition.fen !== pendingEditPositionFen ||
-      preferredState.loading ||
-      preferredState.error !== null ||
-      preferredState.preferredMove?.state !== "assigned"
-    ) {
-      return;
-    }
-
-    setDraft(beginPreferredMoveDraft("edit"));
-    setPendingEditPositionFen(null);
-  }, [
-    pendingEditPositionFen,
-    preferredState.error,
-    preferredState.loading,
-    preferredState.preferredMove,
-    session.currentPosition.fen,
-  ]);
 
   const persistedDate = useMemo(() => {
     if (!positionModel.effectiveAt) {
@@ -192,102 +158,29 @@ export function usePreferredMoveWorkflow({
   }, [positionModel.effectiveAt]);
   const date = hasExplicitDate ? explicitDate : persistedDate;
 
-  const onStagedMove = useCallback(
-    (move: PositionPickerSession["stagedMove"]) => {
-      if (!move) {
-        return;
-      }
-      setDraft((current) => {
-        if (current.mode !== "idle") {
-          return stagePreferredMoveDraft(current, move, session.bottomColor) ?? current;
-        }
-        if (
-          positionModel.saveability === "savable" &&
-          preferredState.preferredMove?.state === "unassigned"
-        ) {
-          return (
-            stagePreferredMoveDraft(beginPreferredMoveDraft("add"), move, session.bottomColor) ??
-            current
-          );
-        }
-        return current;
-      });
-    },
-    [positionModel.saveability, preferredState.preferredMove, session.bottomColor],
-  );
-
-  const onEdit = useCallback(() => {
-    if (positionModel.savedMove) {
-      const next = beginPreferredMoveDraft("edit");
-      setDraft(
-        session.stagedMove
-          ? (stagePreferredMoveDraft(next, session.stagedMove, session.bottomColor) ?? next)
-          : next,
-      );
-      setWorkflowError(null);
-      return;
-    }
-
-    const focusedMove = playedTransition?.move;
-    const focusedPreferredMove = playedTransition ? preferredState.preferredMove : null;
-    if (
-      positionModel.state !== "matching-played" ||
-      !focusedMove ||
-      focusedPreferredMove?.state !== "assigned"
-    ) {
-      return;
-    }
-
-    setPendingEditPositionFen(focusedPreferredMove.fen);
-    setSession(
-      (current) => selectPositionPickerPly(current, focusedMove.position.ply - 1) ?? current,
-    );
-    setWorkflowError(null);
-  }, [
-    playedTransition,
-    positionModel.savedMove,
-    positionModel.state,
-    preferredState.preferredMove,
-    session,
-    setSession,
-  ]);
-
-  const onCancelEdit = useCallback(() => {
-    setPendingEditPositionFen(null);
-    setDraft(cancelPreferredMoveDraft());
-    setSession((current) => ({ ...current, stagedMove: null }));
-  }, [setSession]);
-
   const runMutation = useCallback(
     async (kind: PreferredMoveMutationKind) => {
       const ownTurn = sideToMove === session.bottomColor;
-      const focusedPreferredMove =
-        positionModel.state === "matching-played" &&
-        playedTransition?.move.color === session.bottomColor &&
-        preferredState.preferredMove?.state === "assigned"
-          ? preferredState.preferredMove
-          : null;
-      const mutationFen = focusedPreferredMove?.fen ?? session.currentPosition.fen;
-      const mutationSavedMove = positionModel.savedMove ?? focusedPreferredMove?.move ?? null;
-      const focusedOwnMove =
-        focusedPreferredMove !== null && playedTransition?.move.color === session.bottomColor;
+      const mutationFen = positionModel.sourceFen;
+      const mutationSavedMove = positionModel.savedMove;
       const canSave =
         ownTurn &&
         positionModel.saveability === "savable" &&
+        positionModel.savedPresence !== "unknown" &&
+        positionModel.relationship !== "matching" &&
+        positionModel.stagedMove !== null &&
         !preferredState.loading &&
         preferredState.error === null &&
         !contextState.loading &&
         contextState.error === null;
-      const move = session.stagedMove;
+      const move = positionModel.stagedMove;
 
       if (
         mutation !== null ||
-        (!ownTurn && !focusedOwnMove) ||
-        (kind !== "remove" && !canSave) ||
+        (!ownTurn && kind === "remove") ||
+        (kind === "save" && !canSave) ||
         (kind === "remove" && !mutationSavedMove) ||
-        (kind === "add" && preferredState.preferredMove?.state !== "unassigned") ||
-        (kind === "save" && (draft.mode !== "edit" || !move)) ||
-        (kind !== "remove" && !move)
+        (kind === "save" && !move)
       ) {
         return;
       }
@@ -308,7 +201,7 @@ export function usePreferredMoveWorkflow({
               )
             : await preferredMoveClient.put(
                 {
-                  fen: session.currentPosition.fen,
+                  fen: mutationFen,
                   move_uci: `${move!.sourceSquare}${move!.targetSquare}${move!.promotion ?? ""}`,
                   effective_at: effectiveAt,
                 },
@@ -331,32 +224,26 @@ export function usePreferredMoveWorkflow({
 
       setExplicitDate(null);
       setHasExplicitDate(false);
-      setPendingEditPositionFen(null);
-      setDraft(cancelPreferredMoveDraft());
-      setSession((current) => ({ ...current, stagedMove: null }));
-      setSessionStatus(
-        kind === "add"
-          ? "Preferred move added."
-          : kind === "save"
-            ? "Preferred move replaced."
-            : "Preferred move removed.",
-      );
+      if (kind === "save") {
+        setSession((current) => ({ ...current, stagedMove: null }));
+      }
+      setSessionStatus(kind === "save" ? "Preferred move saved." : "Preferred move removed.");
       setRefreshToken((value) => value + 1);
     },
     [
       contextState.error,
       contextState.loading,
       explicitDate,
-      draft.mode,
       mutation,
-      playedTransition,
+      positionModel.relationship,
+      positionModel.savedPresence,
       positionModel.saveability,
+      positionModel.sourceFen,
       positionModel.savedMove,
-      positionModel.state,
+      positionModel.stagedMove,
       preferredMoveClient,
       preferredState.error,
       preferredState.loading,
-      preferredState.preferredMove,
       session,
       setSession,
       setSessionStatus,
@@ -367,14 +254,20 @@ export function usePreferredMoveWorkflow({
   const onPlaySavedMove = useCallback(() => {
     const savedMove = positionModel.savedMove;
     const move = savedMove ? moveFromUci(savedMove.uci) : null;
-    const next = move ? appendPositionPickerMove(session, move) : null;
-    if (!next) {
+    const result =
+      move && positionModel.ownTurn && mutation === null
+        ? playAndStagePositionPickerMove(session, move)
+        : null;
+    if (!result) {
       setSessionStatus("Saved move rejected because it is illegal in the current position.");
       return;
     }
-    setSession(next);
-    setSessionStatus(`Saved move played locally: ${savedMove!.san}.`);
+    setWorkflowError(null);
+    setSession(result.session);
+    setSessionStatus(`Saved move staged locally: ${savedMove!.san}.`);
   }, [
+    mutation,
+    positionModel.ownTurn,
     positionModel.savedMove,
     session,
     setSession,
@@ -389,7 +282,6 @@ export function usePreferredMoveWorkflow({
     contextLoading: contextState.loading,
     contextError: contextState.error,
     stagedMove: session.stagedMove,
-    draftMode: draft.mode,
     date,
     mutation,
     workflowError,
@@ -397,11 +289,7 @@ export function usePreferredMoveWorkflow({
       setExplicitDate(value);
       setHasExplicitDate(true);
     },
-    onStagedMove,
-    onAdd: () => void runMutation("add"),
-    onEdit,
     onSave: () => void runMutation("save"),
-    onCancelEdit,
     onPlaySavedMove,
     onRemove: () => void runMutation("remove"),
     reset,
