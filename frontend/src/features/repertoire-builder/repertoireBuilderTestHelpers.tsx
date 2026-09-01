@@ -22,6 +22,7 @@ export const BOARD_LABEL = "Chess board: standard starting position, White at th
 export const STORED_BOARD_LABEL = `Chess board: game ${VIEWER_GAME_UUID}, ply 2, Black at the bottom`;
 export const STARTING_FEN = VIEWER_GAME.positions[0].fen;
 export const AFTER_E4_FEN = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1";
+export const AFTER_E5_FEN = "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq e6 0 2";
 export const AFTER_D4_FEN = "rnbqkbnr/pppppppp/8/8/3P4/8/PPP1PPPP/RNBQKBNR b KQkq d3 0 1";
 export const AFTER_E8_KNIGHT_FEN = "k3N3/8/8/8/8/8/8/4K3 b - - 0 1";
 export const CONTEXT = {

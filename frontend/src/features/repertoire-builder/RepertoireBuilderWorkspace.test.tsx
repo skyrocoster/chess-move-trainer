@@ -488,13 +488,15 @@ describe("RepertoireBuilderWorkspace", () => {
       { signal: expect.any(AbortSignal) },
     );
     await waitFor(() =>
-      expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", STARTING_FEN),
+      expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", AFTER_E4_FEN),
     );
-    expect(sharedPositionSummary().querySelectorAll('[data-position-square="e2"]')).toHaveLength(1);
-    expect(sharedPositionSummary().querySelectorAll('[data-position-square="e4"]')).toHaveLength(0);
-    expect(screen.getByTestId("session-origin")).toHaveTextContent("Current Ply 0.");
+    expect(sharedPositionSummary().querySelectorAll('[data-position-square="e2"]')).toHaveLength(0);
+    expect(sharedPositionSummary().querySelectorAll('[data-position-square="e4"]')).toHaveLength(1);
+    expect(screen.getByTestId("session-origin")).toHaveTextContent("Current Ply 1.");
+    expect(historyEntry("White, move 1, e4")).toHaveAttribute("aria-current", "step");
     expect(historyEntry("Initial position")).toBeVisible();
-    expect(screen.getByRole("button", { name: "Change effective date" })).toBeDisabled();
+    expect(screen.getByTestId("saved-move")).toHaveTextContent("e4");
+    expect(screen.getByTestId("session-status")).toHaveTextContent("Preferred move saved.");
   });
   it("stages a saved replacement immediately and saves it explicitly", async () => {
     const user = userEvent.setup();
@@ -518,11 +520,12 @@ describe("RepertoireBuilderWorkspace", () => {
       { signal: expect.any(AbortSignal) },
     );
     await waitFor(() =>
-      expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", STARTING_FEN),
+      expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", AFTER_D4_FEN),
     );
-    expect(sharedPositionSummary().querySelectorAll('[data-position-square="d2"]')).toHaveLength(1);
-    expect(sharedPositionSummary().querySelectorAll('[data-position-square="d4"]')).toHaveLength(0);
-    expect(screen.getByTestId("session-origin")).toHaveTextContent("Current Ply 0.");
+    expect(sharedPositionSummary().querySelectorAll('[data-position-square="d2"]')).toHaveLength(0);
+    expect(sharedPositionSummary().querySelectorAll('[data-position-square="d4"]')).toHaveLength(1);
+    expect(screen.getByTestId("session-origin")).toHaveTextContent("Current Ply 1.");
+    expect(historyEntry("White, move 1, d4")).toHaveAttribute("aria-current", "step");
     expect(historyEntry("Initial position")).toBeVisible();
   });
   it("hydrates a persisted effective timestamp by its UTC calendar day", async () => {

@@ -4,6 +4,8 @@ import { VIEWER_GAME } from "../viewer/viewerFixtures";
 import {
   createStandardStartSession,
   createStoredGameSession,
+  commitStagedMove,
+  applyPositionPickerMove,
   flipPositionPickerSession,
   navigatePositionPickerSession,
   playAndStagePositionPickerMove,
@@ -334,5 +336,34 @@ describe("position picker session", () => {
     expect(result?.session.localMoves).toEqual([]);
     expect(result?.session.stagedMove).toMatchObject({ san: "e4" });
     expect(positionPickerHistory(result!.session)).toHaveLength(1);
+  });
+
+  it("lets an opponent reply immediately after a staged owner move without losing it", () => {
+    const staged = selectPositionPickerMove(createStandardStartSession(), {
+      sourceSquare: "e2",
+      targetSquare: "e4",
+    })!.session;
+    expect(staged.stagedMove).not.toBeNull();
+
+    const reply = applyPositionPickerMove(staged, {
+      sourceSquare: "e7",
+      targetSquare: "e5",
+    });
+
+    expect(reply?.disposition).toBe("advanced");
+    expect(reply?.session.stagedMove).toBeNull();
+    expect(reply?.session.localContinuation.map((position) => position.san)).toEqual([
+      "e4",
+      "e5",
+    ]);
+    expect(reply?.session.currentPosition.fen).toBe(
+      "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq e6 0 2",
+    );
+  });
+
+  it("returns the session unchanged when nothing is staged", () => {
+    const session = createStandardStartSession();
+
+    expect(commitStagedMove(session)).toBe(session);
   });
 });

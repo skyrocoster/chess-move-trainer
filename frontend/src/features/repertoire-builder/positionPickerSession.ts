@@ -202,6 +202,48 @@ export function selectPositionPickerMove(
   };
 }
 
+/**
+ * Commits any pending staged owner move into the local continuation so the next
+ * move is evaluated from the displayed (post-staged) position rather than the
+ * pre-staged current position. When no move is staged the session is unchanged.
+ */
+export function commitStagedMove(
+  session: PositionPickerSession,
+): PositionPickerSession {
+  if (session.stagedMove === null) {
+    return session;
+  }
+  return appendMove({ ...session, stagedMove: null }, session.stagedMove);
+}
+
+/**
+ * Selects a move with staged-move-aware fallback so an already staged owner
+ * preview is not lost when the next interaction is a different owner move.
+ *
+ * - With no staged move the behavior matches selectPositionPickerMove.
+ * - With a staged owner move, the candidate is first tried against the current
+ *   (pre-staged) position. A legal same-color move replaces the staged preview
+ *   instead of committing the earlier stage.
+ * - If the candidate is illegal as a same-color replacement but legal after the
+ *   staged move is committed (an opponent reply), the staged move is committed
+ *   and the reply is appended.
+ */
+export function applyPositionPickerMove(
+  session: PositionPickerSession,
+  move: PositionPickerMove,
+): PositionPickerMoveResult | null {
+  if (session.stagedMove === null) {
+    return selectPositionPickerMove(session, move);
+  }
+
+  const sameColorReplacement = selectPositionPickerMove(session, move);
+  if (sameColorReplacement !== null) {
+    return sameColorReplacement;
+  }
+
+  return selectPositionPickerMove(commitStagedMove(session), move);
+}
+
 /** Plays a saved owner move as a child preview without committing it to history. */
 export function playAndStagePositionPickerMove(
   session: PositionPickerSession,

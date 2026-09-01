@@ -14,6 +14,7 @@ import { VIEWER_GAME_UUID } from "../viewer/viewerFixtures";
 import {
   AFTER_D4_FEN,
   AFTER_E4_FEN,
+  AFTER_E5_FEN,
   AFTER_E8_KNIGHT_FEN,
   displayAnalysisClient,
   renderWorkspace,
@@ -163,6 +164,25 @@ describe("RepertoireBuilderWorkspace workflow", () => {
     expect(preferredMoveClient.put).not.toHaveBeenCalled();
   });
 
+  it("lets the opponent reply immediately after a staged owner move and keeps both in history", async () => {
+    const user = userEvent.setup();
+    renderWorkspace(testClients());
+    await waitFor(() =>
+      expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", STARTING_FEN),
+    );
+
+    await user.click(screen.getByTestId("move-e2-e4"));
+    expect(screen.getByTestId("session-status")).toHaveTextContent("My move staged: e4.");
+
+    await user.click(screen.getByTestId("move-e7-e5"));
+    expect(screen.getByTestId("session-status")).toHaveTextContent(
+      "Opponent move played locally: e5.",
+    );
+    expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", AFTER_E5_FEN);
+    expect(historyEntry("White, move 1, e4")).toBeVisible();
+    expect(historyEntry("Black, move 1, e5")).toHaveAttribute("aria-current", "step");
+  });
+
   it("requires confirmation before Remove and only clears the saved move after success", async () => {
     const user = userEvent.setup();
     const clients = testClients("assigned");
@@ -281,8 +301,9 @@ describe("RepertoireBuilderWorkspace workflow", () => {
     });
     await waitFor(() => expect(screen.getByTestId("saved-move")).toHaveTextContent("d4"));
     expect(screen.getByTestId("staged-move")).toHaveTextContent("No move staged.");
-    expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", STARTING_FEN);
-    expect(historyEntry("Initial position")).toHaveAttribute("aria-current", "step");
+    expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", AFTER_D4_FEN);
+    expect(historyEntry("White, move 1, d4")).toHaveAttribute("aria-current", "step");
+    expect(historyEntry("Initial position")).toBeVisible();
     expect(screen.getByTestId("session-status")).toHaveTextContent("Preferred move saved.");
   });
 

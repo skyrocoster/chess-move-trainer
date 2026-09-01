@@ -26,6 +26,7 @@ import {
 import { usePreferredMoveState } from "./preferredMoveState";
 import { deriveRepertoirePositionModel } from "./repertoireWorkflowModel";
 import {
+  commitStagedMove,
   playAndStagePositionPickerMove,
   positionPickerSelectedTransition,
   type PositionPickerMove,
@@ -221,7 +222,7 @@ export function usePreferredMoveWorkflow({
         const stagedUci = staged
           ? `${staged.sourceSquare}${staged.targetSquare}${staged.promotion ?? ""}`
           : null;
-        return stagedUci === pendingRefresh.stagedUci ? { ...current, stagedMove: null } : current;
+        return stagedUci === pendingRefresh.stagedUci ? commitStagedMove(current) : current;
       });
     }
     setPendingRefresh(null);

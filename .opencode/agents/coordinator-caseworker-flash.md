@@ -1,8 +1,8 @@
 ---
-description: Resumable DeepSeek Flash case-worker for bounded assessment, Plan work, master plans, and approved execution.
+description: Resumable opencode case-worker for bounded assessment, Plan work, master plans, and approved execution.
 mode: subagent
 color: "#EAB308"
-model: opencode-go/hy3
+model: opencode-go/glm-5.3-flash
 variant: high
 permission:
   edit: allow

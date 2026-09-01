@@ -36,7 +36,7 @@ import {
   navigatePositionPickerSession,
   positionPickerHistory,
   selectPositionPickerPly,
-  selectPositionPickerMove,
+  applyPositionPickerMove,
   type PositionPickerMove,
   type PositionPickerNavigation,
   type PositionPickerSession,
@@ -110,7 +110,7 @@ export default function RepertoireBuilderWorkspace({
   const handlePromotionCommit = useCallback(
     (commit: PromotionCommit) => {
       const selectedPromotion = promotionPiece(commit.move.promotion);
-      const result = selectPositionPickerMove(session, {
+      const result = applyPositionPickerMove(session, {
         sourceSquare: commit.move.from,
         targetSquare: commit.move.to,
         ...(selectedPromotion ? { promotion: selectedPromotion } : {}),
@@ -242,7 +242,7 @@ export default function RepertoireBuilderWorkspace({
 
   const applyMove = useCallback(
     (move: PositionPickerMove): boolean => {
-      const result = selectPositionPickerMove(session, move);
+      const result = applyPositionPickerMove(session, move);
       if (!result) {
         setSessionStatus("Move rejected because it is illegal.");
         return false;
