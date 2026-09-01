@@ -25,6 +25,18 @@ export const constrainedViewport = {
   },
 };
 
+export const mediumViewport = {
+  viewport: {
+    defaultViewport: "cmt-repertoire-medium",
+    options: {
+      "cmt-repertoire-medium": {
+        name: "Medium workspace",
+        styles: { width: "800px", height: "1000px" },
+      },
+    },
+  },
+};
+
 export const R2_ASSIGNED_CONTEXT = {
   overall_exists: true,
   white_count: 5,

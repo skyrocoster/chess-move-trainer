@@ -1,16 +1,18 @@
 import { expect, userEvent, within } from "storybook/test";
 
 export async function sharedPositionSummary(canvasElement: HTMLElement): Promise<HTMLElement> {
-  const description = canvasElement.querySelector(
-    '[data-testid="position-description-row"] button',
-  );
+  const sessionLane = canvasElement.querySelector('[data-testid="repertoire-session-lane"]');
+  if (!(sessionLane instanceof HTMLElement)) {
+    throw new Error("The repertoire session lane is missing.");
+  }
+  const description = sessionLane.querySelector('[data-testid="position-description-row"] button');
   if (!(description instanceof HTMLElement)) {
     throw new Error("The shared position description trigger is missing.");
   }
   if (description.getAttribute("aria-expanded") === "false") {
     await userEvent.click(description);
   }
-  const summary = canvasElement.querySelector(
+  const summary = sessionLane.querySelector(
     '[data-testid="position-description-row"] [data-position-summary]',
   );
   if (!(summary instanceof HTMLElement)) {
@@ -32,8 +34,10 @@ export async function expectSessionBoundary(canvasElement: HTMLElement): Promise
   const canvas = within(canvasElement);
   const session = canvas.getByTestId("repertoire-session");
   const sessionContent = within(session);
+  const boardLane = canvas.getByTestId("repertoire-board-lane");
   await expect(session).toBeVisible();
-  await expect(sessionContent.getByTestId("session-move-history")).toBeVisible();
+  await expect(within(boardLane).getByTestId("board-move-history")).toBeVisible();
+  await expect(sessionContent.queryByTestId("board-move-history")).not.toBeInTheDocument();
   await expect(sessionContent.queryByTestId("session-san-history")).not.toBeInTheDocument();
   const status = sessionContent.getByTestId("session-status");
   await expect(status).toBeVisible();
@@ -48,7 +52,7 @@ export async function expectSessionHistory(
   canvasElement: HTMLElement,
   entries: readonly string[],
 ): Promise<void> {
-  const history = within(canvasElement).getByTestId("session-move-history");
+  const history = within(canvasElement).getByTestId("board-move-history");
   const buttons = within(history).getAllByRole("button");
   await expect(buttons).toHaveLength(entries.length);
   for (const [index, name] of entries.entries()) {
@@ -61,7 +65,7 @@ export async function expectActiveSessionHistoryEntry(
   name: string,
 ): Promise<void> {
   await expect(
-    within(within(canvasElement).getByTestId("session-move-history")).getByRole("button", {
+    within(within(canvasElement).getByTestId("board-move-history")).getByRole("button", {
       name,
     }),
   ).toHaveAttribute("aria-current", "step");
@@ -83,7 +87,9 @@ export async function expectPreferredMoveState(
   canvasElement: HTMLElement,
   state: "empty" | "first-choice" | "saved" | "replacement" | "matching" | "unknown",
 ): Promise<void> {
-  const panel = canvasElement.querySelector(`section[aria-labelledby="preferred-move-heading"]`);
+  const panel = canvasElement
+    .querySelector('[data-testid="repertoire-session-lane"]')
+    ?.querySelector('section[aria-labelledby="preferred-move-heading"]');
   if (!(panel instanceof HTMLElement)) {
     throw new Error("The preferred move panel is missing.");
   }
@@ -95,7 +101,9 @@ export async function expectPreferredActions(
   canvasElement: HTMLElement,
   actions: readonly string[],
 ): Promise<void> {
-  const panel = canvasElement.querySelector('section[aria-labelledby="preferred-move-heading"]');
+  const panel = canvasElement
+    .querySelector('[data-testid="repertoire-session-lane"]')
+    ?.querySelector('section[aria-labelledby="preferred-move-heading"]');
   if (!(panel instanceof HTMLElement)) {
     throw new Error("The preferred move panel is missing.");
   }
@@ -107,7 +115,9 @@ export async function expectPreferredActions(
 }
 
 export async function expectDeferredDateAction(canvasElement: HTMLElement): Promise<void> {
-  const panel = canvasElement.querySelector('section[aria-labelledby="preferred-move-heading"]');
+  const panel = canvasElement
+    .querySelector('[data-testid="repertoire-session-lane"]')
+    ?.querySelector('section[aria-labelledby="preferred-move-heading"]');
   if (!(panel instanceof HTMLElement)) {
     throw new Error("The preferred move panel is missing.");
   }
@@ -119,7 +129,9 @@ export async function expectDeferredDateAction(canvasElement: HTMLElement): Prom
 }
 
 export async function expectNoPreferredActions(canvasElement: HTMLElement): Promise<void> {
-  const panel = canvasElement.querySelector('section[aria-labelledby="preferred-move-heading"]');
+  const panel = canvasElement
+    .querySelector('[data-testid="repertoire-session-lane"]')
+    ?.querySelector('section[aria-labelledby="preferred-move-heading"]');
   if (!(panel instanceof HTMLElement)) {
     throw new Error("The preferred move panel is missing.");
   }
@@ -136,7 +148,9 @@ export async function expectPositionReachFrequency(
   fraction?: string,
   percentage?: string,
 ): Promise<void> {
-  const panel = canvasElement.querySelector(`section[data-state="${state}"] h2`);
+  const panel = canvasElement
+    .querySelector('[data-testid="repertoire-session-lane"]')
+    ?.querySelector(`section[data-state="${state}"] h2`);
   if (!(panel instanceof HTMLElement) || panel.textContent !== "Position reach frequency") {
     throw new Error(`The ${state} position reach frequency panel is missing.`);
   }

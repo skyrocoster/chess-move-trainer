@@ -1,0 +1,12 @@
+.lane {
+  display: flex;
+  flex-direction: column;
+  align-content: start;
+  gap: var(--cmt-spacing-16);
+  min-inline-size: 0;
+}
+
+.controls,
+.lane > nav {
+  min-inline-size: 0;
+}

@@ -1,5 +1,7 @@
 .stage {
   grid-area: board;
+  container-name: board-eval-stage;
+  container-type: inline-size;
   display: flex;
   align-items: flex-start;
   min-inline-size: 0;

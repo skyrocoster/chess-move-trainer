@@ -127,7 +127,7 @@ afterEach(() => {
 });
 
 function historyEntry(name: string) {
-  return within(screen.getByTestId("session-move-history")).getByRole("button", { name });
+  return within(screen.getByTestId("board-move-history")).getByRole("button", { name });
 }
 
 describe("RepertoireBuilderWorkspace workflow", () => {
@@ -553,7 +553,10 @@ describe("RepertoireBuilderWorkspace workflow", () => {
     const { container } = renderWorkspace();
     const session = screen.getByTestId("repertoire-session");
 
-    expect(within(session).getByTestId("session-move-history")).toBeVisible();
+    expect(within(session).queryByTestId("board-move-history")).not.toBeInTheDocument();
+    expect(
+      within(screen.getByTestId("repertoire-board-lane")).getByTestId("board-move-history"),
+    ).toBeVisible();
     expect(within(session).getByTestId("session-status")).toHaveAttribute("aria-live", "polite");
     expect(
       within(session).getByRole("heading", { name: "What is saved, and what is staged?" }),

@@ -1,6 +1,7 @@
 ---
 description: Isolated Exploration Agent for noncanonical mock-ups, design catalogues, synthesis, and prototypes.
 mode: subagent
+color: "#EC4899"
 model: openai/gpt-5.6-luna
 variant: xhigh
 permission:

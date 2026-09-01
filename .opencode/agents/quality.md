@@ -1,6 +1,7 @@
 ---
 description: Independent Quality Agent for fresh validation or one exact coordinator-authorized repair.
 mode: subagent
+color: "#14B8A6"
 #model: opencode-go/deepseek-v4-flash
 #variant: medium
 model: opencode/mimo-v2.5-free

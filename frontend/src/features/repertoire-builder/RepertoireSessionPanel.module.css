@@ -1,18 +1,6 @@
 .session {
   display: grid;
-  grid-area: session;
   gap: var(--cmt-spacing-8);
   align-content: start;
   min-inline-size: 0;
-}
-
-.historyLabel {
-  color: var(--md-sys-color-on-surface-variant);
-  font: var(--cmt-typescale-label-large, var(--md-sys-typescale-label-large));
-}
-
-.history {
-  color: var(--md-sys-color-on-surface);
-  font: var(--md-sys-typescale-body-medium);
-  overflow-wrap: anywhere;
 }

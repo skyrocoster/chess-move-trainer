@@ -35,6 +35,7 @@ REQUIRED_WORKFLOW_PATHS = (
 )
 REQUIRED_AGENT_NAMES = {
     "coordinator.md",
+    "god.md",
     "scout.md",
     "coordinator-caseworker.md",
     "coordinator-caseworker-flash.md",

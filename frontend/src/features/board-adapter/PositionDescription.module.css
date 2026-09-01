@@ -1,3 +1,8 @@
+.positionDescription {
+  container-name: position-description;
+  container-type: inline-size;
+}
+
 .positionDescription :global(button:focus-visible),
 .positionDescription :global(summary:focus-visible) {
   outline: 3px solid var(--md-sys-color-primary);
@@ -180,13 +185,13 @@
   font: var(--md-sys-typescale-label-medium, var(--md-sys-typescale-body-medium));
 }
 
-@container (max-width: 36rem) {
+@container position-description (max-width: 36rem) {
   .positionInventories {
     grid-template-columns: 1fr;
   }
 }
 
-@container (max-width: 26rem) {
+@container position-description (max-width: 26rem) {
   .positionMetadata {
     grid-template-columns: 1fr;
   }

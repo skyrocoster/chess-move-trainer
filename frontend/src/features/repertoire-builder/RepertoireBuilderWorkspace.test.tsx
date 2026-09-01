@@ -11,7 +11,6 @@ import {
   AFTER_E4_FEN,
   AFTER_E8_KNIGHT_FEN,
   BOARD_LABEL,
-  rawStyles,
   renderWorkspace,
   sharedPositionSummary,
   STARTING_FEN,
@@ -121,27 +120,39 @@ afterEach(() => {
 });
 describe("RepertoireBuilderWorkspace", () => {
   function historyEntry(name: string) {
-    return within(screen.getByTestId("session-move-history")).getByRole("button", { name });
+    return within(screen.getByTestId("board-move-history")).getByRole("button", { name });
   }
 
   it("renders the standard starting position with White at the bottom", () => {
-    const { container } = renderWorkspace();
+    renderWorkspace();
     expect(screen.getByRole("heading", { name: "Repertoire Builder", level: 1 })).toBeVisible();
     const board = screen.getByRole("group", { name: BOARD_LABEL });
     const stage = screen.getByTestId("board-eval-stage");
     const rail = screen.getByTestId("board-eval-rail-shell");
+    const workspaceStage = screen.getByTestId("repertoire-workspace-stage");
+    const boardLane = screen.getByTestId("repertoire-board-lane");
+    const sessionLane = screen.getByTestId("repertoire-session-lane");
+    const engineLane = screen.getByTestId("repertoire-engine-lane");
+    expect(
+      Array.from(workspaceStage.querySelectorAll("[data-lane]")).map((child) =>
+        child.getAttribute("data-testid"),
+      ),
+    ).toEqual(["repertoire-board-lane", "repertoire-session-lane", "repertoire-engine-lane"]);
+    expect(within(boardLane).getByTestId("board-move-history")).toBeVisible();
+    expect(within(sessionLane).getByTestId("repertoire-session")).toBeVisible();
+    expect(within(sessionLane).getByTestId("position-description-row")).toBeVisible();
+    expect(within(engineLane).getByRole("heading", { name: "Analysis" })).toBeVisible();
+    expect(screen.getAllByTestId("board-move-history")).toHaveLength(1);
+    expect(screen.queryByTestId("session-move-history")).not.toBeInTheDocument();
+    expect(screen.getAllByTestId("session-status")).toHaveLength(1);
     expect(board).toBeVisible();
-    expect(stage.parentElement).toBe(container.querySelector('[class*="workspace"]'));
+    expect(boardLane).toContainElement(stage);
     expect(stage).toContainElement(board);
     expect(stage).toContainElement(rail);
     expect(screen.getByRole("meter", { name: "Evaluation" })).toHaveAttribute(
       "data-orientation",
       "white",
     );
-    expect(rawStyles).toMatch(/"board board session"/);
-    expect(rawStyles).toMatch(/grid-template-columns:\s*minmax\(0, 1fr\) 30px minmax\(0, 1fr\)/);
-    expect(rawStyles).toMatch(/"board board"/);
-    expect(rawStyles).toMatch(/"controls \."/);
     expect(screen.getByTestId("session-origin")).toHaveTextContent(
       "Standard starting position; local session begins at Ply 0. Current Ply 0.",
     );
@@ -149,8 +160,7 @@ describe("RepertoireBuilderWorkspace", () => {
     expect(screen.getByTestId("board-square-e4")).toHaveAttribute("data-highlighted", "false");
     const descriptionRow = screen.getByTestId("position-description-row");
     expect(board.contains(descriptionRow)).toBe(false);
-    expect(descriptionRow.parentElement).toBe(container.querySelector('[class*="workspace"]'));
-    expect(descriptionRow.className).toMatch(/positionDescription/);
+    expect(sessionLane).toContainElement(descriptionRow);
     const description = screen.getByRole("button", { name: "Position description" });
     expect(description).toHaveAttribute("aria-expanded", "false");
     fireEvent.click(description);
@@ -419,7 +429,10 @@ describe("RepertoireBuilderWorkspace", () => {
     expect(status).toHaveTextContent("My move staged: e4.");
     expect(status).toHaveAttribute("role", "status");
     expect(status).toHaveAttribute("aria-live", "polite");
-    expect(within(session).getByTestId("session-move-history")).toBeVisible();
+    expect(within(session).queryByTestId("board-move-history")).not.toBeInTheDocument();
+    expect(
+      within(screen.getByTestId("repertoire-board-lane")).getByTestId("board-move-history"),
+    ).toBeVisible();
     expect(
       within(session).getByRole("heading", { name: "What is saved, and what is staged?" }),
     ).toBeVisible();

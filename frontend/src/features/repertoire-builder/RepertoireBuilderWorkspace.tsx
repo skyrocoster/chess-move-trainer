@@ -2,10 +2,7 @@ import { Chess, type Square } from "chess.js";
 import { useCallback, useMemo, useRef, useState } from "react";
 
 import { AnalysisPanel } from "../analysis/AnalysisPanel";
-import {
-  InteractiveBoardAdapter,
-  type InteractiveBoardMoveIntent,
-} from "../board-adapter/InteractiveBoardAdapter";
+import type { InteractiveBoardMoveIntent } from "../board-adapter/InteractiveBoardAdapter";
 import { deriveLastMove, lastMoveFromSquares } from "../board-adapter/lastMove";
 import { PositionDescription } from "../board-adapter/PositionDescription";
 import { createPositionModel } from "../board-adapter/positionDescriptionModel";
@@ -14,8 +11,6 @@ import {
   type PromotionCommit,
   usePromotionController,
 } from "../board-adapter/PromotionPicker";
-import { BoardControl } from "../viewer/BoardControl";
-import { BoardEvalStage } from "../viewer/BoardEvalStage";
 import { defaultAnalysisClient, type AnalysisClient } from "../viewer/analysisApi";
 import { analysisPanelDisplay } from "../viewer/analysisFormatting";
 import { useAnalysisState } from "../viewer/analysisState";
@@ -25,6 +20,8 @@ import type { PositionContextClient } from "../viewer/positionContextApi";
 import { evaluationDisplay } from "../viewer/evalBarDisplay";
 import type { PreferredMoveClient } from "./preferredMoveApi";
 import { usePreferredMoveWorkflow } from "./preferredMoveWorkflowState";
+import { RepertoireBoardLane } from "./RepertoireBoardLane";
+import { RepertoireResponsiveStage } from "./RepertoireResponsiveStage";
 import {
   boardLabel,
   branchMove,
@@ -366,80 +363,101 @@ export default function RepertoireBuilderWorkspace({
         <p className={styles.origin} data-testid="session-origin">
           {originDescription(session)} Current Ply {session.currentPly}.
         </p>
-        <BoardEvalStage orientation={session.orientation} display={displayedEvaluationDisplay}>
-          <InteractiveBoardAdapter
-            key={viewKey}
-            branchSnapshot={{
-              viewKey,
-              resetToken: 0,
-              originFen: session.prefix.at(-1)!.fen,
-              currentFen: displayedPosition.fen,
-              originPly: session.origin.selectedPly,
-              moves: localMoves,
-              active: localMoves.length > 0,
-            }}
-            orientation={session.orientation}
-            label={label}
-            notice={sessionStatus}
-            terminal={null}
-            lastMove={lastMove}
-            promotionPending={promotionPending}
-            promotionColor={chess.turn()}
-            promotionSourceElement={promotionSourceElement}
-            promotionAnchorElement={promotionAnchorElement}
-            showBranchPanel={false}
-            onMoveIntent={handleMoveIntent}
-            onPromotionSelect={selectPromotion}
-            onPromotionCancel={handlePromotionCancel}
-            onUndo={() => undefined}
-            onReset={() => undefined}
-          />
-        </BoardEvalStage>
-        <div className={styles.controls}>
-          <BoardControl
-            hasGame
-            canGoPrevious={hasPrevious}
-            canGoNext={hasNext}
-            onPrevious={handlePrevious}
-            onNext={handleNext}
-            onFlip={handleFlip}
-          />
-        </div>
-        <div className={styles.positionDescription} data-testid="position-description-row">
-          <PositionDescription model={positionModel} />
-        </div>
-        <RepertoireSessionPanel
-          initialPosition={historyInput.initialPosition}
-          moves={historyInput.moves}
-          activePly={session.currentPly}
-          onActivePlyChange={handleHistorySelection}
-          sessionStatus={sessionStatus}
-          model={workflow.positionModel}
-          positionContext={workflow.positionContext}
-          date={workflow.date}
-          mutation={workflow.mutation}
-          preferredLoading={workflow.preferredLoading}
-          preferredError={workflow.preferredError}
-          contextLoading={workflow.contextLoading}
-          contextError={workflow.contextError}
-          workflowError={workflow.workflowError}
-          dateEdit={workflow.dateEdit}
-          onDateChange={workflow.onDateChange}
-          onSave={workflow.onSave}
-          onPlaySavedMove={workflow.onPlaySavedMove}
-          onRemove={workflow.onRemove}
-          onRetry={workflow.onRetry}
+        <RepertoireResponsiveStage
+          board={
+            <RepertoireBoardLane
+              orientation={session.orientation}
+              evaluation={displayedEvaluationDisplay}
+              viewKey={viewKey}
+              board={{
+                branchSnapshot: {
+                  viewKey,
+                  resetToken: 0,
+                  originFen: session.prefix.at(-1)!.fen,
+                  currentFen: displayedPosition.fen,
+                  originPly: session.origin.selectedPly,
+                  moves: localMoves,
+                  active: localMoves.length > 0,
+                },
+                label,
+                notice: sessionStatus,
+                terminal: null,
+                lastMove,
+                promotionPending,
+                promotionColor: chess.turn(),
+                promotionSourceElement,
+                promotionAnchorElement,
+                showBranchPanel: false,
+                onMoveIntent: handleMoveIntent,
+                onPromotionSelect: selectPromotion,
+                onPromotionCancel: handlePromotionCancel,
+                onUndo: () => undefined,
+                onReset: () => undefined,
+              }}
+              controls={{
+                hasGame: true,
+                canGoPrevious: hasPrevious,
+                canGoNext: hasNext,
+                onPrevious: handlePrevious,
+                onNext: handleNext,
+                onFlip: handleFlip,
+              }}
+              history={{
+                initialPosition: historyInput.initialPosition,
+                moves: historyInput.moves,
+                activePly: session.currentPly,
+                onActivePlyChange: handleHistorySelection,
+              }}
+            />
+          }
+          session={
+            <section
+              className={styles.sessionLane}
+              data-lane="session"
+              data-testid="repertoire-session-lane"
+              aria-label="Session lane"
+            >
+              <RepertoireSessionPanel
+                sessionStatus={sessionStatus}
+                model={workflow.positionModel}
+                positionContext={workflow.positionContext}
+                date={workflow.date}
+                mutation={workflow.mutation}
+                preferredLoading={workflow.preferredLoading}
+                preferredError={workflow.preferredError}
+                contextLoading={workflow.contextLoading}
+                contextError={workflow.contextError}
+                workflowError={workflow.workflowError}
+                dateEdit={workflow.dateEdit}
+                onDateChange={workflow.onDateChange}
+                onSave={workflow.onSave}
+                onPlaySavedMove={workflow.onPlaySavedMove}
+                onRemove={workflow.onRemove}
+                onRetry={workflow.onRetry}
+              />
+              <div className={styles.positionDescription} data-testid="position-description-row">
+                <PositionDescription model={positionModel} />
+              </div>
+            </section>
+          }
+          engine={
+            <section
+              className={styles.engineLane}
+              data-lane="engine"
+              data-testid="repertoire-engine-lane"
+              aria-label="Engine lane"
+            >
+              <AnalysisPanel
+                display={analysisDisplay}
+                onAnalyze={() => parentAnalysisState.handleAction("analyze")}
+                onUpdate={() => parentAnalysisState.handleAction("update")}
+                onRetry={() => parentAnalysisState.handleAction("retry")}
+                onRetryObservation={parentAnalysisState.retryObservation}
+                onCandidateMove={handleCandidateMove}
+              />
+            </section>
+          }
         />
-        <div className={styles.analysis}>
-          <AnalysisPanel
-            display={analysisDisplay}
-            onAnalyze={() => parentAnalysisState.handleAction("analyze")}
-            onUpdate={() => parentAnalysisState.handleAction("update")}
-            onRetry={() => parentAnalysisState.handleAction("retry")}
-            onRetryObservation={parentAnalysisState.retryObservation}
-            onCandidateMove={handleCandidateMove}
-          />
-        </div>
       </div>
     </div>
   );

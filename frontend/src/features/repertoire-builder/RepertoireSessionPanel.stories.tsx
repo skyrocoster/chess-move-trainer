@@ -38,14 +38,6 @@ function panelArgs(
   overrides: Partial<RepertoireSessionPanelProps> = {},
 ): RepertoireSessionPanelProps {
   return {
-    initialPosition: { ply: 0 },
-    moves: [
-      { ply: 1, san: "e4" },
-      { ply: 2, san: "e5" },
-      { ply: 3, san: "Nf3" },
-    ],
-    activePly: 3,
-    onActivePlyChange: fn(),
     sessionStatus: "My move staged: e4.",
     model: model(),
     positionContext: POSITION_CONTEXT,
@@ -94,8 +86,9 @@ export const LocalLineSession: Story = {
   },
 };
 
-export const EmptyHistory: Story = {
-  args: panelArgs({ moves: [], activePly: 0, sessionStatus: "No local moves yet." }),
+export const SessionFactsOnly: Story = {
+  name: "Session facts without move history",
+  args: panelArgs({ sessionStatus: "No local moves yet." }),
 };
 
 export const FrequencyZero: Story = {

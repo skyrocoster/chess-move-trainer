@@ -157,4 +157,7 @@ export async function loadGame(canvas: ReturnType<typeof within>, gameUuid: stri
 export async function expectNoHorizontalOverflow(canvasElement: HTMLElement) {
   const documentElement = canvasElement.ownerDocument.documentElement;
   await expect(documentElement.scrollWidth).toBeLessThanOrEqual(documentElement.clientWidth);
+  await expect(canvasElement.ownerDocument.body.scrollWidth).toBeLessThanOrEqual(
+    canvasElement.ownerDocument.body.clientWidth,
+  );
 }

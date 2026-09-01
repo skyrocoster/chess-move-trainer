@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Chess Move Trainer — Repertoire Builder (redesign)</title>
+<style>
+  :root{
+    --bg:#0c0c0e;
+    --panel:#151518;
+    --panel-2:#1b1b1f;
+    --border:#2a2a30;
+    --border-strong:#38383f;
+    --text:#eceef0;
+    --text-secondary:#9b9ba3;
+    --text-muted:#6c6c74;
+    --accent:#8683ee;
+    --accent-bg:#211f3d;
+    --green:#3fbf7f;
+    --green-bg:#132a20;
+    --amber:#e0a83e;
+    --red:#e0645c;
+    --board-light:#d9c49c;
+    --board-dark:#8a6a49;
+    --radius:8px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    font-size:14px;
+  }
+  .app{display:flex;min-height:100vh;}
+
+  /* Sidebar */
+  .sidebar{
+    width:190px;
+    flex-shrink:0;
+    border-right:1px solid var(--border);
+    padding:20px 12px;
+  }
+  .brand{font-size:15px;font-weight:600;padding:0 8px 22px;letter-spacing:.2px;}
+  .nav-item{
+    display:flex;align-items:center;gap:9px;
+    padding:8px 10px;border-radius:6px;
+    color:var(--text-secondary);font-size:13.5px;
+    margin-bottom:2px;
+  }
+  .nav-item.active{background:var(--panel-2);color:var(--text);}
+  .nav-item .dot{width:14px;height:14px;border:1.5px solid currentColor;border-radius:3px;flex-shrink:0;}
+
+  /* Main */
+  .main{flex:1;min-width:0;padding:20px 28px 40px;}
+
+  .loader-bar{
+    display:flex;align-items:center;gap:16px;
+    background:var(--panel);border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:10px 16px;margin-bottom:10px;flex-wrap:wrap;
+  }
+  .loader-bar .label{font-size:13px;color:var(--text-secondary);display:flex;align-items:center;gap:6px;white-space:nowrap;}
+  .loader-bar input{
+    background:var(--panel-2);border:1px solid var(--border-strong);
+    color:var(--text);border-radius:6px;padding:7px 10px;font-size:13px;
+  }
+  .loader-bar input#uuid{width:280px;}
+  .loader-bar input#ply{width:110px;}
+  .btn{
+    border-radius:6px;padding:7px 14px;font-size:13px;border:1px solid var(--border-strong);
+    background:var(--panel-2);color:var(--text);cursor:pointer;
+  }
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:#0c0c0e;font-weight:600;}
+  .btn.ghost{background:transparent;}
+  .btn.danger{border-color:#5a2c29;color:var(--red);background:transparent;}
+  .status-line{color:var(--text-muted);font-size:12.5px;margin:2px 4px 16px;}
+
+  .board-row{display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap;}
+
+  .panel{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px;}
+  .panel + .panel{margin-top:16px;}
+  .panel-title{font-size:13px;font-weight:600;margin:0 0 12px;display:flex;align-items:center;justify-content:space-between;}
+  .panel-title .muted{font-size:12px;color:var(--text-muted);font-weight:400;}
+
+  /* Board column — fixed to content width, resizable; siblings flex around it */
+  .board-col{flex:0 0 auto;position:relative;padding-right:26px;}
+  .board-col .resize-handle{
+    position:absolute;top:0;right:0;bottom:0;width:26px;
+    display:flex;align-items:center;justify-content:center;
+    cursor:ew-resize;touch-action:none;background:var(--panel-2);
+    border:1px solid var(--border);border-radius:6px;
+  }
+  .board-col .resize-handle:hover,.board-col.resizing .resize-handle{border-color:var(--accent);}
+  .board-col .resize-handle:hover .grip,.board-col.resizing .grip{background:var(--accent);}
+  .board-col .grip{width:4px;height:44px;border-radius:3px;background:var(--border-strong);transition:background .1s;}
+  .board-col.resizing{user-select:none;}
+  .resize-hint{font-size:11px;color:var(--text-muted);text-align:center;margin-top:8px;}
+  #sizeSlider{-webkit-appearance:none;appearance:none;height:4px;border-radius:3px;background:var(--panel-2);outline:none;}
+  #sizeSlider::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--accent);cursor:pointer;}
+  #sizeSlider::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:var(--accent);border:none;cursor:pointer;}
+
+  .col-flex{flex:1 1 300px;min-width:280px;}
+  .col-flex.engine{flex:1.3 1 360px;min-width:340px;}
+
+  /* Board */
+  .board-wrap{display:flex;gap:10px;}
+  .board{
+    display:grid;grid-template-columns:repeat(8,1fr);grid-template-rows:repeat(8,1fr);
+    width:var(--board-size,460px);height:var(--board-size,460px);
+    border-radius:4px;overflow:hidden;border:1px solid var(--border-strong);flex-shrink:0;
+  }
+  .sq{display:flex;align-items:center;justify-content:center;}
+  .sq.light{background:var(--board-light);}
+  .sq.dark{background:var(--board-dark);}
+  .piece-w{color:#f7f3ea;text-shadow:0 0 1px #2a1d10,0 0 1px #2a1d10;}
+  .piece-b{color:#211407;}
+  .eval-bar{width:14px;height:var(--board-size,460px);border-radius:3px;background:linear-gradient(to top,#e7e2d6 55%,#1c1c1c 55%);position:relative;border:1px solid var(--border-strong);flex-shrink:0;}
+  .eval-tag{position:absolute;top:-18px;left:50%;transform:translateX(-50%);font-size:10px;background:var(--accent);color:#0c0c0e;padding:1px 4px;border-radius:3px;white-space:nowrap;font-weight:600;}
+
+  .board-controls{display:flex;gap:8px;margin-top:12px;width:var(--board-size,460px);}
+  .board-controls .btn{flex:1;text-align:center;}
+
+  table.movelist{width:100%;border-collapse:collapse;margin-top:14px;font-size:12.5px;}
+  table.movelist th{text-align:left;color:var(--text-muted);font-weight:500;padding:4px 6px;border-bottom:1px solid var(--border);}
+  table.movelist td{padding:6px;border-bottom:1px solid var(--border);}
+  table.movelist tr.current td{background:var(--accent-bg);}
+  table.movelist tr.current td:first-child{border-radius:6px 0 0 6px;}
+  table.movelist tr.current td:last-child{border-radius:0 6px 6px 0;}
+
+  /* Reach frequency */
+  .freq-row{display:flex;justify-content:space-between;font-size:12px;color:var(--text-secondary);margin-bottom:6px;}
+  .freq-bar{height:6px;border-radius:3px;background:var(--panel-2);overflow:hidden;margin-bottom:6px;}
+  .freq-fill{height:100%;background:var(--accent);width:100%;}
+  .freq-note{font-size:12px;color:var(--text-muted);}
+
+  .badge{display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:3px 9px;border-radius:20px;}
+  .badge.green{background:var(--green-bg);color:var(--green);}
+  .badge-dot{width:6px;height:6px;border-radius:50%;background:currentColor;}
+
+  .move-box{border:1px solid var(--border-strong);border-radius:8px;padding:12px;margin-top:10px;}
+  .move-box.saved{border-color:#245c40;background:var(--green-bg);}
+  .move-box .check{color:var(--green);font-size:12px;display:flex;align-items:center;gap:6px;margin-bottom:8px;}
+  .move-box .san{font-size:20px;font-weight:600;}
+  .move-box .uci{color:var(--text-muted);font-size:12px;margin-bottom:8px;}
+  .move-box .eff{font-size:12px;color:var(--text-secondary);}
+  .move-box .eff b{color:var(--text);font-weight:500;}
+
+  .stage-box{border:1px dashed var(--border-strong);border-radius:8px;padding:12px;margin-top:10px;color:var(--text-muted);font-size:12.5px;}
+  .stage-actions{display:flex;gap:8px;margin-top:14px;}
+
+  .accordion{border-top:1px solid var(--border);margin-top:16px;padding-top:12px;font-size:13px;color:var(--text-secondary);display:flex;align-items:center;gap:6px;}
+
+  /* Engine */
+  .engine-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px;}
+  .engine-head .meta{font-size:12px;color:var(--text-muted);}
+  .engine-head .status{font-size:12px;color:var(--green);}
+
+  .line-card{border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:10px;}
+  .line-card.best{border-color:var(--accent);background:var(--accent-bg);}
+  .line-top{display:flex;justify-content:space-between;align-items:baseline;gap:10px;}
+  .line-rank{font-size:11px;color:var(--text-muted);width:20px;flex-shrink:0;}
+  .line-moves{font-family:"SFMono-Regular",Consolas,Menlo,monospace;font-size:13px;flex:1;}
+  .line-eval{font-size:14px;font-weight:600;flex-shrink:0;}
+  .wdl{display:flex;height:6px;border-radius:3px;overflow:hidden;margin:9px 0 6px;}
+  .wdl-legend{display:flex;justify-content:space-between;font-size:11.5px;color:var(--text-muted);}
+  .wdl-legend span b{color:var(--text-secondary);font-weight:500;}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="sidebar">
+    <div class="brand">Chess Move Trainer</div>
+    <div class="nav-item"><span class="dot"></span>Status</div>
+    <div class="nav-item"><span class="dot"></span>Viewer</div>
+    <div class="nav-item active"><span class="dot"></span>Repertoire builder</div>
+  </div>
+
+  <div class="main">
+
+    <div class="loader-bar">
+      <span class="label">▾ Game loader</span>
+      <input id="uuid" placeholder="Game UUID">
+      <input id="ply" placeholder="Ply (optional)">
+      <button class="btn primary">Load game</button>
+      <button class="btn ghost">Reset</button>
+    </div>
+    <div class="status-line">Standard starting position — local session begins at ply 0. Current ply 0.</div>
+
+    <div class="board-row">
+
+      <!-- Column 1: board + navigation + move list — fixed width, resizable -->
+      <div class="board-col" id="boardCol">
+        <div class="panel">
+          <div class="panel-title">Board</div>
+          <div class="board-wrap">
+            <div class="board" id="board"></div>
+            <div class="eval-bar"><span class="eval-tag">+0.46</span></div>
+          </div>
+          <div class="board-controls">
+            <button class="btn ghost">‹ Previous</button>
+            <button class="btn ghost">Next ›</button>
+            <button class="btn ghost">Flip</button>
+          </div>
+          <table class="movelist" style="width:var(--board-size,460px);">
+            <tr><th>#</th><th>White</th><th>Black</th></tr>
+            <tr class="current"><td>—</td><td colspan="2">Initial position</td></tr>
+          </table>
+        </div>
+        <div class="resize-hint">Drag the edge to resize — or use the slider</div>
+        <input type="range" id="sizeSlider" min="300" max="720" value="460" step="10" style="width:100%;margin-top:6px;">
+        <div class="resize-handle" id="resizeHandle"><div class="grip"></div></div>
+      </div>
+
+      <!-- Column 2: position + preferred move + staging -->
+      <div class="col-flex">
+        <div class="panel">
+          <div class="panel-title">Position reach frequency<span class="muted">White repertoire colour</span></div>
+          <div class="freq-row"><span>6183 / 6185 games</span><span>100.0%</span></div>
+          <div class="freq-bar"><div class="freq-fill"></div></div>
+          <div class="freq-note">Reached in 6183 of 6185 games as White.</div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-title">Preferred move<span class="badge green"><span class="badge-dot"></span>Saved</span></div>
+          <div style="font-size:12.5px;color:var(--text-secondary);margin-bottom:2px;">Seen in 6183 games as White</div>
+
+          <div class="move-box saved">
+            <div class="check">✓ Current saved choice</div>
+            <div class="san">e4</div>
+            <div class="uci">(e2e4)</div>
+            <div class="eff">Effective date <b>2026-08-29</b></div>
+          </div>
+
+          <div class="stage-box">
+            <strong style="color:var(--text-secondary);">Staged move</strong><br>
+            No move staged. Stage a legal move to propose replacing e4.
+          </div>
+
+          <div class="stage-actions">
+            <button class="btn ghost" style="flex:1;">Change effective date</button>
+            <button class="btn danger" style="flex:1;">Remove</button>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="accordion">▸ Position description</div>
+        </div>
+      </div>
+
+      <!-- Column 3: engine output, widest -->
+      <div class="panel col-flex engine">
+        <div class="engine-head">
+          <div>
+            <div class="panel-title" style="margin-bottom:2px;">Engine output</div>
+            <div class="meta">Displayed position · ply 0 · depth 13 · 5 lines</div>
+          </div>
+          <div style="text-align:right;">
+            <div class="status">Analysis complete</div>
+            <button class="btn ghost" style="margin-top:8px;">Update analysis</button>
+          </div>
+        </div>
+
+        <div class="line-card best">
+          <div class="line-top">
+            <span class="line-rank">01</span>
+            <span class="line-moves">1. e4</span>
+            <span class="line-eval">+0.46</span>
+          </div>
+          <div class="wdl">
+            <div style="width:11.3%;background:var(--green);"></div>
+            <div style="width:88.3%;background:var(--amber);"></div>
+            <div style="width:0.4%;background:var(--red);"></div>
+          </div>
+          <div class="wdl-legend"><span>Win <b>11.3%</b></span><span>Draw <b>88.3%</b></span><span>Loss <b>0.4%</b></span></div>
+        </div>
+
+        <div class="line-card">
+          <div class="line-top">
+            <span class="line-rank">02</span>
+            <span class="line-moves">1. d4 Nf6 2. c4 e6 3. Nf3 d5 4. Nc3 c5 5. cxd5 cxd4 6. Qa4+ Nbd7 7. Nxd4 Nxd5 8. Nxd5 exd5</span>
+            <span class="line-eval">+0.34</span>
+          </div>
+          <div class="wdl">
+            <div style="width:7.3%;background:var(--green);"></div>
+            <div style="width:92.1%;background:var(--amber);"></div>
+            <div style="width:0.6%;background:var(--red);"></div>
+          </div>
+          <div class="wdl-legend"><span>Win <b>7.3%</b></span><span>Draw <b>92.1%</b></span><span>Loss <b>0.6%</b></span></div>
+        </div>
+
+        <div class="line-card">
+          <div class="line-top">
+            <span class="line-rank">03</span>
+            <span class="line-moves">1. Nf3 d5 2. d4 e6 3. c4 Nf6 4. Nc3 c5 5. cxd5 cxd4 6. Nxd4 Nxd5 7. Bd2 Be7</span>
+            <span class="line-eval">+0.27</span>
+          </div>
+          <div class="wdl">
+            <div style="width:5.7%;background:var(--green);"></div>
+            <div style="width:93.5%;background:var(--amber);"></div>
+            <div style="width:0.8%;background:var(--red);"></div>
+          </div>
+          <div class="wdl-legend"><span>Win <b>5.7%</b></span><span>Draw <b>93.5%</b></span><span>Loss <b>0.8%</b></span></div>
+        </div>
+
+        <div class="line-card">
+          <div class="line-top">
+            <span class="line-rank">04</span>
+            <span class="line-moves">1. e3 e5 2. d4 exd4 3. exd4 Nf6 4. Nf3 d5 5. Bd3 Bd6 6. O-O O-O 7. Bg5 h6 8. Bh4 Bg4 9. h3 Bh5</span>
+            <span class="line-eval">+0.20</span>
+          </div>
+          <div class="wdl">
+            <div style="width:4.4%;background:var(--green);"></div>
+            <div style="width:94.6%;background:var(--amber);"></div>
+            <div style="width:1.0%;background:var(--red);"></div>
+          </div>
+          <div class="wdl-legend"><span>Win <b>4.4%</b></span><span>Draw <b>94.6%</b></span><span>Loss <b>1.0%</b></span></div>
+        </div>
+
+        <div class="line-card">
+          <div class="line-top">
+            <span class="line-rank">05</span>
+            <span class="line-moves">1. c3 e6 2. d4 d5 3. Bf4 Bd6 4. Bxd6 cxd6 5. e3 Nf6 6. Bd3</span>
+            <span class="line-eval">+0.09</span>
+          </div>
+          <div class="wdl">
+            <div style="width:2.9%;background:var(--green);"></div>
+            <div style="width:95.6%;background:var(--amber);"></div>
+            <div style="width:1.5%;background:var(--red);"></div>
+          </div>
+          <div class="wdl-legend"><span>Win <b>2.9%</b></span><span>Draw <b>95.6%</b></span><span>Loss <b>1.5%</b></span></div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+const start = [
+  ['r','n','b','q','k','b','n','r'],
+  ['p','p','p','p','p','p','p','p'],
+  ['','','','','','','',''],
+  ['','','','','','','',''],
+  ['','','','','','','',''],
+  ['','','','','','','',''],
+  ['P','P','P','P','P','P','P','P'],
+  ['R','N','B','Q','K','B','N','R'],
+];
+const glyph = {r:'♜',n:'♞',b:'♝',q:'♛',k:'♚',p:'♟',R:'♖',N:'♘',B:'♗',Q:'♕',K:'♔',P:'♙'};
+const board = document.getElementById('board');
+for(let r=0;r<8;r++){
+  for(let c=0;c<8;c++){
+    const sq=document.createElement('div');
+    sq.className='sq '+(((r+c)%2===0)?'light':'dark');
+    const p=start[r][c];
+    if(p){
+      const isWhite = p===p.toUpperCase();
+      sq.innerHTML = '<span class="'+(isWhite?'piece-w':'piece-b')+'">'+glyph[p]+'</span>';
+    }
+    board.appendChild(sq);
+  }
+}
+
+const MIN_SIZE = 300, MAX_SIZE = 720;
+const root = document.documentElement;
+const boardCol = document.getElementById('boardCol');
+const handle = document.getElementById('resizeHandle');
+const slider = document.getElementById('sizeSlider');
+
+function applySize(size){
+  size = Math.round(Math.max(MIN_SIZE, Math.min(MAX_SIZE, size)));
+  root.style.setProperty('--board-size', size + 'px');
+  board.style.fontSize = Math.round((size/8) * 0.62) + 'px';
+  slider.value = size;
+  return size;
+}
+applySize(460);
+
+let startX = 0, startSize = 460;
+
+handle.addEventListener('pointerdown', (e) => {
+  handle.setPointerCapture(e.pointerId);
+  startX = e.clientX;
+  startSize = parseFloat(root.style.getPropertyValue('--board-size')) || 460;
+  boardCol.classList.add('resizing');
+  e.preventDefault();
+});
+handle.addEventListener('pointermove', (e) => {
+  if(!handle.hasPointerCapture(e.pointerId)) return;
+  applySize(startSize + (e.clientX - startX));
+});
+handle.addEventListener('pointerup', (e) => {
+  if(handle.hasPointerCapture(e.pointerId)) handle.releasePointerCapture(e.pointerId);
+  boardCol.classList.remove('resizing');
+});
+handle.addEventListener('dblclick', () => applySize(460));
+slider.addEventListener('input', () => applySize(parseInt(slider.value, 10)));
+</script>
+</body>
+</html>

@@ -1,6 +1,7 @@
 ---
 description: Runs every repository test, build, and quality check, fixing errors or warnings one at a time.
 mode: primary
+color: "#EF4444"
 permission:
   edit: allow
   bash: allow

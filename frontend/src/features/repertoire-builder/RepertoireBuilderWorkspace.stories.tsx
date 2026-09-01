@@ -1,4 +1,4 @@
-import { expect, userEvent, waitFor, within } from "storybook/test";
+import { expect, userEvent, within } from "storybook/test";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import "../../styles/cmt-tokens.css";
 import "../../styles/cmt-typescale.css";
@@ -16,7 +16,12 @@ import {
   expectSingleStagedStatus,
   sharedPositionSummary,
 } from "./repertoireBuilderStoryAssertions";
-import { BLACK_SUBJECT_GAME, constrainedViewport, workspace } from "./repertoireBuilderStoryRender";
+import {
+  BLACK_SUBJECT_GAME,
+  constrainedViewport,
+  mediumViewport,
+  workspace,
+} from "./repertoireBuilderStoryRender";
 import { expectNoHorizontalOverflow, loadGame } from "./repertoireBuilderStoryHelpers";
 
 const meta = {
@@ -38,7 +43,10 @@ stagedIdentityClient.observe = async (fen, signal) => {
   return stagedIdentityObserve(fen, signal);
 };
 
-async function verifyStandardWorkspace(canvasElement: HTMLElement) {
+async function verifyStandardWorkspace(
+  canvasElement: HTMLElement,
+  mode: "wide" | "medium" | "narrow" = "wide",
+) {
   const canvas = within(canvasElement);
   await expect(canvas.getByRole("heading", { name: "Repertoire Builder", level: 1 })).toBeVisible();
   const board = canvas.getByRole("group", {
@@ -46,17 +54,42 @@ async function verifyStandardWorkspace(canvasElement: HTMLElement) {
   });
   const stage = canvas.getByTestId("board-eval-stage");
   const rail = canvas.getByTestId("board-eval-rail-shell");
+  const boardLane = canvas.getByTestId("repertoire-board-lane");
+  const sessionLane = canvas.getByTestId("repertoire-session-lane");
+  const engineLane = canvas.getByTestId("repertoire-engine-lane");
   const meter = canvas.getByRole("meter", { name: "Evaluation" });
+  const responsiveStage = canvas.getByTestId("repertoire-workspace-stage");
+  await expect(responsiveStage).toHaveAttribute("data-layout-mode", mode);
+  const expectedSeparators =
+    mode === "wide"
+      ? ["Board and Session boundary", "Session and Engine boundary"]
+      : mode === "medium"
+        ? ["Session and Engine boundary"]
+        : [];
+  const stageQueries = within(responsiveStage);
+  await expect(stageQueries.queryAllByRole("separator")).toHaveLength(expectedSeparators.length);
+  await expect(
+    stageQueries
+      .queryAllByRole("separator")
+      .map((separator) => separator.getAttribute("aria-label")),
+  ).toEqual(expectedSeparators);
   await expect(board).toBeVisible();
+  await expect(responsiveStage).toContainElement(boardLane);
+  await expect(responsiveStage).toContainElement(sessionLane);
+  await expect(responsiveStage).toContainElement(engineLane);
+  await expect(
+    within(engineLane).getByRole("heading", { name: "Analysis", level: 2 }),
+  ).toBeVisible();
   await expect(stage).toContainElement(board);
   await expect(stage).toContainElement(rail);
+  await expect(within(boardLane).getByTestId("board-move-history")).toBeVisible();
+  await expect(within(sessionLane).getByTestId("repertoire-session")).toBeVisible();
   await expect(meter).toHaveAttribute("data-state", "neutral");
   await expect(meter).toHaveAttribute("data-orientation", "white");
   await expect(meter).toHaveAttribute("aria-valuetext", "No analysis yet; evaluation neutral.");
   const descriptionRow = canvas.getByTestId("position-description-row");
-  if (board.contains(descriptionRow)) {
-    throw new Error("The position description is still inside the repertoire board container.");
-  }
+  await expect(boardLane).not.toContainElement(descriptionRow);
+  await expect(sessionLane).toContainElement(descriptionRow);
   const description = canvas.getByRole("button", { name: "Position description" });
   await expect(description).toHaveAttribute("aria-expanded", "false");
   await userEvent.click(description);
@@ -80,7 +113,25 @@ export const Constrained: Story = {
   name: "Standard starting position - Constrained",
   parameters: constrainedViewport,
   render: () => workspace(),
-  play: async ({ canvasElement }) => verifyStandardWorkspace(canvasElement),
+  play: async ({ canvasElement }) => verifyStandardWorkspace(canvasElement, "narrow"),
+};
+
+export const Medium: Story = {
+  name: "Standard starting position - Medium",
+  parameters: mediumViewport,
+  render: () => workspace(),
+  play: async ({ canvasElement }) => {
+    await verifyStandardWorkspace(canvasElement, "medium");
+    const canvas = within(canvasElement);
+    const stage = canvas.getByTestId("repertoire-workspace-stage");
+    const boardRow = canvas.getByTestId("repertoire-responsive-board-row");
+    const lowerGroup = canvas.getByTestId("repertoire-responsive-medium-group");
+    await expect(boardRow).toContainElement(canvas.getByTestId("repertoire-board-lane"));
+    await expect(lowerGroup).toContainElement(canvas.getByTestId("repertoire-session-lane"));
+    await expect(lowerGroup).toContainElement(canvas.getByTestId("repertoire-engine-lane"));
+    await expect(lowerGroup).not.toContainElement(canvas.getByTestId("repertoire-board-lane"));
+    await expect(stage).toContainElement(boardRow);
+  },
 };
 export const StoredPrefixBlackSubject: Story = {
   name: "Stored prefix through selected Ply - Black subject",
@@ -136,7 +187,7 @@ export const StagedMy: Story = {
     await expect(stagedObservedFens).toContain(STAGED_E4_FEN);
     await expect(canvas.getByRole("button", { name: "1. e4" })).toBeVisible();
     await expectPreferredMoveState(canvasElement, "first-choice");
-    await expect(canvas.getByTestId("staged-move")).toHaveTextContent("Staged move: e4 (e2e4)");
+    await expect(canvas.getByTestId("staged-move")).toHaveTextContent(/^Staged move\s*e4 \(e2e4\)/);
     await expectPositionReachFrequency(canvasElement, "available", "White", "3 / 10 games", "30%");
   },
 };
@@ -353,110 +404,5 @@ export const Accessibility: Story = {
       "false",
     );
     await expectNoHorizontalOverflow(canvasElement);
-  },
-};
-export const FirstChoiceFromEmpty: Story = {
-  name: "Preferred move - first choice, seen, and Save",
-  render: () =>
-    workspace(
-      { analysisClient: storyCandidateAnalysisClient(["e2e4"]) },
-      { relationship: "empty" },
-      { overall_exists: true, white_count: 3, black_count: 2 },
-    ),
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    await expectPreferredMoveState(canvasElement, "empty");
-    await expectPositionReachFrequency(canvasElement, "available", "White", "3 / 10 games", "30%");
-    await expect(canvas.getByText("Seen in 3 games as White")).toBeVisible();
-    await expect(canvas.queryByRole("button", { name: "Save" })).not.toBeInTheDocument();
-    await userEvent.click(await canvas.findByRole("button", { name: "1. e4" }));
-    await expectSingleStagedStatus(canvasElement);
-    await expectPositionSquares(canvasElement, "e2", 0);
-    await expectPositionSquares(canvasElement, "e4", 1);
-    await expectSessionHistory(canvasElement, ["Initial position"]);
-    await expect(canvas.getByRole("button", { name: "Save" })).toBeEnabled();
-    await userEvent.click(canvas.getByRole("button", { name: "Save" }));
-    await waitFor(() =>
-      expect(canvas.getByTestId("session-status")).toHaveTextContent("Preferred move saved."),
-    );
-    await expectPreferredMoveState(canvasElement, "saved");
-    await expect(canvas.getByTestId("saved-move")).toHaveTextContent("e4");
-    await expectPositionSquares(canvasElement, "e2", 1);
-    await expectPositionSquares(canvasElement, "e4", 0);
-    await expect(canvas.getByTestId("session-origin")).toHaveTextContent("Current Ply 0");
-    await expectSessionHistory(canvasElement, ["Initial position"]);
-    await expect(canvas.getByRole("button", { name: "Change effective date" })).toBeDisabled();
-  },
-};
-export const ZeroPersonalCount: Story = {
-  name: "Preferred move - zero personal count remains savable",
-  render: () =>
-    workspace(
-      { analysisClient: storyCandidateAnalysisClient(["e2e4"]) },
-      { relationship: "empty" },
-      { overall_exists: true, white_count: 0, black_count: 4 },
-    ),
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    await expectPositionReachFrequency(canvasElement, "available", "White", "0 / 10 games", "0%");
-    await expect(canvas.getByText("Never seen as White")).toBeVisible();
-    await expect(
-      canvas.queryByText("This position cannot be saved because it is not in the corpus."),
-    ).not.toBeInTheDocument();
-    await expect(canvas.queryByRole("button", { name: "Save" })).not.toBeInTheDocument();
-    await userEvent.click(await canvas.findByRole("button", { name: "1. e4" }));
-    await expect(canvas.getByRole("button", { name: "Save" })).toBeEnabled();
-    await expectPreferredMoveState(canvasElement, "first-choice");
-  },
-};
-export const AbsentUnsavable: Story = {
-  name: "Preferred move - absent overall and unsavable",
-  render: () =>
-    workspace(
-      { analysisClient: storyCandidateAnalysisClient(["e2e4"]) },
-      { relationship: "empty" },
-      { overall_exists: false, white_count: 0, black_count: 0 },
-    ),
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    await expectPreferredMoveState(canvasElement, "empty");
-    await expectPositionReachFrequency(canvasElement, "absent", "White");
-    await expect(canvas.getByText("Never seen as White")).toBeVisible();
-    await expect(
-      canvas.getByText("This position cannot be saved because it is not in the corpus."),
-    ).toBeVisible();
-    await expect(canvas.queryByRole("button", { name: "Save" })).not.toBeInTheDocument();
-    await expect(
-      canvas.queryByRole("button", { name: "Change effective date" }),
-    ).not.toBeInTheDocument();
-  },
-};
-export const SavedChoiceStagesMove: Story = {
-  name: "Preferred move - saved choice stages on own turn",
-  render: () =>
-    workspace(
-      { analysisClient: storyCandidateAnalysisClient(["e2e4"]) },
-      { relationship: "saved" },
-      { overall_exists: true, white_count: 5, black_count: 1 },
-    ),
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    await expectPreferredMoveState(canvasElement, "saved");
-    await expect(canvas.getByText("Seen in 5 games as White")).toBeVisible();
-    const savedChoice = canvas.getByRole("button", {
-      name: "Current saved choice: e4; play and stage this move.",
-    });
-    await expect(savedChoice).toBeEnabled();
-    await expect(canvas.queryByRole("button", { name: "Save" })).not.toBeInTheDocument();
-    await userEvent.click(savedChoice);
-    await expectPositionSquares(canvasElement, "e4", 1);
-    await expectSessionHistory(canvasElement, ["Initial position"]);
-    await expectActiveSessionHistoryEntry(canvasElement, "Initial position");
-    await expect(canvas.getByTestId("session-status")).toHaveTextContent(
-      "Saved move staged locally: e4.",
-    );
-    await expectPreferredMoveState(canvasElement, "matching");
-    await expect(canvas.getByTestId("staged-move")).toHaveTextContent("Staged move: e4 (e2e4)");
-    await expect(canvas.getByTestId("saved-move")).toBeVisible();
   },
 };

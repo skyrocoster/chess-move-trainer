@@ -1,6 +1,7 @@
 ---
 description: Thin-README steward — writes or updates persistent signpost READMEs after structural changes.
 mode: subagent
+color: "#22C55E"
 model: opencode-go/deepseek-v4-flash
 variant: medium
 #model: opencode/mimo-v2.5-free

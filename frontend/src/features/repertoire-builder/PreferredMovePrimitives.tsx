@@ -102,7 +102,6 @@ export function PreferredMoveChoiceBox({
           </span>
           <span>
             <span>{label}</span>
-            {move ? ": " : ""}
           </span>
         </div>
       </div>

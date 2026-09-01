@@ -3,6 +3,8 @@
   display: grid;
   gap: var(--cmt-spacing-16);
   min-inline-size: 0;
+  container-name: preferred-move-panel;
+  container-type: inline-size;
   padding: var(--cmt-spacing-16);
   border: 1px solid var(--md-sys-color-outline-variant);
   border-block-start: var(--cmt-spacing-4) solid var(--preferred-accent);
@@ -204,7 +206,7 @@
   gap: var(--cmt-spacing-8);
 }
 
-@media (max-width: 40rem) {
+@container preferred-move-panel (max-width: 40rem) {
   .header {
     flex-direction: column;
   }
@@ -218,6 +220,7 @@
   }
 
   .actionLayout {
+    align-items: flex-start;
     justify-content: flex-start;
   }
 

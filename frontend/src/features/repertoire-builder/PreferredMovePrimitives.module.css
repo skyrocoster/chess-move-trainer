@@ -205,14 +205,20 @@
 }
 
 .consequenceIcon {
-  flex: 0 0 var(--cmt-spacing-16);
-  inline-size: var(--cmt-spacing-16);
-  block-size: var(--cmt-spacing-16);
-  color: var(--cmt-warning-accent);
+  display: block;
+  flex: 0 0 var(--cmt-spacing-24);
+  inline-size: var(--cmt-spacing-24);
+  block-size: var(--cmt-spacing-24);
+  box-sizing: border-box;
+  padding: var(--cmt-spacing-4);
+  border-radius: 50%;
+  background: var(--cmt-warning-accent);
+  color: var(--cmt-warning-on-accent);
 }
 
 .consequenceMatching .consequenceIcon {
-  color: var(--cmt-success-accent);
+  background: var(--cmt-success-accent);
+  color: var(--cmt-success-on-accent);
 }
 
 .dateControl {
@@ -227,9 +233,11 @@
   gap: var(--cmt-spacing-8);
 }
 
-@media (max-width: 40rem) {
+@container preferred-move-panel (max-width: 40rem) {
   .connector {
     flex-direction: column;
+    gap: var(--cmt-spacing-8);
+    min-block-size: var(--cmt-spacing-24);
   }
 
   .connectorIcon {
@@ -266,6 +274,11 @@
   .connectorIcon,
   .consequenceIcon {
     color: CanvasText;
+  }
+
+  .consequenceIcon {
+    border: 1px solid ButtonBorder;
+    background: Canvas;
   }
 
   .boxLabel,

@@ -45,5 +45,17 @@ export default defineConfig({
         },
       },
     ],
+    // Vitest 4 routes this callback through the workspace state, so gate its
+    // one exact diagnostic by the Storybook story path; all other errors, and
+    // all unit-project errors, retain the default failing disposition.
+    onUnhandledError: (error) => {
+      const testPath = (error as Error & { VITEST_TEST_PATH?: unknown }).VITEST_TEST_PATH;
+      return typeof testPath === "string" &&
+        testPath.includes(".stories.") &&
+        (error.message === "ResizeObserver loop completed with undelivered notifications" ||
+          error.message === "ResizeObserver loop completed with undelivered notifications.")
+        ? false
+        : undefined;
+    },
   },
 });

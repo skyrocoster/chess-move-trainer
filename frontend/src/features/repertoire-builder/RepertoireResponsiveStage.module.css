@@ -1,0 +1,144 @@
+.stage {
+  container-name: repertoire-workspace-stage;
+  container-type: inline-size;
+  inline-size: 100%;
+  min-inline-size: 0;
+  max-inline-size: 100%;
+}
+
+.stageActions {
+  display: flex;
+  justify-content: flex-end;
+  min-inline-size: 0;
+  margin-block-end: var(--cmt-spacing-12);
+}
+
+.reset {
+  border: 1px solid var(--md-sys-color-outline);
+  border-radius: var(--cmt-radius-4);
+  padding: var(--cmt-spacing-8) var(--cmt-spacing-12);
+  background: var(--md-sys-color-surface-container);
+  color: var(--md-sys-color-on-surface);
+  cursor: pointer;
+  font: var(--md-sys-typescale-label-large);
+}
+
+.reset:hover {
+  border-color: var(--md-sys-color-primary);
+}
+
+.reset:focus-visible,
+.separator:focus-visible {
+  outline: 2px solid var(--cmt-focus-ring-color);
+  outline-offset: 3px;
+}
+
+.group,
+.mediumBoardRow,
+.mediumLowerRow,
+.narrowStack {
+  inline-size: 100%;
+  min-inline-size: 0;
+}
+
+.group {
+  align-items: stretch;
+}
+
+.panel {
+  min-inline-size: 0;
+}
+
+.mediumLowerRow {
+  margin-block-start: var(--cmt-spacing-16);
+}
+
+.narrowStack {
+  display: grid;
+  gap: var(--cmt-spacing-16);
+}
+
+.separator {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-self: stretch;
+  align-items: center;
+  justify-content: center;
+  inline-size: var(--cmt-spacing-12);
+  min-inline-size: var(--cmt-spacing-12);
+  min-block-size: 0;
+  border: 1px solid transparent;
+  border-radius: var(--cmt-radius-4);
+  background: transparent;
+  cursor: col-resize;
+  user-select: none;
+}
+
+.pill {
+  inline-size: var(--cmt-spacing-4);
+  block-size: 52px;
+  border: 1px solid var(--md-sys-color-outline);
+  border-radius: 999px;
+  background: var(--md-sys-color-surface-container-high);
+  box-shadow: 0 0 0 2px var(--md-sys-color-surface);
+  content: "";
+  transition:
+    inline-size 120ms ease,
+    block-size 120ms ease,
+    border-color 120ms ease,
+    background-color 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.separator:hover .pill,
+.separator:focus-visible .pill,
+.separator[data-separator="active"] .pill,
+.separator[data-separator="focus"] .pill {
+  inline-size: 6px;
+  block-size: 72px;
+  border-color: var(--md-sys-color-primary);
+  background: var(--md-sys-color-primary);
+  box-shadow:
+    0 0 0 2px var(--md-sys-color-surface),
+    0 0 12px var(--md-sys-color-primary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pill {
+    transition: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .reset {
+    border-color: ButtonBorder;
+    background: ButtonFace;
+    color: ButtonText;
+  }
+
+  .separator {
+    border-color: ButtonBorder;
+    background: Canvas;
+  }
+
+  .pill {
+    border-color: CanvasText;
+    background: Canvas;
+    box-shadow: 0 0 0 2px Canvas;
+  }
+
+  .separator:hover .pill,
+  .separator:focus-visible .pill,
+  .separator[data-separator="active"] .pill,
+  .separator[data-separator="focus"] .pill {
+    border-color: Highlight;
+    background: Highlight;
+    box-shadow: 0 0 0 2px Canvas;
+  }
+
+  .reset:focus-visible,
+  .separator:focus-visible {
+    outline-color: Highlight;
+  }
+}

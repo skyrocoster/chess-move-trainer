@@ -124,6 +124,12 @@ describe("PreferredMovePanel relationship composition", () => {
 
       const panel = screen.getByRole("region", { name: "What is saved, and what is staged?" });
       expect(relationshipActionLabels(panel)).toEqual(actions);
+      expect(within(panel).getByText("Current saved choice", { exact: true })).toBeVisible();
+      expect(within(panel).getByText("Staged move", { exact: true })).toBeVisible();
+      expect(
+        within(panel).queryByText("Current saved choice:", { exact: true }),
+      ).not.toBeInTheDocument();
+      expect(within(panel).queryByText("Staged move:", { exact: true })).not.toBeInTheDocument();
       expect(panel.querySelectorAll('[data-testid="preferred-consequence"]')).toHaveLength(
         consequences.length,
       );
@@ -257,6 +263,7 @@ describe("PreferredMovePanel relationship composition", () => {
     const dateButton = screen.getByRole("button", { name: "Change effective date" });
     expect(dateButton).toBeDisabled();
     expect(dateButton).toHaveAccessibleDescription(PREFERRED_MOVE_DATE_UNAVAILABLE);
+    expect(screen.getByText(PREFERRED_MOVE_DATE_UNAVAILABLE, { exact: true })).toBeVisible();
     await user.click(dateButton);
     expect(onActivate).not.toHaveBeenCalled();
     expect(onDateChange).not.toHaveBeenCalled();
@@ -373,6 +380,7 @@ describe("PreferredMovePanel relationship composition", () => {
       />,
     );
 
+    const panel = screen.getByRole("region", { name: "What is saved, and what is staged?" });
     const savedBox = screen.getByTestId("saved-move");
     const relationship = savedBox.parentElement;
     if (!(relationship instanceof HTMLElement))
@@ -381,11 +389,25 @@ describe("PreferredMovePanel relationship composition", () => {
     expect(savedBox).toBe(relationship.children[0]);
     expect(relationship.children[1]).toHaveAttribute("aria-hidden", "true");
     expect(relationship.children[2]).toHaveAttribute("data-testid", "staged-move");
+    const consequenceIcon = within(panel).getByTestId("preferred-consequence").querySelector("svg");
+    expect(consequenceIcon).toHaveAttribute("aria-hidden", "true");
+    expect(consequenceIcon).toHaveAttribute("focusable", "false");
     expect(panelCss).toContain("grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);");
     expect(panelCss).toContain("grid-template-columns: minmax(0, 1fr);");
+    expect(panelCss).toContain("container-name: preferred-move-panel;");
+    expect(panelCss).toContain("container-type: inline-size;");
+    expect(panelCss).toContain("@container preferred-move-panel (max-width: 40rem)");
+    expect(panelCss).toContain("justify-content: flex-start;");
+    expect(panelCss).toContain("flex: 1 1 100%;");
     expect(panelCss).toContain("@media (forced-colors: active)");
     expect(panelCss).toContain("@media (prefers-reduced-motion: reduce)");
     expect(primitiveCss).toContain("overflow-wrap: anywhere;");
+    expect(primitiveCss).toContain("border-radius: 50%;");
+    expect(primitiveCss).toContain("background: var(--cmt-warning-accent);");
+    expect(primitiveCss).toContain("background: var(--cmt-success-accent);");
+    expect(primitiveCss).toContain("@container preferred-move-panel (max-width: 40rem)");
+    expect(primitiveCss).toContain("flex-direction: column;");
+    expect(primitiveCss).toContain("transform: rotate(90deg);");
     expect(primitiveCss).toContain(
       "outline: var(--cmt-focus-ring-width) solid var(--cmt-focus-ring-color);",
     );

@@ -1,9 +1,6 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { Chess, type Square } from "chess.js";
 import type { ComponentProps } from "react";
-import { readFileSync } from "node:fs";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
 import { vi } from "vitest";
 
 import type {
@@ -34,11 +31,6 @@ export const CONTEXT = {
   white_total: 10,
   black_total: 10,
 };
-export const rawStyles = readFileSync(
-  join(dirname(fileURLToPath(import.meta.url)), "RepertoireBuilderWorkspace.module.css"),
-  "utf8",
-);
-
 export function noAnalysisClient(): AnalysisClient {
   return {
     observe: vi.fn(async (fen: string) => ({
