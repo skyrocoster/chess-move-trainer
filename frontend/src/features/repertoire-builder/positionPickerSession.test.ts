@@ -6,7 +6,6 @@ import {
   createStoredGameSession,
   flipPositionPickerSession,
   navigatePositionPickerSession,
-  appendPositionPickerMove,
   playAndStagePositionPickerMove,
   positionPickerHistory,
   positionPickerHistoryBounds,
@@ -318,17 +317,6 @@ describe("position picker session", () => {
       promotion: "q",
     });
     expect(promoted?.session.currentPosition.fen).toBe("k3Q3/8/8/8/8/8/8/4K3 b - - 0 1");
-  });
-
-  it("plays a saved move through the same strict local continuation", () => {
-    const next = appendPositionPickerMove(createStandardStartSession(), {
-      sourceSquare: "e2",
-      targetSquare: "e4",
-    });
-
-    expect(next?.currentPosition.fen).toBe(
-      "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1",
-    );
   });
 
   it("plays and stages a saved owner move without advancing Move History", () => {

@@ -66,11 +66,19 @@ describe("repertoire position model", () => {
         relationship,
         comparison,
         savedPresence: preferredMove ? "present" : "absent",
-        savedMove: preferredMove?.move ?? null,
-        stagedMove,
       });
-      expect(model.saved?.sourceFen ?? null).toBe(preferredMove ? FEN : null);
-      expect(model.staged?.uci ?? null).toBe(stagedMove ? canonicalMoveUci(stagedMove) : null);
+      expect(model.saved).toEqual(
+        preferredMove
+          ? {
+              move: preferredMove.move,
+              effectiveAt: preferredMove.effective_at,
+              sourceFen: FEN,
+            }
+          : null,
+      );
+      expect(model.staged).toEqual(
+        stagedMove ? { move: stagedMove, uci: canonicalMoveUci(stagedMove) } : null,
+      );
     },
   );
 
@@ -111,8 +119,11 @@ describe("repertoire position model", () => {
     ).toMatchObject({
       ownTurn: false,
       savedPresence: "present",
-      savedMove: assignedPreferredMove.move,
-      savedMoveVisible: true,
+      saved: {
+        move: assignedPreferredMove.move,
+        effectiveAt: assignedPreferredMove.effective_at,
+        sourceFen: FEN,
+      },
       relationship: "saved",
     });
   });
@@ -133,8 +144,10 @@ describe("repertoire position model", () => {
       relationship: "unknown",
       comparison: "unknown",
       saved: null,
-      savedMove: null,
-      stagedMove: WHITE_MOVE,
+      staged: {
+        move: WHITE_MOVE,
+        uci: "e2e4",
+      },
     });
   });
 

@@ -1,4 +1,4 @@
-import { expect, userEvent, within } from "storybook/test";
+import { expect, userEvent, waitFor, within } from "storybook/test";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import "../../styles/cmt-tokens.css";
 import "../../styles/cmt-typescale.css";
@@ -355,12 +355,12 @@ export const Accessibility: Story = {
     await expectNoHorizontalOverflow(canvasElement);
   },
 };
-export const UnassignedSavable: Story = {
-  name: "Preferred move - unassigned, seen, and Save",
+export const FirstChoiceFromEmpty: Story = {
+  name: "Preferred move - first choice, seen, and Save",
   render: () =>
     workspace(
       { analysisClient: storyCandidateAnalysisClient(["e2e4"]) },
-      { initialState: "unassigned" },
+      { relationship: "empty" },
       { overall_exists: true, white_count: 3, black_count: 2 },
     ),
   play: async ({ canvasElement }) => {
@@ -376,14 +376,16 @@ export const UnassignedSavable: Story = {
     await expectSessionHistory(canvasElement, ["Initial position"]);
     await expect(canvas.getByRole("button", { name: "Save" })).toBeEnabled();
     await userEvent.click(canvas.getByRole("button", { name: "Save" }));
-    await expect(canvas.getByTestId("session-status")).toHaveTextContent("Preferred move saved.");
+    await waitFor(() =>
+      expect(canvas.getByTestId("session-status")).toHaveTextContent("Preferred move saved."),
+    );
     await expectPreferredMoveState(canvasElement, "saved");
     await expect(canvas.getByTestId("saved-move")).toHaveTextContent("e4");
     await expectPositionSquares(canvasElement, "e2", 1);
     await expectPositionSquares(canvasElement, "e4", 0);
     await expect(canvas.getByTestId("session-origin")).toHaveTextContent("Current Ply 0");
     await expectSessionHistory(canvasElement, ["Initial position"]);
-    await expect(canvas.getByRole("button", { name: "Effective date: 2026-08-29" })).toBeVisible();
+    await expect(canvas.getByRole("button", { name: "Change effective date" })).toBeDisabled();
   },
 };
 export const ZeroPersonalCount: Story = {
@@ -391,7 +393,7 @@ export const ZeroPersonalCount: Story = {
   render: () =>
     workspace(
       { analysisClient: storyCandidateAnalysisClient(["e2e4"]) },
-      { initialState: "unassigned" },
+      { relationship: "empty" },
       { overall_exists: true, white_count: 0, black_count: 4 },
     ),
   play: async ({ canvasElement }) => {
@@ -412,7 +414,7 @@ export const AbsentUnsavable: Story = {
   render: () =>
     workspace(
       { analysisClient: storyCandidateAnalysisClient(["e2e4"]) },
-      { initialState: "unassigned" },
+      { relationship: "empty" },
       { overall_exists: false, white_count: 0, black_count: 0 },
     ),
   play: async ({ canvasElement }) => {
@@ -425,16 +427,16 @@ export const AbsentUnsavable: Story = {
     ).toBeVisible();
     await expect(canvas.queryByRole("button", { name: "Save" })).not.toBeInTheDocument();
     await expect(
-      canvas.queryByRole("button", { name: "Effective date: Choose date" }),
+      canvas.queryByRole("button", { name: "Change effective date" }),
     ).not.toBeInTheDocument();
   },
 };
-export const AssignedReadOnly: Story = {
-  name: "Preferred move - assigned own turn plays the saved choice",
+export const SavedChoiceStagesMove: Story = {
+  name: "Preferred move - saved choice stages on own turn",
   render: () =>
     workspace(
       { analysisClient: storyCandidateAnalysisClient(["e2e4"]) },
-      { initialState: "assigned" },
+      { relationship: "saved" },
       { overall_exists: true, white_count: 5, black_count: 1 },
     ),
   play: async ({ canvasElement }) => {

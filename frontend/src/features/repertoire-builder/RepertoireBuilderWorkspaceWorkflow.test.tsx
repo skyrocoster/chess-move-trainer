@@ -4,10 +4,15 @@ import { cleanup, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import axeMatchers from "@chialab/vitest-axe";
 import type {} from "@chialab/vitest-axe/matchers";
-import type { PreferredMoveClient, PreferredMoveMutationResult } from "./preferredMoveApi";
+import type {
+  PreferredMoveClient,
+  PreferredMoveMutationResult,
+  PreferredMoveResult,
+} from "./preferredMoveApi";
 import { PROMOTION_GAME } from "../viewer/viewerStoryFixtures";
 import { VIEWER_GAME_UUID } from "../viewer/viewerFixtures";
 import {
+  AFTER_D4_FEN,
   AFTER_E4_FEN,
   AFTER_E8_KNIGHT_FEN,
   displayAnalysisClient,
@@ -177,34 +182,165 @@ describe("RepertoireBuilderWorkspace workflow", () => {
       { fen: STARTING_FEN, effective_at: "" },
       { signal: expect.any(AbortSignal) },
     );
-    await waitFor(() => expect(screen.queryByTestId("saved-move")).not.toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByTestId("saved-move")).toHaveTextContent("No saved choice yet."),
+    );
   });
 
-  it("uses UTC-midnight for a selected date and clears it only after success", async () => {
-    vi.useFakeTimers({ shouldAdvanceTime: true });
-    vi.setSystemTime(new Date("2026-01-15T23:59:59.999Z"));
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+  it("retains a staged replacement after Remove and keeps Save available", async () => {
+    const user = userEvent.setup();
+    const clients = testClients("assigned");
+    renderWorkspace(clients);
+    await waitFor(() => expect(screen.getByTestId("saved-move")).toBeVisible());
+    await user.click(screen.getByTestId("move-d2-d4"));
+    await user.click(screen.getByRole("button", { name: "Remove" }));
+    const dialog = await screen.findByRole("alertdialog", { name: "Remove preferred move?" });
+    await user.click(within(dialog).getByRole("button", { name: "Remove" }));
+
+    await waitFor(() =>
+      expect(screen.getByTestId("saved-move")).toHaveTextContent("No saved choice yet."),
+    );
+    expect(screen.getByTestId("staged-move")).toHaveTextContent("d4");
+    expect(screen.getByRole("button", { name: "Save" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Change effective date" })).toBeDisabled();
+    expect(historyEntry("Initial position")).toHaveAttribute("aria-current", "step");
+    expect(clients.preferredMoveClient.put).not.toHaveBeenCalled();
+  });
+
+  it("keeps saved and staged facts during Save and clears staging only after refreshed confirmation", async () => {
+    const user = userEvent.setup();
+    const clients = testClients("assigned");
+    let savedMove = { uci: "e2e4", san: "e4" };
+    let resolvePut!: (result: PreferredMoveMutationResult) => void;
+    let resolveRefresh!: (result: PreferredMoveResult) => void;
+    let getCalls = 0;
+    const preferredMoveClient: PreferredMoveClient = {
+      get: vi.fn(async (fen) => {
+        getCalls += 1;
+        if (getCalls === 1) {
+          return {
+            status: "success" as const,
+            data: {
+              fen,
+              state: "assigned" as const,
+              move: savedMove,
+              effective_at: "2026-01-01T00:00:00.000000Z",
+            },
+          };
+        }
+        return new Promise<PreferredMoveResult>((resolve) => (resolveRefresh = resolve));
+      }),
+      put: vi.fn(
+        ({ fen }) =>
+          new Promise<PreferredMoveMutationResult>((resolve) => {
+            resolvePut = (result) => {
+              savedMove = { uci: "d2d4", san: "d4" };
+              resolve(result);
+            };
+            void fen;
+          }),
+      ),
+      remove: clients.preferredMoveClient.remove,
+    };
+    renderWorkspace({
+      preferredMoveClient,
+      positionContextClient: clients.positionContextClient,
+    });
+    await waitFor(() => expect(screen.getByTestId("saved-move")).toBeVisible());
+    await user.click(screen.getByTestId("move-d2-d4"));
+    await user.click(screen.getByRole("button", { name: "Save" }));
+
+    await screen.findByText("Saving preferred move...", { exact: true });
+    expect(screen.getByTestId("saved-move")).toHaveTextContent("e4");
+    expect(screen.getByTestId("staged-move")).toHaveTextContent("d4");
+    expect(screen.getByRole("button", { name: "Save" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Remove" })).toBeDisabled();
+    expect(historyEntry("Initial position")).toHaveAttribute("aria-current", "step");
+    expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", AFTER_D4_FEN);
+
+    resolvePut({
+      status: "success",
+      data: {
+        fen: STARTING_FEN,
+        changed: true,
+        effective_at: "2026-01-01T00:00:00.000000Z",
+      },
+    });
+    await waitFor(() => expect(getCalls).toBe(2));
+    expect(screen.getByTestId("saved-move")).toHaveTextContent("e4");
+    expect(screen.getByTestId("staged-move")).toHaveTextContent("d4");
+
+    resolveRefresh({
+      status: "success",
+      data: {
+        fen: STARTING_FEN,
+        state: "assigned",
+        move: savedMove,
+        effective_at: "2026-01-01T00:00:00.000000Z",
+      },
+    });
+    await waitFor(() => expect(screen.getByTestId("saved-move")).toHaveTextContent("d4"));
+    expect(screen.getByTestId("staged-move")).toHaveTextContent("No move staged.");
+    expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", STARTING_FEN);
+    expect(historyEntry("Initial position")).toHaveAttribute("aria-current", "step");
+    expect(screen.getByTestId("session-status")).toHaveTextContent("Preferred move saved.");
+  });
+
+  it("retains confirmed saved and staged facts while Remove is pending and after failure", async () => {
+    const user = userEvent.setup();
+    const clients = testClients("assigned");
+    let resolveRemove!: (result: PreferredMoveMutationResult) => void;
+    clients.preferredMoveClient.remove = vi.fn(
+      () => new Promise<PreferredMoveMutationResult>((resolve) => (resolveRemove = resolve)),
+    );
+    renderWorkspace(clients);
+    await waitFor(() => expect(screen.getByTestId("saved-move")).toBeVisible());
+    await user.click(screen.getByTestId("move-d2-d4"));
+    await user.click(screen.getByRole("button", { name: "Remove" }));
+    const dialog = await screen.findByRole("alertdialog", { name: "Remove preferred move?" });
+    await user.click(within(dialog).getByRole("button", { name: "Remove" }));
+
+    await screen.findByText("Removing preferred move...", { exact: true });
+    expect(screen.getByTestId("saved-move")).toHaveTextContent("e4");
+    expect(screen.getByTestId("staged-move")).toHaveTextContent("d4");
+    resolveRemove({ status: "unexpected_failure" });
+
+    await waitFor(() =>
+      expect(screen.getByRole("alert")).toHaveTextContent(
+        "The preferred move could not be updated. Try again.",
+      ),
+    );
+    expect(screen.getByTestId("saved-move")).toHaveTextContent("e4");
+    expect(screen.getByTestId("staged-move")).toHaveTextContent("d4");
+    expect(screen.getByRole("button", { name: "Save" })).toBeEnabled();
+  });
+
+  it("keeps date changes visibly disabled without opening a calendar or issuing a request", async () => {
+    const user = userEvent.setup();
     const clients = testClients();
     renderWorkspace(clients);
 
     await waitFor(() => expect(screen.getByText("Never seen as White")).toBeVisible());
     await user.click(screen.getByTestId("move-e2-e4"));
-    await user.click(screen.getByRole("button", { name: "Effective date: Choose date" }));
-    expect(screen.getByRole("button", { name: "Effective date: 2026-01-10" })).toBeVisible();
+    const dateButton = screen.getByRole("button", { name: "Change effective date" });
+    expect(dateButton).toBeDisabled();
+    expect(dateButton).toHaveAccessibleDescription("Date changes are temporarily unavailable");
+    await user.click(dateButton);
+    expect(screen.queryByTestId("calendar-date-popup")).not.toBeInTheDocument();
+    expect(clients.preferredMoveClient.put).not.toHaveBeenCalled();
+    expect(clients.preferredMoveClient.remove).not.toHaveBeenCalled();
 
     await user.click(screen.getByRole("button", { name: "Save" }));
     await waitFor(() => expect(clients.preferredMoveClient.put).toHaveBeenCalledTimes(1));
     expect(clients.preferredMoveClient.put).toHaveBeenCalledWith(
-      { fen: STARTING_FEN, move_uci: "e2e4", effective_at: "2026-01-10T00:00:00.000Z" },
+      { fen: STARTING_FEN, move_uci: "e2e4", effective_at: "" },
       { signal: expect.any(AbortSignal) },
     );
-    expect(screen.getByRole("button", { name: "Effective date: 2026-01-10" })).toBeVisible();
+    expect(screen.queryByTestId("calendar-date-popup")).not.toBeInTheDocument();
   });
 
-  it("retains the staged move and date when a mutation fails", async () => {
-    vi.useFakeTimers({ shouldAdvanceTime: true });
-    vi.setSystemTime(new Date("2026-01-15T23:59:59.999Z"));
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+  it("retains the staged move and disabled date gate when a mutation fails", async () => {
+    const user = userEvent.setup();
     const clients = testClients();
     let resolveMutation!: (result: PreferredMoveMutationResult) => void;
     clients.preferredMoveClient.put = vi.fn(
@@ -217,7 +353,6 @@ describe("RepertoireBuilderWorkspace workflow", () => {
 
     await waitFor(() => expect(screen.getByText("Never seen as White")).toBeVisible());
     await user.click(screen.getByTestId("move-e2-e4"));
-    await user.click(screen.getByRole("button", { name: "Effective date: Choose date" }));
     await user.click(screen.getByRole("button", { name: "Save" }));
 
     const mutationMessage = await screen.findByText("Saving preferred move...", { exact: true });
@@ -239,7 +374,7 @@ describe("RepertoireBuilderWorkspace workflow", () => {
     );
     expect(screen.getAllByRole("alert")).toHaveLength(1);
     expect(clients.preferredMoveClient.put).toHaveBeenCalledWith(
-      { fen: STARTING_FEN, move_uci: "e2e4", effective_at: "2026-01-10T00:00:00.000Z" },
+      { fen: STARTING_FEN, move_uci: "e2e4", effective_at: "" },
       { signal: expect.any(AbortSignal) },
     );
     expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", AFTER_E4_FEN);
@@ -249,7 +384,10 @@ describe("RepertoireBuilderWorkspace workflow", () => {
     expect(historyEntry("Initial position")).toBeVisible();
     expect(screen.getByTestId("session-status")).toHaveTextContent("My move staged: e4.");
     expect(screen.getAllByText("My move staged: e4.", { exact: true })).toHaveLength(1);
-    expect(screen.getByRole("button", { name: "Effective date: 2026-01-10" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Change effective date" })).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: "Change effective date" }),
+    ).toHaveAccessibleDescription("Date changes are temporarily unavailable");
   });
 
   it("activates a displayed Best candidate through the same local move path", async () => {
@@ -417,7 +555,9 @@ describe("RepertoireBuilderWorkspace workflow", () => {
 
     expect(within(session).getByTestId("session-move-history")).toBeVisible();
     expect(within(session).getByTestId("session-status")).toHaveAttribute("aria-live", "polite");
-    expect(within(session).getByRole("heading", { name: "Preferred move" })).toBeVisible();
+    expect(
+      within(session).getByRole("heading", { name: "What is saved, and what is staged?" }),
+    ).toBeVisible();
 
     expect(await axe.run(container)).toHaveNoViolations();
   });

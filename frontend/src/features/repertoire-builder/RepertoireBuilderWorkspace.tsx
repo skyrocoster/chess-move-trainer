@@ -423,10 +423,12 @@ export default function RepertoireBuilderWorkspace({
           contextLoading={workflow.contextLoading}
           contextError={workflow.contextError}
           workflowError={workflow.workflowError}
+          dateEdit={workflow.dateEdit}
           onDateChange={workflow.onDateChange}
           onSave={workflow.onSave}
           onPlaySavedMove={workflow.onPlaySavedMove}
           onRemove={workflow.onRemove}
+          onRetry={workflow.onRetry}
         />
         <div className={styles.analysis}>
           <AnalysisPanel

@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
+import { Chess, type Square } from "chess.js";
 import type { ComponentProps } from "react";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -163,22 +164,32 @@ export function testClients(
 ) {
   let state = initialState;
   let effectiveAt = state === "assigned" ? initialEffectiveAt : null;
+  let savedMove = state === "assigned" ? { uci: "e2e4", san: "e4" } : null;
   const preferredMoveClient: PreferredMoveClient = {
     get: vi.fn(async (fen) => ({
       status: "success" as const,
       data: {
         ...preferredMoveResponse(fen, state),
+        move: savedMove,
         effective_at: state === "assigned" ? effectiveAt : null,
       },
     })),
-    put: vi.fn(async ({ fen, effective_at }) => {
+    put: vi.fn(async ({ fen, move_uci, effective_at }) => {
       state = "assigned";
       effectiveAt = effective_at || "2026-01-01T00:00:00.000000Z";
+      const chess = new Chess(fen);
+      const move = chess.move({
+        from: move_uci.slice(0, 2) as Square,
+        to: move_uci.slice(2, 4) as Square,
+        ...(move_uci.length === 5 ? { promotion: move_uci.slice(4) as "q" | "r" | "b" | "n" } : {}),
+      });
+      savedMove = { uci: move_uci, san: move.san };
       return mutationResponse(fen);
     }),
     remove: vi.fn(async ({ fen }) => {
       state = "unassigned";
       effectiveAt = null;
+      savedMove = null;
       return mutationResponse(fen);
     }),
   };

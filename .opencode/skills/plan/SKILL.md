@@ -6,8 +6,9 @@ description: "Use during PHASE: WRITE PLAN to create or refine one approved focu
 # Plan
 
 Require an approved target under `docs/plans/active/<feature>/<feature>.md`, outcome, scope, stage shape, proof,
-acceptance, and escalation boundaries. Reuse retained assessment facts; read only `docs/PLAN_TEMPLATE.md`, the
-router, and an existing matching Plan when present. Never implement.
+acceptance, and escalation boundaries. Reuse retained assessment facts; read `docs/PLAN_TEMPLATE.md`, the router,
+an existing matching Plan when present, and any upstream evidence explicitly declared by the approved packet or
+existing Plan. Do not search for or require design evidence when none is declared. Never implement.
 
 Write the compact template exactly enough to preserve:
 
@@ -18,6 +19,12 @@ Write the compact template exactly enough to preserve:
   earlier result;
 - concise progress and decisions; and
 - escalation boundaries for any decision not already settled.
+
+When signed-off design evidence is declared, add the template's compact `Design fidelity` section. Identify each
+artifact's authority, preserve only the small set of implementation-critical visual or interaction anchors, state
+allowed canonical adaptations and excluded artifact chrome, and attach each anchor to a stage acceptance check or
+real visual breakpoint. Link to detailed upstream sections instead of copying them. Omit this section when no
+signed-off design evidence exists.
 
 Expected areas describe ownership; they are not exact executor authorization. Do not add parallel stages,
 transient execution logs, speculative work, or legacy records. Preserve truthful completed progress when refining

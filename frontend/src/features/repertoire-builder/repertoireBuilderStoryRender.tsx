@@ -57,12 +57,12 @@ export function workspace(
 
 export function assignedWorkspace(
   props: ComponentProps<typeof RepertoireBuilderWorkspace> = {},
-  preferredOptions: Omit<StoryPreferredMoveOptions, "initialState"> = {},
+  preferredOptions: StoryPreferredMoveOptions = {},
   contextOptions: StoryPositionContextOptions = {},
 ) {
   return workspace(
     props,
-    { initialState: "assigned", ...preferredOptions },
+    { relationship: "saved", ...preferredOptions },
     { ...R2_ASSIGNED_CONTEXT, ...contextOptions },
   );
 }

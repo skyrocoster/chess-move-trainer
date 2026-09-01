@@ -1,10 +1,46 @@
 .panel {
+  --preferred-accent: var(--cmt-info-accent);
   display: grid;
-  gap: var(--cmt-spacing-12);
+  gap: var(--cmt-spacing-16);
+  min-inline-size: 0;
   padding: var(--cmt-spacing-16);
   border: 1px solid var(--md-sys-color-outline-variant);
+  border-block-start: var(--cmt-spacing-4) solid var(--preferred-accent);
   border-radius: var(--cmt-radius-default);
   background: var(--md-sys-color-surface-container);
+  color: var(--md-sys-color-on-surface);
+}
+
+.toneReady {
+  --preferred-accent: var(--cmt-warning-accent);
+}
+
+.toneSaved,
+.toneMatching {
+  --preferred-accent: var(--cmt-success-accent);
+}
+
+.toneBlocked {
+  --preferred-accent: var(--cmt-error-accent);
+}
+
+.toneChecking {
+  --preferred-accent: var(--cmt-info-accent);
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--cmt-spacing-16);
+  min-inline-size: 0;
+}
+
+.kicker {
+  color: var(--md-sys-color-on-surface-variant);
+  font: var(--md-sys-typescale-label-small);
+  letter-spacing: var(--md-sys-typescale-label-small-letter-spacing);
+  text-transform: uppercase;
 }
 
 .heading,
@@ -13,47 +49,110 @@
 }
 
 .heading {
+  margin-block-start: var(--cmt-spacing-4);
   color: var(--md-sys-color-on-surface);
-  font: var(--md-sys-typescale-title-medium);
+  font: var(--md-sys-typescale-title-large);
+}
+
+.status {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: var(--cmt-spacing-8);
+  max-inline-size: 100%;
+  padding: var(--cmt-spacing-8) var(--cmt-spacing-12);
+  border: 1px solid var(--preferred-accent);
+  border-radius: var(--cmt-radius-12);
+  color: var(--preferred-accent);
+  font: var(--md-sys-typescale-label-small);
+  text-align: center;
+}
+
+.status::before {
+  inline-size: var(--cmt-spacing-8);
+  block-size: var(--cmt-spacing-8);
+  flex: 0 0 var(--cmt-spacing-8);
+  border-radius: 50%;
+  background: currentColor;
+  content: "";
 }
 
 .context,
-.instruction,
-.savedMove,
-.stagedMove,
-.effectiveDate {
+.gate {
   color: var(--md-sys-color-on-surface-variant);
-  font: var(--md-sys-typescale-body-medium);
+  font: var(--md-sys-typescale-body-small);
+  overflow-wrap: anywhere;
 }
 
-.savedMove {
-  color: var(--md-sys-color-on-surface);
+.gate {
+  padding-inline-start: var(--cmt-spacing-12);
+  border-inline-start: var(--cmt-spacing-4) solid var(--preferred-accent);
 }
 
-.stagedMove {
-  color: var(--md-sys-color-primary);
-}
-
-.effectiveDate strong {
-  color: var(--md-sys-color-on-surface);
-}
-
-.actions {
+.feedbackRow {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--cmt-spacing-8);
   align-items: center;
-}
-
-.date {
-  display: grid;
   gap: var(--cmt-spacing-8);
-  justify-items: start;
+  min-inline-size: 0;
 }
 
-.dateLabel {
+.feedbackRow > :first-child {
+  flex: 1 1 14rem;
+  min-inline-size: 0;
+}
+
+.relationship {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: var(--cmt-spacing-8);
+  align-items: stretch;
+  min-inline-size: 0;
+}
+
+.relationship > * {
+  min-inline-size: 0;
+}
+
+.consequence {
+  min-inline-size: 0;
+}
+
+.consequence > p {
+  margin: 0;
+}
+
+.footer {
+  min-inline-size: 0;
+  border-block-start: 1px solid var(--md-sys-color-outline-variant);
+  padding-block-start: var(--cmt-spacing-16);
+}
+
+.actionLayout {
+  justify-content: flex-end;
+  min-inline-size: 0;
+}
+
+.actionLayout > * {
+  min-inline-size: 0;
+}
+
+.actionIcon {
+  inline-size: var(--cmt-spacing-16);
+  block-size: var(--cmt-spacing-16);
+}
+
+.dateAction {
+  display: grid;
+  gap: var(--cmt-spacing-4);
+  justify-items: start;
+  min-inline-size: 0;
+}
+
+.dateUnavailable {
   color: var(--md-sys-color-on-surface-variant);
-  font: var(--md-sys-typescale-label-large);
+  font: var(--md-sys-typescale-body-small);
+  overflow-wrap: anywhere;
 }
 
 .dialogBackdrop {
@@ -98,6 +197,47 @@
   font: var(--md-sys-typescale-body-medium);
 }
 
+.dialogActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--cmt-spacing-8);
+}
+
+@media (max-width: 40rem) {
+  .header {
+    flex-direction: column;
+  }
+
+  .status {
+    align-self: flex-start;
+  }
+
+  .relationship {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .actionLayout {
+    justify-content: flex-start;
+  }
+
+  .actionLayout > * {
+    flex: 1 1 10rem;
+  }
+
+  .dateAction {
+    flex: 1 1 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panel,
+  .relationship,
+  .actionLayout {
+    transition: none;
+  }
+}
+
 @media (forced-colors: active) {
   .panel,
   .dialogPopup {
@@ -106,22 +246,27 @@
     color: CanvasText;
   }
 
-  .dialogBackdrop {
+  .panel {
+    border-block-start-color: Highlight;
+  }
+
+  .status,
+  .gate {
+    border-color: ButtonBorder;
+    color: CanvasText;
+  }
+
+  .status::before {
     background: CanvasText;
   }
 
   .heading,
-  .savedMove,
-  .effectiveDate strong,
-  .dialogTitle {
-    color: CanvasText;
-  }
-
   .context,
-  .instruction,
-  .effectiveDate,
+  .gate,
+  .dateUnavailable,
+  .dialogTitle,
   .dialogDescription,
-  .dateLabel {
+  .kicker {
     color: CanvasText;
   }
 }

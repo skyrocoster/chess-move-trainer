@@ -1,7 +1,7 @@
 import "../../styles/cmt-tokens.css";
 import "../../styles/cmt-typescale.css";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { expect, fn, userEvent, within } from "storybook/test";
+import { expect, fn, userEvent, waitFor, within } from "storybook/test";
 import { useState, type ReactNode } from "react";
 
 import { CalendarDate, type CalendarDateProps, type CalendarDateValue } from "./CalendarDate";
@@ -144,7 +144,9 @@ export const Blank: Story = {
     await expect(within(dialog).getByRole("button", { name: "Clear date" })).toBeDisabled();
 
     await userEvent.keyboard("{Escape}");
-    await expect(body.queryByRole("dialog", { name: "Date" })).not.toBeInTheDocument();
+    await waitFor(() =>
+      expect(body.queryByRole("dialog", { name: "Date" })).not.toBeInTheDocument(),
+    );
     await expect(trigger).toHaveFocus();
   },
 };

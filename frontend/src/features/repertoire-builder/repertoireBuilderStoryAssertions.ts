@@ -39,7 +39,9 @@ export async function expectSessionBoundary(canvasElement: HTMLElement): Promise
   await expect(status).toBeVisible();
   await expect(status).toHaveAttribute("role", "status");
   await expect(status).toHaveAttribute("aria-live", "polite");
-  await expect(sessionContent.getByRole("heading", { name: "Preferred move" })).toBeVisible();
+  await expect(
+    sessionContent.getByRole("heading", { name: "What is saved, and what is staged?" }),
+  ).toBeVisible();
 }
 
 export async function expectSessionHistory(
@@ -66,15 +68,20 @@ export async function expectActiveSessionHistoryEntry(
 }
 
 export async function expectSingleStagedStatus(canvasElement: HTMLElement): Promise<void> {
+  return expectStagedStatus(canvasElement, "e4");
+}
+
+export async function expectStagedStatus(canvasElement: HTMLElement, san: string): Promise<void> {
   const canvas = within(canvasElement);
   const session = within(canvas.getByTestId("repertoire-session"));
-  await expect(session.getByTestId("session-status")).toHaveTextContent("My move staged: e4.");
-  await expect(canvas.getAllByText("My move staged: e4.", { exact: true })).toHaveLength(1);
+  const status = `My move staged: ${san}.`;
+  await expect(session.getByTestId("session-status")).toHaveTextContent(status);
+  await expect(canvas.getAllByText(status, { exact: true })).toHaveLength(1);
 }
 
 export async function expectPreferredMoveState(
   canvasElement: HTMLElement,
-  state: "empty" | "first-choice" | "saved" | "replacement" | "matching",
+  state: "empty" | "first-choice" | "saved" | "replacement" | "matching" | "unknown",
 ): Promise<void> {
   const panel = canvasElement.querySelector(`section[aria-labelledby="preferred-move-heading"]`);
   if (!(panel instanceof HTMLElement)) {
@@ -82,6 +89,44 @@ export async function expectPreferredMoveState(
   }
   await expect(panel).toHaveAttribute("data-state", state);
   await expect(panel).toBeVisible();
+}
+
+export async function expectPreferredActions(
+  canvasElement: HTMLElement,
+  actions: readonly string[],
+): Promise<void> {
+  const panel = canvasElement.querySelector('section[aria-labelledby="preferred-move-heading"]');
+  if (!(panel instanceof HTMLElement)) {
+    throw new Error("The preferred move panel is missing.");
+  }
+  const actual = within(panel)
+    .queryAllByRole("button")
+    .map((button) => button.textContent?.trim() ?? "")
+    .filter((label) => ["Save", "Change effective date", "Remove"].includes(label));
+  await expect(actual).toEqual(actions);
+}
+
+export async function expectDeferredDateAction(canvasElement: HTMLElement): Promise<void> {
+  const panel = canvasElement.querySelector('section[aria-labelledby="preferred-move-heading"]');
+  if (!(panel instanceof HTMLElement)) {
+    throw new Error("The preferred move panel is missing.");
+  }
+  const scoped = within(panel);
+  const date = scoped.getByRole("button", { name: "Change effective date" });
+  await expect(date).toBeDisabled();
+  await expect(date).toHaveAccessibleDescription("Date changes are temporarily unavailable");
+  await expect(scoped.queryByTestId("calendar-date-popup")).not.toBeInTheDocument();
+}
+
+export async function expectNoPreferredActions(canvasElement: HTMLElement): Promise<void> {
+  const panel = canvasElement.querySelector('section[aria-labelledby="preferred-move-heading"]');
+  if (!(panel instanceof HTMLElement)) {
+    throw new Error("The preferred move panel is missing.");
+  }
+  const scoped = within(panel);
+  for (const label of ["Add", "Edit", "Cancel edit", "Save replacement", "Play saved move"]) {
+    await expect(scoped.queryByRole("button", { name: label })).not.toBeInTheDocument();
+  }
 }
 
 export async function expectPositionReachFrequency(

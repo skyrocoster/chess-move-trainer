@@ -38,10 +38,6 @@ export type RepertoirePositionModel = {
   staged: RepertoireStagedMoveFact | null;
   comparison: PreferredMoveComparison;
   relationship: RepertoirePositionRelationship;
-  savedMove: PreferredMoveValue | null;
-  savedMoveVisible: boolean;
-  stagedMove: PositionPickerMoveRecord | null;
-  effectiveAt: string | null;
 };
 
 function colorLabel(color: ChessSide): "White" | "Black" {
@@ -103,8 +99,6 @@ export function deriveRepertoirePositionModel({
           : comparison === "matching"
             ? "matching"
             : "replacement";
-  const effectiveAt = saved?.effectiveAt ?? null;
-
   return {
     sourceFen,
     bottomColor,
@@ -122,10 +116,6 @@ export function deriveRepertoirePositionModel({
     staged: stagedFact,
     comparison,
     relationship,
-    savedMove,
-    savedMoveVisible: savedMove !== null,
-    stagedMove: stagedFact?.move ?? null,
-    effectiveAt,
   };
 }
 

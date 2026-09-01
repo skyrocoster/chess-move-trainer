@@ -22,6 +22,11 @@ contradiction between them instead of inventing precedence. The document should 
 - current repository components, models, APIs, ownership boundaries, and focused tests affected; and
 - settled invariants and unresolved technical facts clearly separated.
 
+Include a compact adoption boundary that distinguishes details canonical implementation must preserve, details it
+may translate onto repository conventions, and artifact-only content it must exclude. Give the most important
+visual or interaction anchors stable section references so a downstream Plan can link them without copying the
+whole document.
+
 Keep the document implementation-ready but not implementation-prescriptive. Do not define Plan stages, progress,
 proof execution, lifecycle mechanics, or implementation authorization. The final mock-up communicates composition;
 the design document communicates behavior, constraints, and repository meaning.

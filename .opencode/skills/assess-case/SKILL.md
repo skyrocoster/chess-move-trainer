@@ -9,11 +9,16 @@ Investigate one bounded request and select the smallest safe route. Never edit, 
 downstream work.
 
 1. Read `docs/README.md`, the relevant active Plan or destination record when one exists, the owning source,
-   focused tests, and only the nearest consumer or precedent needed to establish the change shape.
+   focused tests, and only the nearest consumer or precedent needed to establish the change shape. When the request
+   or existing record declares upstream evidence, read the relevant declared artifacts too; do not require or search
+   for a design document when none is declared.
 2. Separate observed facts from desired behavior. Treat grilling records and master plans as optional evidence,
    not mandatory steps.
 3. Define the observable outcome, included and excluded behavior, expected paths, implementation-critical facts,
    proof, acceptance, useful support skills, and exact escalation boundary.
+4. For a design-backed UI outcome, identify which declared artifact governs composition and which document governs
+   behavior or repository meaning. Extract only the fidelity anchors, allowed adaptations, excluded artifact chrome,
+   and visual breakpoint needed downstream. Do not duplicate the full design hand-off.
 
 Choose:
 
@@ -30,9 +35,11 @@ TARGET: <surface or destination>
 OUTCOME: <observable result>
 ROUTE BASIS: <why this is the smallest safe route>
 EVIDENCE: <concise path:line or symbol facts>
+UPSTREAM: none | <declared evidence, each artifact's authority, and relevant read trigger>
 SCOPE: <included behavior; expected paths; explicit exclusions>
 CHANGE SHAPE: <one logical change, sequential stages, or selectable slices>
 KNOWN FACTS: <facts execution must preserve>
+FIDELITY: n/a | <compact anchors, allowed adaptations, excluded artifact content, and visual breakpoint>
 SUPPORT SKILLS: none | <explicit skill names and purpose>
 PROOF: <regression guard, exact focused commands, full/live proof when required>
 ACCEPTANCE: <observable pass condition and any real breakpoint>

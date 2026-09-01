@@ -12,7 +12,7 @@ authoring and execution guidance lives in the `plan` and `execute` skills.
 > **Status:** pending | in progress | done - <short progress and next boundary>
 
 - **Read trigger:** <when this Plan must be read>
-- **Upstream:** <links to settled grilling or master-plan evidence, or none>
+- **Upstream:** <declared signed-off design, grilling, master-plan, or other governing evidence; or none>
 
 ## Outcome
 <The semantic human-visible result and why it matters.>
@@ -21,6 +21,16 @@ authoring and execution guidance lives in the `plan` and `execute` skills.
 - **Included:** <behavior and ownership areas included>
 - **Expected areas:** `<bounded source or documentation globs>`
 - **Excluded:** <adjacent behavior, refactors, contracts, and paths excluded>
+
+## Design fidelity
+<Include only when signed-off design evidence is declared; otherwise omit this section.>
+
+- **Authority:** <artifact and role, such as visual composition or behavior/repository meaning>
+- **Excluded artifact content:** <review chrome, demo controls, annotations, or none>
+
+| Anchor | Preserve | Allowed adaptation | Acceptance |
+|---|---|---|---|
+| <upstream section, selector, or state> | <implementation-critical detail> | <canonical translation allowed> | <stage check or visual breakpoint> |
 
 ## Stages
 1. **pending** - <sequential AI-focused stage and its outcome>
@@ -50,7 +60,10 @@ missing or invalidated proof.
 - Use semantic outcomes, expected areas, and exclusions rather than exact executor authorization lists.
 - Keep stages AI-focused and ordered. Record `pending`, `in progress`, or `done` with concise proof and
   breakpoint decisions.
-- Link upstream evidence and restate only implementation-critical facts.
+- Link declared upstream evidence when present and restate only implementation-critical facts.
+- Do not require or search for design evidence for an ordinary Plan. When signed-off design evidence is declared,
+  read it, include the compact `Design fidelity` section, and connect every listed anchor to stage acceptance or a
+  real visual breakpoint. Keep detailed design content upstream rather than duplicating it in the Plan.
 - Human pauses are for genuine product or visual decisions. User edits at a visual breakpoint are authoritative.
 - Prescribe only finite behavioral tests or browser scenarios that directly prove this Plan's outcome. Exclude lint,
   formatting, broad type/build, source-size, aggregate, and repository-hygiene checks unless the outcome specifically

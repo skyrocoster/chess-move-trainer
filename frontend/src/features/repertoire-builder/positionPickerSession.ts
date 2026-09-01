@@ -211,14 +211,6 @@ export function playAndStagePositionPickerMove(
   return result?.disposition === "staged" ? result : null;
 }
 
-export function appendPositionPickerMove(
-  session: PositionPickerSession,
-  move: PositionPickerMove,
-): PositionPickerSession | null {
-  const moveRecord = positionAfterMove(session, move);
-  return moveRecord ? appendMove(session, moveRecord) : null;
-}
-
 /** Returns the one represented line: the complete stored prefix then local continuation. */
 export function positionPickerHistory(session: PositionPickerSession): readonly GamePosition[] {
   return [...session.prefix, ...session.localContinuation];

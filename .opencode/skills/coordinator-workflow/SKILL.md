@@ -34,9 +34,13 @@ exploration funnel a Plan lifecycle.
 Ask the user only when an answer changes the outcome, behavior, contract, dependency, destructive effect, or
 acceptance. Handle the case-worker result as follows:
 
-- `DIRECT-CANDIDATE`: resume with `PHASE: EXECUTE DIRECT` and the approved execution packet.
+- `DIRECT-CANDIDATE`: resume with `PHASE: EXECUTE DIRECT` and the approved execution packet, including any
+  declared upstream reads and fidelity requirements from assessment.
 - `PLAN-CANDIDATE`: resume with `PHASE: WRITE PLAN`, the approved Plan path, outcome, scope, stages, proof,
-  acceptance, and escalation boundaries.
+  acceptance, escalation boundaries, and any upstream evidence explicitly declared by the assessment. When that
+  evidence includes a signed-off design, include its authority roles, compact fidelity anchors, allowed adaptations,
+  excluded artifact content, and required visual breakpoint. Do not introduce design-document requirements for a
+  case whose assessment declares no such evidence.
 - `MASTER-PLAN-CANDIDATE`: obtain explicit user approval for the destination and slice envelope, then resume with
   `PHASE: WRITE MASTER PLAN`. Do not implement or choose a slice.
 - `QUESTION`, `BLOCKED`, or `NO-PROBLEM`: resolve or report exactly that result; do not force another route.
@@ -58,6 +62,12 @@ escalation boundaries. For a Plan, execute one stage at a time with `PHASE: EXEC
 run in parallel. The coordinator may split an oversized stage only when the Plan outcome and acceptance remain
 unchanged.
 
+When the Plan or approved case declares upstream evidence relevant to the stage, include those artifacts as
+approved read-only paths and carry forward the applicable read trigger and fidelity anchors. For a design-backed
+visual stage, require representative visual evidence or a human visual breakpoint; behavioral tests, DOM checks,
+accessibility checks, and no-overflow checks cannot alone satisfy visual fidelity. No extra visual process applies
+when no signed-off visual evidence is declared.
+
 Review the returned proof and diff scope. Do not silently expand behavior. User edits at a visual breakpoint are
 authoritative: bound them, preserve them, and continue from the resulting state.
 
@@ -71,7 +81,9 @@ must not be used merely to rerun already-covered tests.
 ## 4. Accept and record
 
 Accept implementation when finite behavioral tests or browser scenarios establish the Plan or direct-change outcome
-and all required human or visual breakpoints pass. Do not use lint, formatting, broad type/build, source-size,
+and all required human or visual breakpoints pass. A stage governed by declared signed-off visual evidence remains
+unaccepted until its fidelity anchors have visual evidence or the named human breakpoint passes; record intentional
+canonical adaptations and reject unexplained drift. Do not use lint, formatting, broad type/build, source-size,
 aggregate, or other repository-hygiene checks as implementation proof unless the outcome specifically changes that
 tool or constraint. Temporary maintenance violations do not block Plan acceptance; do not append a Quality phase or
 complete repository-suite closeout.

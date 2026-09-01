@@ -22,6 +22,7 @@ export type PreferredMoveChoiceBoxProps = {
   onActivate?: () => void;
   activationLabel?: string;
   disabled?: boolean;
+  "data-testid"?: string;
 };
 
 const TONE_ICON = {
@@ -31,6 +32,22 @@ const TONE_ICON = {
   empty: Minus,
   blocked: TriangleAlert,
 } as const;
+
+const TONE_CLASS: Record<PreferredMoveChoiceBoxTone, string> = {
+  saved: styles.choiceBoxSaved,
+  proposal: styles.choiceBoxProposal,
+  matching: styles.choiceBoxMatching,
+  empty: styles.choiceBoxEmpty,
+  blocked: styles.choiceBoxBlocked,
+};
+
+const ICON_CLASS: Record<PreferredMoveChoiceBoxTone, string> = {
+  saved: styles.boxIconSaved,
+  proposal: styles.boxIconProposal,
+  matching: styles.boxIconMatching,
+  empty: styles.boxIconEmpty,
+  blocked: styles.boxIconBlocked,
+};
 
 function joinClasses(...classes: Array<string | undefined>): string {
   return classes.filter(Boolean).join(" ");
@@ -44,14 +61,19 @@ export function PreferredMoveValue({ san, uci }: PreferredMoveValueProps) {
   return (
     <div className={styles.moveValue}>
       <span className={styles.san}>{san}</span>
-      {uci ? <span className={styles.uci}>{uci}</span> : null}
+      {uci ? (
+        <span className={styles.uci}>
+          {" "}
+          (<span>{uci}</span>)
+        </span>
+      ) : null}
     </div>
   );
 }
 
 export function PreferredMoveDateValue({ value }: { value: Date }) {
   return (
-    <div className={styles.dateValue}>
+    <div className={styles.dateValue} data-testid="effective-date">
       <span>Effective date</span>
       <strong>{formatUtcDate(value)}</strong>
     </div>
@@ -68,16 +90,20 @@ export function PreferredMoveChoiceBox({
   onActivate,
   activationLabel,
   disabled = false,
+  "data-testid": dataTestId,
 }: PreferredMoveChoiceBoxProps) {
   const Icon = TONE_ICON[tone];
   const content = (
     <>
       <div className={styles.boxTop}>
         <div className={styles.boxLabel}>
-          <span className={joinClasses(styles.boxIcon, styles[`boxIcon${tone}`])}>
+          <span className={joinClasses(styles.boxIcon, ICON_CLASS[tone])}>
             <Icon aria-hidden="true" focusable="false" />
           </span>
-          <span>{label}</span>
+          <span>
+            <span>{label}</span>
+            {move ? ": " : ""}
+          </span>
         </div>
       </div>
       {move ? (
@@ -96,16 +122,13 @@ export function PreferredMoveChoiceBox({
     return (
       <button
         type="button"
-        className={joinClasses(
-          styles.choiceBox,
-          styles[`choiceBox${tone[0].toUpperCase()}${tone.slice(1)}`],
-          styles.choiceBoxInteractive,
-        )}
+        className={joinClasses(styles.choiceBox, TONE_CLASS[tone], styles.choiceBoxInteractive)}
         aria-label={
           activationLabel ?? `${label}${move ? `: ${move.san}; play and stage this move.` : ""}`
         }
         onClick={onActivate}
         disabled={disabled}
+        data-testid={dataTestId}
       >
         {content}
       </button>
@@ -114,11 +137,9 @@ export function PreferredMoveChoiceBox({
 
   return (
     <section
-      className={joinClasses(
-        styles.choiceBox,
-        styles[`choiceBox${tone[0].toUpperCase()}${tone.slice(1)}`],
-      )}
+      className={joinClasses(styles.choiceBox, TONE_CLASS[tone])}
       aria-label={label}
+      data-testid={dataTestId}
     >
       {content}
     </section>

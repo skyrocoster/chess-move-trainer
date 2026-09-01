@@ -68,6 +68,8 @@ const profile = serverProfile();
 
 export default defineConfig({
   testDir: ".",
+  fullyParallel: true,
+  workers: 2,
   timeout: 15_000,
   use: { baseURL: "http://localhost:8444", headless: true },
   webServer:

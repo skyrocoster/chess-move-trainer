@@ -26,8 +26,16 @@ function success(fen: Fen): PreferredMoveResult {
   return { status: "success", data: response(fen) };
 }
 
-function Probe({ fen, client }: { fen: Fen | null; client: PreferredMoveReader }) {
-  const state = usePreferredMoveState(fen, client);
+function Probe({
+  fen,
+  client,
+  refreshKey = 0,
+}: {
+  fen: Fen | null;
+  client: PreferredMoveReader;
+  refreshKey?: number;
+}) {
+  const state = usePreferredMoveState(fen, client, refreshKey);
   return createElement(
     "output",
     { "data-testid": "state" },
@@ -146,6 +154,73 @@ describe("usePreferredMoveState", () => {
           effective_at: "2026-01-02T00:00:00.000000Z",
           loading: false,
           error: null,
+        }),
+      ),
+    );
+  });
+
+  it("retains the confirmed response while a same-position refresh is pending", async () => {
+    let resolveRefresh!: (result: PreferredMoveResult) => void;
+    const client = vi.fn<PreferredMoveReader>();
+    client.mockResolvedValueOnce(success(FEN));
+    client.mockImplementationOnce(
+      () => new Promise<PreferredMoveResult>((resolve) => (resolveRefresh = resolve)),
+    );
+    const view = render(createElement(Probe, { fen: FEN, client }));
+
+    await waitFor(() =>
+      expect(screen.getByTestId("state")).toHaveTextContent(
+        JSON.stringify({
+          fen: FEN,
+          effective_at: "2026-01-01T00:00:00.000000Z",
+          loading: false,
+          error: null,
+        }),
+      ),
+    );
+
+    view.rerender(createElement(Probe, { fen: FEN, client, refreshKey: 1 }));
+    await waitFor(() =>
+      expect(screen.getByTestId("state")).toHaveTextContent(
+        JSON.stringify({
+          fen: FEN,
+          effective_at: "2026-01-01T00:00:00.000000Z",
+          loading: true,
+          error: null,
+        }),
+      ),
+    );
+
+    resolveRefresh(success(FEN));
+    await waitFor(() =>
+      expect(screen.getByTestId("state")).toHaveTextContent(
+        JSON.stringify({
+          fen: FEN,
+          effective_at: "2026-01-01T00:00:00.000000Z",
+          loading: false,
+          error: null,
+        }),
+      ),
+    );
+  });
+
+  it("retains the confirmed response when a same-position refresh fails", async () => {
+    const client = vi
+      .fn<PreferredMoveReader>()
+      .mockResolvedValueOnce(success(FEN))
+      .mockResolvedValueOnce({ status: "preferred_move_unavailable" });
+    const view = render(createElement(Probe, { fen: FEN, client }));
+
+    await waitFor(() => expect(screen.getByTestId("state")).toHaveTextContent(FEN));
+    view.rerender(createElement(Probe, { fen: FEN, client, refreshKey: 1 }));
+
+    await waitFor(() =>
+      expect(screen.getByTestId("state")).toHaveTextContent(
+        JSON.stringify({
+          fen: FEN,
+          effective_at: "2026-01-01T00:00:00.000000Z",
+          loading: false,
+          error: "preferred_move_unavailable",
         }),
       ),
     );

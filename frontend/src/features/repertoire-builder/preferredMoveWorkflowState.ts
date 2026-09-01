@@ -1,6 +1,7 @@
 import {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -32,6 +33,22 @@ import {
 } from "./positionPickerSession";
 import type { PreferredMoveMutationKind } from "./PreferredMovePanel";
 
+export const PREFERRED_MOVE_DATE_UNAVAILABLE = "Date changes are temporarily unavailable";
+
+export type PreferredMoveDateCapability = {
+  available: false;
+  reason: typeof PREFERRED_MOVE_DATE_UNAVAILABLE;
+  onActivate: () => void;
+  onChange: (value: CalendarDateValue) => void;
+};
+
+const unavailableDateCapability: PreferredMoveDateCapability = {
+  available: false,
+  reason: PREFERRED_MOVE_DATE_UNAVAILABLE,
+  onActivate: () => undefined,
+  onChange: () => undefined,
+};
+
 type WorkflowArgs = {
   session: PositionPickerSession;
   sideToMove: ChessSide;
@@ -48,15 +65,23 @@ export type PreferredMoveWorkflowState = {
   preferredError: ReturnType<typeof usePreferredMoveState>["error"];
   contextLoading: boolean;
   contextError: ReturnType<typeof usePositionContextState>["error"];
-  stagedMove: PositionPickerSession["stagedMove"];
   date: CalendarDateValue;
+  dateEdit: PreferredMoveDateCapability;
   mutation: PreferredMoveMutationKind | null;
   workflowError: PreferredMoveFailureCode | null;
   onDateChange: (value: CalendarDateValue) => void;
   onSave: () => void;
   onPlaySavedMove: () => void;
   onRemove: () => void;
+  onRetry: () => void;
   reset: () => void;
+};
+
+type PendingRefresh = {
+  id: number;
+  key: number;
+  kind: PreferredMoveMutationKind;
+  stagedUci: string | null;
 };
 
 function moveFromUci(uci: string): PositionPickerMove | null {
@@ -81,33 +106,34 @@ export function usePreferredMoveWorkflow({
   setSessionStatus,
 }: WorkflowArgs): PreferredMoveWorkflowState {
   const [refreshToken, setRefreshToken] = useState(0);
-  const [explicitDate, setExplicitDate] = useState<CalendarDateValue>(null);
-  const [hasExplicitDate, setHasExplicitDate] = useState(false);
+  const [contextRefreshToken, setContextRefreshToken] = useState(0);
   const [mutation, setMutation] = useState<PreferredMoveMutationKind | null>(null);
   const [workflowError, setWorkflowError] = useState<PreferredMoveFailureCode | null>(null);
+  const [failedMutation, setFailedMutation] = useState<PreferredMoveMutationKind | null>(null);
+  const [pendingRefresh, setPendingRefresh] = useState<PendingRefresh | null>(null);
   const mutationId = useRef(0);
   const mutationController = useRef<AbortController | null>(null);
   const preferredReader = useCallback(
     (fen: string, options?: { asOf?: string; signal?: AbortSignal }) => {
-      void refreshToken;
       return preferredMoveClient.get(fen, options);
     },
-    [preferredMoveClient, refreshToken],
+    [preferredMoveClient],
   );
   const contextReader = useCallback(
-    (fen: string, signal?: AbortSignal) => {
-      void refreshToken;
-      return positionContextClient(fen, signal);
-    },
-    [positionContextClient, refreshToken],
+    (fen: string, signal?: AbortSignal) => positionContextClient(fen, signal),
+    [positionContextClient],
   );
   const selectedTransition = useMemo(() => positionPickerSelectedTransition(session), [session]);
   const focusedOwnerTransition =
     selectedTransition?.move.color === session.bottomColor ? selectedTransition : null;
   const preferredPositionFen =
     focusedOwnerTransition?.sourcePosition.fen ?? session.currentPosition.fen;
-  const preferredState = usePreferredMoveState(preferredPositionFen, preferredReader);
-  const contextState = usePositionContextState(session.currentPosition.fen, contextReader);
+  const preferredState = usePreferredMoveState(preferredPositionFen, preferredReader, refreshToken);
+  const contextState = usePositionContextState(
+    session.currentPosition.fen,
+    contextReader,
+    contextRefreshToken,
+  );
   const positionModel = useMemo(
     () =>
       deriveRepertoirePositionModel({
@@ -117,7 +143,9 @@ export function usePreferredMoveWorkflow({
         bottomColor: session.bottomColor,
         sourceFen: preferredPositionFen,
         stagedMove: session.stagedMove,
-        preferredMoveKnown: !preferredState.loading && preferredState.error === null,
+        preferredMoveKnown:
+          preferredState.preferredMove !== null ||
+          (!preferredState.loading && preferredState.error === null),
       }),
     [
       contextState.context,
@@ -137,8 +165,8 @@ export function usePreferredMoveWorkflow({
     mutationController.current = null;
     setMutation(null);
     setWorkflowError(null);
-    setExplicitDate(null);
-    setHasExplicitDate(false);
+    setFailedMutation(null);
+    setPendingRefresh(null);
   }, []);
 
   const reset = useCallback(() => {
@@ -150,36 +178,95 @@ export function usePreferredMoveWorkflow({
   }, [resetPositionState, session.currentPosition.fen, session.bottomColor]);
 
   const persistedDate = useMemo(() => {
-    if (!positionModel.effectiveAt) {
+    if (!positionModel.saved?.effectiveAt) {
       return null;
     }
-    const parsed = new Date(positionModel.effectiveAt);
+    const parsed = new Date(positionModel.saved.effectiveAt);
     return Number.isNaN(parsed.getTime()) ? null : normalizeToUtcMidnight(parsed);
-  }, [positionModel.effectiveAt]);
-  const date = hasExplicitDate ? explicitDate : persistedDate;
+  }, [positionModel.saved]);
+  const date = persistedDate;
+
+  useLayoutEffect(() => {
+    if (
+      pendingRefresh === null ||
+      preferredState.completedRefreshKey !== pendingRefresh.key ||
+      preferredState.loading
+    ) {
+      return;
+    }
+
+    if (preferredState.error !== null) {
+      setPendingRefresh(null);
+      setMutation(null);
+      setFailedMutation(null);
+      return;
+    }
+
+    const refreshed = preferredState.preferredMove;
+    const confirmed =
+      pendingRefresh.kind === "save"
+        ? refreshed?.state === "assigned" && refreshed.move?.uci === pendingRefresh.stagedUci
+        : refreshed?.state === "unassigned";
+    if (!confirmed) {
+      setPendingRefresh(null);
+      setMutation(null);
+      setFailedMutation(pendingRefresh.kind);
+      setWorkflowError("unexpected_failure");
+      return;
+    }
+
+    if (pendingRefresh.kind === "save") {
+      setSession((current) => {
+        const staged = current.stagedMove;
+        const stagedUci = staged
+          ? `${staged.sourceSquare}${staged.targetSquare}${staged.promotion ?? ""}`
+          : null;
+        return stagedUci === pendingRefresh.stagedUci ? { ...current, stagedMove: null } : current;
+      });
+    }
+    setPendingRefresh(null);
+    setMutation(null);
+    setFailedMutation(null);
+    setSessionStatus(
+      pendingRefresh.kind === "save" ? "Preferred move saved." : "Preferred move removed.",
+    );
+  }, [
+    pendingRefresh,
+    preferredState.completedRefreshKey,
+    preferredState.error,
+    preferredState.loading,
+    preferredState.preferredMove,
+    setSession,
+    setSessionStatus,
+  ]);
 
   const runMutation = useCallback(
     async (kind: PreferredMoveMutationKind) => {
       const ownTurn = sideToMove === session.bottomColor;
       const mutationFen = positionModel.sourceFen;
-      const mutationSavedMove = positionModel.savedMove;
+      const mutationSavedMove = positionModel.saved?.move ?? null;
       const canSave =
         ownTurn &&
         positionModel.saveability === "savable" &&
         positionModel.savedPresence !== "unknown" &&
         positionModel.relationship !== "matching" &&
-        positionModel.stagedMove !== null &&
+        positionModel.staged !== null &&
         !preferredState.loading &&
         preferredState.error === null &&
         !contextState.loading &&
         contextState.error === null;
-      const move = positionModel.stagedMove;
+      const move = positionModel.staged?.move ?? null;
 
       if (
         mutation !== null ||
+        pendingRefresh !== null ||
         (!ownTurn && kind === "remove") ||
         (kind === "save" && !canSave) ||
-        (kind === "remove" && !mutationSavedMove) ||
+        (kind === "remove" &&
+          (!mutationSavedMove ||
+            positionModel.savedPresence !== "present" ||
+            preferredState.loading ||
+            preferredState.error !== null)) ||
         (kind === "save" && !move)
       ) {
         return;
@@ -191,19 +278,19 @@ export function usePreferredMoveWorkflow({
       mutationController.current = controller;
       setMutation(kind);
       setWorkflowError(null);
-      const effectiveAt = explicitDate?.toISOString() ?? "";
+      setFailedMutation(null);
       const result = await (async () => {
         try {
           return kind === "remove"
             ? await preferredMoveClient.remove(
-                { fen: mutationFen, effective_at: effectiveAt },
+                { fen: mutationFen, effective_at: "" },
                 { signal: controller.signal },
               )
             : await preferredMoveClient.put(
                 {
                   fen: mutationFen,
                   move_uci: `${move!.sourceSquare}${move!.targetSquare}${move!.promotion ?? ""}`,
-                  effective_at: effectiveAt,
+                  effective_at: "",
                 },
                 { signal: controller.signal },
               );
@@ -216,34 +303,37 @@ export function usePreferredMoveWorkflow({
         return;
       }
       mutationController.current = null;
-      setMutation(null);
       if (result.status !== "success") {
+        setMutation(null);
+        setFailedMutation(kind);
         setWorkflowError(result.status);
         return;
       }
 
-      setExplicitDate(null);
-      setHasExplicitDate(false);
-      if (kind === "save") {
-        setSession((current) => ({ ...current, stagedMove: null }));
-      }
-      setSessionStatus(kind === "save" ? "Preferred move saved." : "Preferred move removed.");
-      setRefreshToken((value) => value + 1);
+      const nextRefreshToken = refreshToken + 1;
+      setPendingRefresh({
+        id,
+        key: nextRefreshToken,
+        kind,
+        stagedUci: kind === "save" ? (positionModel.staged?.uci ?? null) : null,
+      });
+      setRefreshToken(nextRefreshToken);
     },
     [
       contextState.error,
       contextState.loading,
-      explicitDate,
       mutation,
+      pendingRefresh,
       positionModel.relationship,
       positionModel.savedPresence,
       positionModel.saveability,
       positionModel.sourceFen,
-      positionModel.savedMove,
-      positionModel.stagedMove,
+      positionModel.saved,
+      positionModel.staged,
       preferredMoveClient,
       preferredState.error,
       preferredState.loading,
+      refreshToken,
       session,
       setSession,
       setSessionStatus,
@@ -252,7 +342,7 @@ export function usePreferredMoveWorkflow({
   );
 
   const onPlaySavedMove = useCallback(() => {
-    const savedMove = positionModel.savedMove;
+    const savedMove = positionModel.saved?.move ?? null;
     const move = savedMove ? moveFromUci(savedMove.uci) : null;
     const result =
       move && positionModel.ownTurn && mutation === null
@@ -265,14 +355,17 @@ export function usePreferredMoveWorkflow({
     setWorkflowError(null);
     setSession(result.session);
     setSessionStatus(`Saved move staged locally: ${savedMove!.san}.`);
-  }, [
-    mutation,
-    positionModel.ownTurn,
-    positionModel.savedMove,
-    session,
-    setSession,
-    setSessionStatus,
-  ]);
+  }, [mutation, positionModel.ownTurn, positionModel.saved, session, setSession, setSessionStatus]);
+
+  const onRetry = useCallback(() => {
+    if (failedMutation !== null) {
+      void runMutation(failedMutation);
+      return;
+    }
+    setWorkflowError(null);
+    setRefreshToken((value) => value + 1);
+    setContextRefreshToken((value) => value + 1);
+  }, [failedMutation, runMutation]);
 
   return {
     positionModel,
@@ -281,17 +374,15 @@ export function usePreferredMoveWorkflow({
     preferredError: preferredState.error,
     contextLoading: contextState.loading,
     contextError: contextState.error,
-    stagedMove: session.stagedMove,
     date,
+    dateEdit: unavailableDateCapability,
     mutation,
     workflowError,
-    onDateChange: (value) => {
-      setExplicitDate(value);
-      setHasExplicitDate(true);
-    },
+    onDateChange: unavailableDateCapability.onChange,
     onSave: () => void runMutation("save"),
     onPlaySavedMove,
     onRemove: () => void runMutation("remove"),
+    onRetry,
     reset,
   };
 }

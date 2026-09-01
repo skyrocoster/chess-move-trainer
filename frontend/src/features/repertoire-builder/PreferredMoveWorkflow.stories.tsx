@@ -10,6 +10,8 @@ import { VIEWER_GAME_UUID } from "../viewer/viewerFixtures";
 import RepertoireBuilderWorkspace from "./RepertoireBuilderWorkspace";
 import {
   expectActiveSessionHistoryEntry,
+  expectPreferredActions,
+  expectPreferredMoveState,
   expectSessionHistory,
 } from "./repertoireBuilderStoryAssertions";
 import { BLACK_SUBJECT_GAME, workspace } from "./repertoireBuilderStoryRender";
@@ -41,7 +43,43 @@ export const ReadErrors: Story = {
     }
     await expect(alerts[0]).toHaveTextContent("Preferred move data is unavailable. Try again.");
     await expect(alerts[1]).toHaveTextContent("Position context is temporarily unavailable.");
-    await expect(canvas.queryByRole("button", { name: "Add" })).not.toBeInTheDocument();
+    await expect(canvas.queryByRole("button", { name: "Save" })).not.toBeInTheDocument();
+  },
+};
+
+export const UnsavableGate: Story = {
+  name: "Preferred move - unsavable position remains in the same shell",
+  render: () =>
+    workspace(
+      { analysisClient: storyCandidateAnalysisClient(["e2e4"]) },
+      { relationship: "empty" },
+      { overall_exists: false, white_count: 0, black_count: 0 },
+    ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expectPreferredMoveState(canvasElement, "empty");
+    await expect(
+      canvas.getByText("This position cannot be saved because it is not in the corpus."),
+    ).toBeVisible();
+    await expectPreferredActions(canvasElement, []);
+    await expect(canvas.queryByRole("button", { name: "Save" })).not.toBeInTheDocument();
+    await expect(
+      canvas.queryByRole("button", { name: "Change effective date" }),
+    ).not.toBeInTheDocument();
+    await expect(canvas.queryByRole("button", { name: "Remove" })).not.toBeInTheDocument();
+  },
+};
+
+export const LoadingGate: Story = {
+  name: "Preferred move - loading keeps the relationship shell",
+  render: () => workspace({}, { relationship: "empty", pendingRead: true }, { pending: true }),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expectPreferredMoveState(canvasElement, "unknown");
+    await expect(canvas.getByTestId("preferred-status")).toHaveTextContent(
+      "Loading saved choice...",
+    );
+    await expectPreferredActions(canvasElement, []);
   },
 };
 
@@ -53,7 +91,7 @@ export const OpponentLocalOnly: Story = {
         analysisClient: storyCandidateAnalysisClient(["g1f3"]),
         lookup: completeGameLookup(BLACK_SUBJECT_GAME),
       },
-      { initialState: "assigned", putFailure: "unexpected_failure" },
+      { relationship: "saved", putFailure: "unexpected_failure" },
       { overall_exists: true, white_count: 5, black_count: 2 },
     ),
   play: async ({ canvasElement }) => {
@@ -65,7 +103,7 @@ export const OpponentLocalOnly: Story = {
     await expect(
       canvas.getByTestId("position-description-row").querySelector("[data-position-summary]"),
     ).toHaveTextContent("OrientationBlack at the bottom");
-    await expect(canvas.queryByTestId("saved-move")).not.toBeInTheDocument();
+    await expect(canvas.getByTestId("saved-move")).toBeVisible();
     await userEvent.click(await canvas.findByRole("button", { name: "2. Nf3" }));
     await expect(canvas.getByTestId("session-status")).toHaveTextContent(
       "Opponent move played locally: Nf3.",
@@ -78,5 +116,26 @@ export const OpponentLocalOnly: Story = {
     ]);
     await expectActiveSessionHistoryEntry(canvasElement, "White, move 2, Nf3");
     await expect(canvas.queryByRole("alert")).not.toBeInTheDocument();
+  },
+};
+
+export const OpponentTurnGate: Story = {
+  name: "Preferred move - opponent turn is a read-only gate",
+  render: () =>
+    workspace(
+      { lookup: completeGameLookup(BLACK_SUBJECT_GAME) },
+      { relationship: "saved" },
+      { overall_exists: true, white_count: 5, black_count: 2 },
+    ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await loadGame(canvas, VIEWER_GAME_UUID, "2");
+    await expect(
+      canvas.getByText("Wait for your turn to stage or save a preferred move."),
+    ).toBeVisible();
+    await expectPreferredActions(canvasElement, []);
+    await expect(
+      canvas.queryByRole("button", { name: /play and stage this move/ }),
+    ).not.toBeInTheDocument();
   },
 };

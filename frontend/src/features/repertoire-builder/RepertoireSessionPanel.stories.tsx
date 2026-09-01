@@ -30,10 +30,6 @@ function model(overrides: Partial<RepertoirePositionModel> = {}): RepertoirePosi
     staged: null,
     comparison: "not-applicable",
     relationship: "empty",
-    savedMove: null,
-    savedMoveVisible: false,
-    stagedMove: null,
-    effectiveAt: null,
     ...overrides,
   };
 }

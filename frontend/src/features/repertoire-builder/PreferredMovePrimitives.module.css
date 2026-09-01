@@ -8,6 +8,11 @@
   background: var(--md-sys-color-surface-container);
   color: var(--md-sys-color-on-surface);
   text-align: start;
+  overflow-wrap: anywhere;
+}
+
+.choiceBoxSaved {
+  border-color: var(--cmt-success-accent);
 }
 
 .choiceBoxProposal {
@@ -82,22 +87,27 @@
   block-size: var(--cmt-spacing-16);
 }
 
-.boxIconproposal {
+.boxIconSaved {
+  background: var(--cmt-success-container);
+  color: var(--cmt-success-on-container);
+}
+
+.boxIconProposal {
   background: var(--cmt-warning-accent);
   color: var(--cmt-warning-on-accent);
 }
 
-.boxIconmatching {
+.boxIconMatching {
   background: var(--cmt-success-accent);
   color: var(--cmt-success-on-accent);
 }
 
-.boxIconempty {
+.boxIconEmpty {
   background: var(--md-sys-color-surface-container-high);
   color: var(--md-sys-color-on-surface-variant);
 }
 
-.boxIconblocked {
+.boxIconBlocked {
   background: var(--cmt-error-accent);
   color: var(--cmt-error-on-accent);
 }
@@ -227,6 +237,13 @@
   }
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .choiceBoxInteractive,
+  .connectorIcon {
+    transition: none;
+  }
+}
+
 @media (forced-colors: active) {
   .choiceBox,
   .consequence {
@@ -242,6 +259,12 @@
   .boxIcon {
     border: 1px solid ButtonBorder;
     background: Canvas;
+    color: CanvasText;
+  }
+
+  .connector,
+  .connectorIcon,
+  .consequenceIcon {
     color: CanvasText;
   }
 

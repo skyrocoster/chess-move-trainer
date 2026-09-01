@@ -56,7 +56,7 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Primitives: Story = {
-  name: "Choice boxes, connector, consequences, and date trigger",
+  name: "Choice boxes, connector, consequences, and date primitive",
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await expect(canvas.getByRole("region", { name: "Current saved choice" })).toBeVisible();

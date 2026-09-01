@@ -17,6 +17,7 @@ export type PositionContextState = {
 export function usePositionContextState(
   fen: Fen | null,
   client: PositionContextClient = fetchPositionContext,
+  refreshKey = 0,
 ): PositionContextState {
   const [context, setContext] = useState<PositionContextResponse | null>(null);
   const [loading, setLoading] = useState(fen !== null);
@@ -72,7 +73,7 @@ export function usePositionContextState(
       active = false;
       controller.abort();
     };
-  }, [client, fen]);
+  }, [client, fen, refreshKey]);
 
   return { context, loading, error };
 }

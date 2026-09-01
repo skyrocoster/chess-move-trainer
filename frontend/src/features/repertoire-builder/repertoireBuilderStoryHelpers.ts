@@ -13,16 +13,22 @@ import type {
   PreferredMoveResponse,
   PreferredMoveValue,
 } from "./preferredMoveApi";
+import {
+  preferredMoveRelationshipFixtures,
+  type PreferredMoveRelationship,
+} from "./preferredMoveStoryFixtures";
 
 const DEFAULT_MOVE: PreferredMoveValue = { uci: "e2e4", san: "e4" };
 
 export type StoryPreferredMoveOptions = {
-  initialState?: PreferredMoveResponse["state"];
-  initialMove?: PreferredMoveValue;
+  relationship?: PreferredMoveRelationship;
+  savedMove?: PreferredMoveValue;
   effectiveAt?: string;
   readFailure?: PreferredMoveFailureCode;
   putFailure?: PreferredMoveFailureCode;
   removeFailure?: PreferredMoveFailureCode;
+  pendingMutation?: "save" | "remove";
+  pendingRead?: boolean;
 };
 
 export type StoryPositionContextOptions = Partial<
@@ -32,6 +38,7 @@ export type StoryPositionContextOptions = Partial<
   >
 > & {
   failure?: PositionContextFailureCode;
+  pending?: boolean;
 };
 
 function mutationResponse(fen: Fen, effectiveAt: string) {
@@ -54,14 +61,20 @@ function moveFromRequest(fen: Fen, uci: string): PreferredMoveValue {
 export function storyPreferredMoveClient(
   options: StoryPreferredMoveOptions = {},
 ): PreferredMoveClient {
-  let state = options.initialState ?? "unassigned";
-  let move = options.initialMove ?? DEFAULT_MOVE;
+  const relationship = options.relationship ?? "empty";
+  const fixture = preferredMoveRelationshipFixtures[relationship];
+  let state: PreferredMoveResponse["state"] =
+    fixture.savedPresence === "present" ? "assigned" : "unassigned";
+  let move = options.savedMove ?? fixture.saved?.move ?? DEFAULT_MOVE;
   let effectiveAt =
     options.effectiveAt ?? (state === "assigned" ? "2026-01-01T00:00:00.000000Z" : null);
   let assignedFen: Fen | null = null;
 
   return {
     get: fn(async (fen) => {
+      if (options.pendingRead) {
+        return new Promise<never>(() => undefined);
+      }
       if (options.readFailure) {
         return { status: options.readFailure };
       }
@@ -80,6 +93,9 @@ export function storyPreferredMoveClient(
       };
     }),
     put: fn(async ({ fen, move_uci, effective_at }) => {
+      if (options.pendingMutation === "save") {
+        return new Promise<never>(() => undefined);
+      }
       if (options.putFailure) {
         return { status: options.putFailure };
       }
@@ -90,6 +106,9 @@ export function storyPreferredMoveClient(
       return mutationResponse(fen, effective_at ?? "");
     }),
     remove: fn(async ({ fen, effective_at }) => {
+      if (options.pendingMutation === "remove") {
+        return new Promise<never>(() => undefined);
+      }
       if (options.removeFailure) {
         return { status: options.removeFailure };
       }
@@ -104,6 +123,9 @@ export function storyPositionContextClient(
   options: StoryPositionContextOptions = {},
 ): PositionContextClient {
   return fn(async (fen) => {
+    if (options.pending) {
+      return new Promise<never>(() => undefined);
+    }
     if (options.failure) {
       return { status: options.failure };
     }
@@ -121,37 +143,15 @@ export function storyPositionContextClient(
   });
 }
 
-function ordinal(day: number): string {
-  if (day % 100 >= 11 && day % 100 <= 13) {
-    return `${day}th`;
-  }
-  return `${day}${day % 10 === 1 ? "st" : day % 10 === 2 ? "nd" : day % 10 === 3 ? "rd" : "th"}`;
-}
-
-export async function selectCurrentUtcDate(canvasElement: HTMLElement): Promise<string> {
-  const canvas = within(canvasElement);
-  const body = within(canvasElement.ownerDocument.body);
-  const now = new Date();
-  const month = new Intl.DateTimeFormat("en-US", { month: "long", timeZone: "UTC" }).format(now);
-  const day = now.getUTCDate();
-  const year = now.getUTCFullYear();
-
-  await userEvent.click(await canvas.findByRole("button", { name: "Effective date: Choose date" }));
-  const calendar = await body.findByRole("dialog", { name: "Effective date" });
-  await userEvent.click(
-    within(calendar).getByRole("button", {
-      name: new RegExp(`${month} ${ordinal(day)}, ${year}`),
-    }),
-  );
-  return `${String(year).padStart(4, "0")}-${String(now.getUTCMonth() + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-}
-
 export async function loadGame(canvas: ReturnType<typeof within>, gameUuid: string, ply?: string) {
   await userEvent.type(canvas.getByLabelText("Game UUID"), gameUuid);
   if (ply !== undefined) {
     await userEvent.type(canvas.getByLabelText(/Ply/), ply);
   }
   await userEvent.click(canvas.getByRole("button", { name: "Load game" }));
+  await expect(canvas.getByTestId("session-status")).toHaveTextContent(
+    "Select a legal move to continue the local line.",
+  );
 }
 
 export async function expectNoHorizontalOverflow(canvasElement: HTMLElement) {
