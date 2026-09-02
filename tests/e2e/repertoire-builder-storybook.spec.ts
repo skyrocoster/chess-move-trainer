@@ -31,6 +31,9 @@ const STORY_IDS = {
   accessibility: "application-repertoire-builder-workspace--accessibility-and-responsive",
   readErrors: "application-repertoire-builder-workspace--read-errors",
   unsavable: "application-repertoire-builder-workspace--unsavable-gate",
+  responseDistribution: "application-repertoire-builder-workspace--response-distribution-integration",
+  responseDistributionDense:
+    "application-move-response-distribution--dense-tiny-sector-cluster",
   loading: "application-repertoire-builder-workspace--loading-gate",
   opponentGate: "application-repertoire-builder-workspace--opponent-turn-gate",
   opponentLocal: "application-repertoire-builder-workspace--opponent-local-only",
@@ -233,6 +236,78 @@ async function expectNoHorizontalOverflow(page: Page) {
   }));
   expect(dimensions.documentScrollWidth).toBeLessThanOrEqual(dimensions.documentClientWidth);
   expect(dimensions.bodyScrollWidth).toBeLessThanOrEqual(dimensions.bodyClientWidth);
+}
+
+type DistributionLabelBox = {
+  text: string;
+  left: number;
+  right: number;
+  top: number;
+  bottom: number;
+};
+
+async function expectDistributionChartAndControlsClean(page: Page) {
+  const distribution = page.getByTestId("move-response-distribution");
+  const observations = await distribution.evaluate((element) => {
+    const chart = element.querySelector<HTMLElement>(
+      '[data-testid="move-response-distribution-chart"]',
+    );
+    if (!chart) throw new Error("Distribution chart frame is missing.");
+    const chartBox = chart.getBoundingClientRect();
+    const labels: DistributionLabelBox[] = Array.from(
+      element.querySelectorAll<SVGTextElement>("svg text"),
+    ).map((text) => {
+      const box = text.getBoundingClientRect();
+      return {
+        text: text.textContent ?? "",
+        left: box.left,
+        right: box.right,
+        top: box.top,
+        bottom: box.bottom,
+      };
+    });
+    const sans = Array.from(
+      element.querySelectorAll<HTMLElement>('[class*="replySan"]'),
+    ).map((san) => {
+      const style = getComputedStyle(san);
+      return {
+        text: san.textContent ?? "",
+        whiteSpace: style.whiteSpace,
+        height: san.getBoundingClientRect().height,
+        lineHeight: Number.parseFloat(style.lineHeight),
+      };
+    });
+    return { chartBox, labels, sans };
+  });
+
+  expect(observations.labels.length).toBeGreaterThan(0);
+  for (const label of observations.labels) {
+    expect(label.text).not.toBe("");
+    expect(
+      label.left,
+      `label "${label.text}" crosses the chart frame's left edge`,
+    ).toBeGreaterThanOrEqual(observations.chartBox.left - 1);
+    expect(
+      label.right,
+      `label "${label.text}" crosses the chart frame's right edge`,
+    ).toBeLessThanOrEqual(observations.chartBox.right + 1);
+  }
+  for (let first = 0; first < observations.labels.length; first += 1) {
+    for (let second = first + 1; second < observations.labels.length; second += 1) {
+      const a = observations.labels[first]!;
+      const b = observations.labels[second]!;
+      const overlaps =
+        a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
+      expect(overlaps, `pie labels "${a.text}" and "${b.text}" overlap`).toBe(false);
+    }
+  }
+  for (const san of observations.sans) {
+    expect(san.whiteSpace, `SAN "${san.text}" lost nowrap protection`).toBe("nowrap");
+    expect(
+      san.height,
+      `SAN "${san.text}" wrapped across lines`,
+    ).toBeLessThanOrEqual(san.lineHeight * 1.5 + 1);
+  }
 }
 
 async function expectPreferredPanelFidelity(page: Page, expectStacked: boolean) {
@@ -520,6 +595,101 @@ test.describe("Repertoire Builder Storybook surface", () => {
     expect(requests).toEqual([]);
   });
 
+  test("proves response distribution integration, states, accessibility, and responsive evidence", async ({ page }, testInfo) => {
+    const cases = [
+      { mode: "wide" as const, width: 1280, height: 1000 },
+      { mode: "narrow" as const, width: 497, height: 1000 },
+      { mode: "medium" as const, width: 800, height: 1000 },
+      { mode: "narrow" as const, width: 412, height: 1000 },
+    ];
+
+    for (const entry of cases) {
+      await openStory(page, STORY_IDS.responseDistribution, entry.width, entry.height);
+      await expectResponsiveComposition(
+        page,
+        entry.mode,
+        entry.mode === "wide"
+          ? ["Board and Session boundary", "Session and Engine boundary"]
+          : entry.mode === "medium"
+            ? ["Session and Engine boundary"]
+            : [],
+      );
+
+      const distribution = page.getByTestId("move-response-distribution");
+      await expect(distribution).toHaveAttribute("data-state", "available");
+      await expect(distribution.getByText("Black repertoire colour", { exact: true })).toBeVisible();
+      const other = distribution.getByRole("button", { name: /other replies/ });
+      await expect(other).toHaveAttribute("aria-expanded", "false");
+      await other.focus();
+      await expect(other).toBeFocused();
+      await other.click();
+      await expect(other).toHaveAttribute("aria-expanded", "true");
+      await expect(distribution.getByRole("button", { name: /b3, 1 distinct games/ })).toBeVisible();
+      await expect(page.getByTestId("session-status")).toContainText(
+        "Select a legal move to continue the local line.",
+      );
+      const panelDimensions = await distribution.evaluate((element) => ({
+        clientWidth: element.clientWidth,
+        scrollWidth: element.scrollWidth,
+      }));
+      expect(panelDimensions.scrollWidth).toBeLessThanOrEqual(panelDimensions.clientWidth);
+      await expectDistributionChartAndControlsClean(page);
+      await expectNoHorizontalOverflow(page);
+      await checkA11y(page);
+      await page.screenshot({
+        path: testInfo.outputPath(`move-response-distribution-${entry.mode}-${entry.width}.png`),
+        fullPage: true,
+      });
+
+      const common = distribution.getByRole("button", { name: /Nf3, 4 distinct games/ });
+      await common.focus();
+      await page.keyboard.press("Enter");
+      await expect(page.getByTestId("session-status")).toContainText(
+        "Opponent move played locally: Nf3.",
+      );
+      await expect(page.getByTestId("session-origin")).toContainText("Current Ply 3.");
+    }
+
+    await page.emulateMedia({ forcedColors: "active", reducedMotion: "reduce" });
+    await openStory(page, STORY_IDS.responseDistribution, 800, 1000);
+    const media = await page.evaluate(() => ({
+      forcedColors: window.matchMedia("(forced-colors: active)").matches,
+      reducedMotion: window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+    }));
+    expect(media).toEqual({ forcedColors: true, reducedMotion: true });
+    const forcedDistribution = page.getByTestId("move-response-distribution");
+    await expect(forcedDistribution).toHaveAttribute("data-state", "available");
+    await expect(forcedDistribution.getByRole("button", { name: /Show other replies/ })).toBeVisible();
+    const transitionDuration = await forcedDistribution
+      .getByRole("button", { name: /Nf3, 4 distinct games/ })
+      .first()
+      .evaluate((element) => getComputedStyle(element).transitionDuration);
+    expect(transitionDuration).toBe("0s");
+    await expectNoHorizontalOverflow(page);
+  });
+
+  test("proves the dense distribution label cluster stays readable at wide, 497px, and 412px", async ({ page }, testInfo) => {
+    const cases = [
+      { width: 1280, height: 1000 },
+      { width: 497, height: 1000 },
+      { width: 412, height: 1000 },
+    ] as const;
+
+    for (const entry of cases) {
+      await openStory(page, STORY_IDS.responseDistributionDense, entry.width, entry.height, false);
+      const distribution = page.getByTestId("move-response-distribution");
+      await expect(distribution).toHaveAttribute("data-state", "available");
+      await expect(distribution.getByText("e4 98.0%")).toBeVisible();
+      await expect(distribution.getByText("Other 0.0%")).toBeVisible();
+      await expectDistributionChartAndControlsClean(page);
+      await expectNoHorizontalOverflow(page);
+      await page.screenshot({
+        path: testInfo.outputPath(`move-response-distribution-dense-${entry.width}.png`),
+        fullPage: true,
+      });
+    }
+  });
+
   test("proves all five saved/staged relationship readings and disabled date behavior", async ({ page }) => {
     const requests = preferredRequestUrls(page);
 
@@ -584,15 +754,15 @@ test.describe("Repertoire Builder Storybook surface", () => {
     await expectPreferredRelationship(page, "saved");
     await expect(preferredPanel(page).getByTestId("saved-move")).toContainText(/d4.*d2d4/);
     await expect(preferredPanel(page).getByTestId("staged-move")).toContainText("No move staged.");
-    await expectPositionSquares(page, "d2", 1);
-    await expectPositionSquares(page, "d4", 0);
-    await expectSessionHistory(page, ["Initial position"]);
+    await expectPositionSquares(page, "d2", 0);
+    await expectPositionSquares(page, "d4", 1);
+    await expectSessionHistory(page, ["Initial position", "White, move 1, d4"]);
     await expect(
       preferredPanel(page)
         .getByTestId("preferred-actions")
         .getByRole("button", { name: "Save", exact: true }),
     ).toHaveCount(0);
-    await expectPreferredActions(page, ["Change effective date", "Remove"]);
+    await expectPreferredActions(page, []);
 
     await openStory(page, STORY_IDS.firstChoice);
     await expectPreferredRelationship(page, "first-choice");

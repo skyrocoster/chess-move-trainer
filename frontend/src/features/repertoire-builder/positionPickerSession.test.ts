@@ -352,10 +352,7 @@ describe("position picker session", () => {
 
     expect(reply?.disposition).toBe("advanced");
     expect(reply?.session.stagedMove).toBeNull();
-    expect(reply?.session.localContinuation.map((position) => position.san)).toEqual([
-      "e4",
-      "e5",
-    ]);
+    expect(reply?.session.localContinuation.map((position) => position.san)).toEqual(["e4", "e5"]);
     expect(reply?.session.currentPosition.fen).toBe(
       "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq e6 0 2",
     );

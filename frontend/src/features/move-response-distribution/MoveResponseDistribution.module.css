@@ -1,0 +1,357 @@
+.panel {
+  container: move-response-distribution / inline-size;
+  box-sizing: border-box;
+  display: grid;
+  min-inline-size: 0;
+  gap: var(--cmt-spacing-12);
+  padding: var(--cmt-spacing-16);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--cmt-radius-default);
+  background: var(--md-sys-color-surface-container);
+  color: var(--md-sys-color-on-surface);
+}
+
+.header {
+  display: flex;
+  min-inline-size: 0;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--cmt-spacing-8) var(--cmt-spacing-12);
+}
+
+.heading,
+.controlsHeading,
+.status,
+.message,
+.overlapNote {
+  margin: 0;
+}
+
+.heading {
+  min-inline-size: 0;
+  color: var(--md-sys-color-on-surface);
+  font: var(--md-sys-typescale-title-medium);
+  overflow-wrap: anywhere;
+}
+
+.color,
+.status,
+.message,
+.overlapNote {
+  color: var(--md-sys-color-on-surface-variant);
+  font: var(--md-sys-typescale-body-medium);
+  overflow-wrap: anywhere;
+}
+
+.status {
+  min-inline-size: 0;
+}
+
+.content {
+  display: grid;
+  min-inline-size: 0;
+  grid-template-columns: minmax(0, 15rem) minmax(0, 1fr);
+  align-items: start;
+  gap: var(--cmt-spacing-16);
+}
+
+.chartFrame {
+  box-sizing: border-box;
+  display: grid;
+  min-inline-size: 0;
+  max-inline-size: 100%;
+  justify-items: center;
+  /* Visible, not hidden: the chart tooltip must be allowed to extend past
+     the chart frame when the cursor is near the frame edge. The SVG itself
+     contains its own geometry, so nothing else spills out. */
+  overflow: visible;
+}
+
+.chartFrame :global(.recharts-wrapper),
+.chartFrame :global(svg) {
+  max-inline-size: 100%;
+}
+
+.chartFrame :global(svg) {
+  block-size: auto;
+}
+
+.chartFrame :global(.recharts-sector) {
+  stroke: var(--md-sys-color-surface-container);
+  stroke-width: 2px;
+  transition:
+    opacity var(--cmt-motion-duration-short) ease,
+    filter var(--cmt-motion-duration-short) ease;
+}
+
+.chartFrame :global(.recharts-sector[data-hovered="false"]) {
+  opacity: 0.45;
+}
+
+.chartFrame :global(.recharts-sector[data-hovered="true"]) {
+  opacity: 1;
+  filter: brightness(1.35) saturate(1.15);
+}
+
+.tooltip {
+  box-sizing: border-box;
+  display: grid;
+  max-inline-size: 12rem;
+  gap: var(--cmt-spacing-4);
+  padding: var(--cmt-spacing-8) var(--cmt-spacing-12);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--cmt-radius-default);
+  background: var(--md-sys-color-surface-container-high);
+  color: var(--md-sys-color-on-surface);
+  box-shadow: var(--cmt-elevation-e2);
+  font: var(--md-sys-typescale-body-small);
+  overflow-wrap: anywhere;
+  pointer-events: none;
+}
+
+.tooltipLabel {
+  color: var(--md-sys-color-on-surface);
+  font: var(--md-sys-typescale-label-large);
+}
+
+.tooltipMetric {
+  color: var(--md-sys-color-on-surface-variant);
+  font: var(--md-sys-typescale-label-medium);
+  font-variant-numeric: tabular-nums;
+}
+
+.controls {
+  display: grid;
+  min-inline-size: 0;
+  gap: var(--cmt-spacing-8);
+}
+
+.controlsHeading {
+  color: var(--md-sys-color-on-surface);
+  font: var(--md-sys-typescale-label-large);
+}
+
+.replyList {
+  display: grid;
+  min-inline-size: 0;
+  gap: var(--cmt-spacing-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.replyList[hidden] {
+  display: none;
+}
+
+.replyItem {
+  min-inline-size: 0;
+}
+
+.replyButton,
+.otherButton {
+  box-sizing: border-box;
+  display: grid;
+  min-block-size: 48px;
+  min-inline-size: 0;
+  inline-size: 100%;
+  align-items: center;
+  gap: var(--cmt-spacing-8);
+  padding: var(--cmt-spacing-8) var(--cmt-spacing-12);
+  border: 1px solid transparent;
+  border-radius: var(--cmt-radius-default);
+  background: transparent;
+  color: var(--md-sys-color-on-surface);
+  font: var(--md-sys-typescale-body-medium);
+  text-align: start;
+  cursor: pointer;
+  transition:
+    background-color var(--cmt-motion-duration-short) ease,
+    border-color var(--cmt-motion-duration-short) ease;
+}
+
+.replyButton {
+  grid-template-columns: minmax(1.5rem, auto) minmax(auto, 1fr) auto;
+}
+
+.replyButton:hover,
+.otherButton:hover {
+  background: var(--md-sys-color-surface-container-high);
+}
+
+.replyButton:focus-visible,
+.otherButton:focus-visible {
+  outline: var(--cmt-focus-ring-width) solid var(--cmt-focus-ring-color);
+  outline-offset: var(--cmt-focus-ring-separation);
+}
+
+.replyButton[aria-pressed="true"] {
+  border-color: var(--md-sys-color-primary);
+  background: var(--md-sys-color-primary-container);
+  color: var(--md-sys-color-on-primary-container);
+}
+
+.otherButton {
+  grid-template-columns: minmax(0, 1fr) auto;
+  border-color: var(--md-sys-color-outline-variant);
+  background: var(--md-sys-color-surface-container-high);
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.replyRank,
+.replyMetrics {
+  color: var(--md-sys-color-on-surface-variant);
+  font-variant-numeric: tabular-nums;
+}
+
+.replyRank {
+  text-align: end;
+}
+
+.replyDetails,
+.replyMetrics {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--cmt-spacing-4) var(--cmt-spacing-8);
+}
+
+.replyMetrics {
+  min-inline-size: 0;
+}
+
+.replyDetails {
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.replySan {
+  color: inherit;
+  font: var(--md-sys-typescale-label-large);
+  /* The composite font token above does not resolve, so pin the line box to
+     the intended label line-height; without it the line height computes to
+     "normal" and single-line SAN integrity cannot be measured. */
+  line-height: var(--md-sys-typescale-label-large-line-height);
+  overflow-wrap: normal;
+  white-space: nowrap;
+}
+
+.openingName {
+  min-inline-size: 0;
+  color: var(--md-sys-color-on-surface-variant);
+  font: var(--md-sys-typescale-body-small);
+  overflow-wrap: anywhere;
+}
+
+.replyMetrics {
+  justify-content: flex-end;
+  font: var(--md-sys-typescale-label-medium);
+  text-align: end;
+}
+
+.actionRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--cmt-spacing-8);
+}
+
+.overlapNote {
+  padding-block-start: var(--cmt-spacing-4);
+  font: var(--md-sys-typescale-body-small);
+}
+
+.visuallyHidden {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  clip-path: inset(50%);
+}
+
+@container move-response-distribution (max-width: 25.75rem) {
+  .content {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .chartFrame {
+    inline-size: min(100%, 15rem);
+    justify-self: center;
+  }
+
+  .replyButton,
+  .otherButton {
+    min-inline-size: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chartFrame :global(.recharts-sector),
+  .replyButton,
+  .otherButton {
+    transition: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .panel,
+  .replyButton,
+  .otherButton {
+    border-color: CanvasText;
+    background: Canvas;
+    color: CanvasText;
+  }
+
+  .heading,
+  .color,
+  .status,
+  .message,
+  .overlapNote,
+  .controlsHeading,
+  .replyRank,
+  .replyMetrics,
+  .openingName {
+    color: CanvasText;
+  }
+
+  .replyButton[aria-pressed="true"] {
+    border-color: Highlight;
+    background: Highlight;
+    color: HighlightText;
+  }
+
+  .chartFrame :global(.recharts-sector) {
+    fill: Canvas !important;
+    stroke: CanvasText;
+  }
+
+  .chartFrame :global(.recharts-sector[data-hovered="true"]) {
+    filter: none;
+    stroke: Highlight;
+    stroke-width: 3px;
+  }
+
+  .tooltip {
+    border-color: CanvasText;
+    background: Canvas;
+    color: CanvasText;
+    box-shadow: none;
+  }
+
+  .tooltipLabel,
+  .tooltipMetric {
+    color: CanvasText;
+  }
+
+  .chartFrame :global(.recharts-text) {
+    fill: CanvasText !important;
+  }
+
+  .replyButton:focus-visible,
+  .otherButton:focus-visible {
+    outline-color: Highlight;
+  }
+}

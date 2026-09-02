@@ -18,6 +18,7 @@ import { GameLoader, type GameLoaderStatus, type GameLoaderValues } from "../vie
 import { fetchGame, type GameLookup } from "../viewer/positionApi";
 import type { PositionContextClient } from "../viewer/positionContextApi";
 import { evaluationDisplay } from "../viewer/evalBarDisplay";
+import type { MoveResponseDistributionClient } from "../move-response-distribution/moveResponseDistributionApi";
 import type { PreferredMoveClient } from "./preferredMoveApi";
 import { usePreferredMoveWorkflow } from "./preferredMoveWorkflowState";
 import { RepertoireBoardLane } from "./RepertoireBoardLane";
@@ -44,6 +45,11 @@ import {
 import type { Ply } from "../viewer/chessPrimitives";
 import styles from "./RepertoireBuilderWorkspace.module.css";
 import { RepertoireSessionPanel } from "./RepertoireSessionPanel";
+import {
+  cancelPromotionWithStatus,
+  historyNavigationHandlers,
+} from "./repertoireBuilderWorkspaceHandlers";
+import { useMoveResponseSelection } from "./moveResponseSelection";
 
 export type RepertoireBuilderWorkspaceProps = {
   lookup?: GameLookup;
@@ -51,6 +57,7 @@ export type RepertoireBuilderWorkspaceProps = {
   analysisPollIntervalMs?: number;
   preferredMoveClient?: PreferredMoveClient;
   positionContextClient?: PositionContextClient;
+  moveResponseDistributionClient?: MoveResponseDistributionClient;
 };
 
 export default function RepertoireBuilderWorkspace({
@@ -59,6 +66,7 @@ export default function RepertoireBuilderWorkspace({
   analysisPollIntervalMs,
   preferredMoveClient,
   positionContextClient,
+  moveResponseDistributionClient,
 }: RepertoireBuilderWorkspaceProps) {
   const [gameUuidInput, setGameUuidInput] = useState("");
   const [plyInput, setPlyInput] = useState("");
@@ -105,7 +113,7 @@ export default function RepertoireBuilderWorkspace({
     setSession,
     setSessionStatus,
   });
-  const { reset: resetWorkflow } = workflow;
+  const { onPlaySavedMove, reset: resetWorkflow } = workflow;
 
   const handlePromotionCommit = useCallback(
     (commit: PromotionCommit) => {
@@ -196,6 +204,7 @@ export default function RepertoireBuilderWorkspace({
     setPlyInput("");
     setStatus("idle");
     setSession(createStandardStartSession());
+    clearSelectedResponse();
     setSessionStatus("Select a legal move to start the local line.");
   }
 
@@ -203,6 +212,7 @@ export default function RepertoireBuilderWorkspace({
     cancelPromotion();
     invalidateRequest();
     resetWorkflow();
+    clearSelectedResponse();
     const currentRequestId = requestId.current;
     const nextController = new AbortController();
     controller.current = nextController;
@@ -261,9 +271,15 @@ export default function RepertoireBuilderWorkspace({
     },
     [resetWorkflow, session],
   );
+  const {
+    clear: clearSelectedResponse,
+    select: selectResponse,
+    selectedUci: selectedResponseUci,
+  } = useMoveResponseSelection(displayedPosition.fen, session.bottomColor);
 
   const handleMoveIntent = useCallback(
     (intent: InteractiveBoardMoveIntent): boolean => {
+      clearSelectedResponse();
       const piece = chess.get(intent.sourceSquare);
       if (piece?.type === "p" && isPromotionTarget(piece.color, intent.targetSquare)) {
         const opened = requestPromotion(
@@ -283,14 +299,14 @@ export default function RepertoireBuilderWorkspace({
         targetSquare: intent.targetSquare,
       });
     },
-    [applyMove, chess, requestPromotion],
+    [applyMove, chess, clearSelectedResponse, requestPromotion],
   );
 
   const handleCandidateMove = useCallback(
     (move: string) => {
       const sourceElement =
         document.activeElement instanceof HTMLElement ? document.activeElement : null;
-      if (move.length < 4) {
+      if (move.length < 4 || move.length > 5) {
         setSessionStatus("Move rejected because it is illegal.");
         return;
       }
@@ -303,11 +319,19 @@ export default function RepertoireBuilderWorkspace({
     },
     [handleMoveIntent],
   );
+  const handleResponseMove = useCallback(
+    (uci: string) => {
+      handleCandidateMove(uci);
+      selectResponse(uci);
+    },
+    [handleCandidateMove, selectResponse],
+  );
 
-  const handlePromotionCancel = useCallback(() => {
-    cancelPromotion();
-    setSessionStatus("Promotion cancelled; the current position is unchanged.");
-  }, [cancelPromotion]);
+  const handlePromotionCancel = () => cancelPromotionWithStatus(cancelPromotion, setSessionStatus);
+  const handlePlaySavedMove = useCallback(() => {
+    clearSelectedResponse();
+    onPlaySavedMove();
+  }, [clearSelectedResponse, onPlaySavedMove]);
 
   const handleHistorySelection = useCallback(
     (
@@ -323,27 +347,23 @@ export default function RepertoireBuilderWorkspace({
             : navigatePositionPickerSession(current, selection);
         return next ?? current;
       });
+      clearSelectedResponse();
       setSessionStatus(status);
     },
-    [cancelPromotion, resetWorkflow],
+    [cancelPromotion, clearSelectedResponse, resetWorkflow],
   );
 
-  const handlePrevious = useCallback(() => {
-    handleHistorySelection("previous", "Moved to the previous local position.");
-  }, [handleHistorySelection]);
-
-  const handleNext = useCallback(() => {
-    handleHistorySelection("next", "Moved to the next local position.");
-  }, [handleHistorySelection]);
+  const historyControls = historyNavigationHandlers(handleHistorySelection);
 
   const handleFlip = useCallback(() => {
     cancelPromotion();
     resetWorkflow();
+    clearSelectedResponse();
     setSession((current) => flipPositionPickerSession(current));
     setSessionStatus(
       `Flipped to ${session.orientation === "white" ? "Black" : "White"} at the bottom.`,
     );
-  }, [cancelPromotion, resetWorkflow, session.orientation]);
+  }, [cancelPromotion, clearSelectedResponse, resetWorkflow, session.orientation]);
 
   return (
     <div className={styles.repertoire}>
@@ -398,8 +418,8 @@ export default function RepertoireBuilderWorkspace({
                 hasGame: true,
                 canGoPrevious: hasPrevious,
                 canGoNext: hasNext,
-                onPrevious: handlePrevious,
-                onNext: handleNext,
+                onPrevious: historyControls.previous,
+                onNext: historyControls.next,
                 onFlip: handleFlip,
               }}
               history={{
@@ -429,9 +449,16 @@ export default function RepertoireBuilderWorkspace({
                 contextError={workflow.contextError}
                 workflowError={workflow.workflowError}
                 dateEdit={workflow.dateEdit}
+                moveResponseDistribution={{
+                  fen: displayedPosition.fen,
+                  color: session.bottomColor,
+                  selectedUci: selectedResponseUci,
+                  client: moveResponseDistributionClient,
+                  onMoveSelect: handleResponseMove,
+                }}
                 onDateChange={workflow.onDateChange}
                 onSave={workflow.onSave}
-                onPlaySavedMove={workflow.onPlaySavedMove}
+                onPlaySavedMove={handlePlaySavedMove}
                 onRemove={workflow.onRemove}
                 onRetry={workflow.onRetry}
               />

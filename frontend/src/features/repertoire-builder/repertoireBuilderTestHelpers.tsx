@@ -12,6 +12,10 @@ import type {
 import type { PositionContextClient } from "../viewer/positionContextApi";
 import { VIEWER_GAME, VIEWER_GAME_UUID } from "../viewer/viewerFixtures";
 import type {
+  MoveResponseDistributionClient,
+  MoveResponseDistributionResponse,
+} from "../move-response-distribution/moveResponseDistributionApi";
+import type {
   PreferredMoveClient,
   PreferredMoveMutationResult,
   PreferredMoveResponse,
@@ -32,6 +36,25 @@ export const CONTEXT = {
   white_total: 10,
   black_total: 10,
 };
+
+export function moveResponseDistributionResponse(
+  fen: string,
+  color: "white" | "black" = "white",
+): MoveResponseDistributionResponse {
+  return {
+    fen,
+    color,
+    matching_game_count: 10,
+    replies: [
+      { rank: 1, child_uci: "e2e4", san: "e4", distinct_game_count: 4, opening_name: null },
+      { rank: 2, child_uci: "d2d4", san: "d4", distinct_game_count: 3, opening_name: null },
+      { rank: 3, child_uci: "c2c4", san: "c4", distinct_game_count: 2, opening_name: null },
+      { rank: 4, child_uci: "g1f3", san: "Nf3", distinct_game_count: 1, opening_name: null },
+      { rank: 5, child_uci: "c2c3", san: "c3", distinct_game_count: 1, opening_name: null },
+      { rank: 6, child_uci: "b2b3", san: "b3", distinct_game_count: 1, opening_name: null },
+    ],
+  };
+}
 export function noAnalysisClient(): AnalysisClient {
   return {
     observe: vi.fn(async (fen: string) => ({
@@ -190,7 +213,13 @@ export function testClients(
     status: "success" as const,
     data: { fen, ...CONTEXT },
   }));
-  return { preferredMoveClient, positionContextClient };
+  const moveResponseDistributionClient: MoveResponseDistributionClient = vi.fn(
+    async (fen, color) => ({
+      status: "success" as const,
+      data: moveResponseDistributionResponse(fen, color),
+    }),
+  );
+  return { preferredMoveClient, positionContextClient, moveResponseDistributionClient };
 }
 
 export function renderWorkspace(
@@ -202,6 +231,7 @@ export function renderWorkspace(
       analysisClient={noAnalysisClient()}
       preferredMoveClient={clients.preferredMoveClient}
       positionContextClient={clients.positionContextClient}
+      moveResponseDistributionClient={clients.moveResponseDistributionClient}
       {...props}
     />,
   );

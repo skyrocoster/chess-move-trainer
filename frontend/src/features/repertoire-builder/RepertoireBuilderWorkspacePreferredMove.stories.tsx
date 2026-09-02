@@ -147,10 +147,10 @@ export const SaveReplacement: Story = {
       /^Current saved choice\s*d4 \(d2d4\)/,
     );
     await expect(canvas.getByTestId("staged-move")).toHaveTextContent("No move staged.");
-    await expectPositionSquares(canvasElement, "d2", 1);
-    await expectPositionSquares(canvasElement, "d4", 0);
-    await expectSessionHistory(canvasElement, ["Initial position"]);
-    await expectPreferredActions(canvasElement, ["Change effective date", "Remove"]);
+    await expectPositionSquares(canvasElement, "d2", 0);
+    await expectPositionSquares(canvasElement, "d4", 1);
+    await expectSessionHistory(canvasElement, ["Initial position", "White, move 1, d4"]);
+    await expectNoPreferredActions(canvasElement);
   },
 };
 
@@ -342,11 +342,11 @@ export const FirstChoiceFromEmpty: Story = {
     );
     await expectPreferredMoveState(canvasElement, "saved");
     await expect(canvas.getByTestId("saved-move")).toHaveTextContent("e4");
-    await expectPositionSquares(canvasElement, "e2", 1);
-    await expectPositionSquares(canvasElement, "e4", 0);
-    await expect(canvas.getByTestId("session-origin")).toHaveTextContent("Current Ply 0");
-    await expectSessionHistory(canvasElement, ["Initial position"]);
-    await expect(canvas.getByRole("button", { name: "Change effective date" })).toBeDisabled();
+    await expectPositionSquares(canvasElement, "e2", 0);
+    await expectPositionSquares(canvasElement, "e4", 1);
+    await expect(canvas.getByTestId("session-origin")).toHaveTextContent("Current Ply 1");
+    await expectSessionHistory(canvasElement, ["Initial position", "White, move 1, e4"]);
+    await expectNoPreferredActions(canvasElement);
   },
 };
 

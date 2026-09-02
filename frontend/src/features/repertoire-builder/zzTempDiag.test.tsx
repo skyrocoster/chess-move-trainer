@@ -31,13 +31,13 @@ it("reproduces first-choice-from-empty save flow", async () => {
   expect(save).toBeEnabled();
   await user.click(save);
   await new Promise((resolve) => setTimeout(resolve, 1000));
-  // eslint-disable-next-line no-console
+
   console.log("STATUS:", JSON.stringify(screen.getByTestId("session-status").textContent));
-  // eslint-disable-next-line no-console
+
   console.log("ALERT:", JSON.stringify(screen.queryByRole("alert")?.textContent ?? null));
-  // eslint-disable-next-line no-console
+
   console.log("SAVED-MOVE:", JSON.stringify(screen.getByTestId("saved-move").textContent));
-  // eslint-disable-next-line no-console
+
   console.log("STAGED-MOVE:", JSON.stringify(screen.getByTestId("staged-move").textContent));
   expect(screen.getByTestId("session-status")).toHaveTextContent("Preferred move saved.");
 });

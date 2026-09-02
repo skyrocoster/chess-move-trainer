@@ -3,6 +3,9 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from backend.app.features.evaluation.router import router as evaluation_router
 from backend.app.features.health.router import router as health_router
+from backend.app.features.move_response_distribution.router import (
+    router as move_response_distribution_router,
+)
 from backend.app.features.openings.router import router as openings_router
 from backend.app.features.position_context.router import router as position_context_router
 from backend.app.features.positions.router import router as positions_router
@@ -23,6 +26,7 @@ def create_app() -> FastAPI:
     app.include_router(evaluation_router)
     app.include_router(preferred_move_router)
     app.include_router(position_context_router)
+    app.include_router(move_response_distribution_router)
     app.include_router(openings_router)
     return app
 

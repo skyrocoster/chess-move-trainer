@@ -1,4 +1,5 @@
 import userEvent from "@testing-library/user-event";
+import "./RepertoireBuilderWorkspace.testSetup";
 import { cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import axeMatchers from "@chialab/vitest-axe";
@@ -17,102 +18,6 @@ import {
   STORED_BOARD_LABEL,
   testClients,
 } from "./repertoireBuilderTestHelpers";
-vi.mock("react-chessboard", () => ({
-  defaultPieces: Object.fromEntries(
-    ["wP", "wR", "wN", "wB", "wQ", "wK", "bP", "bR", "bN", "bB", "bQ", "bK"].map((pieceType) => [
-      pieceType,
-      () => <svg data-default-piece={pieceType} />,
-    ]),
-  ),
-  Chessboard: ({
-    options,
-  }: {
-    options: {
-      position: string;
-      pieces: Record<string, (props?: { square?: string }) => React.JSX.Element>;
-      onPieceDrop: (args: { sourceSquare: string; targetSquare: string | null }) => boolean;
-      squareStyles?: Record<string, React.CSSProperties>;
-    };
-  }) => (
-    <div data-testid="mock-chessboard" data-position={options.position}>
-      {[
-        ["e2", "e4", "wP"],
-        ["e7", "e5", "bP"],
-        ["g8", "f6", "bN"],
-        ["e7", "e8", "wP"],
-        ["e2", "e5", "wP"],
-        ["d2", "d4", "wP"],
-      ].map(([source, target, pieceType]) => (
-        <button
-          key={`${source}-${target}-${pieceType}`}
-          type="button"
-          data-testid={`move-${source}-${target}`}
-          data-square={source}
-          aria-roledescription="draggable"
-          aria-label={`Move ${source} to ${target}`}
-          onClick={() => options.onPieceDrop({ sourceSquare: source, targetSquare: target })}
-        >
-          {options.pieces[pieceType]?.({ square: source })}
-        </button>
-      ))}
-      {["e2", "e4", "e7", "e5", "e8", "d2", "d4"].map((square) => (
-        <span
-          key={`square-${square}`}
-          data-testid={`board-square-${square}`}
-          data-highlighted={options.squareStyles?.[square] ? "true" : "false"}
-        />
-      ))}
-    </div>
-  ),
-}));
-vi.mock("../design-system/CalendarDate", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../design-system/CalendarDate")>();
-
-  return {
-    ...actual,
-    CalendarDate: ({
-      value,
-      onChange,
-      label = "Date",
-    }: {
-      value: Date | null;
-      onChange: (value: Date | null) => void;
-      label?: string;
-    }) => {
-      const displayValue = value ? value.toISOString().slice(0, 10) : "Choose date";
-      return (
-        <button
-          type="button"
-          aria-label={`${label}: ${displayValue}`}
-          onClick={() => onChange(new Date("2026-01-10T00:00:00.000Z"))}
-        >
-          {displayValue}
-        </button>
-      );
-    },
-  };
-});
-vi.mock("../board-adapter/PromotionPicker", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../board-adapter/PromotionPicker")>();
-
-  return {
-    ...actual,
-    PromotionPicker: ({
-      pending,
-      onSelect,
-    }: {
-      pending: { sourceSquare: string; targetSquare: string } | null;
-      onSelect: (piece: "q" | "r" | "b" | "n") => void;
-    }) =>
-      pending ? (
-        <div role="dialog" aria-label="Choose a promotion piece">
-          <button type="button" onClick={() => onSelect("n")}>
-            Promote to knight
-          </button>
-        </div>
-      ) : null,
-  };
-});
 expect.extend(axeMatchers);
 afterEach(() => {
   cleanup();
@@ -682,5 +587,86 @@ describe("RepertoireBuilderWorkspace", () => {
       screen.getByRole("region", { name: "What is saved, and what is staged?" }),
     ).toHaveAttribute("data-state", "replacement");
     expect(screen.getByTestId("staged-move")).toHaveTextContent("d4");
+  });
+
+  it("requests the displayed position and selected colour, then uses the existing move flow", async () => {
+    const user = userEvent.setup();
+    const clients = testClients();
+    renderWorkspace(clients);
+
+    await waitFor(() =>
+      expect(clients.moveResponseDistributionClient).toHaveBeenCalledWith(
+        STARTING_FEN,
+        "white",
+        expect.any(AbortSignal),
+      ),
+    );
+    const panel = screen.getByTestId("move-response-distribution");
+    const e4 = within(panel).getByRole("button", { name: /e4, 4 distinct games, 40%/ });
+    await user.click(e4);
+    expect(screen.getByTestId("session-status")).toHaveTextContent("My move staged: e4.");
+    expect(screen.getByTestId("session-origin")).toHaveTextContent("Current Ply 0.");
+    await waitFor(() =>
+      expect(clients.moveResponseDistributionClient).toHaveBeenLastCalledWith(
+        AFTER_E4_FEN,
+        "white",
+        expect.any(AbortSignal),
+      ),
+    );
+    await waitFor(() =>
+      expect(screen.getByTestId("move-response-distribution")).toHaveAttribute(
+        "data-state",
+        "available",
+      ),
+    );
+    const restagedE4 = within(screen.getByTestId("move-response-distribution")).getByRole(
+      "button",
+      { name: /e4, 4 distinct games, 40%/ },
+    );
+    expect(restagedE4).not.toHaveAttribute("aria-pressed", "true");
+
+    await user.click(screen.getByRole("button", { name: /Show other replies/ }));
+    expect(screen.getByRole("button", { name: /b3, 1 distinct games/ })).toBeVisible();
+    expect(screen.getByTestId("session-status")).toHaveTextContent("My move staged: e4.");
+
+    await user.click(screen.getByRole("button", { name: "Flip" }));
+    await waitFor(() =>
+      expect(clients.moveResponseDistributionClient).toHaveBeenLastCalledWith(
+        STARTING_FEN,
+        "black",
+        expect.any(AbortSignal),
+      ),
+    );
+    expect(
+      within(screen.getByTestId("move-response-distribution")).getByText(
+        "Black repertoire colour",
+        {
+          exact: true,
+        },
+      ),
+    ).toBeVisible();
+    expect(
+      within(screen.getByTestId("move-response-distribution")).getByRole("button", {
+        name: /Hide other replies/,
+      }),
+    ).toBeVisible();
+
+    await user.click(
+      within(screen.getByTestId("move-response-distribution")).getByRole("button", {
+        name: /e4, 4 distinct games, 40%/,
+      }),
+    );
+    await waitFor(() =>
+      expect(clients.moveResponseDistributionClient).toHaveBeenLastCalledWith(
+        AFTER_E4_FEN,
+        "black",
+        expect.any(AbortSignal),
+      ),
+    );
+    expect(screen.getByTestId("session-origin")).toHaveTextContent("Current Ply 1.");
+    expect(screen.getByTestId("session-status")).toHaveTextContent(
+      "Opponent move played locally: e4.",
+    );
+    expect(clients.preferredMoveClient.put).not.toHaveBeenCalled();
   });
 });

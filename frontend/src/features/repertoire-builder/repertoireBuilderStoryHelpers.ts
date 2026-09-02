@@ -8,6 +8,10 @@ import type {
 } from "../viewer/positionContextApi";
 import type { Fen } from "../viewer/chessPrimitives";
 import type {
+  MoveResponseDistributionClient,
+  MoveResponseDistributionResponse,
+} from "../move-response-distribution/moveResponseDistributionApi";
+import type {
   PreferredMoveClient,
   PreferredMoveFailureCode,
   PreferredMoveResponse,
@@ -40,6 +44,57 @@ export type StoryPositionContextOptions = Partial<
   failure?: PositionContextFailureCode;
   pending?: boolean;
 };
+
+function moveResponseData(fen: Fen, color: "white" | "black"): MoveResponseDistributionResponse {
+  const afterStoredE5 = fen === "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2";
+  const blackToMove = fen.split(" ")[1] === "b";
+  const replies: readonly [string, string, number][] = afterStoredE5
+    ? [
+        ["g1f3", "Nf3", 4],
+        ["d2d4", "d4", 3],
+        ["c2c4", "c4", 2],
+        ["f1c4", "Bc4", 1],
+        ["b1c3", "Nc3", 1],
+        ["b2b3", "b3", 1],
+      ]
+    : blackToMove
+      ? [
+          ["e7e5", "e5", 4],
+          ["c7c5", "c5", 3],
+          ["g8f6", "Nf6", 2],
+          ["d7d5", "d5", 1],
+          ["c7c6", "c6", 1],
+          ["g7g6", "g6", 1],
+        ]
+      : [
+          ["e2e4", "e4", 4],
+          ["d2d4", "d4", 3],
+          ["c2c4", "c4", 2],
+          ["g1f3", "Nf3", 1],
+          ["c2c3", "c3", 1],
+          ["b2b3", "b3", 1],
+        ];
+
+  return {
+    fen,
+    color,
+    matching_game_count: 10,
+    replies: replies.map(([child_uci, san, distinct_game_count], index) => ({
+      rank: index + 1,
+      child_uci,
+      san,
+      distinct_game_count,
+      opening_name: index === 1 ? "Queen's Pawn Game" : null,
+    })),
+  };
+}
+
+export function storyMoveResponseDistributionClient(): MoveResponseDistributionClient {
+  return fn(async (fen, color) => ({
+    status: "success" as const,
+    data: moveResponseData(fen, color),
+  }));
+}
 
 function mutationResponse(fen: Fen, effectiveAt: string) {
   return {

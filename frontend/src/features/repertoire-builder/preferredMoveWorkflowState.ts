@@ -336,8 +336,6 @@ export function usePreferredMoveWorkflow({
       preferredState.loading,
       refreshToken,
       session,
-      setSession,
-      setSessionStatus,
       sideToMove,
     ],
   );

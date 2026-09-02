@@ -6,6 +6,7 @@ import { VIEWER_GAME } from "../viewer/viewerFixtures";
 import RepertoireBuilderWorkspace from "./RepertoireBuilderWorkspace";
 import {
   storyPositionContextClient,
+  storyMoveResponseDistributionClient,
   storyPreferredMoveClient,
   type StoryPositionContextOptions,
   type StoryPreferredMoveOptions,
@@ -57,12 +58,15 @@ export function workspace(
     props.preferredMoveClient ?? storyPreferredMoveClient(preferredOptions);
   const positionContextClient =
     props.positionContextClient ?? storyPositionContextClient(contextOptions);
+  const moveResponseDistributionClient =
+    props.moveResponseDistributionClient ?? storyMoveResponseDistributionClient();
   return frame(
     <RepertoireBuilderWorkspace
       {...props}
       analysisClient={analysisClient}
       preferredMoveClient={preferredMoveClient}
       positionContextClient={positionContextClient}
+      moveResponseDistributionClient={moveResponseDistributionClient}
     />,
   );
 }

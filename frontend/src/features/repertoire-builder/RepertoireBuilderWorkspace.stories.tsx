@@ -101,6 +101,14 @@ async function verifyStandardWorkspace(
   await expectSessionBoundary(canvasElement);
   await expectPreferredMoveState(canvasElement, "empty");
   await expectPositionReachFrequency(canvasElement, "available", "White", "3 / 10 games", "30%");
+  const distribution = canvas.getByTestId("move-response-distribution");
+  await expect(distribution).toHaveAttribute("data-state", "available");
+  await expect(
+    within(distribution).getByText("White repertoire colour", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    within(distribution).getByRole("button", { name: /e4, 4 distinct games/ }),
+  ).toBeVisible();
   await expectNoHorizontalOverflow(canvasElement);
 }
 
@@ -403,6 +411,41 @@ export const Accessibility: Story = {
       "aria-expanded",
       "false",
     );
+    await expectNoHorizontalOverflow(canvasElement);
+  },
+};
+
+export const ResponseDistributionIntegration: Story = {
+  name: "Response distribution - integrated move flow",
+  render: () =>
+    workspace({
+      lookup: completeGameLookup(BLACK_SUBJECT_GAME),
+    }),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await loadGame(canvas, VIEWER_GAME_UUID, "2");
+
+    const distribution = canvas.getByTestId("move-response-distribution");
+    const distributionQueries = within(distribution);
+    await expect(distribution).toHaveAttribute("data-state", "available");
+    await expect(
+      distributionQueries.getByText("Black repertoire colour", { exact: true }),
+    ).toBeVisible();
+    await expect(
+      distributionQueries.getByRole("button", { name: /Nf3, 4 distinct games/ }),
+    ).toBeVisible();
+
+    const status = canvas.getByTestId("session-status");
+    const beforeDisclosure = status.textContent;
+    const other = distributionQueries.getByRole("button", { name: /Show other replies/ });
+    await userEvent.click(other);
+    await expect(other).toHaveAttribute("aria-expanded", "true");
+    await expect(
+      distributionQueries.getByRole("button", { name: /b3, 1 distinct games/ }),
+    ).toBeVisible();
+    await expect(status).toHaveTextContent(beforeDisclosure ?? "");
+    await userEvent.click(other);
+    await expect(other).toHaveAttribute("aria-expanded", "false");
     await expectNoHorizontalOverflow(canvasElement);
   },
 };

@@ -244,6 +244,9 @@ export const KeyboardAndFocus: Story = {
     await userEvent.keyboard("{Enter}");
 
     await expect(args.onChange).toHaveBeenCalledWith(new Date("2025-01-16T00:00:00.000Z"));
+    await waitFor(() =>
+      expect(body.queryByRole("dialog", { name: "Date" })).not.toBeInTheDocument(),
+    );
     await expect(canvas.getByRole("button", { name: "Date: 2025-01-16" })).toHaveFocus();
   },
 };

@@ -207,9 +207,7 @@ export function selectPositionPickerMove(
  * move is evaluated from the displayed (post-staged) position rather than the
  * pre-staged current position. When no move is staged the session is unchanged.
  */
-export function commitStagedMove(
-  session: PositionPickerSession,
-): PositionPickerSession {
+export function commitStagedMove(session: PositionPickerSession): PositionPickerSession {
   if (session.stagedMove === null) {
     return session;
   }

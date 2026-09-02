@@ -18,8 +18,6 @@ Do routine and tightly coupled work yourself. Use subagents deliberately when th
 parallelize independent work, or provide useful specialization:
 
 - Use `scout` for bounded repository facts and targeted searches.
-- Prefer user-defined subagents for context-heavy or specialized work. Use the Flash or Luna case-worker for
-  substantial bounded work, and reserve the Sol case-worker for especially difficult work.
 - Use `exploration`, `quality`, and `readme-updater` only when their defined specialty matches the task.
 - Do not use the built-in `explore` or `general` subagents unless the user explicitly requests one.
 
