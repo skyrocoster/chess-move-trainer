@@ -1,13 +1,14 @@
 ---
 name: design-synthesis
-description: Use after final visual sign-off and repository-grounded grilling to write the selected mock-up's detailed design document for planning hand-off.
+description: Use only when requested to record durable design decisions that an approved Storybook candidate, its stories, API, and focused tests cannot express.
 ---
 
 # Design synthesis
 
-Require an explicitly signed-off mock-up, settled behavior decisions, detailed repository facts, genuinely
-unresolved technical facts, and an approved `DESIGN.md` path beside the selected artifact under `experiments/`.
-Inspect the latest artifact before writing so authoritative user edits are carried forward.
+This is optional. Never require it between HTML selection, Storybook iteration, approval, and integration. Require
+an explicitly approved Storybook candidate, a concrete reason durable notes are needed, settled behavior decisions,
+relevant repository facts, and an approved `DESIGN.md` path under `experiments/`. Inspect the latest candidate and
+stories before writing so authoritative user edits are carried forward.
 
 Write only what is supported by the selected design, settled decisions, and repository evidence. Report a
 contradiction between them instead of inventing precedence. The document should include the applicable parts of:
@@ -28,12 +29,13 @@ visual or interaction anchors stable section references so a downstream Plan can
 whole document.
 
 Keep the document implementation-ready but not implementation-prescriptive. Do not define Plan stages, progress,
-proof execution, lifecycle mechanics, or implementation authorization. The final mock-up communicates composition;
-the design document communicates behavior, constraints, and repository meaning.
+proof execution, lifecycle mechanics, or implementation authorization. The approved Storybook candidate
+communicates composition and executable behavior; the design document records only important context that those
+artifacts cannot express without duplication.
 
 ```text
 RESULT: WRITTEN | CONTRADICTION | BLOCKED
-MOCK-UP: <signed-off artifact path>
+STORYBOOK: <approved story and component paths>
 DESIGN: <exact DESIGN.md path>
 GROUNDING: <repository areas mapped>
 UNRESOLVED: none | <technical facts that planning must resolve>

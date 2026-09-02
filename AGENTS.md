@@ -67,9 +67,10 @@ Never run an unbounded process.
    are separate maintenance work outside the implementation workflow.
 
 `Scratch/` is a user-owned temporary workspace. Preserve unrelated content and do not read or alter unrelated
-paths. New mock-ups, catalogues, design documents, and prototypes belong under `experiments/`, which has its own
-manifests and ignored environments and artifacts. Mock-ups may be self-contained HTML/CSS/JavaScript or isolated
-React, using the lowest fidelity sufficient for the current design decision.
+paths. Early HTML mock-ups, catalogues, optional design notes, and prototypes belong under `experiments/`, which
+has its own manifests and ignored environments and artifacts. Once an HTML direction is selected, rebuild it in
+the existing production Storybook with real components, tokens, styles, and accessibility behavior. Keep that
+candidate isolated from application routes, state, data, and APIs until the user explicitly approves integration.
 
 ## Working modes
 
@@ -91,11 +92,15 @@ role-based workflow.
   retained proof and runs only missing or invalidated checks. A coordinator-authorized repair uses the Quality fix
   route, followed by fresh-session final validation of evidence invalidated by the repair. After one failed repair,
   return to the coordinator. Unrelated failures are reported, not absorbed.
-- **Exploration:** when substantial UI or interaction direction is unsettled, the coordinator may run a flexible
-  narrowing funnel through broad catalogues, selected branches, focused grilling, final sign-off, and repository-
-  aware design synthesis. The Exploration Agent produces bounded mock-ups, catalogues, design documents, and
-  prototypes under `experiments/`; it does not select the winning design or authorize implementation. Exploration
-  output remains noncanonical until explicitly adopted and hands off to the existing assessment and planning system.
+- **Design exploration:** start with a basic self-contained HTML mock-up under `experiments/`, then, after the user
+  selects a direction, rebuild and iterate on it in the existing production Storybook. Storybook candidates use real
+  frontend tools but remain design work until the user approves integration. Do not require a Plan or `DESIGN.md`
+  for this design loop. After approval, assess and Plan only the remaining application integration when its size
+  warrants a Plan. The Exploration Agent owns disposable artifacts under `experiments/`; an approved case-worker
+  owns production-backed Storybook changes.
+
+  This workflow uses the repository's current checkout in place. Do not create or switch Git branches, worktrees,
+  stashes, or commits as design-workflow steps unless the user explicitly asks for that Git operation.
 
 The coordinator may approve scope expansion needed for the settled outcome unless behavior, direction, contracts,
 destructive effects, or dependencies change. Human pauses are reserved for genuine product or visual decisions.
@@ -110,8 +115,9 @@ validated when applicable, and carried forward.
   belongs in the planning skills.
 - Active Plans may contain one transient `handoff.md` during context rollover. It is coordinator-reviewed,
   overwritten on rollover, and deleted at closeout.
-- A signed-off mock-up and repository-aware `DESIGN.md` under `experiments/` may provide upstream planning
-  evidence, but neither is a Plan or implementation authorization.
+- A selected HTML mock-up, an approved Storybook candidate, and optional design notes may provide upstream planning
+  evidence. A `DESIGN.md` is never mandatory when the executable Storybook design expresses the needed decisions.
+  Design approval authorizes assessment of integration, not silent application integration.
 - Completed historical Plans, grilling records, and the existing master-plan records are preserved unchanged.
 
 ## Safety
@@ -125,5 +131,5 @@ validated when applicable, and carried forward.
 
 `.opencode/` contains the coordinator, cheap Scout, selectable Flash/Luna case-workers, one Quality Agent, one
 Exploration Agent, browser-proof guidance, and planning skills. Design exploration is coordinator-owned through
-`design-exploration`; the Exploration Agent uses `mock-up`, `design-catalogue`, `design-synthesis`, `prototype`, and
-optional `frontend-design` support to produce noncanonical evidence.
+`design-exploration`: the Exploration Agent produces disposable HTML evidence, and a case-worker uses
+`frontend-component-iteration` for the production-backed Storybook design loop before integration.

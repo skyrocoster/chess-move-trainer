@@ -26,6 +26,12 @@ allowed canonical adaptations and excluded artifact chrome, and attach each anch
 real visual breakpoint. Link to detailed upstream sections instead of copying them. Omit this section when no
 signed-off design evidence exists.
 
+For a UI designed through Storybook, require explicit user approval of the Storybook candidate before planning
+application integration. Treat the approved component and stories as primary executable design evidence; a
+`DESIGN.md` is optional. Plan only remaining integration such as product placement, state, data, routes, APIs, and
+integration proof. Do not add stages that recreate the HTML mock-up, redo settled Storybook design, create a Git
+branch/worktree, or obtain approval already recorded.
+
 Expected areas describe ownership; they are not exact executor authorization. Do not add parallel stages,
 transient execution logs, speculative work, or legacy records. Preserve truthful completed progress when refining
 an existing Plan. If outcome, scope, dependency, proof, or acceptance is unresolved, do not guess.

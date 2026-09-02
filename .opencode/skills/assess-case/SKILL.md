@@ -19,6 +19,10 @@ downstream work.
 4. For a design-backed UI outcome, identify which declared artifact governs composition and which document governs
    behavior or repository meaning. Extract only the fidelity anchors, allowed adaptations, excluded artifact chrome,
    and visual breakpoint needed downstream. Do not duplicate the full design hand-off.
+5. When the target is a production-backed Storybook candidate, treat the selected HTML artifact as visual input and
+   Storybook as the executable design workspace. Prefer a bounded `DIRECT-CANDIDATE`, explicitly exclude runtime
+   application imports and integration, and do not require a Plan or `DESIGN.md`. Do not propose Git branches,
+   worktrees, stashes, or commits as workflow steps.
 
 Choose:
 

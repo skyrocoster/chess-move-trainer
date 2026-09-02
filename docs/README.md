@@ -38,8 +38,11 @@ the case-worker and coordinator keep exact execution boundaries in the active co
 
 ## Experiments
 
-Exploration output is noncanonical until explicitly adopted. New mock-ups, prototypes, small fixtures,
+Early exploration output is noncanonical until explicitly adopted. Basic HTML mock-ups, prototypes, small fixtures,
 Python/Node manifests, and ignored generated artifacts belong under [`experiments/`](../experiments/README.md).
+After the user selects an HTML direction, rebuild and iterate on it in the existing production Storybook while
+keeping it disconnected from the application. Explicit approval of that Storybook candidate is required before
+integration assessment. This flow uses the current checkout and does not create Git branches or worktrees.
 Unrelated user-owned material under `Scratch/` remains in place.
 
 ## Adopting Chess Move Trainer

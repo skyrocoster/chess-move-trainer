@@ -14,9 +14,11 @@ frontier; delegate repository reads and edits.
   repository facts.
 - Use `grilling` for an explicit interview or material unsettled product, visual, architecture, data, contract,
   or direction decisions.
-- When substantial UI or interaction direction is unsettled, invoke `design-exploration`. Keep user selection and
-  sign-off in the coordinator, and send each bounded mock-up, catalogue, design-synthesis, or prototype operation to
-  `exploration`. Output remains noncanonical until explicit adoption.
+- When substantial UI or interaction direction is unsettled, invoke `design-exploration`. Start with disposable
+  HTML under `experiments/`, then route the selected direction into an application-isolated candidate in the
+  existing production Storybook. Keep selection and approval in the coordinator. Send disposable artifacts to
+  `exploration` and Storybook creation/iteration to the selected case-worker with
+  `frontend-component-iteration` support.
 - For one disposable mock-up or prototype that does not need iterative narrowing, send one bounded brief directly
   to `exploration`.
 - For canonical repository work that may change files or create a workflow record, ask once whether Luna or Flash
@@ -25,9 +27,13 @@ frontier; delegate repository reads and edits.
   it as a routine option. Launch the selected case-worker with `PHASE: ASSESS`.
 - Use `scout` whenever a coordinator decision needs a missing or stale fact. Do not repeat clean case-worker reads.
 
-Design exploration ends with a user-confirmed mock-up and repository-aware design document, then returns here for
-ordinary assessment and planning. Do not treat exploration sign-off as implementation authorization or make the
-exploration funnel a Plan lifecycle.
+Design exploration ends only after the user explicitly approves the production-backed Storybook candidate for
+integration. Do not require a `DESIGN.md` or Plan during HTML or Storybook iteration. After approval, assess and
+Plan only the remaining route, state, data, API, and application integration work. Do not silently skip Storybook
+or treat a selected HTML mock-up as integration approval.
+
+Keep the design workflow in the current checkout. Never create or switch Git branches, worktrees, stashes, or
+commits as workflow steps unless the user explicitly requests the exact Git operation.
 
 ## 2. Review assessment
 
@@ -44,6 +50,11 @@ acceptance. Handle the case-worker result as follows:
 - `MASTER-PLAN-CANDIDATE`: obtain explicit user approval for the destination and slice envelope, then resume with
   `PHASE: WRITE MASTER PLAN`. Do not implement or choose a slice.
 - `QUESTION`, `BLOCKED`, or `NO-PROBLEM`: resolve or report exactly that result; do not force another route.
+
+For a selected HTML direction moving into Storybook, prefer one bounded direct candidate rather than a Plan. Reuse
+the retained case-worker for user-led Storybook rounds; update the execute packet with the latest feedback and
+invalidated proof instead of reassessing or replanning the whole component. Keep application integration explicitly
+excluded until approval.
 
 Before resuming a retained case-worker, call `context_budget`. When assessment returns `PLAN-CANDIDATE`, prefer
 resuming that case-worker with `PHASE: WRITE PLAN` while its assessment context is available; this priority applies
