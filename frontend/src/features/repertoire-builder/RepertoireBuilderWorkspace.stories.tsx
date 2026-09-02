@@ -57,6 +57,20 @@ async function verifyStandardWorkspace(
   const boardLane = canvas.getByTestId("repertoire-board-lane");
   const sessionLane = canvas.getByTestId("repertoire-session-lane");
   const engineLane = canvas.getByTestId("repertoire-engine-lane");
+  const tablist = within(engineLane).getByRole("tablist", {
+    name: "Analysis and move responses",
+  });
+  const analysisTab = within(tablist).getByRole("tab", { name: "Analysis" });
+  const responsesTab = within(tablist).getByRole("tab", { name: "Move responses" });
+  await expect(within(tablist).getAllByRole("tab")).toHaveLength(2);
+  await expect(analysisTab).toHaveAttribute("aria-selected", "true");
+  await expect(within(engineLane).getByTestId("move-response-distribution")).toHaveAttribute(
+    "data-embedded",
+    "true",
+  );
+  await expect(within(engineLane).getByTestId("tabs-panel-move-responses")).toHaveAttribute(
+    "hidden",
+  );
   const meter = canvas.getByRole("meter", { name: "Evaluation" });
   const responsiveStage = canvas.getByTestId("repertoire-workspace-stage");
   await expect(responsiveStage).toHaveAttribute("data-layout-mode", mode);
@@ -101,6 +115,7 @@ async function verifyStandardWorkspace(
   await expectSessionBoundary(canvasElement);
   await expectPreferredMoveState(canvasElement, "empty");
   await expectPositionReachFrequency(canvasElement, "available", "White", "3 / 10 games", "30%");
+  await userEvent.click(responsesTab);
   const distribution = canvas.getByTestId("move-response-distribution");
   await expect(distribution).toHaveAttribute("data-state", "available");
   await expect(
@@ -110,6 +125,11 @@ async function verifyStandardWorkspace(
     within(distribution).getByRole("button", { name: /e4, 4 distinct games/ }),
   ).toBeVisible();
   await expectNoHorizontalOverflow(canvasElement);
+  await userEvent.click(analysisTab);
+  await expect(analysisTab).toHaveAttribute("aria-selected", "true");
+  await expect(within(engineLane).getByTestId("tabs-panel-move-responses")).toHaveAttribute(
+    "hidden",
+  );
 }
 
 export const Wide: Story = {
@@ -423,6 +443,11 @@ export const ResponseDistributionIntegration: Story = {
     }),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
+    const engineLane = canvas.getByTestId("repertoire-engine-lane");
+    const analysisTab = within(engineLane).getByRole("tab", { name: "Analysis" });
+    const responsesTab = within(engineLane).getByRole("tab", { name: "Move responses" });
+    await expect(analysisTab).toHaveAttribute("aria-selected", "true");
+    await userEvent.click(responsesTab);
     await loadGame(canvas, VIEWER_GAME_UUID, "2");
 
     const distribution = canvas.getByTestId("move-response-distribution");
@@ -446,6 +471,8 @@ export const ResponseDistributionIntegration: Story = {
     await expect(status).toHaveTextContent(beforeDisclosure ?? "");
     await userEvent.click(other);
     await expect(other).toHaveAttribute("aria-expanded", "false");
+    await userEvent.click(analysisTab);
+    await expect(canvas.getByTestId("tabs-panel-move-responses")).toHaveAttribute("hidden");
     await expectNoHorizontalOverflow(canvasElement);
   },
 };

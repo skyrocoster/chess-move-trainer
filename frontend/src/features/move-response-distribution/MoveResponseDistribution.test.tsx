@@ -53,6 +53,43 @@ function clientFor(data: MoveResponseDistributionResponse): MoveResponseDistribu
 afterEach(() => cleanup());
 
 describe("MoveResponseDistribution", () => {
+  it("keeps the standalone card surface by default and marks embedded mode as opt-in", () => {
+    const standalone = render(
+      <MoveResponseDistribution
+        fen={FEN}
+        color="white"
+        client={clientFor(availableData())}
+        onMoveSelect={vi.fn()}
+      />,
+    );
+    const standalonePanel = screen.getByTestId("move-response-distribution");
+    expect(standalonePanel).not.toHaveAttribute("data-embedded");
+    standalone.unmount();
+
+    render(
+      <MoveResponseDistribution
+        embedded
+        fen={FEN}
+        color="white"
+        client={clientFor(availableData())}
+        onMoveSelect={vi.fn()}
+      />,
+    );
+    expect(screen.getByTestId("move-response-distribution")).toHaveAttribute(
+      "data-embedded",
+      "true",
+    );
+
+    const standaloneRule = rawStyles.match(/\.panel\s*\{[^}]*\}/)?.[0];
+    expect(standaloneRule).toContain("border: 1px solid var(--md-sys-color-outline-variant);");
+    expect(standaloneRule).toContain("border-radius: var(--cmt-radius-default);");
+    const embeddedRule = rawStyles.match(/\.panel\.embedded\s*\{[^}]*\}/)?.[0];
+    expect(embeddedRule).toContain("border: 0;");
+    expect(embeddedRule).toContain("border-radius: 0;");
+    expect(embeddedRule).toContain("background: transparent;");
+    expect(embeddedRule).toContain("box-shadow: none;");
+  });
+
   it("renders the available 01C chart/list with the selected colour and overlap-safe copy", async () => {
     render(
       <MoveResponseDistribution

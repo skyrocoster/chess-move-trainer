@@ -4,7 +4,6 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect, fn, within } from "storybook/test";
 
 import type { PositionContextResponse } from "../viewer/positionContextApi";
-import type { MoveResponseDistributionResponse } from "../move-response-distribution/moveResponseDistributionApi";
 import { RepertoireSessionPanel, type RepertoireSessionPanelProps } from "./RepertoireSessionPanel";
 import type { RepertoirePositionModel } from "./repertoireWorkflowModel";
 
@@ -16,20 +15,6 @@ const POSITION_CONTEXT: PositionContextResponse = {
   black_count: 2,
   white_total: 10,
   black_total: 10,
-};
-
-const MOVE_RESPONSE: MoveResponseDistributionResponse = {
-  fen: SOURCE_FEN,
-  color: "white",
-  matching_game_count: 4,
-  replies: [
-    { rank: 1, child_uci: "e2e4", san: "e4", distinct_game_count: 4, opening_name: null },
-    { rank: 2, child_uci: "d2d4", san: "d4", distinct_game_count: 3, opening_name: null },
-    { rank: 3, child_uci: "c2c4", san: "c4", distinct_game_count: 2, opening_name: null },
-    { rank: 4, child_uci: "g1f3", san: "Nf3", distinct_game_count: 1, opening_name: null },
-    { rank: 5, child_uci: "c2c3", san: "c3", distinct_game_count: 1, opening_name: null },
-    { rank: 6, child_uci: "b2b3", san: "b3", distinct_game_count: 1, opening_name: null },
-  ],
 };
 
 function model(overrides: Partial<RepertoirePositionModel> = {}): RepertoirePositionModel {
@@ -63,12 +48,6 @@ function panelArgs(
     contextLoading: false,
     contextError: null,
     workflowError: null,
-    moveResponseDistribution: {
-      fen: SOURCE_FEN,
-      color: "white",
-      client: async () => ({ status: "success", data: MOVE_RESPONSE }),
-      onMoveSelect: fn(),
-    },
     onDateChange: fn(),
     onSave: fn(),
     onPlaySavedMove: fn(),

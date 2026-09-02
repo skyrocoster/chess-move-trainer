@@ -26,6 +26,7 @@ describe("RepertoireBuilderWorkspace move response distribution", () => {
         }),
     );
     renderWorkspace({ moveResponseDistributionClient: client });
+    await user.click(screen.getByRole("tab", { name: "Move responses" }));
     await waitFor(() => expect(client).toHaveBeenCalledOnce());
 
     await user.click(screen.getByRole("button", { name: "Flip" }));

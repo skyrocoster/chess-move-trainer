@@ -10,6 +10,13 @@
   box-shadow: var(--cmt-elevation-e1);
 }
 
+.panel.embedded {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
 .header {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;

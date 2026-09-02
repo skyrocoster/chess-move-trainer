@@ -4,6 +4,9 @@ import axe from "axe-core";
 import matchers from "@chialab/vitest-axe";
 import type {} from "@chialab/vitest-axe/matchers";
 import type { ComponentProps } from "react";
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -170,7 +173,11 @@ type PanelCallbacks = Pick<
   "onAnalyze" | "onUpdate" | "onRetry" | "onRetryObservation" | "onCandidateMove"
 >;
 
-function renderPanel(display: AnalysisPanelDisplay, overrides: Partial<PanelCallbacks> = {}) {
+function renderPanel(
+  display: AnalysisPanelDisplay,
+  overrides: Partial<PanelCallbacks> = {},
+  embedded = false,
+) {
   const callbacks: PanelCallbacks = {
     onAnalyze: vi.fn(),
     onUpdate: vi.fn(),
@@ -178,13 +185,42 @@ function renderPanel(display: AnalysisPanelDisplay, overrides: Partial<PanelCall
     onRetryObservation: vi.fn(),
     ...overrides,
   };
-  const rendered = render(<AnalysisPanel display={display} {...callbacks} />);
+  const rendered = render(<AnalysisPanel display={display} embedded={embedded} {...callbacks} />);
   return { ...callbacks, ...rendered };
 }
 
 afterEach(() => cleanup());
 
 describe("AnalysisPanel", () => {
+  it("keeps the standalone card surface by default and marks embedded mode as opt-in", () => {
+    const standalone = renderPanel(completeDisplay());
+    const standalonePanel = screen.getByRole("region", { name: "Analysis" });
+    expect(standalonePanel).not.toHaveAttribute("data-embedded");
+    standalone.unmount();
+
+    renderPanel(completeDisplay(), {}, true);
+    expect(screen.getByRole("region", { name: "Analysis" })).toHaveAttribute(
+      "data-embedded",
+      "true",
+    );
+
+    const standaloneRule = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), "AnalysisPanel.module.css"),
+      "utf8",
+    ).match(/\.panel\s*\{[^}]*\}/)?.[0];
+    expect(standaloneRule).toContain("border: 1px solid var(--md-sys-color-outline-variant);");
+    expect(standaloneRule).toContain("border-radius: var(--cmt-radius-12);");
+    expect(standaloneRule).toContain("box-shadow: var(--cmt-elevation-e1);");
+    const embeddedRule = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), "AnalysisPanel.module.css"),
+      "utf8",
+    ).match(/\.panel\.embedded\s*\{[^}]*\}/)?.[0];
+    expect(embeddedRule).toContain("border: 0;");
+    expect(embeddedRule).toContain("border-radius: 0;");
+    expect(embeddedRule).toContain("background: transparent;");
+    expect(embeddedRule).toContain("box-shadow: none;");
+  });
+
   it("renders the loading display without inventing controls", () => {
     renderPanel(displayFor());
 

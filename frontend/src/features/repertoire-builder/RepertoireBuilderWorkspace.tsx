@@ -1,7 +1,6 @@
 import { Chess, type Square } from "chess.js";
 import { useCallback, useMemo, useRef, useState } from "react";
 
-import { AnalysisPanel } from "../analysis/AnalysisPanel";
 import type { InteractiveBoardMoveIntent } from "../board-adapter/InteractiveBoardAdapter";
 import { deriveLastMove, lastMoveFromSquares } from "../board-adapter/lastMove";
 import { PositionDescription } from "../board-adapter/PositionDescription";
@@ -30,6 +29,7 @@ import {
   promotionPiece,
   sessionViewKey,
 } from "./repertoireBuilderWorkspaceModel";
+import { RepertoireAnalysisTabs } from "./RepertoireAnalysisTabs";
 import {
   createStandardStartSession,
   createStoredGameSession,
@@ -449,13 +449,6 @@ export default function RepertoireBuilderWorkspace({
                 contextError={workflow.contextError}
                 workflowError={workflow.workflowError}
                 dateEdit={workflow.dateEdit}
-                moveResponseDistribution={{
-                  fen: displayedPosition.fen,
-                  color: session.bottomColor,
-                  selectedUci: selectedResponseUci,
-                  client: moveResponseDistributionClient,
-                  onMoveSelect: handleResponseMove,
-                }}
                 onDateChange={workflow.onDateChange}
                 onSave={workflow.onSave}
                 onPlaySavedMove={handlePlaySavedMove}
@@ -474,13 +467,22 @@ export default function RepertoireBuilderWorkspace({
               data-testid="repertoire-engine-lane"
               aria-label="Engine lane"
             >
-              <AnalysisPanel
-                display={analysisDisplay}
-                onAnalyze={() => parentAnalysisState.handleAction("analyze")}
-                onUpdate={() => parentAnalysisState.handleAction("update")}
-                onRetry={() => parentAnalysisState.handleAction("retry")}
-                onRetryObservation={parentAnalysisState.retryObservation}
-                onCandidateMove={handleCandidateMove}
+              <RepertoireAnalysisTabs
+                analysis={{
+                  display: analysisDisplay,
+                  onAnalyze: () => parentAnalysisState.handleAction("analyze"),
+                  onUpdate: () => parentAnalysisState.handleAction("update"),
+                  onRetry: () => parentAnalysisState.handleAction("retry"),
+                  onRetryObservation: parentAnalysisState.retryObservation,
+                  onCandidateMove: handleCandidateMove,
+                }}
+                moveResponseDistribution={{
+                  fen: displayedPosition.fen,
+                  color: session.bottomColor,
+                  selectedUci: selectedResponseUci,
+                  client: moveResponseDistributionClient,
+                  onMoveSelect: handleResponseMove,
+                }}
               />
             </section>
           }

@@ -15,6 +15,8 @@ import styles from "./MoveResponseDistribution.module.css";
 export type MoveResponseDistributionProps = {
   fen: Fen | null;
   color: ChessSide;
+  /** Remove the standalone card surface when a parent composition owns it. */
+  embedded?: boolean;
   selectedUci?: string | null;
   client?: MoveResponseDistributionClient;
   onMoveSelect: (childUci: string) => void;
@@ -27,6 +29,7 @@ function colorLabel(color: ChessSide): "White" | "Black" {
 export function MoveResponseDistribution({
   fen,
   color,
+  embedded = false,
   selectedUci = null,
   client = fetchMoveResponseDistribution,
   onMoveSelect,
@@ -52,7 +55,8 @@ export function MoveResponseDistribution({
 
   return (
     <section
-      className={styles.panel}
+      className={[styles.panel, embedded ? styles.embedded : null].filter(Boolean).join(" ")}
+      data-embedded={embedded ? "true" : undefined}
       data-testid="move-response-distribution"
       data-state={state.status}
       aria-labelledby={headingId}

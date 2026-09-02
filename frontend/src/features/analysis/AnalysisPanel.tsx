@@ -53,6 +53,8 @@ export type AnalysisPanelCandidateIntent = (move: string) => void | Promise<void
 
 export type AnalysisPanelProps = {
   display: AnalysisPanelDisplay;
+  /** Remove the standalone card surface when a parent composition owns it. */
+  embedded?: boolean;
   onAnalyze: AnalysisPanelIntent;
   onUpdate: AnalysisPanelIntent;
   onRetry: AnalysisPanelIntent;
@@ -263,6 +265,7 @@ function ResultPresentation({
 
 export function AnalysisPanel({
   display,
+  embedded = false,
   onAnalyze,
   onUpdate,
   onRetry,
@@ -272,7 +275,11 @@ export function AnalysisPanel({
   const { stateLabel, error, actionError, message, result, actions } = display;
 
   return (
-    <section className={styles.panel} aria-labelledby="analysis-panel-heading">
+    <section
+      className={[styles.panel, embedded ? styles.embedded : null].filter(Boolean).join(" ")}
+      data-embedded={embedded ? "true" : undefined}
+      aria-labelledby="analysis-panel-heading"
+    >
       <header className={styles.header}>
         <div className={styles.panelTitle}>
           <p className={styles.eyebrow}>Engine output</p>

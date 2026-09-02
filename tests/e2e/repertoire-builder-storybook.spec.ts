@@ -601,6 +601,7 @@ test.describe("Repertoire Builder Storybook surface", () => {
       { mode: "narrow" as const, width: 497, height: 1000 },
       { mode: "medium" as const, width: 800, height: 1000 },
       { mode: "narrow" as const, width: 412, height: 1000 },
+      { mode: "narrow" as const, width: 320, height: 1000 },
     ];
 
     for (const entry of cases) {
@@ -615,6 +616,20 @@ test.describe("Repertoire Builder Storybook surface", () => {
             : [],
       );
 
+      const engineLane = page.getByTestId("repertoire-engine-lane");
+      const analysisTab = engineLane.getByRole("tab", { name: "Analysis" });
+      const responsesTab = engineLane.getByRole("tab", { name: "Move responses" });
+      await expect(engineLane.getByRole("tab")).toHaveCount(2);
+      await expect(analysisTab).toHaveAttribute("aria-selected", "true");
+      await expect(engineLane.getByTestId("move-response-distribution")).toHaveAttribute(
+        "data-embedded",
+        "true",
+      );
+      await expect(engineLane.getByTestId("tabs-panel-move-responses")).toHaveAttribute(
+        "hidden",
+      );
+      await responsesTab.click();
+      await expect(responsesTab).toHaveAttribute("aria-selected", "true");
       const distribution = page.getByTestId("move-response-distribution");
       await expect(distribution).toHaveAttribute("data-state", "available");
       await expect(distribution.getByText("Black repertoire colour", { exact: true })).toBeVisible();
@@ -648,6 +663,10 @@ test.describe("Repertoire Builder Storybook surface", () => {
         "Opponent move played locally: Nf3.",
       );
       await expect(page.getByTestId("session-origin")).toContainText("Current Ply 3.");
+      await analysisTab.click();
+      await expect(engineLane.getByTestId("tabs-panel-move-responses")).toHaveAttribute(
+        "hidden",
+      );
     }
 
     await page.emulateMedia({ forcedColors: "active", reducedMotion: "reduce" });

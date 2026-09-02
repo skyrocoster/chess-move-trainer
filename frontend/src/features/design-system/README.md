@@ -13,8 +13,21 @@ Material Design-based component library used across the frontend.
 | `Button`        | Styled button with variants                                                                          |
 | `CalendarDate`  | Controlled UTC date picker (Base UI Popover + react-day-picker); null allowed, future dates disabled |
 | `Disclosure`    | Expandable/collapsible content section                                                               |
+| `Tabs`          | Generic accessible tabs with mounted caller-owned panels and horizontal overflow behavior            |
 | `feedback/`     | Feedback display components: `Inline`, `Panel`, `Page`, `Core`                                       |
 | `line-library/` | Tree-based opening line picker: `LineLibrary`, `LineLibraryFilters`, `LineLibraryTree`               |
+
+### Tabs
+
+`Tabs` accepts stable, unique tab IDs, visible labels, and caller-owned `ReactNode` panel content.
+Use `defaultSelectedId` for uncontrolled selection or `selectedId` with `onSelectedIdChange` for
+controlled selection. `ariaLabel` names the tab list, and root `<div>` DOM props and `className`
+are forwarded.
+
+All panels remain mounted; inactive panels are hidden, and panel interiors are owned by the caller.
+The horizontal rail provides roving keyboard navigation, disabled-tab skipping, focus and selection
+reveal, native scrolling, vertical-wheel conversion while movement is possible, and overflow controls
+with edge fades.
 
 ## Storybook support components
 

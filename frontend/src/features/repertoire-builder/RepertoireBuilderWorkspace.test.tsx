@@ -47,6 +47,26 @@ describe("RepertoireBuilderWorkspace", () => {
     expect(within(sessionLane).getByTestId("repertoire-session")).toBeVisible();
     expect(within(sessionLane).getByTestId("position-description-row")).toBeVisible();
     expect(within(engineLane).getByRole("heading", { name: "Analysis" })).toBeVisible();
+    const tablist = within(engineLane).getByRole("tablist", {
+      name: "Analysis and move responses",
+    });
+    expect(within(tablist).getAllByRole("tab")).toHaveLength(2);
+    expect(within(tablist).getByRole("tab", { name: "Analysis" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    expect(within(tablist).getByRole("tab", { name: "Move responses" })).toHaveAttribute(
+      "aria-selected",
+      "false",
+    );
+    expect(within(engineLane).getByTestId("tabs-panel-move-responses")).toHaveAttribute(
+      "hidden",
+    );
+    expect(within(engineLane).getByTestId("move-response-distribution")).toHaveAttribute(
+      "data-embedded",
+      "true",
+    );
+    expect(within(sessionLane).queryByTestId("move-response-distribution")).not.toBeInTheDocument();
     expect(screen.getAllByTestId("board-move-history")).toHaveLength(1);
     expect(screen.queryByTestId("session-move-history")).not.toBeInTheDocument();
     expect(screen.getAllByTestId("session-status")).toHaveLength(1);
@@ -601,6 +621,7 @@ describe("RepertoireBuilderWorkspace", () => {
         expect.any(AbortSignal),
       ),
     );
+    await user.click(screen.getByRole("tab", { name: "Move responses" }));
     const panel = screen.getByTestId("move-response-distribution");
     const e4 = within(panel).getByRole("button", { name: /e4, 4 distinct games, 40%/ });
     await user.click(e4);
