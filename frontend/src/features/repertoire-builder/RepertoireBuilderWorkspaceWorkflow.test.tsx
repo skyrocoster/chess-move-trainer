@@ -131,6 +131,18 @@ function historyEntry(name: string) {
   return within(screen.getByTestId("board-move-history")).getByRole("button", { name });
 }
 
+function expectDateFreePreferredPanel() {
+  const panel = screen.getByRole("region", { name: "Preferred move" });
+  const scoped = within(panel);
+  expect(scoped.queryByTestId("effective-date")).not.toBeInTheDocument();
+  expect(scoped.queryByTestId("calendar-date-popup")).not.toBeInTheDocument();
+  expect(scoped.queryByRole("button", { name: /effective date/i })).not.toBeInTheDocument();
+  expect(panel).not.toHaveTextContent(/effective date/i);
+  expect(panel).not.toHaveTextContent(
+    /\b\d{4}-\d{2}-\d{2}\b|\b(?:\d{1,2} )?(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)(?: \d{1,2},?)? \d{4}\b/,
+  );
+}
+
 describe("RepertoireBuilderWorkspace workflow", () => {
   it("stages a saved promotion move selected on the board without a history entry", async () => {
     const user = userEvent.setup();
@@ -152,6 +164,7 @@ describe("RepertoireBuilderWorkspace workflow", () => {
     await user.type(screen.getByLabelText("Game UUID"), VIEWER_GAME_UUID);
     await user.click(screen.getByRole("button", { name: "Load game" }));
     await waitFor(() => expect(screen.getByTestId("saved-move")).toBeVisible());
+    expectDateFreePreferredPanel();
     await user.click(screen.getByTestId("move-e7-e8"));
     const dialog = await screen.findByRole("dialog", { name: "Choose a promotion piece" });
     await user.click(within(dialog).getByRole("button", { name: "Promote to knight" }));
@@ -203,7 +216,7 @@ describe("RepertoireBuilderWorkspace workflow", () => {
       { signal: expect.any(AbortSignal) },
     );
     await waitFor(() =>
-      expect(screen.getByTestId("saved-move")).toHaveTextContent("No saved choice yet."),
+      expect(screen.getByTestId("saved-move")).toHaveTextContent("None yet"),
     );
   });
 
@@ -218,11 +231,11 @@ describe("RepertoireBuilderWorkspace workflow", () => {
     await user.click(within(dialog).getByRole("button", { name: "Remove" }));
 
     await waitFor(() =>
-      expect(screen.getByTestId("saved-move")).toHaveTextContent("No saved choice yet."),
+      expect(screen.getByTestId("saved-move")).toHaveTextContent("None yet"),
     );
     expect(screen.getByTestId("staged-move")).toHaveTextContent("d4");
-    expect(screen.getByRole("button", { name: "Save" })).toBeEnabled();
-    expect(screen.getByRole("button", { name: "Change effective date" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Save d4" })).toBeEnabled();
+    expectDateFreePreferredPanel();
     expect(historyEntry("Initial position")).toHaveAttribute("aria-current", "step");
     expect(clients.preferredMoveClient.put).not.toHaveBeenCalled();
   });
@@ -268,12 +281,13 @@ describe("RepertoireBuilderWorkspace workflow", () => {
     });
     await waitFor(() => expect(screen.getByTestId("saved-move")).toBeVisible());
     await user.click(screen.getByTestId("move-d2-d4"));
-    await user.click(screen.getByRole("button", { name: "Save" }));
+    await user.click(screen.getByRole("button", { name: "Save d4" }));
 
     await screen.findByText("Saving preferred move...", { exact: true });
     expect(screen.getByTestId("saved-move")).toHaveTextContent("e4");
     expect(screen.getByTestId("staged-move")).toHaveTextContent("d4");
-    expect(screen.getByRole("button", { name: "Save" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Save d4" })).toBeDisabled();
+    expectDateFreePreferredPanel();
     expect(screen.getByRole("button", { name: "Remove" })).toBeDisabled();
     expect(historyEntry("Initial position")).toHaveAttribute("aria-current", "step");
     expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", AFTER_D4_FEN);
@@ -300,7 +314,9 @@ describe("RepertoireBuilderWorkspace workflow", () => {
       },
     });
     await waitFor(() => expect(screen.getByTestId("saved-move")).toHaveTextContent("d4"));
-    expect(screen.getByTestId("staged-move")).toHaveTextContent("No move staged.");
+    expect(screen.getByTestId("staged-move")).toHaveTextContent(
+      "Stage a move to propose replacing d4",
+    );
     expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", AFTER_D4_FEN);
     expect(historyEntry("White, move 1, d4")).toHaveAttribute("aria-current", "step");
     expect(historyEntry("Initial position")).toBeVisible();
@@ -333,34 +349,30 @@ describe("RepertoireBuilderWorkspace workflow", () => {
     );
     expect(screen.getByTestId("saved-move")).toHaveTextContent("e4");
     expect(screen.getByTestId("staged-move")).toHaveTextContent("d4");
-    expect(screen.getByRole("button", { name: "Save" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Save d4" })).toBeEnabled();
   });
 
-  it("keeps date changes visibly disabled without opening a calendar or issuing a request", async () => {
+  it("keeps the panel date-free while preserving blank effective-now requests", async () => {
     const user = userEvent.setup();
     const clients = testClients();
     renderWorkspace(clients);
 
     await waitFor(() => expect(screen.getByText("Never seen as White")).toBeVisible());
     await user.click(screen.getByTestId("move-e2-e4"));
-    const dateButton = screen.getByRole("button", { name: "Change effective date" });
-    expect(dateButton).toBeDisabled();
-    expect(dateButton).toHaveAccessibleDescription("Date changes are temporarily unavailable");
-    await user.click(dateButton);
-    expect(screen.queryByTestId("calendar-date-popup")).not.toBeInTheDocument();
+    expectDateFreePreferredPanel();
     expect(clients.preferredMoveClient.put).not.toHaveBeenCalled();
     expect(clients.preferredMoveClient.remove).not.toHaveBeenCalled();
 
-    await user.click(screen.getByRole("button", { name: "Save" }));
+    await user.click(screen.getByRole("button", { name: "Save e4" }));
     await waitFor(() => expect(clients.preferredMoveClient.put).toHaveBeenCalledTimes(1));
     expect(clients.preferredMoveClient.put).toHaveBeenCalledWith(
       { fen: STARTING_FEN, move_uci: "e2e4", effective_at: "" },
       { signal: expect.any(AbortSignal) },
     );
-    expect(screen.queryByTestId("calendar-date-popup")).not.toBeInTheDocument();
+    expectDateFreePreferredPanel();
   });
 
-  it("retains the staged move and disabled date gate when a mutation fails", async () => {
+  it("retains the staged move and date-free panel when a mutation fails", async () => {
     const user = userEvent.setup();
     const clients = testClients();
     let resolveMutation!: (result: PreferredMoveMutationResult) => void;
@@ -374,7 +386,7 @@ describe("RepertoireBuilderWorkspace workflow", () => {
 
     await waitFor(() => expect(screen.getByText("Never seen as White")).toBeVisible());
     await user.click(screen.getByTestId("move-e2-e4"));
-    await user.click(screen.getByRole("button", { name: "Save" }));
+    await user.click(screen.getByRole("button", { name: "Save e4" }));
 
     const mutationMessage = await screen.findByText("Saving preferred move...", { exact: true });
     const mutationStatus = mutationMessage.closest('[role="status"]');
@@ -405,10 +417,7 @@ describe("RepertoireBuilderWorkspace workflow", () => {
     expect(historyEntry("Initial position")).toBeVisible();
     expect(screen.getByTestId("session-status")).toHaveTextContent("My move staged: e4.");
     expect(screen.getAllByText("My move staged: e4.", { exact: true })).toHaveLength(1);
-    expect(screen.getByRole("button", { name: "Change effective date" })).toBeDisabled();
-    expect(
-      screen.getByRole("button", { name: "Change effective date" }),
-    ).toHaveAccessibleDescription("Date changes are temporarily unavailable");
+    expectDateFreePreferredPanel();
   });
 
   it("activates a displayed Best candidate through the same local move path", async () => {
@@ -580,7 +589,7 @@ describe("RepertoireBuilderWorkspace workflow", () => {
     ).toBeVisible();
     expect(within(session).getByTestId("session-status")).toHaveAttribute("aria-live", "polite");
     expect(
-      within(session).getByRole("heading", { name: "What is saved, and what is staged?" }),
+      within(session).getByRole("heading", { name: "Preferred move" }),
     ).toBeVisible();
 
     expect(await axe.run(container)).toHaveNoViolations();

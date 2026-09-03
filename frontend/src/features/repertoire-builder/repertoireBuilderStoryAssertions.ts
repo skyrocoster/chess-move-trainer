@@ -44,7 +44,7 @@ export async function expectSessionBoundary(canvasElement: HTMLElement): Promise
   await expect(status).toHaveAttribute("role", "status");
   await expect(status).toHaveAttribute("aria-live", "polite");
   await expect(
-    sessionContent.getByRole("heading", { name: "What is saved, and what is staged?" }),
+    sessionContent.getByRole("heading", { name: "Preferred move" }),
   ).toBeVisible();
 }
 
@@ -107,14 +107,21 @@ export async function expectPreferredActions(
   if (!(panel instanceof HTMLElement)) {
     throw new Error("The preferred move panel is missing.");
   }
-  const actual = within(panel)
-    .queryAllByRole("button")
-    .map((button) => button.textContent?.trim() ?? "")
-    .filter((label) => ["Save", "Change effective date", "Remove"].includes(label));
+  const footer = within(panel).queryByTestId("preferred-actions");
+  if (actions.length === 0) {
+    await expect(footer).not.toBeInTheDocument();
+    return;
+  }
+  if (!(footer instanceof HTMLElement)) {
+    throw new Error("The preferred move action footer is missing.");
+  }
+  const actual = within(footer)
+    .getAllByRole("button")
+    .map((button) => button.textContent?.trim() ?? "");
   await expect(actual).toEqual(actions);
 }
 
-export async function expectDeferredDateAction(canvasElement: HTMLElement): Promise<void> {
+export async function expectDateFreePreferredPanel(canvasElement: HTMLElement): Promise<void> {
   const panel = canvasElement
     .querySelector('[data-testid="repertoire-session-lane"]')
     ?.querySelector('section[aria-labelledby="preferred-move-heading"]');
@@ -122,23 +129,13 @@ export async function expectDeferredDateAction(canvasElement: HTMLElement): Prom
     throw new Error("The preferred move panel is missing.");
   }
   const scoped = within(panel);
-  const date = scoped.getByRole("button", { name: "Change effective date" });
-  await expect(date).toBeDisabled();
-  await expect(date).toHaveAccessibleDescription("Date changes are temporarily unavailable");
+  await expect(scoped.queryByTestId("effective-date")).not.toBeInTheDocument();
   await expect(scoped.queryByTestId("calendar-date-popup")).not.toBeInTheDocument();
-}
-
-export async function expectNoPreferredActions(canvasElement: HTMLElement): Promise<void> {
-  const panel = canvasElement
-    .querySelector('[data-testid="repertoire-session-lane"]')
-    ?.querySelector('section[aria-labelledby="preferred-move-heading"]');
-  if (!(panel instanceof HTMLElement)) {
-    throw new Error("The preferred move panel is missing.");
-  }
-  const scoped = within(panel);
-  for (const label of ["Add", "Edit", "Cancel edit", "Save replacement", "Play saved move"]) {
-    await expect(scoped.queryByRole("button", { name: label })).not.toBeInTheDocument();
-  }
+  await expect(scoped.queryByRole("button", { name: /effective date/i })).not.toBeInTheDocument();
+  await expect(panel).not.toHaveTextContent(/effective date/i);
+  await expect(panel).not.toHaveTextContent(
+    /\b\d{4}-\d{2}-\d{2}\b|\b(?:\d{1,2} )?(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)(?: \d{1,2},?)? \d{4}\b/,
+  );
 }
 
 export async function expectPositionReachFrequency(

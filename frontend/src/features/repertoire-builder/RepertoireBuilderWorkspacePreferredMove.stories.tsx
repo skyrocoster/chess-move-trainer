@@ -10,8 +10,7 @@ import { PROMOTION_GAME } from "../viewer/viewerStoryFixtures";
 import RepertoireBuilderWorkspace from "./RepertoireBuilderWorkspace";
 import {
   expectActiveSessionHistoryEntry,
-  expectDeferredDateAction,
-  expectNoPreferredActions,
+  expectDateFreePreferredPanel,
   expectPositionReachFrequency,
   expectPositionSquares,
   expectPreferredActions,
@@ -41,9 +40,11 @@ export const SavedNoStage: Story = {
     await expect(
       canvas.getByRole("button", { name: "Current saved choice: e4; play and stage this move." }),
     ).toBeEnabled();
-    await expect(canvas.getByTestId("staged-move")).toHaveTextContent("No move staged.");
-    await expectPreferredActions(canvasElement, ["Change effective date", "Remove"]);
-    await expectDeferredDateAction(canvasElement);
+    await expect(canvas.getByTestId("staged-move")).toHaveTextContent(
+      "Stage a move to propose replacing e4",
+    );
+    await expectPreferredActions(canvasElement, ["Remove"]);
+    await expectDateFreePreferredPanel(canvasElement);
   },
 };
 
@@ -60,10 +61,10 @@ export const FirstChoice: Story = {
     await userEvent.click(await canvas.findByRole("button", { name: "1. e4" }));
     await expectPreferredMoveState(canvasElement, "first-choice");
     await expectStagedStatus(canvasElement, "e4");
-    await expect(canvas.getByTestId("saved-move")).toHaveTextContent("No saved choice yet.");
-    await expect(canvas.getByTestId("staged-move")).toHaveTextContent(/^Staged move\s*e4 \(e2e4\)/);
-    await expectPreferredActions(canvasElement, ["Save", "Change effective date"]);
-    await expectDeferredDateAction(canvasElement);
+    await expect(canvas.getByTestId("saved-move")).toHaveTextContent("None yet");
+    await expect(canvas.getByTestId("staged-move")).toHaveTextContent(/^Staged\s*e4\s*e2e4/);
+    await expectPreferredActions(canvasElement, ["Save e4"]);
+    await expectDateFreePreferredPanel(canvasElement);
     await expectSessionHistory(canvasElement, ["Initial position"]);
   },
 };
@@ -77,9 +78,9 @@ export const ReplacementConstrained: Story = {
     await userEvent.click(await canvas.findByRole("button", { name: "1. d4" }));
     await expectPreferredMoveState(canvasElement, "replacement");
     await expectStagedStatus(canvasElement, "d4");
-    await expect(canvas.getByText("Save d4 to replace e4.")).toBeVisible();
-    await expectPreferredActions(canvasElement, ["Save", "Change effective date", "Remove"]);
-    await expectDeferredDateAction(canvasElement);
+    await expect(canvas.getByTestId("preferred-status")).toHaveTextContent("Ready to save");
+    await expectPreferredActions(canvasElement, ["Save d4", "Remove"]);
+    await expectDateFreePreferredPanel(canvasElement);
     await expectPositionReachFrequency(canvasElement, "available", "White", "5 / 10 games", "50%");
     await expectSessionHistory(canvasElement, ["Initial position"]);
     await expectNoHorizontalOverflow(canvasElement);
@@ -93,10 +94,10 @@ export const Matching: Story = {
     const canvas = within(canvasElement);
     await userEvent.click(await canvas.findByRole("button", { name: "1. e4" }));
     await expectPreferredMoveState(canvasElement, "matching");
-    await expect(canvas.getByText("e4 is already the current saved choice.")).toBeVisible();
-    await expectPreferredActions(canvasElement, ["Change effective date", "Remove"]);
-    await expect(canvas.queryByRole("button", { name: "Save" })).not.toBeInTheDocument();
-    await expectDeferredDateAction(canvasElement);
+    await expect(canvas.getByRole("button", { name: "Matches saved" })).toBeDisabled();
+    await expectPreferredActions(canvasElement, ["Matches saved", "Remove"]);
+    await expect(canvas.queryByRole("button", { name: /^Save / })).not.toBeInTheDocument();
+    await expectDateFreePreferredPanel(canvasElement);
     await expectSessionHistory(canvasElement, ["Initial position"]);
   },
 };
@@ -115,7 +116,7 @@ export const SavedBoxKeyboard: Story = {
     await expect(savedBox).toHaveFocus();
     await userEvent.keyboard("{Enter}");
     await expectPreferredMoveState(canvasElement, "matching");
-    await expect(canvas.getByTestId("staged-move")).toHaveTextContent(/^Staged move\s*e4 \(e2e4\)/);
+    await expect(canvas.getByTestId("staged-move")).toHaveTextContent(/^Staged\s*e4\s*e2e4/);
     await expectPositionSquares(canvasElement, "e2", 0);
     await expectPositionSquares(canvasElement, "e4", 1);
     await expectSessionHistory(canvasElement, ["Initial position"]);
@@ -138,19 +139,25 @@ export const SaveReplacement: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await userEvent.click(await canvas.findByRole("button", { name: "1. d4" }));
-    await userEvent.click(canvas.getByRole("button", { name: "Save" }));
+    await userEvent.click(canvas.getByRole("button", { name: "Save d4" }));
     await waitFor(() =>
       expect(canvas.getByTestId("session-status")).toHaveTextContent("Preferred move saved."),
     );
     await expectPreferredMoveState(canvasElement, "saved");
     await expect(canvas.getByTestId("saved-move")).toHaveTextContent(
-      /^Current saved choice\s*d4 \(d2d4\)/,
+      /^Saved\s*d4\s*d2d4/,
     );
-    await expect(canvas.getByTestId("staged-move")).toHaveTextContent("No move staged.");
+    await expect(canvas.getByTestId("staged-move")).toHaveTextContent(
+      "Stage a move to propose replacing d4",
+    );
     await expectPositionSquares(canvasElement, "d2", 0);
     await expectPositionSquares(canvasElement, "d4", 1);
     await expectSessionHistory(canvasElement, ["Initial position", "White, move 1, d4"]);
-    await expectNoPreferredActions(canvasElement);
+    await expect(
+      canvas.getByText("Wait for your turn to stage or save a preferred move."),
+    ).toBeVisible();
+    await expectPreferredActions(canvasElement, []);
+    await expectDateFreePreferredPanel(canvasElement);
   },
 };
 
@@ -164,7 +171,7 @@ export const RemoveRetainsStaging: Story = {
     await userEvent.click(await canvas.findByRole("button", { name: "Remove" }));
     const dialog = await body.findByRole("alertdialog", { name: "Remove preferred move?" });
     await expect(canvas.getByTestId("saved-move")).toHaveTextContent(
-      /^Current saved choice\s*e4 \(e2e4\)/,
+      /^Saved\s*e4\s*e2e4/,
     );
     await userEvent.click(within(dialog).getByRole("button", { name: "Cancel" }));
     await waitFor(() => expect(canvas.getByRole("button", { name: "Remove" })).toHaveFocus());
@@ -175,10 +182,10 @@ export const RemoveRetainsStaging: Story = {
     await userEvent.click(within(confirmedDialog).getByRole("button", { name: "Remove" }));
     await expect(canvas.getByText("Preferred move removed.")).toBeVisible();
     await expectPreferredMoveState(canvasElement, "first-choice");
-    await expect(canvas.getByTestId("saved-move")).toHaveTextContent("No saved choice yet.");
-    await expect(canvas.getByTestId("staged-move")).toHaveTextContent(/^Staged move\s*d4 \(d2d4\)/);
-    await expectPreferredActions(canvasElement, ["Save", "Change effective date"]);
-    await expectDeferredDateAction(canvasElement);
+    await expect(canvas.getByTestId("saved-move")).toHaveTextContent("None yet");
+    await expect(canvas.getByTestId("staged-move")).toHaveTextContent(/^Staged\s*d4\s*d2d4/);
+    await expectPreferredActions(canvasElement, ["Save d4"]);
+    await expectDateFreePreferredPanel(canvasElement);
     await expectSessionHistory(canvasElement, ["Initial position"]);
   },
 };
@@ -194,15 +201,15 @@ export const PendingSave: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await userEvent.click(await canvas.findByRole("button", { name: "1. d4" }));
-    await userEvent.click(canvas.getByRole("button", { name: "Save" }));
+    await userEvent.click(canvas.getByRole("button", { name: "Save d4" }));
     await expect(canvas.getByTestId("session-status")).toHaveTextContent("My move staged: d4.");
     await expect(canvas.getByText("Saving preferred move...")).toBeVisible();
     await expect(canvas.getByTestId("saved-move")).toHaveTextContent(
-      /^Current saved choice\s*e4 \(e2e4\)/,
+      /^Saved\s*e4\s*e2e4/,
     );
-    await expect(canvas.getByTestId("staged-move")).toHaveTextContent(/^Staged move\s*d4 \(d2d4\)/);
-    await expect(canvas.getByRole("button", { name: "Save" })).toBeDisabled();
-    await expect(canvas.getByRole("button", { name: "Change effective date" })).toBeDisabled();
+    await expect(canvas.getByTestId("staged-move")).toHaveTextContent(/^Staged\s*d4\s*d2d4/);
+    await expect(canvas.getByRole("button", { name: "Save d4" })).toBeDisabled();
+    await expectDateFreePreferredPanel(canvasElement);
     await expect(canvas.getByRole("button", { name: "Remove" })).toBeDisabled();
     await expectSessionHistory(canvasElement, ["Initial position"]);
   },
@@ -219,10 +226,10 @@ export const PendingRemove: Story = {
     await userEvent.click(within(dialog).getByRole("button", { name: "Remove" }));
     await expect(canvas.getByText("Removing preferred move...")).toBeVisible();
     await expect(canvas.getByTestId("saved-move")).toHaveTextContent(
-      /^Current saved choice\s*e4 \(e2e4\)/,
+      /^Saved\s*e4\s*e2e4/,
     );
     await expect(canvas.getByRole("button", { name: "Remove" })).toBeDisabled();
-    await expect(canvas.getByRole("button", { name: "Change effective date" })).toBeDisabled();
+    await expectDateFreePreferredPanel(canvasElement);
   },
 };
 
@@ -237,15 +244,16 @@ export const SaveFailureRetention: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await userEvent.click(await canvas.findByRole("button", { name: "1. d4" }));
-    await userEvent.click(canvas.getByRole("button", { name: "Save" }));
+    await userEvent.click(canvas.getByRole("button", { name: "Save d4" }));
     await expect(canvas.getByRole("alert")).toHaveTextContent(
       "The preferred move could not be updated. Try again.",
     );
     await expect(canvas.getByTestId("saved-move")).toHaveTextContent(
-      /^Current saved choice\s*e4 \(e2e4\)/,
+      /^Saved\s*e4\s*e2e4/,
     );
-    await expect(canvas.getByTestId("staged-move")).toHaveTextContent(/^Staged move\s*d4 \(d2d4\)/);
-    await expectPreferredActions(canvasElement, ["Save", "Change effective date", "Remove"]);
+    await expect(canvas.getByTestId("staged-move")).toHaveTextContent(/^Staged\s*d4\s*d2d4/);
+    await expectPreferredActions(canvasElement, ["Save d4", "Remove"]);
+    await expectDateFreePreferredPanel(canvasElement);
   },
 };
 
@@ -262,7 +270,7 @@ export const RemoveFailureRetention: Story = {
       "The preferred move could not be updated. Try again.",
     );
     await expect(canvas.getByTestId("saved-move")).toHaveTextContent(
-      /^Current saved choice\s*e4 \(e2e4\)/,
+      /^Saved\s*e4\s*e2e4/,
     );
     await expect(canvas.getByRole("button", { name: "Remove" })).toBeEnabled();
   },
@@ -288,10 +296,10 @@ export const PromotionPreferred: Story = {
     await userEvent.click(body.getByRole("button", { name: "Promote to knight" }));
     await expectPreferredMoveState(canvasElement, "first-choice");
     await expect(canvas.getByTestId("staged-move")).toHaveTextContent(
-      /^Staged move\s*e8=N \(e7e8n\)/,
+      /^Staged\s*e8=N\s*e7e8n/,
     );
-    await expect(canvas.getByTestId("saved-move")).toHaveTextContent("No saved choice yet.");
-    await expect(canvas.getByRole("button", { name: "Save" })).toBeEnabled();
+    await expect(canvas.getByTestId("saved-move")).toHaveTextContent("None yet");
+    await expect(canvas.getByRole("button", { name: "Save e8=N" })).toBeEnabled();
     await expectSessionHistory(canvasElement, ["Initial position"]);
     await expectPositionSquares(canvasElement, "e7", 0);
     await expectPositionSquares(canvasElement, "e8", 1);
@@ -310,8 +318,8 @@ export const AccessibilityAndResponsive: Story = {
     await savedBox.focus();
     await expect(savedBox).toHaveFocus();
     await expect(savedBox).toHaveAttribute("type", "button");
-    await expectNoPreferredActions(canvasElement);
-    await expectDeferredDateAction(canvasElement);
+    await expectPreferredActions(canvasElement, ["Remove"]);
+    await expectDateFreePreferredPanel(canvasElement);
     await expectNoHorizontalOverflow(canvasElement);
   },
 };
@@ -329,14 +337,14 @@ export const FirstChoiceFromEmpty: Story = {
     await expectPreferredMoveState(canvasElement, "empty");
     await expectPositionReachFrequency(canvasElement, "available", "White", "3 / 10 games", "30%");
     await expect(canvas.getByText("Seen in 3 games as White")).toBeVisible();
-    await expect(canvas.queryByRole("button", { name: "Save" })).not.toBeInTheDocument();
+    await expect(canvas.queryByRole("button", { name: /^Save / })).not.toBeInTheDocument();
     await userEvent.click(await canvas.findByRole("button", { name: "1. e4" }));
     await expectSingleStagedStatus(canvasElement);
     await expectPositionSquares(canvasElement, "e2", 0);
     await expectPositionSquares(canvasElement, "e4", 1);
     await expectSessionHistory(canvasElement, ["Initial position"]);
-    await expect(canvas.getByRole("button", { name: "Save" })).toBeEnabled();
-    await userEvent.click(canvas.getByRole("button", { name: "Save" }));
+    await expect(canvas.getByRole("button", { name: "Save e4" })).toBeEnabled();
+    await userEvent.click(canvas.getByRole("button", { name: "Save e4" }));
     await waitFor(() =>
       expect(canvas.getByTestId("session-status")).toHaveTextContent("Preferred move saved."),
     );
@@ -346,7 +354,11 @@ export const FirstChoiceFromEmpty: Story = {
     await expectPositionSquares(canvasElement, "e4", 1);
     await expect(canvas.getByTestId("session-origin")).toHaveTextContent("Current Ply 1");
     await expectSessionHistory(canvasElement, ["Initial position", "White, move 1, e4"]);
-    await expectNoPreferredActions(canvasElement);
+    await expect(
+      canvas.getByText("Wait for your turn to stage or save a preferred move."),
+    ).toBeVisible();
+    await expectPreferredActions(canvasElement, []);
+    await expectDateFreePreferredPanel(canvasElement);
   },
 };
 
@@ -363,11 +375,11 @@ export const ZeroPersonalCount: Story = {
     await expectPositionReachFrequency(canvasElement, "available", "White", "0 / 10 games", "0%");
     await expect(canvas.getByText("Never seen as White")).toBeVisible();
     await expect(
-      canvas.queryByText("This position cannot be saved because it is not in the corpus."),
+      canvas.queryByText("This position isn't in your corpus, so it can't be saved yet."),
     ).not.toBeInTheDocument();
-    await expect(canvas.queryByRole("button", { name: "Save" })).not.toBeInTheDocument();
+    await expect(canvas.queryByRole("button", { name: /^Save / })).not.toBeInTheDocument();
     await userEvent.click(await canvas.findByRole("button", { name: "1. e4" }));
-    await expect(canvas.getByRole("button", { name: "Save" })).toBeEnabled();
+    await expect(canvas.getByRole("button", { name: "Save e4" })).toBeEnabled();
     await expectPreferredMoveState(canvasElement, "first-choice");
   },
 };
@@ -386,12 +398,34 @@ export const AbsentUnsavable: Story = {
     await expectPositionReachFrequency(canvasElement, "absent", "White");
     await expect(canvas.getByText("Never seen as White")).toBeVisible();
     await expect(
-      canvas.getByText("This position cannot be saved because it is not in the corpus."),
+      canvas.getByText("This position isn't in your corpus, so it can't be saved yet."),
     ).toBeVisible();
-    await expect(canvas.queryByRole("button", { name: "Save" })).not.toBeInTheDocument();
+    await expect(canvas.queryByRole("button", { name: /^Save / })).not.toBeInTheDocument();
     await expect(
-      canvas.queryByRole("button", { name: "Change effective date" }),
+      canvas.queryByRole("button", { name: /effective date/i }),
     ).not.toBeInTheDocument();
+  },
+};
+
+export const AssignedUnsavable: Story = {
+  name: "Preferred move - assigned move remains removable when not in corpus",
+  render: () =>
+    workspace(
+      {},
+      { relationship: "saved" },
+      { overall_exists: false, white_count: 0, black_count: 0 },
+    ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expectPreferredMoveState(canvasElement, "saved");
+    await expect(canvas.getByTestId("preferred-status")).toHaveTextContent("Not in Corpus");
+    await expect(
+      canvas.getByText("This position isn't in your corpus, so it can't be saved yet."),
+    ).toBeVisible();
+    await expect(canvas.getByTestId("saved-move")).toHaveTextContent("e4");
+    await expect(canvas.getByRole("button", { name: "Remove" })).toBeEnabled();
+    await expectPreferredActions(canvasElement, ["Remove"]);
+    await expectDateFreePreferredPanel(canvasElement);
   },
 };
 
@@ -411,7 +445,7 @@ export const SavedChoiceStagesMove: Story = {
       name: "Current saved choice: e4; play and stage this move.",
     });
     await expect(savedChoice).toBeEnabled();
-    await expect(canvas.queryByRole("button", { name: "Save" })).not.toBeInTheDocument();
+    await expect(canvas.queryByRole("button", { name: /^Save / })).not.toBeInTheDocument();
     await userEvent.click(savedChoice);
     await expectPositionSquares(canvasElement, "e4", 1);
     await expectSessionHistory(canvasElement, ["Initial position"]);
@@ -420,7 +454,7 @@ export const SavedChoiceStagesMove: Story = {
       "Saved move staged locally: e4.",
     );
     await expectPreferredMoveState(canvasElement, "matching");
-    await expect(canvas.getByTestId("staged-move")).toHaveTextContent(/^Staged move\s*e4 \(e2e4\)/);
+    await expect(canvas.getByTestId("staged-move")).toHaveTextContent(/^Staged\s*e4\s*e2e4/);
     await expect(canvas.getByTestId("saved-move")).toBeVisible();
   },
 };

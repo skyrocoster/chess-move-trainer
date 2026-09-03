@@ -16,7 +16,6 @@ afterEach(() => {
 
 const here = dirname(fileURLToPath(import.meta.url));
 const panelCss = readFileSync(join(here, "PreferredMovePanel.module.css"), "utf8");
-const primitiveCss = readFileSync(join(here, "PreferredMovePrimitives.module.css"), "utf8");
 
 const SOURCE_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 const SAVED_MOVE = { san: "e4", uci: "e2e4" };
@@ -85,27 +84,25 @@ function relationshipActionLabels(panel: HTMLElement): string[] {
   return within(panel)
     .queryAllByRole("button")
     .map((button) => button.textContent?.trim() ?? "")
-    .filter((label) => ["Save", "Change effective date", "Remove"].includes(label));
+    .filter((label) => label === "Matches saved" || label === "Remove" || label.startsWith("Save "));
 }
 
 describe("PreferredMovePanel relationship composition", () => {
   it.each([
-    ["empty", model(), [], []],
+    ["empty", model(), []],
     [
       "first choice",
       model({
         staged: stagedFact({ ...STAGED_MOVE, san: "e4", targetSquare: "e4" }),
         relationship: "first-choice",
       }),
-      ["Save", "Change effective date"],
-      ["Save e4 as the current saved choice."],
+      ["Save e4"],
     ],
-    ["saved", savedModel(), ["Change effective date", "Remove"], []],
+    ["saved", savedModel(), ["Remove"]],
     [
       "replacement",
       savedModel({ staged: stagedFact(), comparison: "different", relationship: "replacement" }),
-      ["Save", "Change effective date", "Remove"],
-      ["Save d4 to replace e4."],
+      ["Save d4", "Remove"],
     ],
     [
       "matching",
@@ -114,34 +111,36 @@ describe("PreferredMovePanel relationship composition", () => {
         comparison: "matching",
         relationship: "matching",
       }),
-      ["Change effective date", "Remove"],
-      ["e4 is already the current saved choice."],
+      ["Matches saved", "Remove"],
     ],
-  ] as const)(
-    "renders the %s reading with exact action visibility and order",
-    (name, fixture, actions, consequences) => {
-      render(<PreferredMovePanel {...panelArgs({ model: fixture })} />);
+  ] as const)("renders the %s reading with exact action visibility and order", (name, fixture, actions) => {
+    render(<PreferredMovePanel {...panelArgs({ model: fixture })} />);
 
-      const panel = screen.getByRole("region", { name: "What is saved, and what is staged?" });
-      expect(relationshipActionLabels(panel)).toEqual(actions);
-      expect(within(panel).getByText("Current saved choice", { exact: true })).toBeVisible();
-      expect(within(panel).getByText("Staged move", { exact: true })).toBeVisible();
-      expect(
-        within(panel).queryByText("Current saved choice:", { exact: true }),
-      ).not.toBeInTheDocument();
-      expect(within(panel).queryByText("Staged move:", { exact: true })).not.toBeInTheDocument();
-      expect(panel.querySelectorAll('[data-testid="preferred-consequence"]')).toHaveLength(
-        consequences.length,
+    const panel = screen.getByRole("region", { name: "Preferred move" });
+    expect(relationshipActionLabels(panel)).toEqual(actions);
+    const footer = within(panel).queryByTestId("preferred-actions");
+    if (actions.length > 0) {
+      expect(footer).toBeInTheDocument();
+      expect(within(footer as HTMLElement).getAllByRole("button").map((button) => button.textContent?.trim())).toEqual(
+        actions,
       );
-      consequences.forEach((text) => expect(within(panel).getByText(text)).toBeVisible());
-      expect(within(panel).getByTestId("saved-move")).toBeVisible();
-      expect(within(panel).getByRole("region", { name: "Staged move" })).toBeVisible();
-      expect(within(panel).queryByRole("button", { name: "Add" })).not.toBeInTheDocument();
-      expect(within(panel).queryByRole("button", { name: "Edit" })).not.toBeInTheDocument();
-    },
-  );
+    } else {
+      expect(footer).not.toBeInTheDocument();
+    }
+    expect(within(panel).getByTestId("saved-move")).toHaveTextContent("Saved");
+    expect(within(panel).getByTestId("staged-move")).toHaveTextContent("Staged");
+    expect(within(panel).queryByText("Saved:", { exact: true })).not.toBeInTheDocument();
+    expect(within(panel).queryByText("Staged:", { exact: true })).not.toBeInTheDocument();
+    expect(within(panel).getByTestId("saved-move")).toBeVisible();
+    expect(within(panel).getByRole("region", { name: "Staged move" })).toBeVisible();
+    expect(within(panel).queryByRole("button", { name: "Add" })).not.toBeInTheDocument();
+    expect(within(panel).queryByRole("button", { name: "Edit" })).not.toBeInTheDocument();
+  });
 
-  it("keeps one confirmed date, one consequence, and one empty staged explanation", () => {
+  it("retains a populated effective-date contract without rendering date UI", () => {
+    const onActivate = vi.fn();
+    const onDateChange = vi.fn();
+
     render(
       <PreferredMovePanel
         {...panelArgs({
@@ -151,35 +150,43 @@ describe("PreferredMovePanel relationship composition", () => {
             relationship: "replacement",
           }),
           date: new Date("2026-08-29T00:00:00.000Z"),
+          onDateChange,
+          dateEdit: {
+            available: false,
+            reason: PREFERRED_MOVE_DATE_UNAVAILABLE,
+            onActivate,
+            onChange: onDateChange,
+          },
         })}
       />,
     );
 
-    const panel = screen.getByRole("region", { name: "What is saved, and what is staged?" });
-    expect(within(panel).getAllByTestId("effective-date")).toHaveLength(1);
-    expect(within(panel).getByTestId("effective-date")).toHaveTextContent("2026-08-29");
-    expect(within(panel).getAllByTestId("preferred-consequence")).toHaveLength(1);
+    const panel = screen.getByRole("region", { name: "Preferred move" });
+    expect(within(panel).getByTestId("saved-move")).toHaveTextContent("e2e4");
+    expect(within(panel).queryByTestId("effective-date")).not.toBeInTheDocument();
+    expect(within(panel).queryByRole("button", { name: /effective date/i })).not.toBeInTheDocument();
+    expect(within(panel).queryByText("2026")).not.toBeInTheDocument();
+    expect(within(panel).queryByText(PREFERRED_MOVE_DATE_UNAVAILABLE, { exact: true })).not.toBeInTheDocument();
+    expect(onActivate).not.toHaveBeenCalled();
+    expect(onDateChange).not.toHaveBeenCalled();
     expect(within(panel).queryAllByText(/Stage a legal move/)).toHaveLength(0);
 
     cleanup();
     render(<PreferredMovePanel {...panelArgs({ model: savedModel() })} />);
-    const emptyPanel = screen.getByRole("region", { name: "What is saved, and what is staged?" });
+    const emptyPanel = screen.getByRole("region", { name: "Preferred move" });
     expect(
-      within(emptyPanel).getAllByText("Stage a legal move to propose replacing e4."),
+      within(emptyPanel).getAllByText("Stage a move to propose replacing e4"),
     ).toHaveLength(1);
-    expect(within(emptyPanel).queryAllByText(/Stage a legal move/)).toHaveLength(1);
-    expect(within(emptyPanel).queryByTestId("preferred-consequence")).not.toBeInTheDocument();
+    expect(within(emptyPanel).queryAllByText(/Stage a legal move/)).toHaveLength(0);
   });
 
   it("renders both empty boxes and exactly one first-choice instruction without actions", () => {
     render(<PreferredMovePanel {...panelArgs()} />);
 
-    const panel = screen.getByRole("region", { name: "What is saved, and what is staged?" });
-    expect(within(panel).getByText("No saved choice yet.")).toBeVisible();
-    expect(within(panel).getByText("No move staged.")).toBeVisible();
-    expect(
-      within(panel).getByText("Stage a legal move to propose the first saved choice."),
-    ).toBeVisible();
+    const panel = screen.getByRole("region", { name: "Preferred move" });
+    expect(within(panel).getByText("None yet")).toBeVisible();
+    expect(within(panel).getByText("No move staged")).toBeVisible();
+    expect(within(panel).getByText("Stage a legal move to propose the first saved choice.")).toBeVisible();
     expect(within(panel).queryAllByText(/Stage a legal move/)).toHaveLength(1);
     expect(within(panel).queryByTestId("preferred-actions")).not.toBeInTheDocument();
   });
@@ -214,7 +221,7 @@ describe("PreferredMovePanel relationship composition", () => {
     expect(onSave).not.toHaveBeenCalled();
     expect(onRemove).not.toHaveBeenCalled();
     expect(savedBox).toHaveAttribute("type", "button");
-    expect(savedBox.querySelector("[data-testid=effective-date]")).not.toBeNull();
+    expect(savedBox.querySelector("[data-testid=effective-date]")).toBeNull();
   });
 
   it("does not make the saved box clickable on the opponent turn", async () => {
@@ -226,7 +233,7 @@ describe("PreferredMovePanel relationship composition", () => {
       />,
     );
 
-    const panel = screen.getByRole("region", { name: "What is saved, and what is staged?" });
+    const panel = screen.getByRole("region", { name: "Preferred move" });
     expect(within(panel).getByRole("region", { name: "Current saved choice" })).toBeVisible();
     expect(
       within(panel).queryByRole("button", {
@@ -238,8 +245,7 @@ describe("PreferredMovePanel relationship composition", () => {
     expect(onPlaySavedMove).not.toHaveBeenCalled();
   });
 
-  it("keeps the deferred date action disabled, described, and request-free", async () => {
-    const user = userEvent.setup();
+  it("keeps the deferred date contract request-free while rendering no date UI", () => {
     const onActivate = vi.fn();
     const onDateChange = vi.fn();
     const onSave = vi.fn();
@@ -260,15 +266,12 @@ describe("PreferredMovePanel relationship composition", () => {
       />,
     );
 
-    const dateButton = screen.getByRole("button", { name: "Change effective date" });
-    expect(dateButton).toBeDisabled();
-    expect(dateButton).toHaveAccessibleDescription(PREFERRED_MOVE_DATE_UNAVAILABLE);
-    expect(screen.getByText(PREFERRED_MOVE_DATE_UNAVAILABLE, { exact: true })).toBeVisible();
-    await user.click(dateButton);
+    expect(screen.queryByRole("button", { name: "Change effective date" })).not.toBeInTheDocument();
+    expect(screen.queryByTestId("effective-date")).not.toBeInTheDocument();
+    expect(screen.queryByText(PREFERRED_MOVE_DATE_UNAVAILABLE, { exact: true })).not.toBeInTheDocument();
     expect(onActivate).not.toHaveBeenCalled();
     expect(onDateChange).not.toHaveBeenCalled();
-    expect(screen.queryByTestId("calendar-date-popup")).not.toBeInTheDocument();
-    expect(screen.getByTestId("effective-date")).toHaveTextContent("2026-08-29");
+    expect(screen.getByTestId("saved-move")).toHaveTextContent("e2e4");
   });
 
   it("retains the saved fact and restores focus through Remove confirmation", async () => {
@@ -307,14 +310,14 @@ describe("PreferredMovePanel relationship composition", () => {
         })}
       />,
     );
-    const errorPanel = screen.getByRole("region", { name: "What is saved, and what is staged?" });
+    const errorPanel = screen.getByRole("region", { name: "Preferred move" });
     expect(within(errorPanel).getByRole("alert")).toHaveTextContent(
       "Preferred move data is unavailable. Try again.",
     );
     expect(within(errorPanel).getByRole("button", { name: "Retry" })).toBeVisible();
     await user.click(within(errorPanel).getByRole("button", { name: "Retry" }));
     expect(onRetry).toHaveBeenCalledOnce();
-    expect(within(errorPanel).queryByText("No saved choice yet.")).not.toBeInTheDocument();
+    expect(within(errorPanel).queryByText("None yet")).not.toBeInTheDocument();
     expect(within(errorPanel).getByText("Saved choice unavailable.")).toBeVisible();
     expect(within(errorPanel).queryByTestId("preferred-actions")).not.toBeInTheDocument();
 
@@ -330,17 +333,15 @@ describe("PreferredMovePanel relationship composition", () => {
         })}
       />,
     );
-    const blockedPanel = screen.getByRole("region", { name: "What is saved, and what is staged?" });
+    const blockedPanel = screen.getByRole("region", { name: "Preferred move" });
+    expect(within(blockedPanel).getByTestId("preferred-status")).toHaveTextContent("Not in Corpus");
     expect(
       within(blockedPanel).getByText(
-        "This position cannot be saved because it is not in the corpus.",
+        "This position isn't in your corpus, so it can't be saved yet.",
       ),
     ).toBeVisible();
     expect(within(blockedPanel).queryByRole("button", { name: "Save" })).not.toBeInTheDocument();
-    expect(
-      within(blockedPanel).queryByRole("button", { name: "Change effective date" }),
-    ).not.toBeInTheDocument();
-    expect(within(blockedPanel).queryByTestId("preferred-consequence")).not.toBeInTheDocument();
+    expect(within(blockedPanel).queryByRole("button", { name: /effective date/i })).not.toBeInTheDocument();
   });
 
   it("keeps facts visible and disables persistence controls during a mutation", () => {
@@ -357,14 +358,40 @@ describe("PreferredMovePanel relationship composition", () => {
       />,
     );
 
-    const panel = screen.getByRole("region", { name: "What is saved, and what is staged?" });
-    expect(within(panel).getByRole("status")).toHaveTextContent("Saving preferred move...");
-    expect(within(panel).getByRole("button", { name: "Save" })).toBeDisabled();
-    expect(within(panel).getByRole("button", { name: "Change effective date" })).toBeDisabled();
+    const panel = screen.getByRole("region", { name: "Preferred move" });
+    expect(within(panel).getByTestId("core-information")).toHaveTextContent("Saving preferred move...");
+    expect(within(panel).getByRole("button", { name: "Save d4" })).toBeDisabled();
+    expect(within(panel).queryByRole("button", { name: /effective date/i })).not.toBeInTheDocument();
     expect(within(panel).getByRole("button", { name: "Remove" })).toBeDisabled();
     expect(within(panel).getByRole("button", { name: /Current saved choice: e4/ })).toBeVisible();
     expect(within(panel).getByText("d4")).toBeVisible();
     expect(within(panel).getAllByText("Saving preferred move...", { exact: true })).toHaveLength(1);
+  });
+
+  it("keeps an assigned saved move and Remove available when the position is not in corpus", () => {
+    render(
+      <PreferredMovePanel
+        {...panelArgs({
+          model: savedModel({
+            saveability: "unsavable",
+            staged: stagedFact(),
+            comparison: "different",
+            relationship: "replacement",
+          }),
+        })}
+      />,
+    );
+
+    const panel = screen.getByRole("region", { name: "Preferred move" });
+    expect(within(panel).getByTestId("preferred-status")).toHaveTextContent("Not in Corpus");
+    expect(
+      within(panel).getByText("This position isn't in your corpus, so it can't be saved yet."),
+    ).toBeVisible();
+    expect(within(panel).getByTestId("saved-move")).toHaveTextContent("e4");
+    expect(within(panel).getByTestId("staged-move")).toHaveTextContent("d4");
+    expect(within(panel).queryByRole("button", { name: "Save" })).not.toBeInTheDocument();
+    expect(within(panel).queryByRole("button", { name: /effective date/i })).not.toBeInTheDocument();
+    expect(within(panel).getByRole("button", { name: "Remove" })).toBeEnabled();
   });
 
   it("keeps responsive relationship order and accessibility styles token-backed", () => {
@@ -380,7 +407,7 @@ describe("PreferredMovePanel relationship composition", () => {
       />,
     );
 
-    const panel = screen.getByRole("region", { name: "What is saved, and what is staged?" });
+    const panel = screen.getByRole("region", { name: "Preferred move" });
     const savedBox = screen.getByTestId("saved-move");
     const relationship = savedBox.parentElement;
     if (!(relationship instanceof HTMLElement))
@@ -389,26 +416,25 @@ describe("PreferredMovePanel relationship composition", () => {
     expect(savedBox).toBe(relationship.children[0]);
     expect(relationship.children[1]).toHaveAttribute("aria-hidden", "true");
     expect(relationship.children[2]).toHaveAttribute("data-testid", "staged-move");
-    const consequenceIcon = within(panel).getByTestId("preferred-consequence").querySelector("svg");
-    expect(consequenceIcon).toHaveAttribute("aria-hidden", "true");
-    expect(consequenceIcon).toHaveAttribute("focusable", "false");
+    expect(panelCss).toContain("block-size: 256px;");
+    expect(panelCss).toContain("block-size: 360px;");
+    expect(panelCss).toContain("block-size: 88px;");
     expect(panelCss).toContain("grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);");
     expect(panelCss).toContain("grid-template-columns: minmax(0, 1fr);");
     expect(panelCss).toContain("container-name: preferred-move-panel;");
     expect(panelCss).toContain("container-type: inline-size;");
     expect(panelCss).toContain("@container preferred-move-panel (max-width: 40rem)");
     expect(panelCss).toContain("justify-content: flex-start;");
-    expect(panelCss).toContain("flex: 1 1 100%;");
     expect(panelCss).toContain("@media (forced-colors: active)");
     expect(panelCss).toContain("@media (prefers-reduced-motion: reduce)");
-    expect(primitiveCss).toContain("overflow-wrap: anywhere;");
-    expect(primitiveCss).toContain("border-radius: 50%;");
-    expect(primitiveCss).toContain("background: var(--cmt-warning-accent);");
-    expect(primitiveCss).toContain("background: var(--cmt-success-accent);");
-    expect(primitiveCss).toContain("@container preferred-move-panel (max-width: 40rem)");
-    expect(primitiveCss).toContain("flex-direction: column;");
-    expect(primitiveCss).toContain("transform: rotate(90deg);");
-    expect(primitiveCss).toContain(
+    expect(panelCss).toContain("overflow-wrap: anywhere;");
+    expect(panelCss).toContain("border-radius: 999px;");
+    expect(panelCss).toContain("background: var(--cmt-warning-container);");
+    expect(panelCss).toContain("background: var(--cmt-success-container);");
+    expect(panelCss).toContain("@container preferred-move-panel (max-width: 40rem)");
+    expect(panelCss).toContain("flex-direction: column;");
+    expect(panelCss).toContain("transform: rotate(90deg);");
+    expect(panelCss).toContain(
       "outline: var(--cmt-focus-ring-width) solid var(--cmt-focus-ring-color);",
     );
   });

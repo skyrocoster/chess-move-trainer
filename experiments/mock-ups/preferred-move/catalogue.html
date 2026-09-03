@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="data:,">
+<title>Preferred move — presentation catalogue</title>
+<style>
+  :root {
+    --bg: #121416;
+    --surface: #1b1e21;
+    --surface-raised: #22262a;
+    --surface-soft: #181b1e;
+    --border: #34383d;
+    --border-strong: #51565d;
+    --text: #e7e8e5;
+    --text-secondary: #adb1b5;
+    --text-muted: #777c82;
+    --amber-bg: #382a0f;
+    --amber-border: #8a5b12;
+    --amber-text: #f0b429;
+    --green-bg: #15301f;
+    --green-border: #307a4d;
+    --green-text: #56c47e;
+    --red-bg: #34191a;
+    --red-border: #7e3838;
+    --red-text: #e36a67;
+    --focus: #d9e8ff;
+    --radius: 10px;
+  }
+
+  * { box-sizing: border-box; }
+
+  html { background: var(--bg); }
+
+  body {
+    margin: 0;
+    padding: 32px 20px 56px;
+    background:
+      linear-gradient(180deg, #17191c 0, var(--bg) 240px),
+      var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.4;
+  }
+
+  button, summary { font: inherit; }
+
+  button:focus-visible,
+  summary:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 3px;
+  }
+
+  .page { width: 100%; max-width: 1180px; margin: 0 auto; }
+
+  .catalogue-header { max-width: 760px; margin-bottom: 24px; }
+  .kicker {
+    margin: 0 0 7px;
+    color: var(--amber-text);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+  }
+  h1 {
+    margin: 0;
+    font-size: clamp(24px, 3vw, 34px);
+    font-weight: 520;
+    letter-spacing: -.025em;
+  }
+  .intro {
+    margin: 10px 0 0;
+    color: var(--text-secondary);
+    font-size: 14px;
+    max-width: 700px;
+  }
+  .lineage {
+    margin: 10px 0 0;
+    color: var(--text-muted);
+    font-size: 12px;
+  }
+  code {
+    padding: 2px 5px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text-secondary);
+    font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+    font-size: 11px;
+  }
+
+  .state-controls {
+    margin: 0 0 24px;
+    padding: 14px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: rgba(27, 30, 33, .84);
+  }
+  .state-controls legend {
+    padding: 0 5px;
+    color: var(--text);
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .switcher {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 7px;
+  }
+  .switcher button {
+    min-height: 42px;
+    padding: 7px 10px;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 12px;
+    text-align: left;
+  }
+  .switcher button:hover { border-color: var(--border-strong); color: var(--text); }
+  .switcher button[aria-pressed="true"] {
+    border-color: var(--border-strong);
+    background: var(--surface-raised);
+    color: var(--text);
+  }
+  .state-caption {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin: 11px 2px 0;
+    color: var(--text-muted);
+    font-size: 12px;
+  }
+  .state-caption strong { color: var(--text-secondary); font-weight: 500; }
+
+  .option-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 16px;
+    align-items: start;
+  }
+  .option-card {
+    min-width: 0;
+    border: 1px solid var(--border);
+    border-radius: 13px;
+    background: var(--surface);
+    overflow: hidden;
+  }
+  .option-card.baseline { border-color: var(--border-strong); }
+  .option-info { padding: 16px 17px 13px; }
+  .option-heading {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .option-name { margin: 0; font-size: 16px; font-weight: 600; }
+  .option-number {
+    flex: 0 0 auto;
+    padding: 3px 7px;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    color: var(--text-muted);
+    font-size: 10px;
+    letter-spacing: .08em;
+  }
+  .option-idea { margin: 4px 0 0; color: var(--text-secondary); font-size: 12px; }
+  .tradeoff {
+    margin: 10px 0 0;
+    padding-top: 9px;
+    border-top: 1px solid rgba(81, 86, 93, .45);
+    color: var(--text-muted);
+    font-size: 12px;
+  }
+  .tradeoff strong { color: var(--text-secondary); font-weight: 600; }
+  .preview {
+    margin: 0 9px 9px;
+    padding: 16px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface-soft);
+  }
+
+  .component-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .component-title { margin: 0; font-size: 14px; font-weight: 600; }
+  .component-meta { margin: 3px 0 0; color: var(--text-muted); font-size: 11px; }
+  .pill {
+    flex: 0 0 auto;
+    padding: 4px 8px;
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .pill.warning { background: var(--amber-bg); color: var(--amber-text); }
+  .pill.success { background: var(--green-bg); color: var(--green-text); }
+  .pill.neutral { background: #292d31; color: var(--text-secondary); }
+
+  .event {
+    margin: 12px 0 -2px;
+    padding: 7px 9px;
+    border-left: 2px solid var(--border-strong);
+    background: rgba(255, 255, 255, .025);
+    color: var(--text-secondary);
+    font-size: 11px;
+  }
+  .event:empty { display: none; }
+
+  .move-label {
+    display: block;
+    margin: 0 0 5px;
+    color: var(--text-muted);
+    font-size: 10px;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+  }
+  .move-value { display: block; font-size: 17px; font-weight: 600; letter-spacing: -.01em; }
+  .move-sub { display: block; margin-top: 2px; color: var(--text-secondary); font-size: 11px; }
+  .empty { color: var(--text-muted); font-size: 12px; }
+  .empty.small { font-size: 11px; }
+
+  .actions {
+    display: flex;
+    align-items: stretch;
+    gap: 7px;
+    margin-top: 14px;
+  }
+  .actions:empty { display: none; }
+  .primary-action,
+  .secondary-action {
+    min-height: 34px;
+    border-radius: 7px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .primary-action {
+    flex: 1;
+    padding: 7px 10px;
+    border: 1px solid #e7e8e5;
+    background: #e7e8e5;
+    color: #17191c;
+  }
+  .primary-action:hover { background: #fff; }
+  .primary-action:disabled {
+    border-color: var(--border);
+    background: transparent;
+    color: var(--text-muted);
+    cursor: default;
+  }
+  .secondary-action {
+    padding: 7px 12px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--red-text);
+  }
+  .secondary-action:hover { border-color: var(--red-border); background: var(--red-bg); }
+
+  .helper {
+    margin: 12px 0 0;
+    color: var(--text-secondary);
+    font-size: 11px;
+  }
+
+  /* Option 1: the parent/reference composition. */
+  .dual-slots {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    gap: 8px;
+    align-items: center;
+    margin-top: 15px;
+  }
+  .slot {
+    min-height: 67px;
+    padding: 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+  }
+  .slot.staged { border-color: var(--amber-border); background: var(--amber-bg); }
+  .slot.saved { border-color: var(--green-border); background: var(--green-bg); }
+  .slot.staged .move-label, .slot.staged .move-value, .slot.staged .move-sub { color: var(--amber-text); }
+  .slot.saved .move-label, .slot.saved .move-value, .slot.saved .move-sub { color: var(--green-text); }
+  .slot-arrow { color: var(--text-muted); font-size: 16px; }
+
+  /* Option 2: the same evidence becomes a compact vertical ledger. */
+  .ledger { margin-top: 15px; border-top: 1px solid var(--border); }
+  .ledger-row {
+    display: grid;
+    grid-template-columns: 58px 1fr;
+    gap: 10px;
+    align-items: center;
+    min-height: 57px;
+    padding: 8px 2px;
+  }
+  .ledger-row + .ledger-row { border-top: 1px solid var(--border); }
+  .ledger-label { color: var(--text-muted); font-size: 10px; text-transform: uppercase; }
+  .ledger-row.proposed .ledger-label { color: var(--amber-text); }
+  .ledger-move { min-width: 0; }
+  .ledger-move .move-value { display: inline; font-size: 15px; }
+  .ledger-move .move-sub { display: inline; margin-left: 7px; }
+
+  /* Option 3: a transition is the primary object only when a change exists. */
+  .transition { margin-top: 15px; }
+  .transition-track {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    align-items: center;
+    gap: 8px;
+    min-height: 82px;
+    padding: 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+  }
+  .transition-track.has-change { border-color: var(--amber-border); }
+  .transition-track .from .move-value { color: var(--green-text); }
+  .transition-track .to .move-value { color: var(--amber-text); }
+  .transition-arrow { color: var(--amber-text); font-size: 18px; }
+  .transition-result {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    margin-top: 9px;
+    color: var(--text-secondary);
+    font-size: 11px;
+  }
+  .transition-result strong { color: var(--text); font-weight: 600; }
+  .transition-result .same { color: var(--green-text); }
+  .transition-idle {
+    min-height: 82px;
+    padding: 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+  }
+
+  /* Option 4: one compact decision row keeps the action beside its evidence. */
+  .decision { margin-top: 15px; }
+  .decision-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    min-height: 70px;
+    padding: 11px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+  }
+  .decision-copy { min-width: 0; }
+  .decision-kicker { margin: 0 0 3px; color: var(--text-muted); font-size: 10px; text-transform: uppercase; }
+  .decision-copy .move-value { display: inline; font-size: 18px; }
+  .decision-copy .move-sub { display: inline; margin-left: 7px; }
+  .decision-action { flex: 0 0 auto; }
+  .decision-action .actions { margin-top: 0; }
+  .decision-action .primary-action { flex: 0 0 auto; min-width: 108px; }
+  .decision-action .secondary-action { padding-right: 9px; padding-left: 9px; }
+  .decision-meta {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    margin-top: 8px;
+    color: var(--text-muted);
+    font-size: 11px;
+  }
+  .decision-meta .helper { margin: 0; }
+
+  /* Option 5: the action is first, while move evidence is deliberately progressive. */
+  .action-first { margin-top: 15px; }
+  .action-hero {
+    padding: 13px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+  }
+  .action-hero-label { margin: 0 0 3px; color: var(--text-muted); font-size: 10px; text-transform: uppercase; }
+  .action-hero-title { margin: 0; font-size: 16px; font-weight: 600; }
+  .action-hero-copy { margin: 4px 0 0; color: var(--text-secondary); font-size: 11px; }
+  .action-hero .actions { margin-top: 12px; }
+  .move-details {
+    margin-top: 9px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+  }
+  .move-details summary {
+    padding: 9px 11px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .move-details[open] summary { border-bottom: 1px solid var(--border); color: var(--text); }
+  .detail-list { display: grid; gap: 0; margin: 0; padding: 0 11px; }
+  .detail-row {
+    display: grid;
+    grid-template-columns: 55px 1fr;
+    gap: 9px;
+    padding: 9px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .detail-row:last-child { border-bottom: 0; }
+  .detail-label { color: var(--text-muted); font-size: 10px; text-transform: uppercase; }
+  .detail-content { min-width: 0; }
+  .detail-content .move-value { display: inline; font-size: 14px; }
+  .detail-content .move-sub { display: inline; margin-left: 6px; }
+  .detail-note { margin: 0 0 10px; color: var(--text-secondary); font-size: 11px; }
+
+  .catalogue-footnote {
+    margin: 19px 2px 0;
+    color: var(--text-muted);
+    font-size: 11px;
+  }
+  .catalogue-footnote strong { color: var(--text-secondary); font-weight: 500; }
+
+  .screen-reader-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  @media (max-width: 650px) {
+    body { padding: 22px 12px 40px; }
+    .switcher { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .state-caption { display: block; }
+    .state-caption strong { display: block; margin-bottom: 3px; }
+    .option-grid { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  }
+
+  @media (max-width: 390px) {
+    .preview { padding: 13px; }
+    .dual-slots, .transition-track { gap: 5px; }
+    .slot, .transition-track { padding-left: 8px; padding-right: 8px; }
+    .decision-row { align-items: flex-start; flex-direction: column; }
+    .decision-action, .decision-action .actions { width: 100%; }
+    .decision-action .primary-action { flex: 1; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; }
+  }
+</style>
+</head>
+<body>
+<main class="page">
+  <header class="catalogue-header">
+    <p class="kicker">Design catalogue · preferred move</p>
+    <h1>One move, one clear next step</h1>
+    <p class="intro">Five restrained presentations branch from the parent card. Use one shared state switcher to compare how each hierarchy explains Saved, Staged, and the action that is genuinely available.</p>
+    <p class="lineage">Parent reference: <code>mock-ups/preferred-move/panel.html</code> · question: cleaner low-duplication presentation</p>
+  </header>
+
+  <fieldset class="state-controls">
+    <legend>Inspect genuine state</legend>
+    <div class="switcher" role="group" aria-label="Preferred move states">
+      <button type="button" data-state="staging_new" aria-pressed="true">Staging · nothing saved</button>
+      <button type="button" data-state="not_in_corpus" aria-pressed="false">Saved · opponent turn</button>
+      <button type="button" data-state="idle_saved" aria-pressed="false">Saved · nothing staged</button>
+      <button type="button" data-state="matches" aria-pressed="false">Staged matches saved</button>
+    </div>
+    <div class="state-caption" aria-live="polite">
+      <strong id="state-name">Staging a new move with no saved preference</strong>
+      <span id="state-event">Move staged: Nce2.</span>
+    </div>
+  </fieldset>
+
+  <section class="option-grid" aria-label="Preferred move presentation alternatives">
+    <article class="option-card baseline">
+      <div class="option-info">
+        <div class="option-heading">
+          <div>
+            <h2 class="option-name">Baseline · Dual slots</h2>
+            <p class="option-idea">Saved and Staged stay visible as two equal, comparable slots.</p>
+          </div>
+          <span class="option-number">PARENT</span>
+        </div>
+        <p class="tradeoff"><strong>Trade-off:</strong> Fastest comparison, but the two-column frame is the most component-like.</p>
+      </div>
+      <div class="preview" id="baseline-preview"></div>
+    </article>
+
+    <article class="option-card">
+      <div class="option-info">
+        <div class="option-heading">
+          <div>
+            <h2 class="option-name">Compact ledger</h2>
+            <p class="option-idea">A quiet vertical record makes the saved value the anchor and the proposal the change.</p>
+          </div>
+          <span class="option-number">01</span>
+        </div>
+        <p class="tradeoff"><strong>Trade-off:</strong> Uses less width and scans naturally, though the transition is less immediate.</p>
+      </div>
+      <div class="preview" id="ledger-preview"></div>
+    </article>
+
+    <article class="option-card">
+      <div class="option-info">
+        <div class="option-heading">
+          <div>
+            <h2 class="option-name">Transition preview</h2>
+            <p class="option-idea">When a proposal exists, one compact “from → to” strip makes the resulting change the story.</p>
+          </div>
+          <span class="option-number">02</span>
+        </div>
+        <p class="tradeoff"><strong>Trade-off:</strong> Best for replacement decisions; idle states need a quieter fallback treatment.</p>
+      </div>
+      <div class="preview" id="transition-preview"></div>
+    </article>
+
+    <article class="option-card">
+      <div class="option-info">
+        <div class="option-heading">
+          <div>
+            <h2 class="option-name">Decision row</h2>
+            <p class="option-idea">The current move, status, and available action share one compact horizontal decision row.</p>
+          </div>
+          <span class="option-number">03</span>
+        </div>
+        <p class="tradeoff"><strong>Trade-off:</strong> Very efficient for experienced users, but move details have less visual separation.</p>
+      </div>
+      <div class="preview" id="decision-preview"></div>
+    </article>
+
+    <article class="option-card">
+      <div class="option-info">
+        <div class="option-heading">
+          <div>
+            <h2 class="option-name">Action first</h2>
+            <p class="option-idea">The next available action is the headline; Saved and Staged details stay available on demand.</p>
+          </div>
+          <span class="option-number">04</span>
+        </div>
+        <p class="tradeoff"><strong>Trade-off:</strong> Lowest duplication and strongest focus, but comparison takes one extra disclosure.</p>
+      </div>
+      <div class="preview" id="action-first-preview"></div>
+    </article>
+  </section>
+
+  <p class="catalogue-footnote"><strong>Scope:</strong> HTML/CSS direction only. Buttons demonstrate affordance and report a lightweight demo response; they do not persist data.</p>
+  <p class="screen-reader-only" id="action-feedback" aria-live="polite"></p>
+</main>
+
+<script>
+  const states = {
+    staging_new: {
+      name: "Staging a new move with no saved preference",
+      event: "Move staged: Nce2.",
+      meta: "Seen in 4 games as white",
+      pill: { text: "Ready to save", tone: "warning" },
+      saved: null,
+      staged: { san: "Nce2", uci: "c3e2" },
+      helper: null,
+      action: { save: "Save Nce2" }
+    },
+    not_in_corpus: {
+      name: "Saved move in a position outside the corpus / opponent turn",
+      event: "Preferred move saved.",
+      meta: "Never seen as white",
+      pill: { text: "Opponent's turn", tone: "neutral" },
+      saved: { san: "Nce2", uci: "c3e2", date: "saved 2 Sep 2026" },
+      staged: null,
+      helper: "This position isn't in your corpus, so it can't be saved yet.",
+      action: null
+    },
+    idle_saved: {
+      name: "Saved preferred move with nothing staged",
+      event: "",
+      meta: "Seen in 6,183 games as white",
+      pill: { text: "Saved", tone: "success" },
+      saved: { san: "e4", uci: "e2e4", date: "saved 29 Aug 2026" },
+      staged: null,
+      helper: null,
+      action: { remove: true }
+    },
+    matches: {
+      name: "Staged move matches the saved preference",
+      event: "Move staged: e4.",
+      meta: "Seen in 6,183 games as white",
+      pill: { text: "Already saved", tone: "success" },
+      saved: { san: "e4", uci: "e2e4", date: "saved 29 Aug 2026" },
+      staged: { san: "e4", uci: "e2e4" },
+      helper: null,
+      action: { save: "Matches saved", saveDisabled: true, remove: true }
+    }
+  };
+
+  const moveMarkup = (move, includeDate = true) => {
+    if (!move) return '<span class="empty">None yet</span>';
+    const date = includeDate && move.date ? ` · ${move.date}` : "";
+    return `<span class="move-value">${move.san}</span><span class="move-sub">${move.uci}${date}</span>`;
+  };
+
+  const stagedMarkup = move => move
+    ? moveMarkup(move, false)
+    : '<span class="empty">No move staged</span>';
+
+  const actionMarkup = action => {
+    if (!action) return "";
+    const save = action.save
+      ? `<button type="button" class="primary-action" data-demo-action="save" ${action.saveDisabled ? "disabled" : ""}>${action.save}</button>`
+      : "";
+    const remove = action.remove
+      ? '<button type="button" class="secondary-action" data-demo-action="remove" aria-label="Remove saved move">Remove</button>'
+      : "";
+    return `<div class="actions">${save}${remove}</div>`;
+  };
+
+  const componentHeader = state => `
+    <div class="component-header">
+      <div>
+        <h3 class="component-title">Preferred move</h3>
+        <p class="component-meta">${state.meta}</p>
+      </div>
+      <span class="pill ${state.pill.tone}">${state.pill.text}</span>
+    </div>
+    <div class="event">${state.event}</div>`;
+
+  const helperMarkup = state => state.helper ? `<p class="helper">${state.helper}</p>` : "";
+
+  function renderBaseline(state) {
+    return `${componentHeader(state)}
+      <div class="dual-slots">
+        <div class="slot ${state.saved ? "saved" : ""}">
+          <span class="move-label">Saved</span>
+          ${moveMarkup(state.saved)}
+        </div>
+        <span class="slot-arrow" aria-hidden="true">→</span>
+        <div class="slot ${state.staged ? "staged" : ""}">
+          <span class="move-label">Staged</span>
+          ${stagedMarkup(state.staged)}
+        </div>
+      </div>
+      ${helperMarkup(state)}
+      ${actionMarkup(state.action)}`;
+  }
+
+  function renderLedger(state) {
+    const stagedText = state.staged
+      ? stagedMarkup(state.staged)
+      : `<span class="empty small">${state.helper ? "Unavailable here" : "No move staged"}</span>`;
+    return `${componentHeader(state)}
+      <div class="ledger" aria-label="Saved and staged move ledger">
+        <div class="ledger-row">
+          <span class="ledger-label">Saved</span>
+          <div class="ledger-move">${moveMarkup(state.saved)}</div>
+        </div>
+        <div class="ledger-row proposed">
+          <span class="ledger-label">Staged</span>
+          <div class="ledger-move">${stagedText}</div>
+        </div>
+      </div>
+      ${helperMarkup(state)}
+      ${actionMarkup(state.action)}`;
+  }
+
+  function renderTransition(state) {
+    if (!state.staged) {
+      return `${componentHeader(state)}
+        <div class="transition">
+          <div class="transition-idle">
+            <span class="move-label">Current preferred move</span>
+            ${moveMarkup(state.saved)}
+            <p class="helper">${state.helper || "Stage a move to propose replacing this preference."}</p>
+          </div>
+        </div>
+        ${actionMarkup(state.action)}`;
+    }
+
+    const matching = state.saved && state.saved.san === state.staged.san && state.saved.uci === state.staged.uci;
+    return `${componentHeader(state)}
+      <div class="transition">
+        <div class="transition-track ${matching ? "" : "has-change"}">
+          <div class="from">
+            <span class="move-label">Saved</span>
+            ${moveMarkup(state.saved)}
+          </div>
+          <span class="transition-arrow" aria-hidden="true">→</span>
+          <div class="to">
+            <span class="move-label">Staged</span>
+            ${moveMarkup(state.staged, false)}
+          </div>
+        </div>
+        <div class="transition-result">
+          <span>${matching ? '<span class="same">No change needed</span>' : "Resulting preference"}</span>
+          <strong>${matching ? "Already saved" : "Ready to save"}</strong>
+        </div>
+      </div>
+      ${helperMarkup(state)}
+      ${actionMarkup(state.action)}`;
+  }
+
+  function decisionMove(state) {
+    if (state.staged) return state.staged;
+    return state.saved;
+  }
+
+  function decisionLabel(state) {
+    if (state.pill.tone === "neutral") return "No action available";
+    if (state.staged && state.saved && state.staged.san === state.saved.san && state.staged.uci === state.saved.uci) return "Already the preferred move";
+    if (state.staged) return "Proposed preferred move";
+    return "Current preferred move";
+  }
+
+  function renderDecision(state) {
+    const move = decisionMove(state);
+    const meta = state.staged && state.saved && state.staged.san !== state.saved.san
+      ? "replacement staged"
+      : state.staged && !state.saved
+        ? "new move staged"
+        : state.saved
+          ? "saved preference"
+          : "no move yet";
+    return `${componentHeader(state)}
+      <div class="decision">
+        <div class="decision-row">
+          <div class="decision-copy">
+            <p class="decision-kicker">${decisionLabel(state)}</p>
+            ${move ? moveMarkup(move, !state.staged) : '<span class="empty">None yet</span>'}
+          </div>
+          <div class="decision-action">${actionMarkup(state.action)}</div>
+        </div>
+        <div class="decision-meta">
+          <span>${meta}</span>
+          <span>${state.meta}</span>
+        </div>
+      </div>
+      ${helperMarkup(state)}`;
+  }
+
+  function actionHeadline(state) {
+    if (state.pill.tone === "neutral") return "No action available";
+    if (state.action && state.action.save && !state.action.saveDisabled) return "New preference ready";
+    if (state.action && state.action.saveDisabled) return "Already saved";
+    if (state.action && state.action.remove) return `Remove ${state.saved ? state.saved.san : "saved move"}`;
+    return "No action available";
+  }
+
+  function actionCopy(state) {
+    if (state.pill.tone === "neutral") return "The position is outside the corpus and it is the opponent's turn.";
+    if (state.action && state.action.save && !state.action.saveDisabled) return "The staged move can become the saved preference.";
+    if (state.action && state.action.saveDisabled) return "The staged move is already the saved preference.";
+    if (state.action && state.action.remove) return "Stage a move to propose a replacement, or remove this preference.";
+    return "Nothing needs to change.";
+  }
+
+  function renderActionFirst(state) {
+    return `${componentHeader(state)}
+      <div class="action-first">
+        <div class="action-hero">
+          <p class="action-hero-label">Next available action</p>
+          <h4 class="action-hero-title">${actionHeadline(state)}</h4>
+          <p class="action-hero-copy">${actionCopy(state)}</p>
+          ${actionMarkup(state.action)}
+        </div>
+        <details class="move-details">
+          <summary>Show move details</summary>
+          <div class="detail-list">
+            <div class="detail-row">
+              <span class="detail-label">Saved</span>
+              <div class="detail-content">${moveMarkup(state.saved)}</div>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Staged</span>
+              <div class="detail-content">${stagedMarkup(state.staged)}</div>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Corpus</span>
+              <div class="detail-content"><p class="detail-note">${state.meta}</p>${state.helper ? `<p class="detail-note">${state.helper}</p>` : ""}</div>
+            </div>
+          </div>
+        </details>
+      </div>`;
+  }
+
+  const renderers = {
+    "baseline-preview": renderBaseline,
+    "ledger-preview": renderLedger,
+    "transition-preview": renderTransition,
+    "decision-preview": renderDecision,
+    "action-first-preview": renderActionFirst
+  };
+
+  function applyState(key) {
+    const state = states[key];
+    document.getElementById("state-name").textContent = state.name;
+    document.getElementById("state-event").textContent = state.event || "No new move event";
+
+    document.querySelectorAll("[data-state]").forEach(button => {
+      button.setAttribute("aria-pressed", String(button.dataset.state === key));
+    });
+
+    Object.entries(renderers).forEach(([id, renderer]) => {
+      document.getElementById(id).innerHTML = renderer(state);
+    });
+  }
+
+  document.querySelectorAll("[data-state]").forEach(button => {
+    button.addEventListener("click", () => applyState(button.dataset.state));
+  });
+
+  document.addEventListener("click", event => {
+    const button = event.target.closest("[data-demo-action]");
+    if (!button || button.disabled) return;
+    const label = button.dataset.demoAction === "remove" ? "Remove affordance selected." : "Save affordance selected.";
+    document.getElementById("action-feedback").textContent = `${label} This catalogue does not persist data.`;
+  });
+
+  applyState("staging_new");
+</script>
+</body>
+</html>

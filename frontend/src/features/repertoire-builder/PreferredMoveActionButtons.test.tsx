@@ -122,6 +122,15 @@ describe("preferred move action buttons", () => {
     );
   });
 
+  it("supports move-specific Save copy without changing the reusable action semantics", () => {
+    render(<SavePreferredMoveButton label="Save e4" />);
+
+    const save = screen.getByRole("button", { name: "Save e4" });
+    expect(save).toBeEnabled();
+    expect(save.className).toContain("primary");
+    expect(save.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
+  });
+
   it("disables pending operations while retaining their accessible labels", async () => {
     const user = userEvent.setup();
     const onSave = vi.fn();

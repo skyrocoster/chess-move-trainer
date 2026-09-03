@@ -1,5 +1,5 @@
 import { AlertDialog } from "@base-ui/react/alert-dialog";
-import { CalendarDays } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { useState } from "react";
 
 import { Button } from "../design-system/Button";
@@ -8,12 +8,7 @@ import { InlineFeedback } from "../design-system/feedback/InlineFeedback";
 import { PanelFeedback } from "../design-system/feedback/PanelFeedback";
 import type { PositionContextFailureCode } from "../viewer/positionContextApi";
 import type { PreferredMoveFailureCode } from "./preferredMoveApi";
-import {
-  PreferredMoveActionLayout,
-  PreferredMoveChoiceBox,
-  PreferredMoveConsequence,
-  PreferredMoveConnector,
-} from "./PreferredMovePrimitives";
+import { PreferredMoveActionLayout } from "./PreferredMovePrimitives";
 import { RemovePreferredMoveButton, SavePreferredMoveButton } from "./PreferredMoveActionButtons";
 import {
   PREFERRED_MOVE_DATE_UNAVAILABLE,
@@ -98,13 +93,13 @@ function statusLabel({
   if (preferredError && model.savedPresence === "unknown") return "Saved choice unavailable";
   if (contextError && model.saveability === "unknown") return "Position context unavailable";
   if (!model.ownTurn) return "Opponent turn";
-  if (model.saveability === "unsavable") return "Saving unavailable";
+  if (model.saveability === "unsavable") return "Not in Corpus";
 
   switch (model.relationship) {
     case "empty":
       return "Ready to stage";
     case "first-choice":
-      return "First choice ready";
+      return "Ready to save";
     case "saved":
       return "Saved";
     case "replacement":
@@ -113,21 +108,6 @@ function statusLabel({
       return "Already saved";
     case "unknown":
       return "Checking position";
-  }
-}
-
-function connectorLabel(model: RepertoirePositionModel): string {
-  switch (model.relationship) {
-    case "first-choice":
-      return "first choice";
-    case "replacement":
-      return "replace";
-    case "matching":
-      return "matches";
-    case "unknown":
-      return "checking";
-    default:
-      return model.ownTurn ? "stage a move" : "your turn next";
   }
 }
 
@@ -147,6 +127,97 @@ function stagedEmptyDescription(
   return undefined;
 }
 
+type RuntimeChoiceBoxProps = {
+  label: "Saved" | "Staged";
+  semanticLabel: string;
+  tone: "warning" | "success" | "neutral" | "blocked";
+  move?: { san: string; uci?: string | null } | null;
+  subLabel?: string;
+  emptyTitle: string;
+  emptyDescription?: string;
+  onActivate?: () => void;
+  activationLabel?: string;
+  disabled?: boolean;
+  "data-testid"?: string;
+};
+
+function choiceBoxToneClass(tone: RuntimeChoiceBoxProps["tone"]): string {
+  switch (tone) {
+    case "warning":
+      return styles.choiceBoxWarning;
+    case "success":
+      return styles.choiceBoxSuccess;
+    case "blocked":
+      return styles.choiceBoxBlocked;
+    case "neutral":
+      return styles.choiceBoxNeutral;
+  }
+}
+
+function RuntimeChoiceBox({
+  label,
+  semanticLabel,
+  tone,
+  move,
+  subLabel,
+  emptyTitle,
+  emptyDescription,
+  onActivate,
+  activationLabel,
+  disabled = false,
+  "data-testid": dataTestId,
+}: RuntimeChoiceBoxProps) {
+  const content = (
+    <>
+      <p className={styles.boxLabel}>{label}</p>
+      {move ? (
+        <>
+          <p className={styles.boxValue}>{move.san}</p>
+          {subLabel ? <p className={styles.boxSub}>{subLabel}</p> : null}
+        </>
+      ) : (
+        <div className={styles.boxEmpty}>
+          <strong>{emptyTitle}</strong>
+          {emptyDescription ? <span>{emptyDescription}</span> : null}
+        </div>
+      )}
+    </>
+  );
+
+  if (onActivate) {
+    return (
+      <button
+        type="button"
+        className={`${styles.choiceBox} ${choiceBoxToneClass(tone)}`}
+        aria-label={activationLabel}
+        onClick={onActivate}
+        disabled={disabled}
+        data-testid={dataTestId}
+      >
+        {content}
+      </button>
+    );
+  }
+
+  return (
+    <section
+      className={`${styles.choiceBox} ${choiceBoxToneClass(tone)}`}
+      aria-label={semanticLabel}
+      data-testid={dataTestId}
+    >
+      {content}
+    </section>
+  );
+}
+
+function RuntimeConnector() {
+  return (
+    <div className={styles.connector} aria-hidden="true">
+      <ArrowRight className={styles.connectorIcon} focusable="false" />
+    </div>
+  );
+}
+
 function PanelError({ message, onRetry }: { message: string; onRetry?: () => void }) {
   return (
     <div className={styles.feedbackRow}>
@@ -160,47 +231,24 @@ function PanelError({ message, onRetry }: { message: string; onRetry?: () => voi
   );
 }
 
-function DateAction({
-  capability,
-  disabled,
-}: {
-  capability: PreferredMoveDateCapability;
-  disabled: boolean;
-}) {
-  const reason = capability.available ? null : capability.reason;
-
-  return (
-    <div className={styles.dateAction}>
-      <Button
-        variant="secondary"
-        disabled={disabled || !capability.available}
-        onClick={capability.onActivate}
-        aria-describedby={reason ? "preferred-date-unavailable" : undefined}
-      >
-        <CalendarDays aria-hidden="true" focusable="false" className={styles.actionIcon} />
-        <span>Change effective date</span>
-      </Button>
-      {reason ? (
-        <span id="preferred-date-unavailable" className={styles.dateUnavailable}>
-          {reason}
-        </span>
-      ) : null}
-    </div>
-  );
-}
-
 function RemoveConfirmation({
   onRemove,
   disabled = false,
+  className,
 }: {
   onRemove: () => void;
   disabled?: boolean;
+  className?: string;
 }) {
   const [open, setOpen] = useState(false);
 
   return (
     <>
-      <RemovePreferredMoveButton disabled={disabled} onClick={() => setOpen(true)} />
+      <RemovePreferredMoveButton
+        className={className}
+        disabled={disabled}
+        onClick={() => setOpen(true)}
+      />
       <AlertDialog.Root open={open} onOpenChange={setOpen}>
         <AlertDialog.Portal>
           <AlertDialog.Backdrop className={styles.dialogBackdrop} />
@@ -256,6 +304,10 @@ export function PreferredMovePanel({
   onRemove,
   onRetry,
 }: PreferredMovePanelProps) {
+  // Keep the effective-date inputs in the panel contract for the workflow even while its UI is date-free.
+  void date;
+  void dateEdit;
+
   const preferredKnown = model.savedPresence !== "unknown";
   const savedMove = preferredKnown ? (model.saved?.move ?? null) : null;
   const stagedMove = model.staged?.move ?? null;
@@ -280,18 +332,14 @@ export function PreferredMovePanel({
     contextReady &&
     !hasContextError &&
     !hasPreferredError;
-  const savedRelation = model.savedPresence === "present";
-  const firstChoiceDate =
-    model.relationship === "first-choice" &&
+  const showMatches =
+    model.ownTurn &&
     model.saveability === "savable" &&
     contextReady &&
-    !hasPreferredError;
-  const showDate =
-    model.ownTurn &&
+    !hasContextError &&
     !hasPreferredError &&
-    (savedRelation ||
-      firstChoiceDate ||
-      (mutation === "save" && model.staged !== null && model.ownTurn));
+    model.relationship === "matching";
+  const savedRelation = model.savedPresence === "present";
   const showRemove = model.ownTurn && savedRelation && !hasPreferredError;
   const persistenceDisabled = mutation !== null || preferredLoading || contextLoading;
   const stagedTone =
@@ -303,7 +351,9 @@ export function PreferredMovePanel({
           ? "proposal"
           : "empty";
   const savedEmptyTitle = preferredKnown
-    ? undefined
+    ? savedMove
+      ? undefined
+      : "None yet"
     : preferredError
       ? "Saved choice unavailable."
       : preferredLoading
@@ -317,14 +367,21 @@ export function PreferredMovePanel({
         ? contextFailureMessage(contextError)
         : null);
   const emptyDescription = stagedEmptyDescription(model, contextLoading, contextError);
-  const showConsequence =
+  const stagedEmptyTitle =
+    model.relationship === "saved" && model.saved
+      ? `Stage a move to propose replacing ${model.saved.move.san}`
+       : "No move staged";
+  const savedSubLabel = savedMove?.uci ?? undefined;
+  const canonicalNormal =
     model.ownTurn &&
+    model.saveability === "savable" &&
+    preferredReady &&
+    contextReady &&
     !hasPreferredError &&
     !hasContextError &&
-    contextReady &&
-    ((model.relationship === "first-choice" && model.saveability === "savable") ||
-      (model.relationship === "replacement" && model.saveability === "savable") ||
-      model.relationship === "matching");
+    !workflowError &&
+    !mutation &&
+    model.relationship !== "unknown";
   const panelTone =
     !model.ownTurn || model.saveability === "unsavable"
       ? styles.toneBlocked
@@ -337,19 +394,24 @@ export function PreferredMovePanel({
             : styles.toneReady;
 
   return (
-    <section
-      className={`${styles.panel} ${panelTone}`}
-      data-state={model.relationship}
-      aria-labelledby="preferred-move-heading"
-    >
+    <div className={styles.container}>
+      <section
+        className={`${styles.panel} ${panelTone} ${canonicalNormal ? styles.canonicalNormal : ""}`}
+        data-state={model.relationship}
+        aria-labelledby="preferred-move-heading"
+      >
       <header className={styles.header}>
         <div>
-          <span className={styles.kicker}>Preferred move</span>
           <h2 className={styles.heading} id="preferred-move-heading">
-            What is saved, and what is staged?
+            Preferred move
           </h2>
+          {contextLabel ? (
+            <p className={styles.meta} data-testid="preferred-context">
+              {contextLabel}
+            </p>
+          ) : null}
         </div>
-        <span className={styles.status} data-testid="preferred-status">
+        <span className={styles.status} role="status" data-testid="preferred-status">
           {statusLabel({
             model,
             mutation,
@@ -361,14 +423,9 @@ export function PreferredMovePanel({
         </span>
       </header>
 
-      {contextLabel ? (
-        <p className={styles.context} data-testid="preferred-context">
-          {contextLabel}
-        </p>
-      ) : null}
       {model.saveability === "unsavable" ? (
         <p className={styles.gate}>
-          This position cannot be saved because it is not in the corpus.
+          This position isn't in your corpus, so it can't be saved yet.
         </p>
       ) : null}
       {!model.ownTurn ? (
@@ -394,11 +451,12 @@ export function PreferredMovePanel({
       ) : null}
 
       <div className={styles.relationship}>
-        <PreferredMoveChoiceBox
-          label="Current saved choice"
-          tone={savedMove ? "saved" : "empty"}
+        <RuntimeChoiceBox
+          label="Saved"
+          semanticLabel="Current saved choice"
+          tone={savedMove ? "success" : "neutral"}
           move={savedMove}
-          effectiveDate={savedMove && model.saved && date ? date : null}
+          subLabel={savedSubLabel}
           emptyTitle={savedEmptyTitle}
           onActivate={savedMove && model.ownTurn ? onPlaySavedMove : undefined}
           activationLabel={
@@ -409,49 +467,55 @@ export function PreferredMovePanel({
           disabled={mutation !== null || preferredLoading}
           data-testid="saved-move"
         />
-        <PreferredMoveConnector label={connectorLabel(model)} />
-        <PreferredMoveChoiceBox
-          label="Staged move"
-          tone={stagedTone}
+        <RuntimeConnector />
+        <RuntimeChoiceBox
+          label="Staged"
+          semanticLabel="Staged move"
+          tone={
+            stagedTone === "proposal"
+              ? "warning"
+              : stagedTone === "matching"
+                ? "success"
+                : stagedTone === "blocked"
+                  ? "blocked"
+                  : "neutral"
+          }
           move={stagedMove ? { san: stagedMove.san, uci: model.staged?.uci } : null}
-          emptyDescription={emptyDescription}
+          subLabel={stagedMove ? model.staged?.uci ?? undefined : undefined}
+          emptyTitle={stagedEmptyTitle}
+          emptyDescription={stagedEmptyTitle === "No move staged" ? emptyDescription : undefined}
           data-testid="staged-move"
         />
       </div>
 
-      {showConsequence ? (
-        <div className={styles.consequence} data-testid="preferred-consequence">
-          {model.relationship === "first-choice" ? (
-            <PreferredMoveConsequence kind="first-choice" stagedSan={model.staged!.move.san} />
-          ) : model.relationship === "replacement" ? (
-            <PreferredMoveConsequence
-              kind="replacement"
-              stagedSan={model.staged!.move.san}
-              savedSan={model.saved!.move.san}
-            />
-          ) : (
-            <PreferredMoveConsequence kind="matching" savedSan={model.saved!.move.san} />
-          )}
-        </div>
-      ) : null}
-
-      {showSave || showDate || showRemove ? (
+      {showMatches || showSave || showRemove ? (
         <footer className={styles.footer} data-testid="preferred-actions">
           <PreferredMoveActionLayout className={styles.actionLayout}>
+            {showMatches ? (
+              <Button variant="primary" className={styles.primaryAction} disabled>
+                Matches saved
+              </Button>
+            ) : null}
             {showSave ? (
               <SavePreferredMoveButton
+                className={styles.primaryAction}
+                label={stagedMove ? `Save ${stagedMove.san}` : undefined}
                 pending={mutation === "save"}
                 disabled={!canSave || persistenceDisabled}
                 onClick={onSave}
               />
             ) : null}
-            {showDate ? <DateAction capability={dateEdit} disabled={persistenceDisabled} /> : null}
             {showRemove ? (
-              <RemoveConfirmation onRemove={onRemove} disabled={persistenceDisabled} />
+              <RemoveConfirmation
+                className={styles.removeAction}
+                onRemove={onRemove}
+                disabled={persistenceDisabled}
+              />
             ) : null}
           </PreferredMoveActionLayout>
         </footer>
       ) : null}
-    </section>
+      </section>
+    </div>
   );
 }

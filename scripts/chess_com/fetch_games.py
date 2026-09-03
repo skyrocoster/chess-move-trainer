@@ -41,6 +41,48 @@ class Response:
     body: bytes
 
 
+@dataclass(frozen=True)
+class MonthFailure:
+    """A monthly archive that could not be fetched or persisted."""
+
+    year: int
+    month: int
+    error: str
+
+    def as_dict(self) -> dict[str, object]:
+        return {"year": self.year, "month": self.month, "error": self.error}
+
+
+@dataclass(frozen=True)
+class FetchResult:
+    """The observable outcome of processing the selected archive months."""
+
+    status: str
+    requested_months: int
+    fetched_months: int
+    unchanged_months: int
+    skipped_months: int
+    failed_months: tuple[MonthFailure, ...] = ()
+
+    @property
+    def complete(self) -> bool:
+        return self.status == "complete"
+
+    @property
+    def exit_code(self) -> int:
+        return 0 if self.complete else 1
+
+    def as_dict(self) -> dict[str, object]:
+        return {
+            "status": self.status,
+            "requested_months": self.requested_months,
+            "fetched_months": self.fetched_months,
+            "unchanged_months": self.unchanged_months,
+            "skipped_months": self.skipped_months,
+            "failed_months": [failure.as_dict() for failure in self.failed_months],
+        }
+
+
 def load_settings(config_path: Path, username: str | None, delay: float | None) -> Settings:
     values = yaml.safe_load(config_path.read_text(encoding="utf-8")) or {}
     name = username or values.get("username", "skyrocoster")
@@ -206,7 +248,7 @@ def run(
     logger: logging.Logger,
     month_filter: tuple[int, int] | None = None,
     sleep=time.sleep,
-) -> int:
+) -> FetchResult:
     settings.database.parent.mkdir(parents=True, exist_ok=True)
     connection = sqlite3.connect(settings.database)
     create_schema(connection)
@@ -224,11 +266,22 @@ def run(
             archives = [url for url in archives if month_from_url(url) == month_filter]
             if not archives:
                 logger.error("Month %04d/%02d not found in archives", *month_filter)
-                return 1
+                return FetchResult(
+                    "incomplete",
+                    0,
+                    0,
+                    0,
+                    0,
+                    (MonthFailure(*month_filter, "month was not present in the archive list"),),
+                )
         current_url = archives[-1] if archives else None
         connection.execute(
             "UPDATE fetch_state SET is_current=0 WHERE username=?", (settings.username,)
         )
+        fetched_months = 0
+        unchanged_months = 0
+        skipped_months = 0
+        failed_months: list[MonthFailure] = []
         for index, url in enumerate(archives):
             year, month = month_from_url(url)
             current = url == current_url
@@ -238,6 +291,7 @@ def run(
             ).fetchone()
             if state and not current and state[1] == 0:
                 logger.info("Skipping fetched historical month %04d/%02d", year, month)
+                skipped_months += 1
                 continue
             if index or settings.delay:
                 sleep(settings.delay)
@@ -250,6 +304,7 @@ def run(
                     mark_state(connection, settings, year, month, state[0], current)
                     connection.commit()
                     logger.info("Month %04d/%02d unchanged", year, month)
+                    unchanged_months += 1
                     continue
                 if response.status != 200:
                     raise RuntimeError(f"month returned HTTP {response.status}")
@@ -260,13 +315,30 @@ def run(
                     mark_state(
                         connection, settings, year, month, response.headers.get("ETag"), current
                     )
+                fetched_months += 1
                 logger.info("Fetched month %04d/%02d", year, month)
             except RateLimitError:
                 raise
             except Exception as error:  # Month failures must not block later months.
                 logger.error("Skipping month %04d/%02d: %s", year, month, error)
-        logger.info("Fetch complete for %s", settings.username)
-        return 0
+                failed_months.append(MonthFailure(year, month, str(error)))
+        result = FetchResult(
+            "incomplete" if failed_months else "complete",
+            len(archives),
+            fetched_months,
+            unchanged_months,
+            skipped_months,
+            tuple(failed_months),
+        )
+        if result.complete:
+            logger.info("Fetch complete for %s", settings.username)
+        else:
+            logger.error(
+                "Fetch incomplete for %s: %d month(s) failed",
+                settings.username,
+                len(failed_months),
+            )
+        return result
     finally:
         connection.close()
 
@@ -289,7 +361,8 @@ def main(argv: list[str] | None = None) -> int:
             logger.error("--month must be in YYYY/MM format")
             return 1
     try:
-        return run(settings, logger, month_filter)
+        result = run(settings, logger, month_filter)
+        return result.exit_code
     except RateLimitError as error:
         logger.error("Rate limited; stopping: %s", error)
         return 2

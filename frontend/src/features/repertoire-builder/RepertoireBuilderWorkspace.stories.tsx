@@ -215,7 +215,7 @@ export const StagedMy: Story = {
     await expect(stagedObservedFens).toContain(STAGED_E4_FEN);
     await expect(canvas.getByRole("button", { name: "1. e4" })).toBeVisible();
     await expectPreferredMoveState(canvasElement, "first-choice");
-    await expect(canvas.getByTestId("staged-move")).toHaveTextContent(/^Staged move\s*e4 \(e2e4\)/);
+    await expect(canvas.getByTestId("staged-move")).toHaveTextContent(/^Staged\s*e4\s*e2e4/);
     await expectPositionReachFrequency(canvasElement, "available", "White", "3 / 10 games", "30%");
   },
 };

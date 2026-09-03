@@ -59,7 +59,7 @@ export const UnsavableGate: Story = {
     const canvas = within(canvasElement);
     await expectPreferredMoveState(canvasElement, "empty");
     await expect(
-      canvas.getByText("This position cannot be saved because it is not in the corpus."),
+      canvas.getByText("This position isn't in your corpus, so it can't be saved yet."),
     ).toBeVisible();
     await expectPreferredActions(canvasElement, []);
     await expect(canvas.queryByRole("button", { name: "Save" })).not.toBeInTheDocument();

@@ -67,7 +67,7 @@ def test_fetches_normalizes_and_writes_raw_data(tmp_path: Path) -> None:
         "request",
         side_effect=[response(200, archive), response(200, {"games": [game()]}, "tag")],
     ):
-        assert fetch_games.run(config, logger(tmp_path), sleep=lambda _: None) == 0
+        assert fetch_games.run(config, logger(tmp_path), sleep=lambda _: None).status == "complete"
     assert (tmp_path / "raw/archives/tester.json").exists()
     assert (tmp_path / "raw/games/2024/01.json").exists()
     with sqlite3.connect(config.database) as db:
@@ -125,7 +125,8 @@ def test_month_filter_fetches_only_requested_archive(tmp_path: Path) -> None:
     ) as mocked:
         assert (
             fetch_games.run(config, logger(tmp_path), month_filter=(2024, 1), sleep=lambda _: None)
-            == 0
+            .status
+            == "complete"
         )
     assert mocked.call_count == 2
     assert mocked.call_args_list[1].args[0].endswith("/2024/01")
@@ -148,7 +149,9 @@ def test_non_429_month_failure_continues(tmp_path: Path) -> None:
             response(200, {"games": [game("g2")]}),
         ],
     ):
-        assert fetch_games.run(config, logger(tmp_path), sleep=lambda _: None) == 0
+        result = fetch_games.run(config, logger(tmp_path), sleep=lambda _: None)
+    assert result.status == "incomplete"
+    assert result.exit_code != 0
     with sqlite3.connect(config.database) as db:
         assert db.execute("SELECT COUNT(*) FROM games").fetchone()[0] == 1
 

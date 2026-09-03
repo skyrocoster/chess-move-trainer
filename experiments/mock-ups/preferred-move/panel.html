@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Preferred move card</title>
+<style>
+  :root {
+    --bg: #17181a;
+    --card: #1e2022;
+    --border: #33363a;
+    --border-strong: #45484d;
+    --text: #e7e7e5;
+    --text-secondary: #a3a6ab;
+    --text-muted: #77797e;
+    --amber-bg: #3a2c10;
+    --amber-border: #8a5a12;
+    --amber-text: #f0b429;
+    --green-bg: #14301f;
+    --green-border: #2f7a4d;
+    --green-text: #4fbf7a;
+    --red-bg: #331717;
+    --red-border: #7a2f2f;
+    --red-text: #e0605f;
+    --radius: 10px;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    display: flex;
+    justify-content: center;
+    padding: 48px 16px;
+  }
+
+  .page { width: 100%; max-width: 480px; }
+
+  /* demo-only controls, not part of the component */
+  .demo-switcher {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+  .demo-switcher button {
+    flex: 1;
+    min-width: 100px;
+    background: transparent;
+    border: 0.5px solid var(--border);
+    color: var(--text-secondary);
+    padding: 6px 10px;
+    font-size: 12px;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  .demo-switcher button.active {
+    border-color: var(--border-strong);
+    color: var(--text);
+    background: #26282b;
+  }
+
+  /* the actual component */
+  .toast {
+    font-size: 13px;
+    color: var(--text-secondary);
+    border: 0.5px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 12px;
+    margin-bottom: 12px;
+    display: none;
+  }
+  .toast.show { display: block; }
+
+  .card {
+    background: var(--card);
+    border: 0.5px solid var(--border);
+    border-radius: 12px;
+    padding: 18px 20px;
+  }
+
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .card-title { font-size: 16px; font-weight: 500; margin: 0; }
+  .card-meta { font-size: 13px; color: var(--text-muted); margin: 3px 0 0; }
+
+  .pill {
+    font-size: 12px;
+    font-weight: 500;
+    padding: 4px 10px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+  .pill.warning { background: var(--amber-bg); color: var(--amber-text); }
+  .pill.success { background: var(--green-bg); color: var(--green-text); }
+  .pill.neutral { background: #2a2c2f; color: var(--text-secondary); }
+  .pill.danger  { background: var(--red-bg); color: var(--red-text); }
+
+  .boxes {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 10px;
+    margin: 18px 0;
+  }
+
+  .box {
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px 14px;
+    min-height: 64px;
+  }
+  .box-label { font-size: 12px; color: var(--text-muted); margin: 0 0 6px; }
+  .box-value { font-size: 16px; font-weight: 500; margin: 0; }
+  .box-sub { font-size: 12px; margin: 2px 0 0; opacity: 0.8; }
+  .box-empty { font-size: 13px; color: var(--text-muted); }
+
+  .box.warning { border-color: var(--amber-border); background: var(--amber-bg); }
+  .box.warning .box-label, .box.warning .box-value, .box.warning .box-sub { color: var(--amber-text); }
+
+  .box.success { border-color: var(--green-border); background: var(--green-bg); }
+  .box.success .box-label, .box.success .box-value, .box.success .box-sub { color: var(--green-text); }
+
+  .arrow {
+    color: var(--text-muted);
+    font-size: 18px;
+    line-height: 1;
+  }
+
+  .helper {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin: 0 0 14px;
+  }
+
+  .actions { display: flex; gap: 8px; }
+
+  .btn-primary {
+    flex: 1;
+    background: #e7e7e5;
+    color: #17181a;
+    border: none;
+    padding: 10px;
+    font-size: 14px;
+    font-weight: 500;
+    border-radius: var(--radius);
+    cursor: pointer;
+  }
+  .btn-primary:disabled {
+    background: transparent;
+    color: var(--text-muted);
+    border: 0.5px solid var(--border);
+    cursor: default;
+  }
+
+  .btn-icon {
+    width: 40px;
+    background: transparent;
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--red-text);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .btn-icon svg { width: 16px; height: 16px; }
+  .btn-icon.push-right { margin-left: auto; }
+
+  .icon-check { width: 16px; height: 16px; margin-right: 6px; vertical-align: -3px; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- demo-only: lets you preview all four states in one file -->
+  <div class="demo-switcher">
+    <button data-state="staging_new" class="active">Staging (nothing saved)</button>
+    <button data-state="not_in_corpus">Not in corpus</button>
+    <button data-state="idle_saved">Saved, nothing staged</button>
+    <button data-state="matches">Staged matches saved</button>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <p class="card-title">Preferred move</p>
+        <p class="card-meta" id="meta">Seen in 4 games as white</p>
+      </div>
+      <span class="pill warning" id="pill">Ready to save</span>
+    </div>
+
+    <div class="boxes">
+      <div class="box" id="savedBox">
+        <p class="box-label">Saved</p>
+        <p class="box-empty" id="savedEmpty">None yet</p>
+        <p class="box-value" id="savedValue" style="display:none;"></p>
+        <p class="box-sub" id="savedSub" style="display:none;"></p>
+      </div>
+
+      <span class="arrow">&#8594;</span>
+
+      <div class="box" id="stagedBox">
+        <p class="box-label">Staged</p>
+        <p class="box-empty" id="stagedEmpty" style="display:none;">No move staged</p>
+        <p class="box-value" id="stagedValue" style="display:none;"></p>
+        <p class="box-sub" id="stagedSub" style="display:none;"></p>
+      </div>
+    </div>
+
+    <p class="helper" id="helper" style="display:none;"></p>
+
+    <div class="actions" id="actions"></div>
+  </div>
+
+</div>
+
+<script>
+  const states = {
+    staging_new: {
+      toast: "Move staged: Nce2.",
+      meta: "Seen in 4 games as white",
+      pill: { text: "Ready to save", cls: "warning" },
+      saved: { empty: true },
+      staged: { value: "Nce2", sub: "c3e2", cls: "warning" },
+      helper: null,
+      actions: [{ type: "primary", label: "Save Nce2" }]
+    },
+    not_in_corpus: {
+      toast: "Preferred move saved.",
+      meta: "Never seen as white",
+      pill: { text: "Opponent's turn", cls: "neutral" },
+      saved: { value: "Nce2", sub: "c3e2 · saved 2 Sep 2026", cls: "success" },
+      staged: { empty: true, emptyText: "No move staged" },
+      helper: "This position isn't in your corpus, so it can't be saved yet.",
+      actions: []
+    },
+    idle_saved: {
+      toast: null,
+      meta: "Seen in 6,183 games as white",
+      pill: { text: "Saved", cls: "success" },
+      saved: { value: "e4", sub: "e2e4 · saved 29 Aug 2026", cls: "success" },
+      staged: { empty: true, emptyText: "Stage a move to propose replacing e4" },
+      helper: null,
+      actions: [{ type: "remove" }]
+    },
+    matches: {
+      toast: "Move staged: e4.",
+      meta: "Seen in 6,183 games as white",
+      pill: { text: "Already saved", cls: "success" },
+      saved: { value: "e4", sub: "e2e4 · saved 29 Aug 2026", cls: "success" },
+      staged: { value: "e4", sub: "e2e4", cls: "success" },
+      helper: null,
+      actions: [{ type: "primary", label: "Matches saved", disabled: true }, { type: "remove" }]
+    }
+  };
+
+  const el = id => document.getElementById(id);
+
+  function renderBox(prefix, data) {
+    const empty = el(prefix + "Empty");
+    const value = el(prefix + "Value");
+    const sub = el(prefix + "Sub");
+    const box = el(prefix + "Box");
+
+    box.classList.remove("warning", "success");
+
+    if (data.empty) {
+      empty.style.display = "block";
+      empty.textContent = data.emptyText || "None yet";
+      value.style.display = "none";
+      sub.style.display = "none";
+    } else {
+      empty.style.display = "none";
+      value.style.display = "block";
+      value.textContent = data.value;
+      sub.style.display = "block";
+      sub.textContent = data.sub;
+      if (data.cls) box.classList.add(data.cls);
+    }
+  }
+
+  function renderActions(actions) {
+    const container = el("actions");
+    container.innerHTML = "";
+    if (!actions.length) return;
+
+    // Fixed left-to-right order regardless of how the state lists them:
+    // primary action always first, remove always last (and pushed right if alone).
+    const hasPrimary = actions.some(a => a.type === "primary");
+    const ordered = [...actions].sort((a, b) => (a.type === "primary" ? -1 : 1) - (b.type === "primary" ? -1 : 1));
+
+    ordered.forEach(a => {
+      if (a.type === "primary") {
+        const btn = document.createElement("button");
+        btn.className = "btn-primary";
+        btn.textContent = a.label;
+        if (a.disabled) btn.disabled = true;
+        container.appendChild(btn);
+      } else if (a.type === "remove") {
+        const btn = document.createElement("button");
+        btn.className = "btn-icon" + (hasPrimary ? "" : " push-right");
+        btn.setAttribute("aria-label", "Remove saved move");
+        btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>';
+        container.appendChild(btn);
+      }
+    });
+  }
+
+  function applyState(key) {
+    const s = states[key];
+
+    const toast = el("toast");
+    if (s.toast) {
+      toast.textContent = s.toast;
+      toast.classList.add("show");
+    } else {
+      toast.classList.remove("show");
+    }
+
+    el("meta").textContent = s.meta;
+
+    const pill = el("pill");
+    pill.className = "pill " + s.pill.cls;
+    pill.textContent = s.pill.text;
+
+    renderBox("saved", s.saved);
+    renderBox("staged", s.staged);
+
+    const helper = el("helper");
+    if (s.helper) {
+      helper.style.display = "block";
+      helper.textContent = s.helper;
+    } else {
+      helper.style.display = "none";
+    }
+
+    renderActions(s.actions);
+  }
+
+  document.querySelectorAll(".demo-switcher button").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".demo-switcher button").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      applyState(btn.dataset.state);
+    });
+  });
+
+  applyState("staging_new");
+</script>
+</body>
+</html>

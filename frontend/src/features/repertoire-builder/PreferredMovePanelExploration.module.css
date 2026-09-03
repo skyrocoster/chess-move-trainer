@@ -1,0 +1,257 @@
+.frame {
+  display: flex;
+  min-block-size: 100vh;
+  min-inline-size: 0;
+  justify-content: center;
+  padding: var(--cmt-spacing-48) var(--cmt-spacing-16);
+  background: var(--md-sys-color-background);
+  color: var(--md-sys-color-on-background);
+  container-name: preferred-move-exploration;
+  container-type: inline-size;
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  inline-size: 100%;
+  max-inline-size: 30rem;
+  min-inline-size: 0;
+  block-size: 256px;
+  box-sizing: border-box;
+  padding: var(--cmt-spacing-16) var(--cmt-spacing-24);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--cmt-radius-12);
+  background: var(--md-sys-color-surface-container);
+  color: var(--md-sys-color-on-surface);
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--cmt-spacing-12);
+  min-inline-size: 0;
+}
+
+.heading,
+.meta,
+.boxLabel,
+.boxValue,
+.boxSub,
+.boxEmpty,
+.helper {
+  margin: 0;
+}
+
+.heading {
+  color: var(--md-sys-color-on-surface);
+  font-family: var(--md-sys-typescale-title-medium-font);
+  font-size: var(--md-sys-typescale-title-medium-size);
+  font-weight: var(--md-sys-typescale-title-medium-weight);
+  letter-spacing: var(--md-sys-typescale-title-medium-letter-spacing);
+  line-height: var(--md-sys-typescale-title-medium-line-height);
+}
+
+.meta {
+  margin-block-start: var(--cmt-spacing-4);
+  color: var(--md-sys-color-on-surface-variant);
+  font-family: var(--md-sys-typescale-body-small-font);
+  font-size: var(--md-sys-typescale-body-small-size);
+  line-height: var(--md-sys-typescale-body-small-line-height);
+}
+
+.status {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  max-inline-size: 100%;
+  padding: var(--cmt-spacing-4) var(--cmt-spacing-12);
+  border-radius: 999px;
+  font-family: var(--md-sys-typescale-label-medium-font);
+  font-size: var(--md-sys-typescale-label-medium-size);
+  font-weight: var(--md-sys-typescale-label-medium-weight);
+  line-height: var(--md-sys-typescale-label-medium-line-height);
+  white-space: nowrap;
+}
+
+.statusWarning {
+  background: var(--cmt-warning-container);
+  color: var(--cmt-warning-on-container);
+}
+
+.statusSuccess {
+  background: var(--cmt-success-container);
+  color: var(--cmt-success-on-container);
+}
+
+.statusNeutral {
+  background: var(--md-sys-color-surface-container-high);
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.relationship {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--cmt-spacing-8);
+  min-inline-size: 0;
+  margin-block: var(--cmt-spacing-16);
+}
+
+.choiceBox {
+  display: flex;
+  flex-direction: column;
+  min-inline-size: 0;
+  block-size: 88px;
+  padding: var(--cmt-spacing-12) var(--cmt-spacing-16);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--cmt-radius-12);
+  box-sizing: border-box;
+  overflow-wrap: anywhere;
+}
+
+.choiceBoxWarning {
+  border-color: var(--cmt-warning-accent);
+  background: var(--cmt-warning-container);
+  color: var(--cmt-warning-on-container);
+}
+
+.choiceBoxSuccess {
+  border-color: var(--cmt-success-accent);
+  background: var(--cmt-success-container);
+  color: var(--cmt-success-on-container);
+}
+
+.boxLabel {
+  color: var(--md-sys-color-on-surface-variant);
+  font-family: var(--md-sys-typescale-label-medium-font);
+  font-size: var(--md-sys-typescale-label-medium-size);
+  font-weight: var(--md-sys-typescale-label-medium-weight);
+  line-height: var(--md-sys-typescale-label-medium-line-height);
+}
+
+.choiceBoxWarning .boxLabel,
+.choiceBoxSuccess .boxLabel {
+  color: inherit;
+}
+
+.boxValue {
+  margin-block-start: var(--cmt-spacing-4);
+  color: inherit;
+  font-family: var(--md-sys-typescale-title-medium-font);
+  font-size: var(--md-sys-typescale-title-medium-size);
+  font-weight: var(--md-sys-typescale-title-medium-weight);
+  line-height: var(--md-sys-typescale-title-medium-line-height);
+}
+
+.boxSub {
+  color: inherit;
+  opacity: 0.8;
+  font-family: var(--md-sys-typescale-body-small-font);
+  font-size: var(--md-sys-typescale-body-small-size);
+  line-height: var(--md-sys-typescale-body-small-line-height);
+}
+
+.boxEmpty {
+  margin-block-start: var(--cmt-spacing-8);
+  color: var(--md-sys-color-on-surface-variant);
+  font-family: var(--md-sys-typescale-body-medium-font);
+  font-size: var(--md-sys-typescale-body-medium-size);
+  line-height: var(--md-sys-typescale-body-medium-line-height);
+}
+
+.connector {
+  display: grid;
+  inline-size: var(--cmt-spacing-24);
+  block-size: var(--cmt-spacing-24);
+  place-items: center;
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.connectorIcon {
+  inline-size: var(--cmt-spacing-16);
+  block-size: var(--cmt-spacing-16);
+}
+
+.helper {
+  color: var(--md-sys-color-on-surface-variant);
+  font-family: var(--md-sys-typescale-body-small-font);
+  font-size: var(--md-sys-typescale-body-small-size);
+  line-height: var(--md-sys-typescale-body-small-line-height);
+  overflow-wrap: anywhere;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--cmt-spacing-8);
+  min-inline-size: 0;
+  margin-block-start: auto;
+}
+
+.primaryAction {
+  flex: 1 1 auto;
+  min-inline-size: 0;
+}
+
+.removeAction {
+  flex: 0 0 auto;
+}
+
+.removeActionAlone {
+  margin-inline-start: auto;
+}
+
+@container preferred-move-exploration (max-width: 40rem) {
+  .panel {
+    block-size: 360px;
+  }
+
+  .relationship {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: stretch;
+    gap: var(--cmt-spacing-8);
+    margin-block: var(--cmt-spacing-12);
+  }
+
+  .connector {
+    inline-size: 100%;
+    block-size: var(--cmt-spacing-16);
+  }
+
+  .connectorIcon {
+    transform: rotate(90deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .connectorIcon {
+    transition: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .panel,
+  .choiceBox {
+    border-color: ButtonBorder;
+    background: Canvas;
+    color: CanvasText;
+  }
+
+  .status {
+    border: 1px solid ButtonBorder;
+    background: Canvas;
+    color: CanvasText;
+  }
+
+  .heading,
+  .meta,
+  .boxLabel,
+  .boxValue,
+  .boxSub,
+  .boxEmpty,
+  .helper,
+  .connector {
+    color: CanvasText;
+  }
+}

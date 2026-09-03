@@ -4,6 +4,7 @@ import { Button, type ButtonProps } from "../design-system/Button";
 import styles from "./PreferredMoveActionButtons.module.css";
 
 export type PreferredMoveActionButtonProps = Omit<ButtonProps, "children" | "variant"> & {
+  label?: string;
   pending?: boolean;
 };
 
@@ -12,6 +13,7 @@ function actionClass(className: string | undefined): string {
 }
 
 export function SavePreferredMoveButton({
+  label = "Save",
   pending = false,
   disabled = false,
   className,
@@ -26,7 +28,7 @@ export function SavePreferredMoveButton({
       aria-busy={pending || undefined}
     >
       <SaveIcon className={styles.actionIcon} aria-hidden="true" focusable="false" />
-      <span>Save</span>
+      <span>{label}</span>
     </Button>
   );
 }
