@@ -110,6 +110,14 @@ evidence.
   safe package/CLI creation and inspection, and generated reference accepted; proof is retained in the Plan.
 - **DB-02:** [focused Plan](../../plans/done/database-rebuild-db-02/database-rebuild-db-02.md) — canonical legal-only
   identity, conflict-safe stable storage, and opaque transaction composition accepted; proof is retained in the Plan.
+- **DB-03:** [focused Plan](../../plans/done/database-rebuild-db-03/database-rebuild-db-03.md) — raw acquisition and
+  normalized game/occurrence rebuilding accepted with 119 focused tests passing in 15.97 seconds. After DB-03 was
+  completed, a separate offline run of the supported tools rebuilt 4,102 games, 209,802 occurrences, and 176,539
+  canonical positions in a disposable database, with zero N+1, non-final NULL-move, or foreign-key failures; it made
+  no network request and did not modify the production database or retained raw files.
+- **DB-04:** [focused Plan](../../plans/done/database-rebuild-db-04/database-rebuild-db-04.md) — strict five-file opening
+  parsing, atomic catalogue/route publication, isolated FEN/PGN recognition, and supported Typer commands accepted with
+  87 focused tests passing across retained proofs in 33.27 seconds; real rebuilt-data proof remains owned by DB-09.
 
 The focused Plan owns implementation progress and detailed evidence; this section must not become an implementation
 queue or progress log.

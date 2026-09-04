@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import json
+import shutil
 import sqlite3
 import subprocess
 import sys
@@ -16,6 +17,7 @@ from chess_move_trainer.database.games.acquisition import (
     AcquisitionFailure,
     AcquisitionResult,
 )
+from chess_move_trainer.database.openings.source import load_opening_sources
 
 
 ROOT = Path(__file__).parents[2]
@@ -515,3 +517,282 @@ def test_games_interruption_is_status_130(
 
     assert result.exit_code == 130
     assert "Interrupted" in result.stderr
+
+
+OPENINGS_FIXTURE_DIR = ROOT / "tests/database/openings/fixtures/catalogue-valid"
+
+
+def _opening_sources(tmp_path: Path) -> Path:
+    source_dir = tmp_path / "opening-sources"
+    shutil.copytree(OPENINGS_FIXTURE_DIR, source_dir)
+    return source_dir
+
+
+def test_openings_root_group_and_command_help_expose_only_explicit_inputs() -> None:
+    root = _runner().invoke(database_cli.app, ["--help"])
+    group = _runner().invoke(database_cli.app, ["openings", "--help"])
+    commands = {
+        "import": ("--source-dir", "--database", "--json"),
+        "lookup": ("--database", "--fen", "--json"),
+        "replay": ("--database", "--pgn-file", "--json"),
+    }
+
+    assert root.exit_code == group.exit_code == 0
+    assert "openings" in root.stdout
+    for command, options in commands.items():
+        result = _runner().invoke(database_cli.app, ["openings", command, "--help"])
+        assert result.exit_code == 0
+        assert all(option in result.stdout for option in options)
+    assert all(command in group.stdout for command in commands)
+
+
+def test_openings_import_has_deterministic_default_and_json_output(tmp_path: Path) -> None:
+    source_dir = _opening_sources(tmp_path)
+    database_path = tmp_path / "import.db"
+    create_schema(database_path)
+
+    default = _run_cli(
+        "openings",
+        "import",
+        "--source-dir",
+        str(source_dir),
+        "--database",
+        str(database_path),
+        input_bytes=b"stdin must not be read",
+    )
+    machine = _run_cli(
+        "openings",
+        "import",
+        "--source-dir",
+        str(source_dir),
+        "--database",
+        str(database_path),
+        "--json",
+    )
+
+    assert default.returncode == machine.returncode == 0
+    assert b"Imported 4 opening label(s), 5 route(s), and 20 move(s)." in default.stdout
+    assert default.stderr == b""
+    assert json.loads(machine.stdout) == {
+        "opening_count": 4,
+        "route_count": 5,
+        "move_count": 20,
+    }
+    assert machine.stderr == b""
+
+
+def test_openings_lookup_and_replay_have_default_json_and_stdin_independent_output(
+    tmp_path: Path,
+) -> None:
+    source_dir = _opening_sources(tmp_path)
+    database_path = tmp_path / "recognition.db"
+    create_schema(database_path)
+    _run_cli(
+        "openings",
+        "import",
+        "--source-dir",
+        str(source_dir),
+        "--database",
+        str(database_path),
+    )
+    route = load_opening_sources(source_dir)[0]
+    pgn_file = tmp_path / "route.pgn"
+    pgn_file.write_text("1. e4 e5 2. Nf3 Nc6", encoding="utf-8")
+
+    lookup_default = _run_cli(
+        "openings",
+        "lookup",
+        "--database",
+        str(database_path),
+        "--fen",
+        route.endpoint_fen,
+        input_bytes=b"not lookup input",
+    )
+    lookup_json = _run_cli(
+        "openings",
+        "lookup",
+        "--database",
+        str(database_path),
+        "--fen",
+        route.endpoint_fen,
+        "--json",
+    )
+    replay_default = _run_cli(
+        "openings",
+        "replay",
+        "--database",
+        str(database_path),
+        "--pgn-file",
+        str(pgn_file),
+        input_bytes=b"not replay input",
+    )
+    replay_json = _run_cli(
+        "openings",
+        "replay",
+        "--database",
+        str(database_path),
+        "--pgn-file",
+        str(pgn_file),
+        "--json",
+    )
+
+    assert lookup_default.returncode == replay_default.returncode == 0
+    assert b"Recognized openings:" in lookup_default.stdout
+    assert b"Current:" in replay_default.stdout
+    expected_lookup = {
+        "recognized": [
+            {"ply": 4, "eco": "A00", "name": "Basic route", "match": "transposition"}
+        ],
+        "current": {
+            "ply": 4,
+            "eco": "A00",
+            "name": "Basic route",
+            "match": "transposition",
+        },
+    }
+    expected_replay = {
+        "recognized": [{"ply": 4, "eco": "A00", "name": "Basic route", "match": "route"}],
+        "current": {"ply": 4, "eco": "A00", "name": "Basic route", "match": "route"},
+    }
+    assert json.loads(lookup_json.stdout) == expected_lookup
+    assert json.loads(replay_json.stdout) == expected_replay
+    assert not lookup_default.stderr
+    assert not replay_default.stderr
+
+
+def test_openings_valid_no_match_is_status_zero_with_empty_json_result(tmp_path: Path) -> None:
+    source_dir = _opening_sources(tmp_path)
+    database_path = tmp_path / "no-match.db"
+    create_schema(database_path)
+    _run_cli(
+        "openings",
+        "import",
+        "--source-dir",
+        str(source_dir),
+        "--database",
+        str(database_path),
+    )
+
+    result = _run_cli(
+        "openings",
+        "lookup",
+        "--database",
+        str(database_path),
+        "--fen",
+        "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+        "--json",
+    )
+
+    assert result.returncode == 0
+    assert json.loads(result.stdout) == {"recognized": [], "current": None}
+    assert result.stderr == b""
+
+
+def test_openings_invalid_input_source_and_database_failures_use_settled_exits(
+    tmp_path: Path,
+) -> None:
+    source_dir = _opening_sources(tmp_path)
+    database_path = tmp_path / "errors.db"
+    create_schema(database_path)
+    invalid_fen = _run_cli(
+        "openings",
+        "lookup",
+        "--database",
+        str(database_path),
+        "--fen",
+        "not a FEN",
+    )
+    missing_pgn = _run_cli(
+        "openings",
+        "replay",
+        "--database",
+        str(database_path),
+        "--pgn-file",
+        str(tmp_path / "missing.pgn"),
+    )
+    second_game = tmp_path / "second-game.pgn"
+    second_game.write_text('1. e4 * [Event "second"] 1. d4', encoding="utf-8")
+    multiple_games = _run_cli(
+        "openings",
+        "replay",
+        "--database",
+        str(database_path),
+        "--pgn-file",
+        str(second_game),
+    )
+    bad_source = _opening_sources(tmp_path / "bad")
+    (bad_source / "a.tsv").write_text(
+        "eco\tname\tpgn\nA00\tBad\t1. e4 Nonsense\n", encoding="utf-8"
+    )
+    bad_catalogue = _run_cli(
+        "openings",
+        "import",
+        "--source-dir",
+        str(bad_source),
+        "--database",
+        str(database_path),
+    )
+    missing_database = _run_cli(
+        "openings",
+        "import",
+        "--source-dir",
+        str(source_dir),
+        "--database",
+        str(tmp_path / "missing.db"),
+    )
+    incompatible = tmp_path / "incompatible.db"
+    sqlite3.connect(incompatible).close()
+    incompatible_result = _run_cli(
+        "openings",
+        "import",
+        "--source-dir",
+        str(source_dir),
+        "--database",
+        str(incompatible),
+    )
+
+    assert invalid_fen.returncode == 2
+    assert missing_pgn.returncode == 2
+    assert multiple_games.returncode == 2
+    assert bad_catalogue.returncode == 1
+    assert missing_database.returncode == 1
+    assert incompatible_result.returncode == 3
+    for result in (
+        invalid_fen,
+        missing_pgn,
+        multiple_games,
+        bad_catalogue,
+        missing_database,
+        incompatible_result,
+    ):
+        assert result.stdout == b""
+        assert result.stderr
+
+
+def test_openings_operational_failure_and_interruption_are_status_one_and_130(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fail(*args: object, **kwargs: object) -> object:
+        del args, kwargs
+        raise database_cli.OpeningPersistenceError("synthetic storage failure")
+
+    monkeypatch.setattr(database_cli, "import_opening_catalogue", fail)
+    failed = _runner().invoke(
+        database_cli.app,
+        ["openings", "import", "--source-dir", "sources", "--database", "database.db"],
+    )
+
+    def interrupt(*args: object, **kwargs: object) -> object:
+        del args, kwargs
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(database_cli, "import_opening_catalogue", interrupt)
+    interrupted = _runner().invoke(
+        database_cli.app,
+        ["openings", "import", "--source-dir", "sources", "--database", "database.db"],
+    )
+
+    assert failed.exit_code == 1
+    assert interrupted.exit_code == 130
+    assert "synthetic storage failure" in failed.stderr
+    assert "Interrupted" in interrupted.stderr

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 
@@ -16,6 +17,17 @@ from .games.configuration import (
 )
 from .games.persistence import GameRepository, import_raw_months
 from .inspection import inspect_schema, render_schema_markdown
+from .openings import (
+    OpeningCatalogueRepository,
+    OpeningInputError,
+    OpeningPersistenceError,
+    OpeningRecognition,
+    OpeningRecognitionError,
+    OpeningSourceError,
+    import_opening_catalogue,
+    lookup_fen,
+    replay_pgn,
+)
 from .publication import SchemaPublicationCollisionError, publish_schema
 from .schema import SchemaIncompatibleError, create_schema
 
@@ -23,8 +35,10 @@ from .schema import SchemaIncompatibleError, create_schema
 app = typer.Typer(add_completion=False, no_args_is_help=True)
 schema_app = typer.Typer(add_completion=False, no_args_is_help=True)
 games_app = typer.Typer(add_completion=False, no_args_is_help=True)
+openings_app = typer.Typer(add_completion=False, no_args_is_help=True)
 app.add_typer(schema_app, name="schema")
 app.add_typer(games_app, name="games")
+app.add_typer(openings_app, name="openings")
 
 
 @schema_app.command("create")
@@ -199,8 +213,87 @@ def import_games(
         raise typer.Exit(code=1)
 
 
-def _usage_error(error: Exception) -> None:
-    raise typer.BadParameter(str(error), param_hint="--lock-timeout")
+@openings_app.command("import")
+def import_openings(
+    source_dir: Path = typer.Option(
+        ..., "--source-dir", help="Explicit directory containing a.tsv through e.tsv."
+    ),
+    database: Path = typer.Option(..., "--database", help="Explicit SQLite database path."),
+    json_output: bool = typer.Option(False, "--json", help="Emit stable JSON output."),
+) -> None:
+    """Replace the opening catalogue from one explicit five-file source directory."""
+
+    try:
+        publication = import_opening_catalogue(
+            source_dir, OpeningCatalogueRepository(database)
+        )
+    except KeyboardInterrupt:
+        _interrupted()
+    except SchemaIncompatibleError as error:
+        _operational_error(error, 3)
+    except (OpeningSourceError, OpeningPersistenceError) as error:
+        _operational_error(error, 1)
+    except Exception as error:
+        _operational_error(error, 1)
+    else:
+        _render_publication(publication, json_output)
+
+
+@openings_app.command("lookup")
+def lookup_opening(
+    database: Path = typer.Option(..., "--database", help="Explicit SQLite database path."),
+    fen: str = typer.Option(..., "--fen", help="Complete six-field FEN to recognize."),
+    json_output: bool = typer.Option(False, "--json", help="Emit stable JSON output."),
+) -> None:
+    """Recognize opening labels for one explicit full FEN."""
+
+    try:
+        result = lookup_fen(database, fen)
+    except KeyboardInterrupt:
+        _interrupted()
+    except SchemaIncompatibleError as error:
+        _operational_error(error, 3)
+    except OpeningInputError as error:
+        _usage_error(error, param_hint="--fen")
+    except OpeningRecognitionError as error:
+        _operational_error(error, 1)
+    except Exception as error:
+        _operational_error(error, 1)
+    else:
+        _render_recognition(result, json_output)
+
+
+@openings_app.command("replay")
+def replay_opening(
+    database: Path = typer.Option(..., "--database", help="Explicit SQLite database path."),
+    pgn_file: Path = typer.Option(..., "--pgn-file", help="Explicit one-game PGN file."),
+    json_output: bool = typer.Option(False, "--json", help="Emit stable JSON output."),
+) -> None:
+    """Replay one explicit PGN file and recognize its opening labels."""
+
+    try:
+        pgn = pgn_file.read_text(encoding="utf-8")
+    except (OSError, UnicodeError) as error:
+        _usage_error(error, param_hint="--pgn-file")
+
+    try:
+        result = replay_pgn(database, pgn)
+    except KeyboardInterrupt:
+        _interrupted()
+    except SchemaIncompatibleError as error:
+        _operational_error(error, 3)
+    except OpeningInputError as error:
+        _usage_error(error, param_hint="--pgn-file")
+    except OpeningRecognitionError as error:
+        _operational_error(error, 1)
+    except Exception as error:
+        _operational_error(error, 1)
+    else:
+        _render_recognition(result, json_output)
+
+
+def _usage_error(error: Exception, *, param_hint: str = "--lock-timeout") -> None:
+    raise typer.BadParameter(str(error), param_hint=param_hint)
 
 
 def _games_configuration_error(error: Exception) -> None:
@@ -215,3 +308,66 @@ def _interrupted() -> None:
 def _operational_error(error: Exception, exit_code: int) -> None:
     typer.echo(f"Error: {error}", err=True)
     raise typer.Exit(code=exit_code)
+
+
+def _render_publication(publication: object, json_output: bool) -> None:
+    if json_output:
+        typer.echo(
+            json.dumps(
+                {
+                    "opening_count": publication.opening_count,
+                    "route_count": publication.route_count,
+                    "move_count": publication.move_count,
+                },
+                ensure_ascii=False,
+                sort_keys=True,
+                separators=(",", ":"),
+            )
+        )
+        return
+    typer.echo(
+        f"Imported {publication.opening_count} opening label(s), "
+        f"{publication.route_count} route(s), and {publication.move_count} move(s)."
+    )
+
+
+def _render_recognition(result: OpeningRecognition, json_output: bool) -> None:
+    recognized = [
+        {
+            "ply": item.ply,
+            "eco": item.eco,
+            "name": item.name,
+            "match": item.match,
+        }
+        for item in result.recognized
+    ]
+    current = (
+        {
+            "ply": result.current.ply,
+            "eco": result.current.eco,
+            "name": result.current.name,
+            "match": result.current.match,
+        }
+        if result.current is not None
+        else None
+    )
+    if json_output:
+        typer.echo(
+            json.dumps(
+                {"recognized": recognized, "current": current},
+                ensure_ascii=False,
+                sort_keys=True,
+                separators=(",", ":"),
+            )
+        )
+        return
+    if not recognized:
+        typer.echo("No recognized opening.")
+        return
+    typer.echo("Recognized openings:")
+    for item in recognized:
+        label = f"{item['eco']} {item['name']}".rstrip()
+        typer.echo(f"- ply {item['ply']}: {label} ({item['match']})")
+    assert current is not None
+    label = f"{current['eco']} {current['name']}".rstrip()
+    typer.echo(f"Current: {label} (ply {current['ply']}, {current['match']})")

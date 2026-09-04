@@ -13,11 +13,26 @@ def test_common_package_and_database_namespace_are_importable() -> None:
     database = importlib.import_module("chess_move_trainer.database")
     positions = importlib.import_module("chess_move_trainer.database.positions")
     games = importlib.import_module("chess_move_trainer.database.games")
+    openings = importlib.import_module("chess_move_trainer.database.openings")
 
     assert package.__name__ == "chess_move_trainer"
     assert database.__name__ == "chess_move_trainer.database"
     assert positions.__name__ == "chess_move_trainer.database.positions"
     assert games.__name__ == "chess_move_trainer.database.games"
+    assert openings.__name__ == "chess_move_trainer.database.openings"
+    for name in (
+        "OpeningRouteSource",
+        "load_opening_sources",
+        "CataloguePublication",
+        "OpeningCatalogueRepository",
+        "import_opening_catalogue",
+        "OpeningInputError",
+        "RecognizedOpening",
+        "OpeningRecognition",
+        "lookup_fen",
+        "replay_pgn",
+    ):
+        assert hasattr(openings, name)
     assert Path(package.__file__).parts[-3:-1] == ("src", "chess_move_trainer")
 
 

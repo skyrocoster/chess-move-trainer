@@ -49,6 +49,12 @@ def test_canonical_sql_is_the_only_executable_ddl_owner_and_cli_is_thin() -> Non
     assert "SQLALCHEMY" not in cli_text.upper()
     assert "SUBPROCESS" not in cli_text.upper()
     assert "CREATE TABLE" not in cli_text.upper()
+    assert "SQLALCHEMY" not in cli_text.upper()
+    assert "SQLITE3" not in cli_text.upper()
+    assert "CHESS.PGN" not in cli_text.upper()
+    assert "CANONICALIZE" not in cli_text.upper()
+    assert "SELECT " not in cli_text.upper()
+    assert "INSERT " not in cli_text.upper()
 
 
 def test_package_contains_no_runtime_wrapper_or_copied_legacy_generator() -> None:
@@ -91,3 +97,38 @@ def test_games_responsibilities_preserve_network_and_database_separation() -> No
         if isinstance(node, ast.ImportFrom) and node.module
     ]
     assert not any("connection" in module or "position" in module for module in acquisition_imports)
+
+
+def test_openings_have_no_legacy_application_or_games_dependency() -> None:
+    openings_path = PACKAGE_PATH / "openings"
+    imported_modules: list[str] = []
+    for source_path in sorted(openings_path.rglob("*.py")):
+        tree = ast.parse(source_path.read_text(encoding="utf-8"))
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                imported_modules.extend(alias.name for alias in node.names)
+            elif isinstance(node, ast.ImportFrom) and node.module:
+                imported_modules.append(node.module)
+
+    assert not any(
+        module == "games"
+        or module.endswith(".games")
+        or module.startswith(("backend", "legacy", "scripts"))
+        for module in imported_modules
+    )
+
+
+def test_lower_level_database_packages_do_not_depend_on_openings() -> None:
+    for package_name in ("positions", "games"):
+        package_path = PACKAGE_PATH / package_name
+        for source_path in sorted(package_path.rglob("*.py")):
+            tree = ast.parse(source_path.read_text(encoding="utf-8"))
+            imports = [
+                node.module
+                for node in ast.walk(tree)
+                if isinstance(node, ast.ImportFrom) and node.module
+            ]
+            assert not any(
+                module == "openings" or module.endswith(".openings")
+                for module in imports
+            )
