@@ -20,4 +20,8 @@ exclude = ["Scratch/"]
 select = ["E", "F", "I"]
 
 [tool.setuptools.packages.find]
-include = ["backend*"]
+where = [".", "src"]
+include = ["backend*", "chess_move_trainer*"]
+
+[tool.setuptools.package-data]
+"chess_move_trainer.database" = ["*.sql"]

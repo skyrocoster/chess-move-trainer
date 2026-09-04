@@ -17,6 +17,7 @@ the case-worker and coordinator keep exact execution boundaries in the active co
 
 ## Database schema
 
+- [Generated Markdown SQLite schema](../data/database/schema.md) is the stable production-facing reference.
 - [AI-readable SQLite schema](../data/database/schema.txt) is the generated reference for the repository-supported
   tables, keys, relationships, indexes, triggers, and canonical SQL.
 
