@@ -1,16 +1,26 @@
 from __future__ import annotations
 
 import os
+import json
 import sqlite3
 import subprocess
 import sys
 from pathlib import Path
 
 import pytest
+from typer.testing import CliRunner
+
+from chess_move_trainer.database import create_schema
+from chess_move_trainer.database import cli as database_cli
+from chess_move_trainer.database.games.acquisition import (
+    AcquisitionFailure,
+    AcquisitionResult,
+)
 
 
 ROOT = Path(__file__).parents[2]
 CLI_TIMEOUT_SECONDS = 15
+TRAINER_UUID = "11111111-1111-4111-8111-111111111111"
 
 
 def _run_cli(*arguments: str, input_bytes: bytes = b"") -> subprocess.CompletedProcess[bytes]:
@@ -182,3 +192,326 @@ def test_commands_are_non_interactive(tmp_path: Path) -> None:
     assert inspect_result.stdout
     assert create_result.stderr == b""
     assert inspect_result.stderr == b""
+
+
+def _config(tmp_path: Path, *, extra: str = "") -> Path:
+    path = tmp_path / "games.yaml"
+    path.write_text(
+        f"username: synthetic-trainer\ntrainer_chesscom_uuid: {TRAINER_UUID}\n{extra}",
+        encoding="utf-8",
+    )
+    return path
+
+
+def _runner() -> CliRunner:
+    return CliRunner()
+
+
+def test_games_help_has_exact_supported_surface_and_no_base_url() -> None:
+    acquire = _runner().invoke(database_cli.app, ["games", "acquire", "--help"])
+    import_result = _runner().invoke(database_cli.app, ["games", "import", "--help"])
+
+    assert acquire.exit_code == 0
+    assert import_result.exit_code == 0
+    for option in (
+        "--config",
+        "--raw-root",
+        "--username",
+        "--trainer-chesscom-uuid",
+        "--request-timeout",
+        "30.0",
+        "--request-delay",
+        "0.25",
+    ):
+        assert option in acquire.stdout
+    assert "fixed Chess.com API endpoint" in acquire.stdout
+    assert "base-url" not in acquire.stdout
+    for option in ("--config", "--raw-root", "--database", "--trainer-chesscom-uuid"):
+        assert option in import_result.stdout
+    assert "base-url" not in import_result.stdout
+
+
+@pytest.mark.parametrize(
+    "arguments",
+    [
+        ["games", "acquire"],
+        ["games", "acquire", "--config", "missing.yaml"],
+        ["games", "import"],
+        ["games", "import", "--config", "missing.yaml", "--raw-root", "raw"],
+    ],
+)
+def test_games_explicit_paths_are_required(arguments: list[str]) -> None:
+    result = _runner().invoke(database_cli.app, arguments)
+
+    assert result.exit_code == 2
+
+
+def test_acquire_wires_yaml_values_defaults_and_cli_overrides(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    config = _config(tmp_path, extra="request_timeout: 9.0\nrequest_delay: 1.5\n")
+    seen: list[object] = []
+
+    def acquire(configuration: object, raw_root: Path) -> AcquisitionResult:
+        seen.extend([configuration, raw_root])
+        return AcquisitionResult(("2026-08",), (), ())
+
+    monkeypatch.setattr(database_cli, "acquire_months", acquire)
+    yaml_result = _runner().invoke(
+        database_cli.app,
+        ["games", "acquire", "--config", str(config), "--raw-root", str(tmp_path / "raw")],
+    )
+    override_result = _runner().invoke(
+        database_cli.app,
+        [
+            "games",
+            "acquire",
+            "--config",
+            str(config),
+            "--raw-root",
+            str(tmp_path / "raw-two"),
+            "--username",
+            "synthetic-override",
+            "--trainer-chesscom-uuid",
+            "22222222-2222-4222-8222-222222222222",
+            "--request-timeout",
+            "4.0",
+            "--request-delay",
+            "0.0",
+        ],
+    )
+
+    assert yaml_result.exit_code == override_result.exit_code == 0
+    yaml_configuration, yaml_root, override_configuration, override_root = seen
+    assert yaml_configuration.username == "synthetic-trainer"
+    assert yaml_configuration.request_timeout == 9.0
+    assert yaml_configuration.request_delay == 1.5
+    assert yaml_root == tmp_path / "raw"
+    assert override_configuration.username == "synthetic-override"
+    assert str(override_configuration.trainer_chesscom_uuid) == "22222222-2222-4222-8222-222222222222"
+    assert override_configuration.request_timeout == 4.0
+    assert override_configuration.request_delay == 0.0
+    assert override_root == tmp_path / "raw-two"
+
+
+def test_acquire_uses_exact_defaults_when_yaml_omits_timing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    seen: list[object] = []
+
+    def acquire(configuration: object, raw_root: Path) -> AcquisitionResult:
+        del raw_root
+        seen.append(configuration)
+        return AcquisitionResult((), (), ())
+
+    monkeypatch.setattr(database_cli, "acquire_months", acquire)
+    result = _runner().invoke(
+        database_cli.app,
+        [
+            "games",
+            "acquire",
+            "--config",
+            str(_config(tmp_path)),
+            "--raw-root",
+            str(tmp_path / "raw"),
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert seen[0].request_timeout == 30.0
+    assert seen[0].request_delay == 0.25
+
+
+@pytest.mark.parametrize(
+    ("option", "value"),
+    [
+        ("--request-timeout", "0"),
+        ("--request-timeout", "nan"),
+        ("--request-delay", "-1"),
+        ("--request-delay", "inf"),
+    ],
+)
+def test_acquire_invalid_timing_is_status_two(
+    tmp_path: Path, option: str, value: str
+) -> None:
+    result = _runner().invoke(
+        database_cli.app,
+        [
+            "games",
+            "acquire",
+            "--config",
+            str(_config(tmp_path)),
+            "--raw-root",
+            str(tmp_path / "raw"),
+            option,
+            value,
+        ],
+    )
+
+    assert result.exit_code == 2
+
+
+def test_acquire_incomplete_and_operational_failures_are_status_one(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    config = _config(tmp_path)
+    monkeypatch.setattr(
+        database_cli,
+        "acquire_months",
+        lambda configuration, raw_root: AcquisitionResult(
+            (), (), (AcquisitionFailure("2026-08", "synthetic rate limit"),)
+        ),
+    )
+    incomplete = _runner().invoke(
+        database_cli.app,
+        ["games", "acquire", "--config", str(config), "--raw-root", str(tmp_path / "raw")],
+    )
+
+    def fail(configuration: object, raw_root: Path) -> AcquisitionResult:
+        del configuration, raw_root
+        raise OSError("synthetic operational failure")
+
+    monkeypatch.setattr(database_cli, "acquire_months", fail)
+    failed = _runner().invoke(
+        database_cli.app,
+        ["games", "acquire", "--config", str(config), "--raw-root", str(tmp_path / "raw")],
+    )
+
+    assert incomplete.exit_code == failed.exit_code == 1
+    assert "rate limit" in incomplete.stderr
+    assert "operational failure" in failed.stderr
+
+
+def test_import_reads_only_month_files_and_completes_with_reported_skip(tmp_path: Path) -> None:
+    raw_root = tmp_path / "raw"
+    month = raw_root / "games" / "2026" / "08.json"
+    month.parent.mkdir(parents=True)
+    valid = json.loads(
+        (ROOT / "tests/database/games/fixtures/game-trainer-white.json").read_text(encoding="utf-8")
+    )
+    skipped = json.loads(
+        (ROOT / "tests/database/games/fixtures/game-non-standard.json").read_text(encoding="utf-8")
+    )
+    month.write_text(json.dumps({"games": [valid, skipped]}), encoding="utf-8")
+    archives = raw_root / "archives"
+    archives.mkdir()
+    (archives / "synthetic-trainer.json").write_text("not JSON", encoding="utf-8")
+    database = tmp_path / "import.db"
+    create_schema(database)
+
+    result = _runner().invoke(
+        database_cli.app,
+        [
+            "games",
+            "import",
+            "--config",
+            str(_config(tmp_path)),
+            "--raw-root",
+            str(raw_root),
+            "--database",
+            str(database),
+        ],
+        input="",
+    )
+
+    assert result.exit_code == 0
+    assert "Imported 1 game" in result.stdout
+    assert "skipped 1" in result.stdout
+    assert "Warning:" in result.stderr
+    with sqlite3.connect(database) as connection:
+        assert connection.execute("SELECT COUNT(*) FROM datasource_game").fetchone()[0] == 1
+
+
+def test_import_cli_uuid_override_wins_over_yaml(tmp_path: Path) -> None:
+    raw_root = tmp_path / "raw"
+    month = raw_root / "games" / "2026" / "08.json"
+    month.parent.mkdir(parents=True)
+    valid = json.loads(
+        (ROOT / "tests/database/games/fixtures/game-trainer-white.json").read_text(encoding="utf-8")
+    )
+    month.write_text(json.dumps({"games": [valid]}), encoding="utf-8")
+    config = _config(tmp_path)
+    config.write_text(
+        "trainer_chesscom_uuid: 22222222-2222-4222-8222-222222222222\n",
+        encoding="utf-8",
+    )
+    database = tmp_path / "override.db"
+    create_schema(database)
+
+    result = _runner().invoke(
+        database_cli.app,
+        [
+            "games",
+            "import",
+            "--config",
+            str(config),
+            "--raw-root",
+            str(raw_root),
+            "--database",
+            str(database),
+            "--trainer-chesscom-uuid",
+            TRAINER_UUID,
+        ],
+    )
+
+    assert result.exit_code == 0
+    with sqlite3.connect(database) as connection:
+        assert connection.execute("SELECT COUNT(*) FROM datasource_game").fetchone()[0] == 1
+
+
+def test_import_operational_failure_is_one_and_invalid_config_is_two(tmp_path: Path) -> None:
+    raw_root = tmp_path / "raw"
+    raw_root.mkdir()
+    valid_config = _config(tmp_path)
+    invalid_config = tmp_path / "invalid.yaml"
+    invalid_config.write_text("trainer_chesscom_uuid: invalid\n", encoding="utf-8")
+    arguments = ["--raw-root", str(raw_root), "--database", str(tmp_path / "missing.db")]
+
+    operational = _runner().invoke(
+        database_cli.app, ["games", "import", "--config", str(valid_config), *arguments]
+    )
+    invalid = _runner().invoke(
+        database_cli.app, ["games", "import", "--config", str(invalid_config), *arguments]
+    )
+
+    assert operational.exit_code == 1
+    assert invalid.exit_code == 2
+
+
+@pytest.mark.parametrize("command", ["acquire", "import"])
+def test_games_interruption_is_status_130(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, command: str
+) -> None:
+    def interrupt(*args: object, **kwargs: object) -> object:
+        del args, kwargs
+        raise KeyboardInterrupt
+
+    if command == "acquire":
+        monkeypatch.setattr(database_cli, "acquire_months", interrupt)
+        arguments = [
+            "games",
+            "acquire",
+            "--config",
+            str(_config(tmp_path)),
+            "--raw-root",
+            str(tmp_path / "raw"),
+        ]
+    else:
+        monkeypatch.setattr(database_cli, "import_raw_months", interrupt)
+        database = tmp_path / "interrupt.db"
+        create_schema(database)
+        arguments = [
+            "games",
+            "import",
+            "--config",
+            str(_config(tmp_path)),
+            "--raw-root",
+            str(tmp_path),
+            "--database",
+            str(database),
+        ]
+
+    result = _runner().invoke(database_cli.app, arguments)
+
+    assert result.exit_code == 130
+    assert "Interrupted" in result.stderr

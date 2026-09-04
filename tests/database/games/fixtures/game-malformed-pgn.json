@@ -1,0 +1,9 @@
+{
+  "synthetic_fixture": "malformed PGN game",
+  "uuid": "dddddddd-dddd-4ddd-8ddd-ddddddddddd6",
+  "url": "https://www.chess.com/game/live/synthetic-malformed",
+  "rules": "chess",
+  "pgn": "[Event \"Synthetic malformed PGN\"\n1. e4",
+  "white": {"uuid": "11111111-1111-4111-8111-111111111111"},
+  "black": {"uuid": "99999999-9999-4999-8999-999999999997"}
+}

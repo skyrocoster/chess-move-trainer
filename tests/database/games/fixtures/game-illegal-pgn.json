@@ -1,0 +1,9 @@
+{
+  "synthetic_fixture": "illegal PGN game",
+  "uuid": "dddddddd-dddd-4ddd-8ddd-ddddddddddd7",
+  "url": "https://www.chess.com/game/live/synthetic-illegal",
+  "rules": "chess",
+  "pgn": "[Event \"Synthetic illegal moves\"]\n\n1. e4 e5 2. Ke2 Ke7 3. Ke1 Ke8 4. Ke1 *",
+  "white": {"uuid": "11111111-1111-4111-8111-111111111111"},
+  "black": {"uuid": "99999999-9999-4999-8999-999999999998"}
+}

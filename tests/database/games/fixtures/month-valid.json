@@ -1,0 +1,7 @@
+{
+  "synthetic_fixture": "valid month envelope",
+  "games": [
+    {"uuid": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1", "rules": "chess", "pgn": "1. e4 e5 *"},
+    {"uuid": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa2", "rules": "chess", "pgn": "1. d4 d5 *"}
+  ]
+}

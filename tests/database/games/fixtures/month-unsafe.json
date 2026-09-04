@@ -1,0 +1,4 @@
+{
+  "synthetic_fixture": "unsafe month envelope with non-list games",
+  "games": {"uuid": "not-a-list"}
+}

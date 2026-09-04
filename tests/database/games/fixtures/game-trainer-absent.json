@@ -1,0 +1,8 @@
+{
+  "synthetic_fixture": "trainer absent game",
+  "uuid": "dddddddd-dddd-4ddd-8ddd-ddddddddddd5",
+  "rules": "chess",
+  "pgn": "[Event \"Synthetic trainer absent\"]\n\n1. e4 e5 *",
+  "white": {"uuid": "99999999-9999-4999-8999-999999999995"},
+  "black": {"uuid": "99999999-9999-4999-8999-999999999996"}
+}

@@ -1,0 +1,7 @@
+{
+  "synthetic_fixture": "duplicate UUID month envelope",
+  "games": [
+    {"uuid": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb", "pgn": "1. e4 *"},
+    {"uuid": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb", "pgn": "1. d4 *"}
+  ]
+}

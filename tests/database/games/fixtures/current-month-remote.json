@@ -1,0 +1,7 @@
+{
+  "synthetic_fixture": "current month remote merge input",
+  "games": [
+    {"uuid": "cccccccc-cccc-4ccc-8ccc-ccccccccccc2", "revision": "corrected replacement"},
+    {"uuid": "cccccccc-cccc-4ccc-8ccc-ccccccccccc3", "revision": "new game"}
+  ]
+}

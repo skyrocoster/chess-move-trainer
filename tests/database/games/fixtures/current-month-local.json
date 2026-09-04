@@ -1,0 +1,7 @@
+{
+  "synthetic_fixture": "current month local merge input",
+  "games": [
+    {"uuid": "cccccccc-cccc-4ccc-8ccc-ccccccccccc1", "revision": "retain omitted"},
+    {"uuid": "cccccccc-cccc-4ccc-8ccc-ccccccccccc2", "revision": "old correction target"}
+  ]
+}

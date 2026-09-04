@@ -1,0 +1,9 @@
+{
+  "synthetic_fixture": "repetition and move counter replay",
+  "uuid": "dddddddd-dddd-4ddd-8ddd-ddddddddddd8",
+  "url": "https://www.chess.com/game/live/synthetic-repetition",
+  "rules": "chess",
+  "pgn": "[Event \"Synthetic repetition\"]\n[Result \"1/2-1/2\"]\n\n1. Nf3 Nf6 2. Ng1 Ng8 3. Nf3 Nf6 4. Ng1 Ng8 1/2-1/2",
+  "white": {"uuid": "11111111-1111-4111-8111-111111111111", "result": "repetition"},
+  "black": {"uuid": "99999999-9999-4999-8999-999999999999", "result": "repetition"}
+}

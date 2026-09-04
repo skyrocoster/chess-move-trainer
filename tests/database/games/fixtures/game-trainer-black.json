@@ -1,0 +1,9 @@
+{
+  "synthetic_fixture": "standard game trainer Black",
+  "uuid": "dddddddd-dddd-4ddd-8ddd-ddddddddddd2",
+  "url": "https://www.chess.com/game/live/synthetic-black",
+  "rules": "chess",
+  "pgn": "[Event \"Synthetic trainer Black\"]\n[Result \"0-1\"]\n\n1. d4 Nf6 2. c4 e6 0-1",
+  "white": {"uuid": "99999999-9999-4999-8999-999999999992", "result": "checkmated"},
+  "black": {"uuid": "11111111-1111-4111-8111-111111111111", "result": "win"}
+}

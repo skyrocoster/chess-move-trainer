@@ -70,3 +70,24 @@ def test_position_service_does_not_promote_raw_handles_or_schema_creation() -> N
     assert "sqlite3.Connection" not in positions_text
     assert "sqlalchemy.engine.Connection" not in positions_text
     assert "raw_connection" not in positions_text
+
+
+def test_games_responsibilities_preserve_network_and_database_separation() -> None:
+    games_path = PACKAGE_PATH / "games"
+    acquisition_text = (games_path / "acquisition.py").read_text(encoding="utf-8").lower()
+    import_side_text = "\n".join(
+        (games_path / name).read_text(encoding="utf-8").lower()
+        for name in ("normalization.py", "persistence.py")
+    )
+
+    assert "sqlite3" not in acquisition_text
+    assert "sqlalchemy" not in acquisition_text
+    assert "httpx" not in import_side_text
+
+    acquisition_tree = ast.parse((games_path / "acquisition.py").read_text(encoding="utf-8"))
+    acquisition_imports = [
+        node.module
+        for node in ast.walk(acquisition_tree)
+        if isinstance(node, ast.ImportFrom) and node.module
+    ]
+    assert not any("connection" in module or "position" in module for module in acquisition_imports)
