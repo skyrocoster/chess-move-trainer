@@ -7,7 +7,12 @@ import pytest
 
 from chess_move_trainer.database import DEFAULT_LOCK_TIMEOUT_SECONDS
 from chess_move_trainer.database import schema as schema_service
-from chess_move_trainer.database.schema import SchemaIncompatibleError, create_schema
+from chess_move_trainer.database.connection import _open_existing_connection
+from chess_move_trainer.database.schema import (
+    SchemaIncompatibleError,
+    _assert_compatible_schema,
+    create_schema,
+)
 
 
 def test_fresh_creation_and_exact_compatible_repeat_are_byte_preserving(tmp_path: Path) -> None:
@@ -148,3 +153,31 @@ def test_interrupted_existing_empty_creation_preserves_the_target(
         assert connection.execute(
             "SELECT name FROM sqlite_master WHERE type = 'table'"
         ).fetchall() == []
+
+
+def test_internal_compatibility_assertion_accepts_v1_and_leaves_connection_clean(
+    tmp_path: Path,
+) -> None:
+    database_path = tmp_path / "compatible-existing.db"
+    create_schema(database_path)
+
+    with _open_existing_connection(database_path, DEFAULT_LOCK_TIMEOUT_SECONDS) as connection:
+        _assert_compatible_schema(connection)
+
+        assert connection.in_transaction() is False
+        with connection.begin():
+            assert connection.exec_driver_sql("SELECT 1").scalar_one() == 1
+
+
+def test_internal_compatibility_assertion_rejects_empty_target_without_modification(
+    tmp_path: Path,
+) -> None:
+    database_path = tmp_path / "empty-existing.db"
+    sqlite3.connect(database_path).close()
+    original_bytes = database_path.read_bytes()
+
+    with _open_existing_connection(database_path, DEFAULT_LOCK_TIMEOUT_SECONDS) as connection:
+        with pytest.raises(SchemaIncompatibleError):
+            _assert_compatible_schema(connection)
+
+    assert database_path.read_bytes() == original_bytes

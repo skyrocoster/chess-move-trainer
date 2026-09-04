@@ -10,7 +10,11 @@ from chess_move_trainer.database import (
     ConnectionProbe,
     probe_connection,
 )
-from chess_move_trainer.database.connection import _create_sqlite_connection, _open_connection
+from chess_move_trainer.database.connection import (
+    _create_sqlite_connection,
+    _open_connection,
+    _open_existing_connection,
+)
 
 
 def test_read_write_probe_creates_an_explicit_database_with_safe_settings(
@@ -114,3 +118,15 @@ def test_internal_factory_preserves_an_existing_non_default_journal_mode(
     assert probe.journal_mode.lower() == "wal"
     with sqlite3.connect(database_path) as connection:
         assert connection.execute("PRAGMA journal_mode").fetchone()[0].lower() == "wal"
+
+
+def test_internal_existing_read_write_factory_never_creates_a_missing_target(
+    tmp_path: Path,
+) -> None:
+    database_path = tmp_path / "missing-existing.db"
+
+    with pytest.raises(FileNotFoundError):
+        with _open_existing_connection(database_path, DEFAULT_LOCK_TIMEOUT_SECONDS):
+            raise AssertionError("the missing target unexpectedly opened")
+
+    assert not database_path.exists()

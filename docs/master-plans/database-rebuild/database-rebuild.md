@@ -108,6 +108,8 @@ evidence.
 
 - **DB-01:** [focused Plan](../../plans/done/database-rebuild-db-01/database-rebuild-db-01.md) — exact schema substrate,
   safe package/CLI creation and inspection, and generated reference accepted; proof is retained in the Plan.
+- **DB-02:** [focused Plan](../../plans/done/database-rebuild-db-02/database-rebuild-db-02.md) — canonical legal-only
+  identity, conflict-safe stable storage, and opaque transaction composition accepted; proof is retained in the Plan.
 
 The focused Plan owns implementation progress and detailed evidence; this section must not become an implementation
 queue or progress log.

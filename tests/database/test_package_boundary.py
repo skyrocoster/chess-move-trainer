@@ -11,9 +11,11 @@ ROOT = Path(__file__).parents[2]
 def test_common_package_and_database_namespace_are_importable() -> None:
     package = importlib.import_module("chess_move_trainer")
     database = importlib.import_module("chess_move_trainer.database")
+    positions = importlib.import_module("chess_move_trainer.database.positions")
 
     assert package.__name__ == "chess_move_trainer"
     assert database.__name__ == "chess_move_trainer.database"
+    assert positions.__name__ == "chess_move_trainer.database.positions"
     assert Path(package.__file__).parts[-3:-1] == ("src", "chess_move_trainer")
 
 

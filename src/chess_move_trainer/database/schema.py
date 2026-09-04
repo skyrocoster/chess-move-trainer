@@ -111,6 +111,25 @@ def _schema_snapshot(connection: Connection) -> _SchemaSnapshot:
     return _SchemaSnapshot(user_version=user_version, objects=objects)
 
 
+def _assert_compatible_schema(
+    connection: Connection,
+    lock_timeout: float = DEFAULT_LOCK_TIMEOUT_SECONDS,
+) -> None:
+    """Assert exact v1 compatibility without changing the open target."""
+
+    try:
+        current = _schema_snapshot(connection)
+        connection.rollback()
+        expected = _reference_snapshot(lock_timeout)
+        if current != expected:
+            raise SchemaIncompatibleError(
+                f"Database is not compatible with schema version {SCHEMA_VERSION}."
+            )
+    finally:
+        if connection.in_transaction():
+            connection.rollback()
+
+
 def _execute_schema_resource(connection: Connection) -> None:
     resource = resources.files("chess_move_trainer.database").joinpath(_SCHEMA_RESOURCE_NAME)
     script = resource.read_text(encoding="utf-8")

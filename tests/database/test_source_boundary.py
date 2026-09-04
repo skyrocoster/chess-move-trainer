@@ -9,7 +9,7 @@ PACKAGE_PATH = ROOT / "src" / "chess_move_trainer" / "database"
 
 
 def _python_sources() -> list[Path]:
-    return sorted(PACKAGE_PATH.glob("*.py"))
+    return sorted(PACKAGE_PATH.rglob("*.py"))
 
 
 def test_database_package_has_no_legacy_or_production_import_direction() -> None:
@@ -58,3 +58,15 @@ def test_package_contains_no_runtime_wrapper_or_copied_legacy_generator() -> Non
     assert "subprocess" not in package_text
     assert "legacy" not in package_text.lower()
     assert "backend" not in package_text.lower()
+
+
+def test_position_service_does_not_promote_raw_handles_or_schema_creation() -> None:
+    positions_text = "\n".join(
+        path.read_text(encoding="utf-8")
+        for path in sorted((PACKAGE_PATH / "positions").rglob("*.py"))
+    )
+
+    assert "create_schema" not in positions_text
+    assert "sqlite3.Connection" not in positions_text
+    assert "sqlalchemy.engine.Connection" not in positions_text
+    assert "raw_connection" not in positions_text

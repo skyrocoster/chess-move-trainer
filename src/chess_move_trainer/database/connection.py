@@ -86,13 +86,43 @@ def _open_connection(
         engine.dispose()
 
 
+@contextmanager
+def _open_existing_connection(
+    database_path: str | Path,
+    lock_timeout: float = DEFAULT_LOCK_TIMEOUT_SECONDS,
+) -> Iterator[Connection]:
+    """Yield a configured read-write connection without creating a target."""
+
+    path = _validate_database_path(database_path, "read-write")
+    if not path.exists():
+        raise FileNotFoundError(f"Database target does not exist: {path}")
+    timeout_seconds = _validate_lock_timeout(lock_timeout)
+    engine = create_engine(
+        "sqlite+pysqlite://",
+        creator=lambda: _create_sqlite_connection(
+            path, "read-write", timeout_seconds, require_existing=True
+        ),
+        poolclass=NullPool,
+    )
+    try:
+        with engine.connect() as connection:
+            if connection.in_transaction():
+                raise RuntimeError("Database connection was yielded with an active transaction.")
+            yield connection
+    finally:
+        engine.dispose()
+
+
 def _create_sqlite_connection(
     database_path: Path,
     mode: AccessMode,
     lock_timeout: float,
+    *,
+    require_existing: bool = False,
 ) -> sqlite3.Connection:
-    if mode == "read-only":
-        uri = f"file:{database_path.resolve().as_posix()}?mode=ro"
+    if mode == "read-only" or require_existing:
+        access_mode = "ro" if mode == "read-only" else "rw"
+        uri = f"file:{database_path.resolve().as_posix()}?mode={access_mode}"
         connection = sqlite3.connect(uri, uri=True, timeout=lock_timeout)
     else:
         connection = sqlite3.connect(str(database_path), timeout=lock_timeout)
