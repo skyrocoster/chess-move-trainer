@@ -95,6 +95,7 @@ escalation, not an AI choice.
 | DB-08 | Idempotent rebuild, snapshot, neighboring replacement, rollback, and interruption operations are available. | DB-07 | No application cutover or old-database deletion. |
 | DB-09 | Real rebuilt data proves the database/tool foundation and direct access paths. | DB-08 | No HTTP routes, frontend integration, or cutover. |
 | SETUP-01 | Reviewed setup inference produces and explicitly applies proposals for preferred-move periods. | DB-09 (and DB-05 transitively) | No automatic preference application, nonempty-target overwrite, or API/frontend work. |
+| SETUP-02 | Exploration & installation of new tools for controlling & managing APIs. Downstream API slices amended to accept new tools | SETUP-01 | Any pre-existing APIs. |
 | API-01 | The game viewer reads rebuilt game and occurrence data. | SETUP-01 | No old API-shape compatibility. |
 | API-02 | Position Context and Move Response Distribution read rebuilt tables directly. | API-01 | No recurrence or materialized projections. |
 | API-03 | Viewer Analyze/Update/Retry uses the rebuilt queue and result lifecycle. | API-02 | No old queue/history contract compatibility. |
@@ -123,6 +124,10 @@ evidence.
   preferred-move periods, atomic supported-writer edits, exact package/CLI boundaries, and three-state resolution
   accepted with 71 focused tests passing across retained proofs in 16.62 seconds; setup inference remains deferred to
   SETUP-01.
+- **DB-06:** [focused Plan](../../plans/done/database-rebuild-db-06/database-rebuild-db-06.md) — engine-independent
+  analysis validation, canonical terminal and legal candidate-line enforcement, quality/version publication rules, and
+  atomic rollback-safe result-set persistence accepted with 72 focused tests passing in 2.57 seconds; queue, worker,
+  benchmark, and operator commands remain deferred to DB-07.
 
 The focused Plan owns implementation progress and detailed evidence; this section must not become an implementation
 queue or progress log.

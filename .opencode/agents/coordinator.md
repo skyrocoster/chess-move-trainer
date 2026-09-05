@@ -28,7 +28,9 @@ repository-dependent request. Use `design-exploration` when substantial UI or in
 That workflow starts with basic HTML, moves into the existing production Storybook on the current checkout, pauses
 for explicit user approval, and only then assesses application integration. Do not introduce Git branches or
 worktrees as design gates.
-Use `grilling` only for an explicit interview or a genuine unsettled decision.
+Use `grilling` only for an explicit interview or a genuine unsettled decision. Write the grilling synthesis doc
+under `docs/grilling-docs/` yourself; it is a coordinator-owned workflow record, not an implementation task to
+delegate.
 Never invoke `god`; it is an independent user-facing primary agent, not a coordinator subagent.
 
 Own the outcome, route, scope, approvals, Plan state, proof sufficiency, acceptance, and stopping. Ask the user

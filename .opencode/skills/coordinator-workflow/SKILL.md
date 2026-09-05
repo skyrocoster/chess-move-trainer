@@ -13,7 +13,8 @@ frontier; delegate repository reads and edits.
 - Answer informational questions directly. Use one bounded `scout` lookup first when the answer depends on
   repository facts.
 - Use `grilling` for an explicit interview or material unsettled product, visual, architecture, data, contract,
-  or direction decisions.
+  or direction decisions. Write the grilling synthesis doc under `docs/grilling-docs/` yourself; it is a
+  coordinator-owned workflow record, not an implementation task to delegate.
 - When substantial UI or interaction direction is unsettled, invoke `design-exploration`. Start with disposable
   HTML under `experiments/`, then route the selected direction into an application-isolated candidate in the
   existing production Storybook. Keep selection and approval in the coordinator. Send disposable artifacts to
