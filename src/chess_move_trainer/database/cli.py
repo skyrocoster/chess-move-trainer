@@ -28,6 +28,18 @@ from .openings import (
     lookup_fen,
     replay_pgn,
 )
+from .preferred_moves.ranges import (
+    NormalizedPeriod,
+    Preference,
+    RangeValidationError,
+    ResolutionState,
+)
+from .preferred_moves.repository import (
+    PreferredMoveRepository,
+    PreferredMoveSchemaError,
+    PreferredMoveStorageError,
+    PreferredMoveValidationError,
+)
 from .publication import SchemaPublicationCollisionError, publish_schema
 from .schema import SchemaIncompatibleError, create_schema
 
@@ -36,9 +48,11 @@ app = typer.Typer(add_completion=False, no_args_is_help=True)
 schema_app = typer.Typer(add_completion=False, no_args_is_help=True)
 games_app = typer.Typer(add_completion=False, no_args_is_help=True)
 openings_app = typer.Typer(add_completion=False, no_args_is_help=True)
+preferred_moves_app = typer.Typer(add_completion=False, no_args_is_help=True)
 app.add_typer(schema_app, name="schema")
 app.add_typer(games_app, name="games")
 app.add_typer(openings_app, name="openings")
+app.add_typer(preferred_moves_app, name="preferred-moves")
 
 
 @schema_app.command("create")
@@ -292,12 +306,134 @@ def replay_opening(
         _render_recognition(result, json_output)
 
 
+@preferred_moves_app.command("list")
+def list_preferred_moves(
+    database: Path = typer.Option(..., "--database", help="Explicit existing SQLite database path."),
+    fen: str = typer.Option(..., "--fen", help="Exactly four meaningful FEN fields."),
+    json_output: bool = typer.Option(False, "--json", help="Emit stable JSON output."),
+) -> None:
+    """List the normalized preferred-move periods for one position."""
+
+    try:
+        periods = PreferredMoveRepository(database).list_periods(fen)
+    except KeyboardInterrupt:
+        _interrupted()
+    except PreferredMoveSchemaError as error:
+        _operational_error(error, 3)
+    except PreferredMoveValidationError as error:
+        _usage_error(error, param_hint="--fen")
+    except PreferredMoveStorageError as error:
+        _operational_error(error, 1)
+    except Exception as error:
+        _operational_error(error, 1)
+    else:
+        _render_preferred_periods(periods, json_output)
+
+
+@preferred_moves_app.command("resolve")
+def resolve_preferred_move(
+    database: Path = typer.Option(..., "--database", help="Explicit existing SQLite database path."),
+    fen: str = typer.Option(..., "--fen", help="Exactly four meaningful FEN fields."),
+    date_literal: str = typer.Option(..., "--date", help="Literal UTC calendar date YYYY-MM-DD."),
+    json_output: bool = typer.Option(False, "--json", help="Emit stable JSON output."),
+) -> None:
+    """Resolve the preferred-move state for one position and date."""
+
+    try:
+        resolution = PreferredMoveRepository(database).resolve(fen, date_literal)
+    except KeyboardInterrupt:
+        _interrupted()
+    except PreferredMoveSchemaError as error:
+        _operational_error(error, 3)
+    except PreferredMoveValidationError as error:
+        _usage_error(error, param_hint="--date")
+    except PreferredMoveStorageError as error:
+        _operational_error(error, 1)
+    except Exception as error:
+        _operational_error(error, 1)
+    else:
+        _render_preferred_resolution(resolution, json_output)
+
+
+@preferred_moves_app.command("set")
+def set_preferred_move(
+    database: Path = typer.Option(..., "--database", help="Explicit existing SQLite database path."),
+    fen: str = typer.Option(..., "--fen", help="Exactly four meaningful FEN fields."),
+    from_date: str = typer.Option(..., "--from", help="Literal UTC start date YYYY-MM-DD."),
+    until: str | None = typer.Option(
+        None, "--until", help="Optional literal UTC end date YYYY-MM-DD."
+    ),
+    move: str | None = typer.Option(None, "--move", help="Legal preferred move in UCI notation."),
+    no_preference: bool = typer.Option(
+        False, "--no-preference", help="Store an explicit no-preference period."
+    ),
+    json_output: bool = typer.Option(False, "--json", help="Emit stable JSON output."),
+) -> None:
+    """Overlay a legal move or explicit no-preference state on a date range."""
+
+    try:
+        preference = _preference_from_options(move, no_preference)
+        periods = PreferredMoveRepository(database).set(
+            fen, from_date, until, preference
+        )
+    except KeyboardInterrupt:
+        _interrupted()
+    except (PreferredMoveValidationError, RangeValidationError) as error:
+        _usage_error(error, param_hint="--move/--no-preference")
+    except PreferredMoveSchemaError as error:
+        _operational_error(error, 3)
+    except PreferredMoveStorageError as error:
+        _operational_error(error, 1)
+    except Exception as error:
+        _operational_error(error, 1)
+    else:
+        _render_preferred_periods(periods, json_output)
+
+
+@preferred_moves_app.command("unset")
+def unset_preferred_move(
+    database: Path = typer.Option(..., "--database", help="Explicit existing SQLite database path."),
+    fen: str = typer.Option(..., "--fen", help="Exactly four meaningful FEN fields."),
+    from_date: str = typer.Option(..., "--from", help="Literal UTC start date YYYY-MM-DD."),
+    until: str | None = typer.Option(
+        None, "--until", help="Optional literal UTC end date YYYY-MM-DD."
+    ),
+    json_output: bool = typer.Option(False, "--json", help="Emit stable JSON output."),
+) -> None:
+    """Remove configuration from a date range."""
+
+    try:
+        periods = PreferredMoveRepository(database).unset(fen, from_date, until)
+    except KeyboardInterrupt:
+        _interrupted()
+    except PreferredMoveSchemaError as error:
+        _operational_error(error, 3)
+    except PreferredMoveValidationError as error:
+        _usage_error(error, param_hint="--from")
+    except PreferredMoveStorageError as error:
+        _operational_error(error, 1)
+    except Exception as error:
+        _operational_error(error, 1)
+    else:
+        _render_preferred_periods(periods, json_output)
+
+
 def _usage_error(error: Exception, *, param_hint: str = "--lock-timeout") -> None:
     raise typer.BadParameter(str(error), param_hint=param_hint)
 
 
 def _games_configuration_error(error: Exception) -> None:
     raise typer.BadParameter(str(error), param_hint="--config")
+
+
+def _preference_from_options(move: str | None, no_preference: bool) -> Preference:
+    if (move is not None) == no_preference:
+        raise RangeValidationError(
+            "exactly one of --move or --no-preference is required",
+        )
+    if no_preference:
+        return Preference.no_preference()
+    return Preference.preferred_move(move or "")
 
 
 def _interrupted() -> None:
@@ -371,3 +507,62 @@ def _render_recognition(result: OpeningRecognition, json_output: bool) -> None:
     assert current is not None
     label = f"{current['eco']} {current['name']}".rstrip()
     typer.echo(f"Current: {label} (ply {current['ply']}, {current['match']})")
+
+
+def _preferred_period_json(period: NormalizedPeriod) -> dict[str, str | None]:
+    return {
+        "effective_from": period.effective_from.isoformat(),
+        "effective_until": (
+            None
+            if period.effective_until is None
+            else period.effective_until.isoformat()
+        ),
+        "move": period.preference.move,
+        "state": period.preference.state.value,
+    }
+
+
+def _render_preferred_periods(
+    periods: tuple[NormalizedPeriod, ...], json_output: bool
+) -> None:
+    serialized = [_preferred_period_json(period) for period in periods]
+    if json_output:
+        typer.echo(
+            json.dumps(
+                {"periods": serialized},
+                ensure_ascii=False,
+                sort_keys=True,
+                separators=(",", ":"),
+            )
+        )
+        return
+    if not periods:
+        typer.echo("No preferred-move periods configured.")
+        return
+    typer.echo("Preferred-move periods:")
+    for period in serialized:
+        end = period["effective_until"] or "indefinite"
+        value = period["move"] or "no preference"
+        typer.echo(f"- {period['effective_from']} to {end}: {value}")
+
+
+def _render_preferred_resolution(result: object, json_output: bool) -> None:
+    state = result.state.value
+    move = result.move
+    payload = {"move": move, "state": state}
+    if json_output:
+        typer.echo(
+            json.dumps(
+                payload,
+                ensure_ascii=False,
+                sort_keys=True,
+                separators=(",", ":"),
+            )
+        )
+        return
+    if result.state is ResolutionState.PREFERRED_MOVE:
+        typer.echo(f"Preferred move: {move}")
+    elif result.state is ResolutionState.NO_PREFERENCE:
+        typer.echo("Explicit no preference.")
+    else:
+        typer.echo("Unconfigured.")

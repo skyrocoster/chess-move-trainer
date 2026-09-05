@@ -18,6 +18,7 @@ from chess_move_trainer.database.games.acquisition import (
     AcquisitionResult,
 )
 from chess_move_trainer.database.openings.source import load_opening_sources
+from chess_move_trainer.database.preferred_moves.repository import PreferredMoveLockError
 
 
 ROOT = Path(__file__).parents[2]
@@ -796,3 +797,481 @@ def test_openings_operational_failure_and_interruption_are_status_one_and_130(
     assert interrupted.exit_code == 130
     assert "synthetic storage failure" in failed.stderr
     assert "Interrupted" in interrupted.stderr
+
+
+PREFERRED_MOVES_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -"
+
+
+def test_preferred_moves_help_exposes_exact_group_and_commands() -> None:
+    root = _runner().invoke(database_cli.app, ["--help"])
+    group = _runner().invoke(database_cli.app, ["preferred-moves", "--help"])
+    commands = {
+        "list": ("--database", "--fen", "--json"),
+        "resolve": ("--database", "--fen", "--date", "--json"),
+        "set": ("--database", "--fen", "--from", "--until", "--move", "--no-preference", "--json"),
+        "unset": ("--database", "--fen", "--from", "--until", "--json"),
+    }
+
+    assert root.exit_code == 0
+    assert group.exit_code == 0
+    assert "preferred-moves" in root.stdout
+    assert all(command in group.stdout for command in commands)
+    for command, options in commands.items():
+        result = _runner().invoke(
+            database_cli.app, ["preferred-moves", command, "--help"]
+        )
+        assert result.exit_code == 0
+        assert all(option in result.stdout for option in options)
+
+
+@pytest.mark.parametrize(
+    "arguments",
+    [
+        ["preferred-moves", "list"],
+        ["preferred-moves", "resolve", "--database", "database.db", "--fen", PREFERRED_MOVES_FEN],
+        [
+            "preferred-moves",
+            "set",
+            "--database",
+            "database.db",
+            "--fen",
+            PREFERRED_MOVES_FEN,
+            "--from",
+            "2026-01-01",
+        ],
+        [
+            "preferred-moves",
+            "unset",
+            "--database",
+            "database.db",
+            "--fen",
+            PREFERRED_MOVES_FEN,
+        ],
+    ],
+)
+def test_preferred_moves_required_options_are_noninteractive(arguments: list[str]) -> None:
+    result = _runner().invoke(database_cli.app, arguments, input="stdin must not be read")
+
+    assert result.exit_code == 2
+    assert result.stdout == ""
+    assert result.stderr
+
+
+@pytest.mark.parametrize("extra", [["--move", "e2e4", "--no-preference"], []])
+def test_preferred_moves_set_requires_exactly_one_selector(
+    tmp_path: Path, extra: list[str]
+) -> None:
+    database = tmp_path / "selectors.db"
+    create_schema(database)
+    result = _runner().invoke(
+        database_cli.app,
+        [
+            "preferred-moves",
+            "set",
+            "--database",
+            str(database),
+            "--fen",
+            PREFERRED_MOVES_FEN,
+            "--from",
+            "2026-01-01",
+            *extra,
+        ],
+    )
+
+    assert result.exit_code == 2
+    assert result.stdout == ""
+    assert result.stderr
+
+
+def test_preferred_moves_list_resolve_set_and_unset_have_stable_outputs(
+    tmp_path: Path,
+) -> None:
+    database = tmp_path / "preferred.db"
+    create_schema(database)
+    base = [
+        "preferred-moves",
+        "list",
+        "--database",
+        str(database),
+        "--fen",
+        PREFERRED_MOVES_FEN,
+    ]
+
+    empty = _run_cli(*base, "--json", input_bytes=b"stdin must not be read")
+    unconfigured = _run_cli(
+        "preferred-moves",
+        "resolve",
+        "--database",
+        str(database),
+        "--fen",
+        PREFERRED_MOVES_FEN,
+        "--date",
+        "2026-01-15",
+        "--json",
+    )
+    preferred = _run_cli(
+        "preferred-moves",
+        "set",
+        "--database",
+        str(database),
+        "--fen",
+        PREFERRED_MOVES_FEN,
+        "--from",
+        "2026-01-01",
+        "--until",
+        "2026-02-01",
+        "--move",
+        "e2e4",
+        "--json",
+        input_bytes=b"stdin must not be read",
+    )
+    no_preference = _run_cli(
+        "preferred-moves",
+        "set",
+        "--database",
+        str(database),
+        "--fen",
+        PREFERRED_MOVES_FEN,
+        "--from",
+        "2026-02-01",
+        "--until",
+        "2026-03-01",
+        "--no-preference",
+        "--json",
+    )
+    listed = _run_cli(*base, "--json")
+    preferred_resolution = _run_cli(
+        "preferred-moves",
+        "resolve",
+        "--database",
+        str(database),
+        "--fen",
+        PREFERRED_MOVES_FEN,
+        "--date",
+        "2026-01-15",
+    )
+    no_preference_resolution = _run_cli(
+        "preferred-moves",
+        "resolve",
+        "--database",
+        str(database),
+        "--fen",
+        PREFERRED_MOVES_FEN,
+        "--date",
+        "2026-02-15",
+        "--json",
+    )
+    unset = _run_cli(
+        "preferred-moves",
+        "unset",
+        "--database",
+        str(database),
+        "--fen",
+        PREFERRED_MOVES_FEN,
+        "--from",
+        "2026-01-15",
+        "--until",
+        "2026-02-15",
+        "--json",
+    )
+    no_op_unset = _run_cli(
+        "preferred-moves",
+        "unset",
+        "--database",
+        str(database),
+        "--fen",
+        PREFERRED_MOVES_FEN,
+        "--from",
+        "2027-01-01",
+        "--until",
+        "2027-02-01",
+        "--json",
+    )
+
+    assert all(result.returncode == 0 for result in (
+        empty,
+        unconfigured,
+        preferred,
+        no_preference,
+        listed,
+        preferred_resolution,
+        no_preference_resolution,
+        unset,
+        no_op_unset,
+    ))
+    assert json.loads(empty.stdout) == {"periods": []}
+    assert json.loads(unconfigured.stdout) == {"move": None, "state": "unconfigured"}
+    assert json.loads(preferred.stdout) == {
+        "periods": [
+            {
+                "effective_from": "2026-01-01",
+                "effective_until": "2026-02-01",
+                "move": "e2e4",
+                "state": "preferred_move",
+            }
+        ]
+    }
+    assert json.loads(no_preference.stdout) == {
+        "periods": [
+            {
+                "effective_from": "2026-01-01",
+                "effective_until": "2026-02-01",
+                "move": "e2e4",
+                "state": "preferred_move",
+            },
+            {
+                "effective_from": "2026-02-01",
+                "effective_until": "2026-03-01",
+                "move": None,
+                "state": "no_preference",
+            },
+        ]
+    }
+    assert json.loads(listed.stdout) == json.loads(no_preference.stdout)
+    assert preferred_resolution.stdout.decode().splitlines() == ["Preferred move: e2e4"]
+    assert json.loads(no_preference_resolution.stdout) == {
+        "move": None,
+        "state": "no_preference",
+    }
+    assert json.loads(unset.stdout) == {
+        "periods": [
+            {
+                "effective_from": "2026-01-01",
+                "effective_until": "2026-01-15",
+                "move": "e2e4",
+                "state": "preferred_move",
+            },
+            {
+                "effective_from": "2026-02-15",
+                "effective_until": "2026-03-01",
+                "move": None,
+                "state": "no_preference",
+            }
+        ]
+    }
+    assert json.loads(no_op_unset.stdout) == json.loads(unset.stdout)
+    for result in (
+        empty,
+        unconfigured,
+        preferred,
+        no_preference,
+        listed,
+        preferred_resolution,
+        no_preference_resolution,
+        unset,
+        no_op_unset,
+    ):
+        assert result.stderr == b""
+
+
+def test_preferred_moves_human_output_covers_empty_and_all_resolution_shapes(
+    tmp_path: Path,
+) -> None:
+    database = tmp_path / "human-output.db"
+    create_schema(database)
+    common = [
+        "--database",
+        str(database),
+        "--fen",
+        PREFERRED_MOVES_FEN,
+    ]
+
+    empty_list = _run_cli("preferred-moves", "list", *common)
+    unconfigured = _run_cli(
+        "preferred-moves",
+        "resolve",
+        *common,
+        "--date",
+        "2026-01-15",
+    )
+    finite = _run_cli(
+        "preferred-moves",
+        "set",
+        *common,
+        "--from",
+        "2026-01-01",
+        "--until",
+        "2026-02-01",
+        "--move",
+        "e2e4",
+    )
+    indefinite = _run_cli(
+        "preferred-moves",
+        "set",
+        *common,
+        "--from",
+        "2026-02-01",
+        "--no-preference",
+    )
+    periods = _run_cli("preferred-moves", "list", *common)
+    no_preference = _run_cli(
+        "preferred-moves",
+        "resolve",
+        *common,
+        "--date",
+        "2026-02-15",
+    )
+
+    assert all(result.returncode == 0 for result in (
+        empty_list,
+        unconfigured,
+        finite,
+        indefinite,
+        periods,
+        no_preference,
+    ))
+    assert empty_list.stdout.decode().splitlines() == [
+        "No preferred-move periods configured."
+    ]
+    assert unconfigured.stdout.decode().splitlines() == ["Unconfigured."]
+    assert periods.stdout.decode().splitlines() == [
+        "Preferred-move periods:",
+        "- 2026-01-01 to 2026-02-01: e2e4",
+        "- 2026-02-01 to indefinite: no preference",
+    ]
+    assert no_preference.stdout.decode().splitlines() == ["Explicit no preference."]
+    for result in (
+        empty_list,
+        unconfigured,
+        finite,
+        indefinite,
+        periods,
+        no_preference,
+    ):
+        assert result.stderr == b""
+
+
+def test_preferred_moves_lock_failure_is_status_one_and_stderr_only(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    class LockedRepository:
+        def __init__(self, *args: object, **kwargs: object) -> None:
+            del args, kwargs
+
+        def list_periods(self, fen: str) -> tuple[object, ...]:
+            del fen
+            raise PreferredMoveLockError("synthetic preferred-move lock failure")
+
+    monkeypatch.setattr(database_cli, "PreferredMoveRepository", LockedRepository)
+    result = _runner().invoke(
+        database_cli.app,
+        [
+            "preferred-moves",
+            "list",
+            "--database",
+            str(tmp_path / "locked.db"),
+            "--fen",
+            PREFERRED_MOVES_FEN,
+        ],
+    )
+
+    assert result.exit_code == 1
+    assert result.stdout == ""
+    assert "lock failure" in result.stderr
+
+
+@pytest.mark.parametrize(
+    "arguments",
+    [
+        ["list", "--fen", "not a FEN"],
+        ["resolve", "--fen", PREFERRED_MOVES_FEN, "--date", "today"],
+        [
+            "set",
+            "--fen",
+            PREFERRED_MOVES_FEN,
+            "--from",
+            "2026-02-01",
+            "--until",
+            "2026-01-01",
+            "--move",
+            "e2e4",
+        ],
+        [
+            "set",
+            "--fen",
+            PREFERRED_MOVES_FEN,
+            "--from",
+            "2026-01-01",
+            "--move",
+            "e2e5",
+        ],
+    ],
+)
+def test_preferred_moves_invalid_inputs_are_status_two(
+    tmp_path: Path, arguments: list[str]
+) -> None:
+    database = tmp_path / "invalid.db"
+    create_schema(database)
+    result = _run_cli(
+        "preferred-moves",
+        arguments[0],
+        "--database",
+        str(database),
+        *arguments[1:],
+    )
+
+    assert result.returncode == 2
+    assert result.stdout == b""
+    assert result.stderr
+
+
+def test_preferred_moves_schema_and_storage_failures_use_status_three_and_one(
+    tmp_path: Path,
+) -> None:
+    incompatible = tmp_path / "incompatible.db"
+    sqlite3.connect(incompatible).close()
+    schema_failure = _run_cli(
+        "preferred-moves",
+        "list",
+        "--database",
+        str(incompatible),
+        "--fen",
+        PREFERRED_MOVES_FEN,
+    )
+    storage_failure = _run_cli(
+        "preferred-moves",
+        "list",
+        "--database",
+        str(tmp_path / "missing.db"),
+        "--fen",
+        PREFERRED_MOVES_FEN,
+    )
+
+    assert schema_failure.returncode == 3
+    assert storage_failure.returncode == 1
+    for result in (schema_failure, storage_failure):
+        assert result.stdout == b""
+        assert result.stderr
+
+
+def test_preferred_moves_interruption_is_status_130_and_stderr_only(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    class InterruptedRepository:
+        def __init__(self, *args: object, **kwargs: object) -> None:
+            del args, kwargs
+
+        def set(self, *args: object, **kwargs: object) -> object:
+            del args, kwargs
+            raise KeyboardInterrupt
+
+    monkeypatch.setattr(database_cli, "PreferredMoveRepository", InterruptedRepository)
+    result = _runner().invoke(
+        database_cli.app,
+        [
+            "preferred-moves",
+            "set",
+            "--database",
+            str(tmp_path / "interrupted.db"),
+            "--fen",
+            PREFERRED_MOVES_FEN,
+            "--from",
+            "2026-01-01",
+            "--move",
+            "e2e4",
+        ],
+    )
+
+    assert result.exit_code == 130
+    assert result.stdout == ""
+    assert "Interrupted" in result.stderr

@@ -132,3 +132,126 @@ def test_lower_level_database_packages_do_not_depend_on_openings() -> None:
                 module == "openings" or module.endswith(".openings")
                 for module in imports
             )
+
+
+def test_preferred_moves_dependencies_are_owned_and_one_way() -> None:
+    preferred_path = PACKAGE_PATH / "preferred_moves"
+    forbidden_modules = (
+        "backend",
+        "frontend",
+        "games",
+        "openings",
+        "scripts",
+        "legacy",
+    )
+    allowed_database_modules = {
+        "connection",
+        "schema",
+        "positions",
+        "positions.repository",
+    }
+
+    for source_path in sorted(preferred_path.rglob("*.py")):
+        tree = ast.parse(source_path.read_text(encoding="utf-8"))
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                modules = [alias.name for alias in node.names]
+            elif isinstance(node, ast.ImportFrom):
+                if node.level == 0 and node.module is not None:
+                    modules = [node.module]
+                elif node.level == 2 and node.module is not None:
+                    modules = [f"database.{node.module}"]
+                elif node.level == 2:
+                    modules = ["database"]
+                elif node.level == 1 and node.module is not None:
+                    modules = [f"preferred_moves.{node.module}"]
+                elif node.level == 1:
+                    modules = ["preferred_moves"]
+                else:
+                    modules = []
+            else:
+                continue
+
+            for module in modules:
+                assert not (
+                    module in forbidden_modules
+                    or module.startswith(
+                        tuple(f"{prefix}." for prefix in forbidden_modules)
+                    )
+                    or module.startswith(
+                        tuple(f"chess_move_trainer.{prefix}" for prefix in forbidden_modules)
+                    )
+                )
+                if module.startswith("database."):
+                    assert module.removeprefix("database.") in allowed_database_modules
+
+
+def test_database_and_position_lower_layers_do_not_import_preferred_moves() -> None:
+    lower_level_paths = [
+        PACKAGE_PATH / "connection.py",
+        PACKAGE_PATH / "schema.py",
+        PACKAGE_PATH / "positions" / "__init__.py",
+        PACKAGE_PATH / "positions" / "canonicalization.py",
+        PACKAGE_PATH / "positions" / "repository.py",
+    ]
+
+    for source_path in lower_level_paths:
+        tree = ast.parse(source_path.read_text(encoding="utf-8"))
+        imported_modules = []
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                imported_modules.extend(alias.name for alias in node.names)
+            elif isinstance(node, ast.ImportFrom):
+                imported_modules.append(node.module or "")
+        assert not any(
+            module == "preferred_moves"
+            or module.endswith(".preferred_moves")
+            or module.startswith(".preferred_moves")
+            for module in imported_modules
+        )
+
+
+def test_preferred_moves_feature_and_cli_have_no_excluded_or_business_logic_imports() -> None:
+    preferred_text = "\n".join(
+        path.read_text(encoding="utf-8")
+        for path in sorted((PACKAGE_PATH / "preferred_moves").rglob("*.py"))
+    )
+    cli_text = "\n".join(
+        (PACKAGE_PATH / name).read_text(encoding="utf-8")
+        for name in ("__main__.py", "cli.py")
+    )
+
+    for forbidden in (
+        "backend",
+        "frontend",
+        "games",
+        "openings",
+        "scripts",
+        "legacy",
+        "runpy",
+        "subprocess",
+    ):
+        assert forbidden not in preferred_text.lower()
+    for forbidden in (
+        "sqlalchemy",
+        "sqlite3",
+        "subprocess",
+        "chess.pgn",
+        "create table",
+        "pragma user_version",
+        "canonicalize",
+        "select ",
+        "insert ",
+    ):
+        assert forbidden not in cli_text.lower()
+
+    cli_tree = ast.parse(cli_text)
+    cli_imports = []
+    for node in ast.walk(cli_tree):
+        if isinstance(node, ast.Import):
+            cli_imports.extend(alias.name for alias in node.names)
+        elif isinstance(node, ast.ImportFrom) and node.module:
+            cli_imports.append(node.module)
+    assert not any(
+        module == "chess" or module.startswith("chess.") for module in cli_imports
+    )

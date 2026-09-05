@@ -1,7 +1,7 @@
 # Database rebuild
 
 > **Status:** direction settled
-> **Approval:** The destination, strict 15-slice envelope, and clean from-scratch package/CLI rewrite of every required
+> **Approval:** The destination, strict 16-slice envelope, and clean from-scratch package/CLI rewrite of every required
 > tool were explicitly approved for this master plan.
 
 ## Destination
@@ -89,12 +89,13 @@ escalation, not an AI choice.
 | DB-02 | Canonical legal-only position identity is available to rebuilt database producers. | DB-01 | No old-position migration or consumer/API work. |
 | DB-03 | Raw Chess.com games rebuild into normalized game and occurrence facts. | DB-02 | No old corpus/player/fetch-state machinery. |
 | DB-04 | The five opening TSV sources rebuild into the exact opening/route tables and an isolated lookup/replay capability. | DB-03 | No classification, recurrence, hierarchy, or manifest machinery. |
-| DB-05 | Preferred moves persist as editable UTC calendar-date periods. | DB-04 | No history editor or historical-game evaluation. |
+| DB-05 | Preferred moves persist as editable UTC calendar-date periods. | DB-04 | No history editor, historical-game evaluation, or setup inference. |
 | DB-06 | Complete Stockfish result sets and candidate lines persist atomically. | DB-05 | No analysis history, failure history, or API changes. |
 | DB-07 | The measured Tool budget and minimal live analysis queue/worker are proven. | DB-06 | No API/frontend contract changes or persisted run history. |
 | DB-08 | Idempotent rebuild, snapshot, neighboring replacement, rollback, and interruption operations are available. | DB-07 | No application cutover or old-database deletion. |
 | DB-09 | Real rebuilt data proves the database/tool foundation and direct access paths. | DB-08 | No HTTP routes, frontend integration, or cutover. |
-| API-01 | The game viewer reads rebuilt game and occurrence data. | DB-09 | No old API-shape compatibility. |
+| SETUP-01 | Reviewed setup inference produces and explicitly applies proposals for preferred-move periods. | DB-09 (and DB-05 transitively) | No automatic preference application, nonempty-target overwrite, or API/frontend work. |
+| API-01 | The game viewer reads rebuilt game and occurrence data. | SETUP-01 | No old API-shape compatibility. |
 | API-02 | Position Context and Move Response Distribution read rebuilt tables directly. | API-01 | No recurrence or materialized projections. |
 | API-03 | Viewer Analyze/Update/Retry uses the rebuilt queue and result lifecycle. | API-02 | No old queue/history contract compatibility. |
 | API-04 | Preferred-move application behavior uses rebuilt editable periods. | API-03 | No future preference-history editor. |
@@ -118,6 +119,10 @@ evidence.
 - **DB-04:** [focused Plan](../../plans/done/database-rebuild-db-04/database-rebuild-db-04.md) — strict five-file opening
   parsing, atomic catalogue/route publication, isolated FEN/PGN recognition, and supported Typer commands accepted with
   87 focused tests passing across retained proofs in 33.27 seconds; real rebuilt-data proof remains owned by DB-09.
+- **DB-05:** [focused Plan](../../plans/done/database-rebuild-db-05/database-rebuild-db-05.md) — normalized current
+  preferred-move periods, atomic supported-writer edits, exact package/CLI boundaries, and three-state resolution
+  accepted with 71 focused tests passing across retained proofs in 16.62 seconds; setup inference remains deferred to
+  SETUP-01.
 
 The focused Plan owns implementation progress and detailed evidence; this section must not become an implementation
 queue or progress log.
@@ -281,7 +286,8 @@ period semantics.
   later application touchpoints.
 - **Prerequisites:** DB-04 accepted.
 - **Explicit exclusions:** No migration of current preference rows, event/action/actor/history tables, no update/delete
-  triggers, no preference-history screen, and no API/frontend contract work.
+  triggers, no preference-history screen, no setup inference or automatic application (deferred to SETUP-01), and no
+  API/frontend contract work.
 - **Focused proof:** Legal move validation, NULL no-preference semantics, date canonical checks, non-overlap under
   concurrent writers, and preservation of dates outside edits.
 - **Escalate if:** Timestamp precision, historical-game evaluation, or an extra state column becomes necessary.
@@ -381,12 +387,12 @@ period semantics.
 
 - **Authority:** `docs/grilling-docs/database-rebuild-direction.md:L742-L772,L774-L805,L864-L879`; `docs/grilling-docs/database-rebuild-schema.md:L119-L157,L716-L742,L781-L830`.
 - **Visible result:** A rebuilt neighboring database containing real regenerated games, openings, positions,
-  preference storage, and analysis data passes a documented proof gate for integrity and direct current-capability
+  empty preference storage, and analysis data passes a documented proof gate for integrity and direct current-capability
   reads. DB-09 explicitly owns the database-level opening lookup proof: PGN replay produces the ordered recognized
   endpoints/current label, exact sequence and FEN lookup distinguish route and transposition matches, and lookup does
   not expose unreached future variations or imply the excluded Opening Line Library application surface. The initial
   25-position analysis mixture and on-demand bulk selection are proven without a persisted target list. The activation
-  candidate contains no migrated or fabricated preference rows.
+  candidate contains no migrated, inferred, or fabricated preference rows.
 - **Scope and current-state touchpoints:** Exercise the rebuilt database directly using only the new package services
   and supported CLIs delivered by DB-01 through DB-08; no legacy tool or command may participate in the accepted proof.
   Cover the query meanings later consumed by
@@ -401,14 +407,49 @@ period semantics.
   quality/terminal behavior, initial 25 positions, bulk ordering, and measured query access paths. Prove preferred,
   explicit no-preference, and unconfigured states plus period transaction semantics in a disposable focused proof
   database or a fully rolled-back transaction; confirm the activation candidate remains empty of preference rows unless
-  the user makes a real choice. Demonstrate supported CLI help, explicit inputs, successful automation-safe invocation,
-  and meaningful failure exits; a source-boundary review must also show no copied legacy implementation, legacy import,
-  wrapper, or runtime delegation in the new toolchain.
+  the user makes a real choice and that no setup proposal is treated as canonical state. Demonstrate supported CLI
+  help, explicit inputs, successful automation-safe invocation, and meaningful failure exits; a source-boundary review
+  must also show no copied legacy implementation, legacy import, wrapper, or runtime delegation in the new toolchain.
 - **Escalate if:** Any named current capability needs a table outside the ten-table catalogue, or the rebuilt SQLite
   workload fails measured integrity/performance/concurrency requirements.
-- **Handoff/selection criterion:** This is the absolute gate. Only after DB-09 is accepted may API-01 through API-04
-  be assessed, planned, or implemented. DB-09's accepted evidence is the handoff for the first production consumer
-  slice.
+- **Handoff/selection criterion:** This is the absolute gate before any application consumer. Only after DB-09 is
+  accepted may SETUP-01 be assessed, planned, or implemented. API-01 remains gated until SETUP-01 is accepted; after
+  that, API-01 through API-04 may proceed in order. DB-09's accepted evidence is the handoff for SETUP-01.
+
+### SETUP-01 — Reviewed preferred-move setup inference
+
+**In plain English:** Use real rebuilt play data to propose, review, validate, and explicitly apply preferred-move periods
+without mistaking observed play for user intent.
+
+**Grilling REQUIRED** before this slice's implementation Plan/work begins, to finalize the exact percentage, bounded span,
+grouping, same-day, ambiguity, gap, final-boundary, JSON proposal, and command details without silently writing preference
+state during generation.
+
+- **Authority:** Coordinator-approved SETUP-01 expansion; the master-plan clean-rewrite, package/CLI, sequencing, and
+  grilling-gate rules.
+- **Visible result:** A package-owned, supported one-time setup workflow reads rebuilt game/occurrence data and identifies
+  positions where the trainer repeatedly selected the same move at high density over a bounded period. It generates a
+  deterministic, reviewable JSON proposal and never silently treats observed play as preference intent. A separate
+  explicit supported command validates an edited proposal and atomically applies it only to an empty
+  `datasource_preferred_move_period` schedule.
+  A qualifying candidate requires strictly more than 20 matching plays (minimum 21). High density combines matching-play
+  count, a high share of the trainer's choices from the position, and a bounded calendar span; exact percentage, span,
+  grouping, same-day, ambiguity, gap, final-boundary, JSON-contract, and command details remain for grilling.
+- **Scope and current-state touchpoints:** Implement a cohesive importable setup-inference package/service and thin
+  supported CLI commands from scratch under the clean-rewrite rules, using the real rebuilt data proven by DB-09 and the
+  DB-05 preferred-move storage. The legacy preferred-move and analysis/setup concepts remain read-only evidence and are
+  not implementation dependencies.
+- **Prerequisites:** DB-09 accepted; DB-05 storage is therefore proven transitively.
+- **Explicit exclusions:** No API/frontend work, automatic application, overwrite of a nonempty schedule, persisted
+  inference/projection/history tables, schema changes, legacy tool reuse, or fabricated/migrated preference rows.
+- **Focused proof:** Trainer-side filtering; minimum-count, share, and span rules; deterministic generation;
+  ambiguity/noise/return-to-an-earlier-move cases; review metadata; proposal validation; empty-target enforcement;
+  non-overlap and legal-move validation; atomic apply/rollback; supported CLI help, explicit inputs, outputs, and
+  meaningful exits; and real-data review without exposing row-level private data.
+- **Escalate if:** Inference needs a new table/state, automatic writes, majority/confidence behavior outside approved
+  threshold semantics, or replacement of a nonempty target schedule.
+- **Handoff/selection criterion:** Select API-01 only after SETUP-01 is accepted with deterministic proposal and safe
+  empty-schedule application proof.
 
 ### API-01 — Game viewer read path
 
@@ -425,7 +466,7 @@ period semantics.
   `backend/app/features/positions/repository.py:PositionRepository`, plus
   `frontend/src/features/viewer/positionApi.ts` and viewer state/components. Existing route and model shapes are
   evidence only.
-- **Prerequisites:** DB-09 accepted; no API/backend/application-consumer slice may start earlier.
+- **Prerequisites:** DB-09 and SETUP-01 accepted; no API/backend/application-consumer slice may start earlier.
 - **Explicit exclusions:** No old database fallback, old contract compatibility layer, statistics projections, or
   Opening Line Library surface.
 - **Focused proof:** Focused backend position tests, frontend position API/state tests, representative game navigation,

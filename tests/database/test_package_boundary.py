@@ -36,6 +36,27 @@ def test_common_package_and_database_namespace_are_importable() -> None:
     assert Path(package.__file__).parts[-3:-1] == ("src", "chess_move_trainer")
 
 
+def test_preferred_moves_package_public_namespace_is_importable() -> None:
+    preferred_moves = importlib.import_module(
+        "chess_move_trainer.database.preferred_moves"
+    )
+
+    assert preferred_moves.__name__ == "chess_move_trainer.database.preferred_moves"
+    for name in (
+        "Preference",
+        "NormalizedPeriod",
+        "DateResolution",
+        "PreferenceState",
+        "ResolutionState",
+        "PreferredMoveRepository",
+        "PreferredMoveValidationError",
+        "PreferredMoveSchemaError",
+        "PreferredMoveStorageError",
+        "PreferredMoveLockError",
+    ):
+        assert hasattr(preferred_moves, name)
+
+
 def test_packaging_preserves_backend_and_declares_database_sql_resources() -> None:
     with (ROOT / "pyproject.toml").open("rb") as pyproject_file:
         config = tomllib.load(pyproject_file)
