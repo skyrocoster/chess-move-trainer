@@ -61,15 +61,8 @@ class AnalysisRepository:
                 self._database_path, self._lock_timeout
             ) as connection:
                 _assert_compatible_schema(connection, self._lock_timeout)
-                position = _load_position(connection, dp_position_id)
-                if position is None:
-                    connection.rollback()
-                    raise AnalysisValidationError(
-                        "canonical position does not exist"
-                    )
+                validated = _prepare_publication(connection, dp_position_id, result)
                 connection.rollback()
-
-                validated = validate_analysis_position(position, result)
 
                 self._checkpoint("before_lock")
                 connection.exec_driver_sql("BEGIN IMMEDIATE")
@@ -82,27 +75,19 @@ class AnalysisRepository:
 
                 try:
                     self._checkpoint("locked")
-                    current = _load_current_result(connection, dp_position_id)
-                    reason = _not_saved_reason(result, current)
-                    self._checkpoint("rechecked")
-                    if reason is not None:
-                        transaction.rollback()
-                        return PublicationOutcome.not_saved(reason)
-
-                    _replace_result(
+                    outcome = _publish_in_transaction(
                         connection,
                         dp_position_id,
                         result,
                         validated,
                         self._checkpoint,
                     )
-                    self._checkpoint("replaced")
                     transaction.commit()
                 except BaseException:
                     if connection.in_transaction():
                         transaction.rollback()
                     raise
-                return PublicationOutcome.saved_result()
+                return outcome
         except KeyboardInterrupt:
             raise
         except AnalysisError:
@@ -140,6 +125,49 @@ def _load_position(connection: object, position_id: int) -> CanonicalPosition | 
         castling_rights=row[2],
         legal_en_passant=row[3],
     )
+
+
+def _prepare_publication(
+    connection: object,
+    position_id: int,
+    result: AnalysisResultInput,
+) -> ValidatedAnalysisResult:
+    """Validate one result against an existing position on a package-owned connection."""
+
+    position = _load_position(connection, position_id)
+    if position is None:
+        raise AnalysisValidationError("canonical position does not exist")
+    return validate_analysis_position(position, result)
+
+
+def _publish_in_transaction(
+    connection: object,
+    position_id: int,
+    result: AnalysisResultInput,
+    validated: ValidatedAnalysisResult,
+    checkpoint: Callable[[str], None] = lambda _: None,
+) -> PublicationOutcome:
+    """Join DB-06 publication to an already-owned package transaction.
+
+    This is deliberately a package-internal participant seam.  The caller owns
+    the transaction and must commit or roll it back after this function returns.
+    """
+
+    current = _load_current_result(connection, position_id)
+    reason = _not_saved_reason(result, current)
+    checkpoint("rechecked")
+    if reason is not None:
+        return PublicationOutcome.not_saved(reason)
+
+    _replace_result(
+        connection,
+        position_id,
+        result,
+        validated,
+        checkpoint,
+    )
+    checkpoint("replaced")
+    return PublicationOutcome.saved_result()
 
 
 def _load_current_result(

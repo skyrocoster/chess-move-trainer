@@ -19,6 +19,12 @@ from chess_move_trainer.database.games.acquisition import (
 )
 from chess_move_trainer.database.openings.source import load_opening_sources
 from chess_move_trainer.database.preferred_moves.repository import PreferredMoveLockError
+from chess_move_trainer.database.stockfish import (
+    MutexBusyError,
+    StockfishIdentityError,
+    WorkerFailure,
+    WorkerOutcome,
+)
 
 
 ROOT = Path(__file__).parents[2]
@@ -1272,6 +1278,225 @@ def test_preferred_moves_interruption_is_status_130_and_stderr_only(
         ],
     )
 
+    assert result.exit_code == 130
+    assert result.stdout == ""
+    assert "Interrupted" in result.stderr
+
+
+def test_stockfish_help_exposes_three_commands_and_explicit_inputs() -> None:
+    group = _runner().invoke(database_cli.app, ["stockfish", "--help"])
+    assert group.exit_code == 0
+    assert all(command in group.stdout for command in ("benchmark", "bulk", "worker"))
+
+    benchmark = _runner().invoke(database_cli.app, ["stockfish", "benchmark", "--help"])
+    assert benchmark.exit_code == 0
+    assert all(
+        option in benchmark.stdout
+        for option in (
+            "--executable",
+            "--position-input",
+            "--output-dir",
+            "--node-budget",
+            "--threads",
+            "--hash-mb",
+            "--repetitions",
+            "--shuffle-seed",
+        )
+    )
+
+    for command in ("bulk", "worker"):
+        result = _runner().invoke(database_cli.app, ["stockfish", command, "--help"])
+        assert result.exit_code == 0
+        assert "--database" in result.stdout
+        assert "--executable" in result.stdout
+
+
+@pytest.mark.parametrize(
+    "arguments",
+    [
+        ["stockfish", "benchmark"],
+        ["stockfish", "bulk"],
+        ["stockfish", "worker"],
+    ],
+)
+def test_stockfish_required_paths_are_noninteractive(arguments: list[str]) -> None:
+    result = _runner().invoke(database_cli.app, arguments, input="stdin must not be read")
+    assert result.exit_code == 2
+    assert result.stdout == ""
+    assert result.stderr
+
+
+def test_stockfish_benchmark_invalid_matrix_is_status_two(tmp_path: Path) -> None:
+    position_input = tmp_path / "positions.json"
+    position_input.write_text(
+        json.dumps(
+            {
+                "positions": [
+                    {
+                        "id": 1,
+                        "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+    result = _runner().invoke(
+        database_cli.app,
+        [
+            "stockfish",
+            "benchmark",
+            "--executable",
+            str(tmp_path / "stockfish.exe"),
+            "--position-input",
+            str(position_input),
+            "--output-dir",
+            str(tmp_path / "artifacts"),
+            "--node-budget",
+            "0",
+            "--threads",
+            "1",
+            "--hash-mb",
+            "64",
+            "--repetitions",
+            "1",
+            "--shuffle-seed",
+            "0",
+        ],
+    )
+    assert result.exit_code == 2
+    assert result.stdout == ""
+    assert result.stderr
+
+
+def test_stockfish_busy_lock_is_status_one(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    class BusyRunner:
+        def __init__(self, *args: object, **kwargs: object) -> None:
+            del args, kwargs
+
+        def run(self, *, limit: int | None) -> object:
+            del limit
+            raise MutexBusyError("synthetic Stockfish lock busy")
+
+    monkeypatch.setattr(database_cli, "BulkRunner", BusyRunner)
+    result = _runner().invoke(
+        database_cli.app,
+        [
+            "stockfish",
+            "bulk",
+            "--database",
+            str(tmp_path / "database.db"),
+            "--executable",
+            str(tmp_path / "stockfish.exe"),
+        ],
+    )
+    assert result.exit_code == 1
+    assert result.stdout == ""
+    assert "lock busy" in result.stderr
+
+
+def test_stockfish_incompatible_schema_is_status_three(tmp_path: Path) -> None:
+    database = tmp_path / "incompatible.db"
+    sqlite3.connect(database).close()
+    result = _runner().invoke(
+        database_cli.app,
+        [
+            "stockfish",
+            "worker",
+            "--database",
+            str(database),
+            "--executable",
+            str(tmp_path / "stockfish.exe"),
+        ],
+    )
+    assert result.exit_code == 3
+    assert result.stdout == ""
+    assert result.stderr
+
+
+def test_stockfish_identity_failure_is_status_one(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    class IdentityFailureRunner:
+        def __init__(self, *args: object, **kwargs: object) -> None:
+            del args, kwargs
+
+        def run(self) -> object:
+            raise StockfishIdentityError("synthetic Stockfish 18 identity failure")
+
+    monkeypatch.setattr(database_cli, "WorkerRunner", IdentityFailureRunner)
+    result = _runner().invoke(
+        database_cli.app,
+        [
+            "stockfish",
+            "worker",
+            "--database",
+            str(tmp_path / "database.db"),
+            "--executable",
+            str(tmp_path / "stockfish.exe"),
+        ],
+    )
+    assert result.exit_code == 1
+    assert "identity failure" in result.stderr
+
+
+def test_stockfish_isolated_failure_is_status_one(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    class FailedWorker:
+        def __init__(self, *args: object, **kwargs: object) -> None:
+            del args, kwargs
+
+        def run(self) -> WorkerOutcome:
+            return WorkerOutcome(
+                claimed_count=1,
+                completed_count=0,
+                not_saved_count=0,
+                failures=(WorkerFailure(7, "synthetic isolated failure"),),
+            )
+
+    monkeypatch.setattr(database_cli, "WorkerRunner", FailedWorker)
+    result = _runner().invoke(
+        database_cli.app,
+        [
+            "stockfish",
+            "worker",
+            "--database",
+            str(tmp_path / "database.db"),
+            "--executable",
+            str(tmp_path / "stockfish.exe"),
+        ],
+    )
+    assert result.exit_code == 1
+    assert result.stdout == ""
+    assert "position 7" in result.stderr
+    assert "isolated failure" in result.stderr
+
+
+def test_stockfish_interruption_is_status_130(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    class InterruptedWorker:
+        def __init__(self, *args: object, **kwargs: object) -> None:
+            del args, kwargs
+
+        def run(self) -> object:
+            raise KeyboardInterrupt
+
+    monkeypatch.setattr(database_cli, "WorkerRunner", InterruptedWorker)
+    result = _runner().invoke(
+        database_cli.app,
+        [
+            "stockfish",
+            "worker",
+            "--database",
+            str(tmp_path / "database.db"),
+            "--executable",
+            str(tmp_path / "stockfish.exe"),
+        ],
+    )
     assert result.exit_code == 130
     assert result.stdout == ""
     assert "Interrupted" in result.stderr

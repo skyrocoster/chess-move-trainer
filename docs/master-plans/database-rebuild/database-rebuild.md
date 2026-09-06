@@ -128,6 +128,10 @@ evidence.
   analysis validation, canonical terminal and legal candidate-line enforcement, quality/version publication rules, and
   atomic rollback-safe result-set persistence accepted with 72 focused tests passing in 2.57 seconds; queue, worker,
   benchmark, and operator commands remain deferred to DB-07.
+- **DB-07:** [focused Plan](../../plans/done/database-rebuild-db-07/database-rebuild-db-07.md) — clean Stockfish 18
+  process control, bounded benchmark persistence, exact queue transactions, deterministic bulk targets, serial worker
+  recovery, and thin operator commands accepted with 76 tests passing across retained proofs in 21.38 seconds; API and
+  frontend integration remain deferred to API-03.
 
 The focused Plan owns implementation progress and detailed evidence; this section must not become an implementation
 queue or progress log.
@@ -328,31 +332,39 @@ period semantics.
 
 **In plain English:** Measure the right Stockfish workload and provide a safe queue and worker for analysis requests.
 
-**Grilling REQUIRED** before this slice's implementation Plan/work begins, to run the required small real Stockfish
-  benchmark and finalize the fixed Tool node budget, stale threshold, claim-token lifecycle, worker concurrency, and
-  bulk/direct-publication boundaries without creating run or failure history.
+**Grilling REQUIRED** before this slice's implementation Plan/work begins, to review the required small real Stockfish
+benchmark evidence and finalize the fixed Tool profile, stale threshold, claim-token lifecycle, worker concurrency, and
+bulk/direct-publication boundaries without creating run or failure history. The approved handoff is
+[`database-rebuild-db-07.md`](../../grilling-docs/database-rebuild-db-07.md); it accepts the completed isolated experiment
+as the sizing evidence and does not require another comparative benchmark run.
 
 - **Authority:** `docs/grilling-docs/database-rebuild-direction.md:L552-L591,L700-L740`; `docs/grilling-docs/database-rebuild-schema.md:L569-L653,L768-L801`.
 - **Visible result:** The rebuilt `derived_analysis_queue` coordinates controlled database work requests and a rebuilt
   standalone worker claims, executes, and publishes complete results using the measured Tool budget. Browser/Tool
   quality ordering and retry behavior are observable and safe under local concurrency; production viewer integration is
   deferred to API-03.
-- **Scope and current-state touchpoints:** Write a new package-owned benchmark, target selector, queue service, and
-  standalone Stockfish worker from scratch, exposed through thin supported benchmark, bulk-analysis, and worker CLI
-  commands sufficient to populate and prove the rebuilt analysis tables, including direct bulk publication and
-  controlled queue exercises.
+- **Scope and current-state touchpoints:** Under the first supported clean-toolchain Stockfish package,
+  `chess_move_trainer.database.stockfish`, write a new benchmark, target selector, queue service, and standalone
+  Stockfish worker from scratch, exposed through thin `stockfish benchmark`, `stockfish bulk`, and `stockfish worker`
+  CLI commands sufficient to populate and prove the rebuilt analysis tables, including direct bulk publication and
+  controlled queue exercises. The Tool profile is fixed at 6,400,000 nodes, 6 threads, and 1,024 MiB hash with one
+  engine process; Browser remains fixed at 200,000 nodes and uses the same process settings.
   `backend/app/features/evaluation/queue.py:enqueue`, `claim_next`, `complete`, `fail`, and `requeue_running`,
   `backend/app/features/evaluation/service.py:_drain`/`run_session`, and the analysis paths in
   `backend/app/features/analysis/engine.py` and `runner.py` are current-state evidence only before DB-09. The
-  old `scripts/stockfish_analysis/benchmark_stockfish.py` is also evidence only: the required benchmark must run through
-  the new package and supported CLI. Production backend/application queue integration is deferred to API-03.
+  old `scripts/stockfish_analysis/benchmark_stockfish.py` is also evidence only. The isolated DB-07 experiment is
+  accepted sizing evidence but remains a disposable reference rather than an implementation base; the supported
+  benchmark is rebuilt cleanly for future use and receives only a bounded operational smoke during this slice.
+  Production backend/application queue integration is deferred to API-03.
 - **Prerequisites:** DB-06 accepted.
 - **Explicit exclusions:** No API route or frontend contract changes, no shared JSON queue, completed/failed/batch/run
   history, target-list table, or guessed Tool budget.
-- **Focused proof:** Benchmark evidence around the 10–15 second target, atomic max-quality UPSERT, stale reclaim,
-  compare-and-swap token rejection, promotion while running, matching-token failure handling, and complete publication.
-- **Escalate if:** The benchmark cannot establish a safe fixed budget, or correctness requires persisted failure/run
-  records or a different queue contract.
+- **Focused proof:** Retain the reviewed experiment as the budget evidence; prove the clean supported benchmark with
+  only the handoff's bounded real-engine smoke. Prove the selected fixed engine profile, one-process Windows lock,
+  atomic max-quality UPSERT, 2-minute stale reclaim, one-time claim-ticket rejection, promotion while running,
+  matching-ticket failure handling, worker drain/exit, resumable direct bulk publication, and complete publication.
+- **Escalate if:** The selected fixed profile is unsafe in the supported implementation, or correctness requires
+  persisted failure/run records, concurrent engines, or a different queue contract.
 - **Handoff/selection criterion:** Select DB-08 only after the benchmark decision and queue/worker proof are accepted.
 
 ### DB-08 — Rebuild, snapshot, and replacement operations

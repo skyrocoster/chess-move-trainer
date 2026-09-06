@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import math
 import sys
 from pathlib import Path
 
@@ -42,6 +43,16 @@ from .preferred_moves.repository import (
 )
 from .publication import SchemaPublicationCollisionError, publish_schema
 from .schema import SchemaIncompatibleError, create_schema
+from .stockfish import (
+    BenchmarkCompatibilityError,
+    BenchmarkInputError,
+    BulkInputError,
+    BulkRunner,
+    TargetInputError,
+    WorkerInputError,
+    WorkerRunner,
+    run_benchmark,
+)
 
 
 app = typer.Typer(add_completion=False, no_args_is_help=True)
@@ -49,10 +60,12 @@ schema_app = typer.Typer(add_completion=False, no_args_is_help=True)
 games_app = typer.Typer(add_completion=False, no_args_is_help=True)
 openings_app = typer.Typer(add_completion=False, no_args_is_help=True)
 preferred_moves_app = typer.Typer(add_completion=False, no_args_is_help=True)
+stockfish_app = typer.Typer(add_completion=False, no_args_is_help=True)
 app.add_typer(schema_app, name="schema")
 app.add_typer(games_app, name="games")
 app.add_typer(openings_app, name="openings")
 app.add_typer(preferred_moves_app, name="preferred-moves")
+app.add_typer(stockfish_app, name="stockfish")
 
 
 @schema_app.command("create")
@@ -416,6 +429,196 @@ def unset_preferred_move(
         _operational_error(error, 1)
     else:
         _render_preferred_periods(periods, json_output)
+
+
+@stockfish_app.command("benchmark")
+def benchmark_stockfish(
+    executable: Path = typer.Option(
+        ...,
+        "--executable",
+        help="Explicit Stockfish 18 executable path.",
+    ),
+    position_input: Path = typer.Option(
+        ...,
+        "--position-input",
+        help="Explicit JSON file containing benchmark positions.",
+    ),
+    output_dir: Path = typer.Option(
+        ...,
+        "--output-dir",
+        help="Explicit directory owned by this benchmark run.",
+    ),
+    node_budget: list[int] = typer.Option(
+        ...,
+        "--node-budget",
+        help="Positive node budget; repeat for a matrix.",
+    ),
+    threads: list[int] = typer.Option(
+        ...,
+        "--threads",
+        help="Positive Stockfish thread count; repeat for a matrix.",
+    ),
+    hash_mb: list[int] = typer.Option(
+        ...,
+        "--hash-mb",
+        help="Positive Stockfish hash size in MiB; repeat for a matrix.",
+    ),
+    repetitions: int = typer.Option(
+        ...,
+        "--repetitions",
+        help="Positive repetition count.",
+    ),
+    shuffle_seed: int = typer.Option(
+        ...,
+        "--shuffle-seed",
+        help="Deterministic integer job-order seed.",
+    ),
+) -> None:
+    """Run one explicit, resumable Stockfish benchmark matrix."""
+
+    try:
+        outcome = run_benchmark(
+            executable=executable,
+            position_input=position_input,
+            output_dir=output_dir,
+            node_budgets=node_budget,
+            thread_counts=threads,
+            hash_sizes_mb=hash_mb,
+            repetitions=repetitions,
+            shuffle_seed=shuffle_seed,
+        )
+    except KeyboardInterrupt:
+        _interrupted()
+    except BenchmarkInputError as error:
+        _usage_error(error, param_hint="--position-input/--node-budget")
+    except BenchmarkCompatibilityError as error:
+        _operational_error(error, 1)
+    except Exception as error:
+        _stockfish_operational_error(error)
+    else:
+        if outcome.interrupted:
+            _interrupted()
+        if not outcome.complete:
+            _operational_error(
+                RuntimeError(
+                    f"benchmark incomplete: {outcome.successful_jobs}/"
+                    f"{outcome.total_jobs} successful"
+                ),
+                1,
+            )
+        typer.echo(
+            f"Benchmark complete: {outcome.successful_jobs}/{outcome.total_jobs} "
+            f"successful; artifacts={outcome.artifact_dir}"
+        )
+
+
+@stockfish_app.command("bulk")
+def bulk_stockfish(
+    database: Path = typer.Option(..., "--database", help="Explicit SQLite database path."),
+    executable: Path = typer.Option(
+        ..., "--executable", help="Explicit Stockfish 18 executable path."
+    ),
+    limit: int | None = typer.Option(
+        None,
+        "--limit",
+        help="Optional positive number of eligible targets for this launch.",
+    ),
+    lock_timeout: float = typer.Option(
+        DEFAULT_LOCK_TIMEOUT_SECONDS,
+        "--lock-timeout",
+        help="Finite positive SQLite lock wait in seconds.",
+    ),
+) -> None:
+    """Publish eligible Tool analyses directly and exit when the launch drains."""
+
+    try:
+        _validate_stockfish_lock_timeout(lock_timeout)
+        outcome = BulkRunner(
+            database,
+            executable,
+            lock_timeout=lock_timeout,
+        ).run(limit=limit)
+    except KeyboardInterrupt:
+        _interrupted()
+    except (BulkInputError, TargetInputError, ValueError) as error:
+        _usage_error(error, param_hint="--limit/--lock-timeout")
+    except Exception as error:
+        _stockfish_operational_error(error)
+    else:
+        _render_stockfish_outcome(
+            f"Bulk complete: {outcome.published_count} published, "
+            f"{outcome.selected_count} selected",
+            outcome,
+        )
+
+
+@stockfish_app.command("worker")
+def worker_stockfish(
+    database: Path = typer.Option(..., "--database", help="Explicit SQLite database path."),
+    executable: Path = typer.Option(
+        ..., "--executable", help="Explicit Stockfish 18 executable path."
+    ),
+    lock_timeout: float = typer.Option(
+        DEFAULT_LOCK_TIMEOUT_SECONDS,
+        "--lock-timeout",
+        help="Finite positive SQLite lock wait in seconds.",
+    ),
+) -> None:
+    """Drain current queued analysis requests and exit."""
+
+    try:
+        _validate_stockfish_lock_timeout(lock_timeout)
+        outcome = WorkerRunner(
+            database,
+            executable,
+            lock_timeout=lock_timeout,
+        ).run()
+    except KeyboardInterrupt:
+        _interrupted()
+    except (WorkerInputError, ValueError) as error:
+        _usage_error(error, param_hint="--database/--executable")
+    except Exception as error:
+        _stockfish_operational_error(error)
+    else:
+        _render_stockfish_outcome(
+            f"Worker complete: {outcome.completed_count} completed, "
+            f"{outcome.claimed_count} claimed",
+            outcome,
+        )
+
+
+def _render_stockfish_outcome(message: str, outcome: object) -> None:
+    if getattr(outcome, "interrupted", False):
+        _interrupted()
+    failures = getattr(outcome, "failures", ())
+    for failure in failures:
+        subject = "database" if failure.position_id is None else f"position {failure.position_id}"
+        typer.echo(f"Error: {subject}: {failure.message}", err=True)
+    if getattr(outcome, "exit_code", 1) != 0:
+        if any("compatible schema" in str(failure.message).lower() for failure in failures):
+            raise typer.Exit(code=3)
+        raise typer.Exit(code=1)
+    typer.echo(message)
+
+
+def _stockfish_operational_error(error: Exception) -> None:
+    if _is_schema_error(error):
+        _operational_error(error, 3)
+    _operational_error(error, 1)
+
+
+def _validate_stockfish_lock_timeout(value: float) -> None:
+    if isinstance(value, bool) or not math.isfinite(float(value)) or float(value) <= 0:
+        raise ValueError("lock-timeout must be finite and greater than zero")
+
+
+def _is_schema_error(error: BaseException) -> bool:
+    candidate: BaseException | None = error
+    while candidate is not None:
+        if isinstance(candidate, SchemaIncompatibleError):
+            return True
+        candidate = candidate.__cause__ or candidate.__context__
+    return "compatible schema" in str(error).lower()
 
 
 def _usage_error(error: Exception, *, param_hint: str = "--lock-timeout") -> None:

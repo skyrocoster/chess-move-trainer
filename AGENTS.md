@@ -2,7 +2,7 @@
 
 Windows-only FastAPI + Vite React TypeScript application for training chess moves. The repository also
 contains a small, role-based coordinator workflow. Use plain English and do not assume the user is an
-expert.
+expert. You WILL find yourself being overly technical or not providing sufficient real world examples - you must reconsider when you are doing this and provide proper examples and plain English.
 
 ## Application architecture
 

@@ -113,6 +113,42 @@ The AI must not start the complete 2,520-job benchmark. Before handoff, prove on
 Every executed proof command and engine process must have an explicit finite timeout. Generated smoke evidence remains
 ignored and must not contaminate a future full run.
 
+## Interim review findings (2026-09-06, advisory)
+
+A later review of the completed dataset produced the compact results report at
+[../../experiments/prototypes/stockfish-db07-benchmark/BENCHMARK_RESULTS.md](../../experiments/prototypes/stockfish-db07-benchmark/BENCHMARK_RESULTS.md)
+(dataset INCOMPLETE: 1822/2520 successful, profile-driven `PermissionError` persistence failures). That report makes no
+Tool node-budget selection. The observations below are advisory input for the later DB-07 decisions, not settled
+choices, and all caveats in the report's Sections 10 and 13 apply (ten fixed positions, MultiPV 5, this machine only,
+convergence is stability not chess correctness, timing semantics not source-verified).
+
+Key findings from converting the report's normalized wall times (Section 5.1) into absolute wall-clock medians per
+node budget and thread count:
+
+| Node budget | t1 | t2 | t4 | t6 |
+|---|---|---|---|---|
+| 100k | 0.12 s | 0.07 s | 0.04 s | 0.03 s |
+| 400k | 0.48 s | 0.27 s | 0.14 s | 0.10 s |
+| 1.6M | 1.9 s | 1.1 s | 0.6 s | 0.4 s |
+| 3.2M | 3.9 s | 2.2 s | 1.2 s | 0.8 s |
+| 6.4M | 7.7 s | 4.3 s | 2.4 s | 1.6 s |
+
+Advisory read of that table:
+
+- Absolute latency spans 0.03 s to 7.7 s across the whole matrix; nothing is slow in a batch sense. Thread count, not
+  node budget, is the main lever on absolute latency.
+- For an interactive quick run (target < ~0.5 s): 2+ threads with 100k–400k nodes all qualify; 1 thread at 400k
+  (0.48 s) is already at the edge. Hash 64 MiB is sufficient at these budgets (hashfull stays low).
+- For a high-confidence long run: 6.4M nodes is not slow (1.6 s at 6 threads), but 3.2M captures most of the benefit
+  at half the cost (Section 9: median depth gain +2 and 74.7% top-1 agreement in both 3.2M→6.4M and lower
+  transitions; top-5 overlap 5/5 and Jaccard 1.0 from 1.6M upward). Use 256 MiB hash here: 64 MiB reaches hashfull
+  p90 477‰ at 6.4M, while 256 MiB is measured at parity cost.
+- 1024 MiB hash is not justified anywhere in the matrix: median 1.28x slower elapsed than 64 MiB on matched pairs
+  (Section 6), with no compensating benefit.
+- Single-run top-1 output remains uncertain at every budget (cross-round agreement 74.2%, Section 10); the top-five
+  candidate set is far more stable than the single best move. Whether that matters depends on how the Tool uses the
+  output.
+
 ## Explicit exclusions and later handoff
 
 - No final Tool node-budget decision or interpretation of benchmark winners.
