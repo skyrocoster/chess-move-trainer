@@ -25,6 +25,7 @@ from chess_move_trainer.database.stockfish import (
     WorkerFailure,
     WorkerOutcome,
 )
+from chess_move_trainer.database.rebuild import VerificationTarget
 
 
 ROOT = Path(__file__).parents[2]
@@ -155,6 +156,108 @@ def test_inspect_missing_database_is_operational_failure(tmp_path: Path) -> None
     assert result.stdout == b""
     assert result.stderr
     assert not database_path.exists()
+
+
+def test_verify_cli_reports_structural_partial_status_without_creating_target(
+    tmp_path: Path,
+) -> None:
+    config_path = tmp_path / "rebuild.yaml"
+    database_path = tmp_path / "neighbour.db"
+    create_schema(database_path)
+    config_path.write_text(f"rebuilt_neighbour: {database_path}\n", encoding="utf-8")
+
+    result = _run_cli("rebuild", "verify", "--config", str(config_path))
+
+    assert result.returncode == 0
+    assert b"target: neighbour" in result.stdout.lower()
+    assert b"structurally_valid_partial" in result.stdout
+    assert b"replacement_ready=no" in result.stdout
+    assert result.stderr == b""
+
+
+def test_verify_cli_selects_snapshot_and_reports_incompatible_status(tmp_path: Path) -> None:
+    config_path = tmp_path / "rebuild.yaml"
+    neighbour = tmp_path / "neighbour.db"
+    snapshot = tmp_path / "snapshot.db"
+    with sqlite3.connect(neighbour) as connection:
+        connection.execute("CREATE TABLE unrelated (id INTEGER PRIMARY KEY)")
+        connection.execute("PRAGMA user_version = 1")
+    snapshot.write_bytes(neighbour.read_bytes())
+    config_path.write_text(f"rebuilt_neighbour: {neighbour}\n", encoding="utf-8")
+
+    result = _run_cli(
+        "rebuild",
+        "verify",
+        "--config",
+        str(config_path),
+        "--target",
+        VerificationTarget.SNAPSHOT.value,
+        "--snapshot",
+        str(snapshot),
+        "--json",
+    )
+
+    assert result.returncode == 3
+    assert b'"status":"incompatible"' in result.stderr
+    assert result.stdout == b""
+
+
+def test_verify_cli_missing_neighbour_is_operational_failure_without_creation(
+    tmp_path: Path,
+) -> None:
+    config_path = tmp_path / "rebuild.yaml"
+    database_path = tmp_path / "missing.db"
+    config_path.write_text(f"rebuilt_neighbour: {database_path}\n", encoding="utf-8")
+
+    result = _run_cli("rebuild", "verify", "--config", str(config_path))
+
+    assert result.returncode == 1
+    assert b'"status":"missing"' not in result.stdout
+    assert b"missing" in result.stderr.lower()
+    assert not database_path.exists()
+
+
+def test_replace_cli_reports_unready_managed_candidate_on_stderr(
+    tmp_path: Path,
+) -> None:
+    neighbour = tmp_path / "neighbour.db"
+    create_schema(neighbour)
+    config_path = tmp_path / "rebuild.yaml"
+    config_path.write_text(f"rebuilt_neighbour: {neighbour}\n", encoding="utf-8")
+
+    result = _run_cli(
+        "rebuild",
+        "replace",
+        "--config",
+        str(config_path),
+        "--json",
+    )
+
+    assert result.returncode == 1
+    assert b'"operation":"replace"' in result.stderr
+    assert b'"status":"failed"' in result.stderr
+    assert result.stdout == b""
+
+
+def test_rollback_cli_rejects_missing_retained_source_without_mutation(
+    tmp_path: Path,
+) -> None:
+    neighbour = tmp_path / "neighbour.db"
+    create_schema(neighbour)
+    config_path = tmp_path / "rebuild.yaml"
+    config_path.write_text(f"rebuilt_neighbour: {neighbour}\n", encoding="utf-8")
+    before = neighbour.read_bytes()
+
+    result = _run_cli(
+        "rebuild",
+        "rollback",
+        "--config",
+        str(config_path),
+    )
+
+    assert result.returncode == 1
+    assert b"retained verified snapshot" in result.stderr
+    assert neighbour.read_bytes() == before
 
 
 def test_inspect_output_collision_exits_one_without_stdout_or_database_damage(tmp_path: Path) -> None:
@@ -1309,6 +1412,51 @@ def test_stockfish_help_exposes_three_commands_and_explicit_inputs() -> None:
         assert result.exit_code == 0
         assert "--database" in result.stdout
         assert "--executable" in result.stdout
+    assert "--preset" in _runner().invoke(
+        database_cli.app, ["stockfish", "bulk", "--help"]
+    ).stdout
+
+
+def test_stockfish_initial_preset_is_one_repeatable_cli_invocation(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    seen: list[tuple[object, object]] = []
+
+    class InitialOutcome:
+        published_count = 25
+        selected_count = 25
+        failures: tuple[object, ...] = ()
+        interrupted = False
+        exit_code = 0
+
+    class InitialRunner:
+        def __init__(self, *args: object, **kwargs: object) -> None:
+            seen.append((args, kwargs))
+
+        def run(self, *, preset: str | None = None) -> InitialOutcome:
+            seen.append((preset, None))
+            return InitialOutcome()
+
+    monkeypatch.setattr(database_cli, "BulkRunner", InitialRunner)
+    result = _runner().invoke(
+        database_cli.app,
+        [
+            "stockfish",
+            "bulk",
+            "--database",
+            str(tmp_path / "database.db"),
+            "--executable",
+            str(tmp_path / "stockfish.exe"),
+            "--preset",
+            "initial",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert seen[-1] == ("initial", None)
+    assert "Initial analysis complete: 25 published, 25 selected" in result.stdout
+    assert "checkmate, stalemate, legal en passant, promotion, castling" in result.stdout
+    assert result.stderr == ""
 
 
 @pytest.mark.parametrize(

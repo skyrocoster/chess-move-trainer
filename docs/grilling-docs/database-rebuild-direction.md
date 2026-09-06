@@ -861,29 +861,106 @@ These findings classify existing dependencies. They do not authorize keeping the
 projections, or contracts. The table-by-table direction in section 3 is governed by demonstrated capabilities, not by
 the current dependency graph.
 
-## 7. Remaining factual work before planning
+## 7. DB-08 CLI and tool-orchestration direction
 
-The product and operating choices needed for this conceptual model are settled. The remaining work is assessment that
-will provide planning inputs, not another speculative interview and not a Plan embedded in this record:
+A Luna case-worker reviewed `docs/flowcharts/database-toolchain.md`,
+`docs/flowcharts/database-operator-journeys.md`, and the rebuilt DB-01 through DB-07 command surface. The review
+separated already rebuilt component operations from the missing DB-08 orchestration and safety boundary. The user then
+settled the following operator-facing choices.
 
-1. run a small real Stockfish benchmark around the 10–15-second Tool target and choose the exact fixed node budget;
-2. produce an actual-name table and field catalogue with keys, checks, ownership, readers, writers, and lifecycle;
-3. map every current live and declared non-live table to survive, replace, drop, or never create;
-4. define the rebuilt APIs and tools required by the approved current capabilities;
-5. choose straightforward indexes for the real access paths and check the actual rebuilt queries on real rebuilt data;
-6. define creation, validation, first parallel-database cutover, later replacement, backup, and rollback ordering; and
-7. define focused acceptance proof and the point at which any removal of the old database may be separately authorized.
+### 7.1 Refresh and staged rebuilding
 
-The actual-name catalogue must resolve the deliberately conceptual names in section 3 without reopening settled table
-responsibilities. In particular, it must not invent tables for the negative register merely because the existing system
-has them.
+- Provide one idempotent refresh operation. Running it against an empty database is the first build; later refreshes use
+  the same operation.
+- Chess.com network acquisition remains a separate operation. Refresh consumes retained local source files and does not
+  silently access the network.
+- Keep the component schema, opening-import, and game-import operations available for focused reruns and diagnosis.
+- Stages make independent progress. A structural failure in one stage does not prevent an unrelated stage from running,
+  and successful committed work survives. The overall refresh remains unsuccessful until every required stage and the
+  final verification pass.
+- Starting with only the opening TSV files is supported as a partial-build checkpoint. The opening catalogue, routes,
+  route moves, and their canonical positions may be created first, then retained while game sources are supplied later.
+  An opening-only database is not a complete replacement candidate: games and openings must both be ready before it can
+  satisfy application-replacement readiness.
 
-## 8. Continuation boundary
+### 7.2 Verification
 
-The grilling interview is complete unless later assessment reveals a genuine product decision. Do not reopen settled
-questions merely because table names, fields, APIs, indexes, or implementation ordering still need factual work.
+Provide one standalone read-only verification capability that can check a rebuilt database, managed candidate, or
+snapshot. Refresh, snapshot, replacement, rollback, and later proof reuse the same verifier. The existing schema
+inspection operation remains informational and is not overloaded with this safety-gate responsibility.
 
-The next routed work is to produce the exact replacement catalogue and API and tool boundary from this record, then
-define safe ordering and focused proof before seeking implementation approval. No part of this record authorizes
-implementation, application cutover, modification or deletion of the old database, removal of generated data, or
-modification of retained raw source files.
+The exact checks, output shape, and exit-code mapping are factual Plan work. They must distinguish a structurally valid
+partial database from a complete replacement candidate without treating incompleteness as corruption.
+
+### 7.3 Stockfish command boundary
+
+Bulk Tool analysis remains serial. DB-08 does not add `--workers`; parallel engine operation is deferred until measured
+need justifies reopening the accepted DB-07 concurrency design. The exact invocation or small preset needed to select
+the already-settled initial 25-position mixture remains factual Plan work rather than another product decision.
+
+### 7.4 Concurrent operation, snapshots, and replacement
+
+- Verification, snapshotting through SQLite's safe backup facility, and isolated candidate building may coexist with
+  other safe local work.
+- Replacement and rollback require exclusive access to the rebuilt-neighbour destination. They must fail clearly when
+  exclusive access is unavailable and must never terminate another process.
+- Configuration identifies one rebuilt-neighbour destination. The tools own a temporary candidate beside it; operators
+  do not repeatedly supply arbitrary source and destination pairs.
+- Replacement verifies the candidate, obtains exclusive access, automatically creates and verifies a fresh snapshot of
+  the current rebuilt neighbour, applies the rolling-three policy, and only then replaces the neighbour.
+- A standalone snapshot operation also remains available.
+- A failed or incomplete candidate never replaces the working neighbour. DB-08 does not modify the old database and does
+  not change which database the application uses.
+
+### 7.5 Rollback and interruption recovery
+
+- Rollback uses the newest verified pre-replacement snapshot by default and permits explicit selection of another
+  retained snapshot.
+- The selected snapshot is verified again before restoration, and the current rebuilt neighbour is preserved before it
+  is overwritten.
+- An interrupted temporary candidate is recovered through the next normal idempotent staging or refresh run. Do not add
+  a dedicated recovery command, permanent run history, or persistent failure records solely for temporary-file cleanup.
+
+Exact command names, flags, output formatting, temporary filenames, lock representation, and internal service boundaries
+are implementation and planning details so long as they preserve these behaviors.
+
+### 7.6 Documentation and later tool review
+
+The last DB-08 Plan stage must update every database flowchart affected by the implemented command surface and resolved
+operator chain. The diagrams must distinguish direct bulk publication from the later API queue worker and must remove
+stale ambiguity about first build, refresh, snapshots, verification, candidate replacement, rollback, and rerun-based
+recovery.
+
+DB-08 does not silently declare every surrounding acquisition or maintenance tool complete. The next master-plan slice
+after DB-08 must review the remaining tool surface and finish any rebuilt tool capability still missing or incomplete,
+explicitly including Chess.com retrieval and API support. Existing commands are evidence for that assessment, not proof
+that the whole operator journey is finished.
+
+## 8. Remaining routed work
+
+The conceptual database choices and the DB-08 CLI/tool-orchestration decisions are settled. Remaining work is routed
+through focused Plans and assessments rather than another speculative interview:
+
+1. write and execute the DB-08 Plan for refresh, verification, safe snapshots, managed candidate replacement, rollback,
+   interruption behavior, the initial-analysis invocation, focused proof, and final flowchart reconciliation;
+2. run the next master-plan slice to review and finish additional rebuilt tools, including Chess.com retrieval/API
+   support, without assuming that old scripts or current command names are authoritative;
+3. define and rebuild only the APIs required by the approved application capabilities;
+4. check real rebuilt queries and straightforward indexes against real rebuilt data where the relevant Plan requires
+   that evidence;
+5. prove the populated neighbour and separately approve application cutover; and
+6. separately authorize any later removal of the old database.
+
+The actual-name catalogue and every later tool or API assessment remain governed by the table responsibilities and
+negative register in this record. They must not revive old state, audit, projection, or history machinery merely because
+an existing script or test mentions it.
+
+## 9. Continuation boundary
+
+The grilling interview is complete unless later assessment reveals another genuine product or operating decision. Do
+not reopen settled questions merely because command names, table fields, APIs, indexes, or implementation ordering still
+need factual work.
+
+This extension authorizes DB-08 planning and the requested master-plan update. It does not authorize implementation,
+application cutover, modification or deletion of the old database, removal of generated data, or modification of
+retained raw source files.

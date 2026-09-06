@@ -10,7 +10,7 @@ import chess
 from sqlalchemy import text
 
 from ..connection import DEFAULT_LOCK_TIMEOUT_SECONDS, _open_existing_connection
-from ..positions import CanonicalPosition, canonicalize_board
+from ..positions import CanonicalPosition, canonicalize_board, canonicalize_fen
 from ..positions.repository import position_transaction
 from ..schema import SchemaIncompatibleError, _assert_compatible_schema
 from .configuration import CONFIGURATION_VERSION, STOCKFISH_VERSION
@@ -19,6 +19,7 @@ from .configuration import CONFIGURATION_VERSION, STOCKFISH_VERSION
 TARGET_MIN_PLY = 0
 TARGET_MAX_PLY = 19
 DEFAULT_TARGET_PAGE_SIZE = 100
+INITIAL_COMMON_TARGET_COUNT = 20
 
 
 class TargetSelectionError(RuntimeError):
@@ -53,6 +54,47 @@ class BulkTarget:
 
 
 @dataclass(frozen=True, slots=True)
+class InitialTechnicalPosition:
+    """One stable technical representative in the initial-analysis preset."""
+
+    category: str
+    fen: str
+
+    @property
+    def canonical(self) -> CanonicalPosition:
+        """Return the canonical identity represented by the fixed FEN."""
+
+        return canonicalize_fen(self.fen)
+
+
+INITIAL_TECHNICAL_POSITIONS = (
+    InitialTechnicalPosition(
+        "checkmate",
+        "7k/6Q1/6K1/8/8/8/8/8 b - - 0 1",
+    ),
+    InitialTechnicalPosition(
+        "stalemate",
+        "7k/5Q2/6K1/8/8/8/8/8 b - - 0 1",
+    ),
+    InitialTechnicalPosition(
+        "legal en passant",
+        "rnbqkbnr/ppp1pppp/8/3pP3/8/8/PPPP1PPP/RNBQKBNR w KQkq d6 0 3",
+    ),
+    InitialTechnicalPosition(
+        "promotion",
+        "4k3/P7/8/8/8/8/8/4K3 w - - 0 1",
+    ),
+    InitialTechnicalPosition(
+        "castling",
+        "r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1",
+    ),
+)
+INITIAL_TECHNICAL_CATEGORIES = tuple(
+    representative.category for representative in INITIAL_TECHNICAL_POSITIONS
+)
+
+
+@dataclass(frozen=True, slots=True)
 class _RouteMove:
     route_id: int
     ply: int
@@ -75,8 +117,13 @@ class BulkTargetSelector:
         self._page_size = page_size
         self._lock_timeout = lock_timeout
 
-    def iter_targets(self, *, limit: int | None = None) -> Iterator[BulkTarget]:
-        """Yield eligible game targets followed by eligible route-only targets."""
+    def iter_targets(
+        self,
+        *,
+        limit: int | None = None,
+        include_ineligible: bool = False,
+    ) -> Iterator[BulkTarget]:
+        """Yield game targets followed by route-only targets in stable order."""
 
         _validate_limit(limit)
         route_positions = self._replay_route_positions()
@@ -90,7 +137,7 @@ class BulkTargetSelector:
                 break
             for target in page:
                 game_position_ids.add(target.position_id)
-                if not self._is_eligible(target.position_id):
+                if not include_ineligible and not self._is_eligible(target.position_id):
                     continue
                 yield target
                 yielded += 1
@@ -110,7 +157,7 @@ class BulkTargetSelector:
         for start in range(0, len(route_only), self._page_size):
             page = route_only[start : start + self._page_size]
             for target in page:
-                if not self._is_eligible(target.position_id):
+                if not include_ineligible and not self._is_eligible(target.position_id):
                     continue
                 yield target
                 yielded += 1
@@ -250,6 +297,74 @@ class BulkTargetSelector:
         return route_positions
 
 
+class InitialAnalysisTargetSelector:
+    """Select the fixed 20-common plus five-technical initial mixture."""
+
+    def __init__(
+        self,
+        database_path: str | Path,
+        *,
+        page_size: int = DEFAULT_TARGET_PAGE_SIZE,
+        lock_timeout: float = DEFAULT_LOCK_TIMEOUT_SECONDS,
+    ) -> None:
+        self._common_selector = BulkTargetSelector(
+            database_path,
+            page_size=page_size,
+            lock_timeout=lock_timeout,
+        )
+        self._database_path = database_path
+        self._lock_timeout = lock_timeout
+
+    def iter_targets(self, *, limit: int | None = None) -> Iterator[BulkTarget]:
+        """Yield the stable initial set, skipping already-current analyses."""
+
+        _validate_limit(limit)
+        technical = self._technical_targets()
+        technical_positions = {target.position for target in technical}
+        common: list[BulkTarget] = []
+        for target in self._common_selector.iter_targets(include_ineligible=True):
+            if target.position in technical_positions:
+                continue
+            common.append(target)
+            if len(common) == INITIAL_COMMON_TARGET_COUNT:
+                break
+
+        if len(common) != INITIAL_COMMON_TARGET_COUNT:
+            raise TargetSelectionError(
+                "initial analysis requires at least 20 common positions"
+            )
+
+        yielded = 0
+        for target in (*common, *technical):
+            if not self._common_selector._is_eligible(target.position_id):
+                continue
+            yield target
+            yielded += 1
+            if limit is not None and yielded >= limit:
+                return
+
+    def _technical_targets(self) -> tuple[BulkTarget, ...]:
+        try:
+            with position_transaction(
+                self._database_path,
+                lock_timeout=self._lock_timeout,
+            ) as position_work:
+                return tuple(
+                    BulkTarget(
+                        position_id=position_work.resolve_fen(representative.fen),
+                        frequency=0,
+                        position=representative.canonical,
+                    )
+                    for representative in INITIAL_TECHNICAL_POSITIONS
+                )
+        except SchemaIncompatibleError:
+            raise
+        except Exception as error:
+            raise TargetSelectionError(
+                "initial technical positions could not be prepared"
+            ) from error
+
+
 TargetSelector = BulkTargetSelector
 
 
@@ -322,6 +437,11 @@ __all__ = [
     "BulkTarget",
     "BulkTargetSelector",
     "DEFAULT_TARGET_PAGE_SIZE",
+    "INITIAL_COMMON_TARGET_COUNT",
+    "INITIAL_TECHNICAL_CATEGORIES",
+    "INITIAL_TECHNICAL_POSITIONS",
+    "InitialAnalysisTargetSelector",
+    "InitialTechnicalPosition",
     "TARGET_MAX_PLY",
     "TARGET_MIN_PLY",
     "TargetInputError",

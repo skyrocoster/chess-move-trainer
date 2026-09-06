@@ -1,7 +1,7 @@
 # Database rebuild
 
 > **Status:** direction settled
-> **Approval:** The destination, strict 16-slice envelope, and clean from-scratch package/CLI rewrite of every required
+> **Approval:** The destination, approved slice envelope, and clean from-scratch package/CLI rewrite of every required
 > tool were explicitly approved for this master plan.
 
 ## Destination
@@ -46,8 +46,8 @@ replacement safely; and perform old-database retirement only as a separately aut
   or requirements.
 - No table, projection, history, audit, manifest, classification, recurrence, player, or other machinery may be
   created unless it is in the authoritative replacement catalogue or later justified by a new approved requirement.
-- The nine `DB-*` slices are strictly first. **Absolute gate:** no `API-*` slice may be assessed or implemented until
-  `DB-09` has proven the rebuilt database foundation with real rebuilt data. Before that gate, production
+- The database/tool sequence through `DB-09` is strictly first. **Absolute gate:** no `API-*` slice may be assessed or
+  implemented until `DB-09` has proven the rebuilt database foundation with real rebuilt data. Before that gate, production
   `backend/app`, frontend, and other application-consumer modules remain untouched. Database slices may create or
   extend only the exact new schema and isolated package-owned feeder/rebuild/analysis toolchain needed to populate and
   prove the neighboring database; existing production modules are current-state evidence or later replacement targets,
@@ -81,6 +81,8 @@ operator-facing.
 Any genuine product, ownership, API, dependency, destructive, or acceptance decision discovered by grilling is an
 escalation, not an AI choice.
 
+**NEXT slice after DB-08:** `DB-08A` — Remaining rebuilt operator and tool surface.
+
 ## Selectable slices
 
 | Slice | Human-visible result | Depends on | Explicit exclusion |
@@ -93,7 +95,8 @@ escalation, not an AI choice.
 | DB-06 | Complete Stockfish result sets and candidate lines persist atomically. | DB-05 | No analysis history, failure history, or API changes. |
 | DB-07 | The measured Tool budget and minimal live analysis queue/worker are proven. | DB-06 | No API/frontend contract changes or persisted run history. |
 | DB-08 | Idempotent rebuild, snapshot, neighboring replacement, rollback, and interruption operations are available. | DB-07 | No application cutover or old-database deletion. |
-| DB-09 | Real rebuilt data proves the database/tool foundation and direct access paths. | DB-08 | No HTTP routes, frontend integration, or cutover. |
+| DB-08A | The remaining current-use operator/tool surface is assessed, and any required rebuilt tool gaps—including Chess.com retrieval/API support—are finished or proven unnecessary before real-data proof. | DB-08 | No application HTTP API, DB-09 proof, opponent-profile work, raw-policy change, or legacy compatibility. |
+| DB-09 | Real rebuilt data proves the database/tool foundation and direct access paths. | DB-08A | No HTTP routes, frontend integration, or cutover. |
 | SETUP-01 | Reviewed setup inference produces and explicitly applies proposals for preferred-move periods. | DB-09 (and DB-05 transitively) | No automatic preference application, nonempty-target overwrite, or API/frontend work. |
 | SETUP-02 | Exploration & installation of new tools for controlling & managing APIs. Downstream API slices amended to accept new tools | SETUP-01 | Any pre-existing APIs. |
 | API-01 | The game viewer reads rebuilt game and occurrence data. | SETUP-01 | No old API-shape compatibility. |
@@ -375,24 +378,67 @@ as the sizing evidence and does not require another comparative benchmark run.
   snapshot naming/verification, rolling-three retention, idempotent refresh boundaries, neighboring-file replacement,
   rollback, interruption recovery, and the new orchestration CLI command set without activating the replacement.
 
-- **Authority:** `docs/grilling-docs/database-rebuild-direction.md:L80-L123,L94-L109,L864-L879`; `docs/grilling-docs/database-rebuild-schema.md:L119-L157,L716-L766`.
+- **Authority:** `docs/grilling-docs/database-rebuild-direction.md:L80-L123,L94-L109,L864-L966`; `docs/grilling-docs/database-rebuild-schema.md:L119-L157,L716-L766`.
 - **Visible result:** Initial creation is an empty refresh; later refreshes are resumable and idempotent; destructive or
   replacing operations create and verify consistent SQLite snapshots; neighboring replacement files can be built and
   rolled back safely.
+- **Focused Plan:** [active DB-08 Plan](../../plans/active/database-rebuild-db-08/database-rebuild-db-08.md).
 - **Scope and current-state touchpoints:** Write a new package-owned orchestration service and thin supported CLI
-  commands for rebuild, refresh, snapshot, neighboring replacement, verification, recovery, and rollback. The behavior
-  represented by `scripts/refresh_chess_com.py`, the existing importer/analysis CLI entry points, and the database
-  path/connection helpers in `backend/app/features/positions/repository.py` is read-only conceptual evidence only and
-  must not be wrapped or reused. Keep raw month files as the fetch ledger and use the SQLite backup facility rather than
-  copying a live WAL database; no production backend/application/frontend module is a pre-gate implementation target.
+  commands for refresh, snapshot, managed neighboring replacement, verification, rerun-based interruption recovery,
+  and rollback. The behavior represented by `scripts/refresh_chess_com.py`, the existing importer/analysis CLI entry
+  points, and the database path/connection helpers in `backend/app/features/positions/repository.py` is read-only
+  conceptual evidence only and must not be wrapped or reused. Keep raw month files as the fetch ledger and use the
+  SQLite backup facility rather than copying a live WAL database; no production backend/application/frontend module is
+  a pre-gate implementation target.
 - **Prerequisites:** DB-07 accepted.
 - **Explicit exclusions:** No application activation, old-database modification/deletion, off-device disaster-recovery
-  system, scheduled backup, or raw-source deletion.
+  system, scheduled backup, raw-source deletion, dedicated recovery command, or parallel Stockfish operation.
 - **Focused proof:** Empty-build versus refresh equivalence, skip/resume behavior, verified rolling snapshots, WAL-safe
   backup, interrupted rebuild recovery, neighboring replacement validation, and rollback without touching the old DB.
 - **Escalate if:** Safe backup/rollback cannot be demonstrated with SQLite, or a proposed operation needs old-row
   migration or old-database mutation.
-- **Handoff/selection criterion:** Select DB-09 only after replacement operations are proven without cutover.
+- **Handoff/selection criterion:** Select DB-08A only after replacement operations are proven without cutover.
+
+### DB-08A — Remaining rebuilt operator and tool surface
+
+**In plain English:** Before real-data proof, confirm that every required current-use operator/tool journey is actually
+available through the rebuilt package and supported CLI, and finish only the missing tool capabilities.
+
+**Grilling REQUIRED** before this slice's assessment Plan/work begins, to bound the complete operator/tool inventory,
+the distinction between rebuilt, incomplete, missing, and legacy paths, and any remaining factual support needed by
+DB-09. The assessment must explicitly trace Chess.com game retrieval and external Chess.com API support; the existing
+`games acquire` command is evidence, not proof that the complete retrieval journey is finished.
+
+- **Authority:** `docs/grilling-docs/database-rebuild-direction.md:L33-L45,L111-L123,L678-L699,L864-L966`; the clean
+  tool-rewrite and sequencing rules in this master plan; and the accepted DB-01 through DB-08 Plans as historical
+  implementation evidence.
+- **Visible result:** A bounded inventory maps every operator-visible step needed to create, refresh, verify, analyze,
+  and prove the rebuilt database to a package-owned supported operation or a documented, coordinator-accepted gap.
+  Required current-use gaps are finished with focused package/CLI proof, including the complete supported Chess.com
+  retrieval/API journey where assessment shows it is still incomplete. The inventory distinguishes external Chess.com
+  retrieval/API support from later application HTTP API slices.
+- **Scope and current-state touchpoints:** Assess the supported package and CLI surface under
+  `src/chess_move_trainer/database/`, the retained raw-source paths under `data/chess-com/raw/`, and the legacy
+  acquisition/tool evidence named in the current-state map, including `scripts/chess_com/fetch_games.py`,
+  `scripts/chess_com/_cli.py`, and `scripts/refresh_chess_com.py`. Trace archive discovery, month retrieval, raw
+  publication/retention, local import, opening/reference inputs, Stockfish benchmark/bulk/worker, verification,
+  snapshot/replacement, and the exact commands DB-09 will use. Implement only required current-use tool gaps in new
+  package-owned areas and thin CLIs; do not silently revive legacy code or treat a command name as a complete journey.
+- **Prerequisites:** DB-08 accepted.
+- **Explicit exclusions:** No DB-09 real-data proof, schema or table changes, speculative persistence, opponent profiles,
+  raw-source policy change, application HTTP API, backend/frontend integration, cutover, old-database handling, Opening
+  Line Library work, or legacy wrapping/copying/delegation. This slice does not authorize network-scale service design;
+  it addresses only the local trainer's required external Chess.com retrieval/API support.
+- **Focused proof:** Retain an evidence-backed operator/tool inventory; run only focused package/CLI tests for each
+  identified gap; prove source boundaries and explicit inputs/meaningful exits; and, for Chess.com retrieval/API support,
+  cover archive discovery, exact month URL handling, current-month refetch/UUID merge, historical skip, safe raw
+  publication, transport failure behavior, and separation from local database import without requiring a broad live
+  network run.
+- **Escalate if:** A missing tool requires changing raw-source retention, standard-game/trainer filtering, opponent-profile
+  exclusion, schema/persistence, a new dependency, an application HTTP API, legacy reuse, or an acceptance requirement
+  beyond the current direction.
+- **Handoff/selection criterion:** Select DB-09 only after the inventory is accepted and every required tool gap has
+  either passed its focused proof or been explicitly accepted as unnecessary for the real-data proof.
 
 ### DB-09 — Rebuilt-database proof gate
 
@@ -402,7 +448,7 @@ as the sizing evidence and does not require another comparative benchmark run.
   integrity assertions, measured access paths/indexes, direct capability queries, analysis sample, and acceptance
   thresholds without turning this gate into API work.
 
-- **Authority:** `docs/grilling-docs/database-rebuild-direction.md:L742-L772,L774-L805,L864-L879`; `docs/grilling-docs/database-rebuild-schema.md:L119-L157,L716-L742,L781-L830`.
+- **Authority:** `docs/grilling-docs/database-rebuild-direction.md:L742-L772,L774-L805,L864-L966`; `docs/grilling-docs/database-rebuild-schema.md:L119-L157,L716-L742,L781-L830`.
 - **Visible result:** A rebuilt neighboring database containing real regenerated games, openings, positions,
   empty preference storage, and analysis data passes a documented proof gate for integrity and direct current-capability
   reads. DB-09 explicitly owns the database-level opening lookup proof: PGN replay produces the ordered recognized
@@ -411,13 +457,13 @@ as the sizing evidence and does not require another comparative benchmark run.
   25-position analysis mixture and on-demand bulk selection are proven without a persisted target list. The activation
   candidate contains no migrated, inferred, or fabricated preference rows.
 - **Scope and current-state touchpoints:** Exercise the rebuilt database directly using only the new package services
-  and supported CLIs delivered by DB-01 through DB-08; no legacy tool or command may participate in the accepted proof.
+  and supported CLIs delivered by DB-01 through DB-08A; no legacy tool or command may participate in the accepted proof.
   Cover the query meanings later consumed by
   `backend/app/features/position_context`, `move_response_distribution`, positions, openings, preferred move, and
   analysis features. These `backend/app` areas are named as later consumer evidence only; DB-09 performs no production
   backend/application/frontend integration. Measure indexes/access paths against real rebuilt data rather than
   synthetic laboratories.
-- **Prerequisites:** DB-08 accepted.
+- **Prerequisites:** DB-08A accepted.
 - **Explicit exclusions:** No HTTP route, frontend, application-consumer, cutover, or deletion work.
 - **Focused proof:** Foreign-key/check integrity, game viewer reconstruction, distinct-game Position Context,
   occurrence-based Move Response Distribution, opening route/transposition recognition, preference states, analysis

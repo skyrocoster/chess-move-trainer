@@ -42,12 +42,14 @@ from .preferred_moves.repository import (
     PreferredMoveValidationError,
 )
 from .publication import SchemaPublicationCollisionError, publish_schema
+from .rebuild.cli import app as rebuild_app
 from .schema import SchemaIncompatibleError, create_schema
 from .stockfish import (
     BenchmarkCompatibilityError,
     BenchmarkInputError,
     BulkInputError,
     BulkRunner,
+    INITIAL_TECHNICAL_CATEGORIES,
     TargetInputError,
     WorkerInputError,
     WorkerRunner,
@@ -66,6 +68,7 @@ app.add_typer(games_app, name="games")
 app.add_typer(openings_app, name="openings")
 app.add_typer(preferred_moves_app, name="preferred-moves")
 app.add_typer(stockfish_app, name="stockfish")
+app.add_typer(rebuild_app, name="rebuild")
 
 
 @schema_app.command("create")
@@ -523,6 +526,14 @@ def bulk_stockfish(
         "--limit",
         help="Optional positive number of eligible targets for this launch.",
     ),
+    preset: str | None = typer.Option(
+        None,
+        "--preset",
+        help=(
+            "Optional deterministic initial preset: 20 common positions plus "
+            "checkmate, stalemate, legal en passant, promotion, and castling."
+        ),
+    ),
     lock_timeout: float = typer.Option(
         DEFAULT_LOCK_TIMEOUT_SECONDS,
         "--lock-timeout",
@@ -533,11 +544,15 @@ def bulk_stockfish(
 
     try:
         _validate_stockfish_lock_timeout(lock_timeout)
-        outcome = BulkRunner(
+        runner = BulkRunner(
             database,
             executable,
             lock_timeout=lock_timeout,
-        ).run(limit=limit)
+        )
+        if preset is None:
+            outcome = runner.run(limit=limit)
+        else:
+            outcome = runner.run(preset=preset)
     except KeyboardInterrupt:
         _interrupted()
     except (BulkInputError, TargetInputError, ValueError) as error:
@@ -545,9 +560,19 @@ def bulk_stockfish(
     except Exception as error:
         _stockfish_operational_error(error)
     else:
+        if preset == "initial":
+            categories = ", ".join(INITIAL_TECHNICAL_CATEGORIES)
+            message = (
+                f"Initial analysis complete: {outcome.published_count} published, "
+                f"{outcome.selected_count} selected; technical categories={categories}"
+            )
+        else:
+            message = (
+                f"Bulk complete: {outcome.published_count} published, "
+                f"{outcome.selected_count} selected"
+            )
         _render_stockfish_outcome(
-            f"Bulk complete: {outcome.published_count} published, "
-            f"{outcome.selected_count} selected",
+            message,
             outcome,
         )
 

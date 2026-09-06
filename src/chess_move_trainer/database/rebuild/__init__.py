@@ -1,0 +1,111 @@
+"""Public boundary for the DB-08 rebuilt-neighbour operations."""
+
+from .configuration import (
+    MANAGED_CANDIDATE_SUFFIX,
+    REBUILT_NEIGHBOUR_KEY,
+    RebuildConfiguration,
+    RebuildConfigurationError,
+    load_rebuild_configuration,
+)
+from .operations import (
+    OperationExitCode,
+    OperationOutcome,
+    OperationStatus,
+    RebuildError,
+    RebuildOperation,
+    RebuildOperationError,
+    RebuildOperations,
+    RebuildUnavailableError,
+    reserve_operation,
+)
+from .snapshots import (
+    MAX_RETAINED_SNAPSHOTS,
+    SNAPSHOT_EXTENSION,
+    SNAPSHOT_MARKER,
+    SnapshotError,
+    SnapshotOutcome,
+    create_snapshot,
+)
+from .candidate import CandidateOutcome, stage_candidate
+from .exclusivity import ExclusiveAccessError, exclusive_destination
+from .replacement import (
+    ReplacementError,
+    ReplacementOutcome,
+    replace_candidate,
+    replace_rebuilt_neighbour,
+)
+from .rollback import (
+    RollbackError,
+    RollbackInputError,
+    RollbackOutcome,
+    rollback_neighbour,
+    rollback_rebuilt_neighbour,
+)
+from .verification import (
+    VerificationResult,
+    VerificationStatus,
+    VerificationTarget,
+    verify_database,
+    verify_rebuild_target,
+)
+from .refresh import (
+    RefreshInputError,
+    RefreshInputs,
+    RefreshOutcome,
+    RefreshStage,
+    RefreshStageOutcome,
+    RefreshStageStatus,
+    RefreshStatus,
+    refresh_database,
+    refresh_rebuilt_neighbour,
+)
+
+__all__ = [
+    "MANAGED_CANDIDATE_SUFFIX",
+    "MAX_RETAINED_SNAPSHOTS",
+    "OperationExitCode",
+    "OperationOutcome",
+    "OperationStatus",
+    "REBUILT_NEIGHBOUR_KEY",
+    "RebuildConfiguration",
+    "RebuildConfigurationError",
+    "RebuildError",
+    "RebuildOperation",
+    "RebuildOperationError",
+    "RebuildOperations",
+    "RebuildUnavailableError",
+    "CandidateOutcome",
+    "ExclusiveAccessError",
+    "ReplacementError",
+    "ReplacementOutcome",
+    "RollbackError",
+    "RollbackInputError",
+    "RollbackOutcome",
+    "RefreshInputError",
+    "RefreshInputs",
+    "RefreshOutcome",
+    "RefreshStage",
+    "RefreshStageOutcome",
+    "RefreshStageStatus",
+    "RefreshStatus",
+    "SNAPSHOT_EXTENSION",
+    "SNAPSHOT_MARKER",
+    "SnapshotError",
+    "SnapshotOutcome",
+    "VerificationResult",
+    "VerificationStatus",
+    "VerificationTarget",
+    "load_rebuild_configuration",
+    "reserve_operation",
+    "create_snapshot",
+    "refresh_database",
+    "refresh_rebuilt_neighbour",
+    "verify_database",
+    "verify_rebuild_target",
+    "stage_candidate",
+    "exclusive_destination",
+    "replace_candidate",
+    "replace_rebuilt_neighbour",
+    "rollback_neighbour",
+    "rollback_rebuilt_neighbour",
+]

@@ -59,11 +59,55 @@ def test_canonical_sql_is_the_only_executable_ddl_owner_and_cli_is_thin() -> Non
 
 def test_package_contains_no_runtime_wrapper_or_copied_legacy_generator() -> None:
     package_text = "\n".join(path.read_text(encoding="utf-8") for path in _python_sources())
+    non_engine_text = "\n".join(
+        path.read_text(encoding="utf-8")
+        for path in _python_sources()
+        if path.relative_to(PACKAGE_PATH).parts[:1] != ("stockfish",)
+    )
 
     assert "runpy" not in package_text
-    assert "subprocess" not in package_text
+    assert "subprocess" not in non_engine_text
     assert "legacy" not in package_text.lower()
     assert "backend" not in package_text.lower()
+
+
+def test_rebuild_boundary_has_typed_inward_only_modules() -> None:
+    rebuild_path = PACKAGE_PATH / "rebuild"
+    assert (rebuild_path / "configuration.py").exists()
+    assert (rebuild_path / "operations.py").exists()
+    assert (rebuild_path / "cli.py").exists()
+
+    for source_path in sorted(rebuild_path.rglob("*.py")):
+        tree = ast.parse(source_path.read_text(encoding="utf-8"))
+        imported_modules = []
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                imported_modules.extend(alias.name for alias in node.names)
+            elif isinstance(node, ast.ImportFrom) and node.module:
+                imported_modules.append(node.module)
+        assert not any(
+            module == prefix or module.startswith(f"{prefix}.")
+            for module in imported_modules
+            for prefix in ("backend", "frontend", "scripts", "legacy")
+        )
+
+    configuration_text = "\n".join(
+        path.read_text(encoding="utf-8") for path in rebuild_path.rglob("*.py")
+    )
+    assert "subprocess" not in configuration_text.lower()
+    assert "sqlite3" not in configuration_text.lower()
+
+
+def test_rebuild_has_no_recovery_command_or_persistent_run_state() -> None:
+    rebuild_text = "\n".join(
+        path.read_text(encoding="utf-8")
+        for path in sorted((PACKAGE_PATH / "rebuild").rglob("*.py"))
+    )
+    assert "recover" not in (PACKAGE_PATH / "rebuild" / "cli.py").read_text(
+        encoding="utf-8"
+    ).lower()
+    for forbidden in ("manifest", "audit_log", "run_history", "failure_row"):
+        assert forbidden not in rebuild_text.lower()
 
 
 def test_position_service_does_not_promote_raw_handles_or_schema_creation() -> None:
