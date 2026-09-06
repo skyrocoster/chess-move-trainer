@@ -26,7 +26,15 @@ frontier; delegate repository reads and edits.
   should own the case, explain the tradeoff, make one recommendation, and retain the choice. Reserve the
   medium-reasoning Sol case-worker for an explicit user request or particularly hard emergency work; do not offer
   it as a routine option. Launch the selected case-worker with `PHASE: ASSESS`.
-- Use `scout` whenever a coordinator decision needs a missing or stale fact. Do not repeat clean case-worker reads.
+- Use `scout` whenever a coordinator decision needs one bounded missing or stale fact. Case-workers may invoke
+  `research` for a less-bounded repository investigation when its expanded result is likely to be useful throughout
+  the later assessment; do not decompose that work into a chain of narrow Scout questions. Do not repeat clean
+  case-worker or delegated reads.
+
+When assessment needs `research`, name it under `SUPPORT SKILLS` in the `PHASE: ASSESS` packet. Include a research
+objective, relevant paths and known facts, expected output, and a stop condition. Do not send `research` as a
+separate subagent task: the selected case-worker invokes the skill so the expanded context remains in its retained
+assessment session.
 
 Design exploration ends only after the user explicitly approves the production-backed Storybook candidate for
 integration. Do not require a `DESIGN.md` or Plan during HTML or Storybook iteration. After approval, assess and

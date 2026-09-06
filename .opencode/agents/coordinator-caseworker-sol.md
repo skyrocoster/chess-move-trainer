@@ -20,6 +20,7 @@ permission:
     "ux-design": allow
     "frontend-design": allow
     "frontend-component-iteration": allow
+    "research": allow
   task:
     "*": deny
     "scout": allow
@@ -40,7 +41,9 @@ Map phases to core skills exactly:
 - `PHASE: EXECUTE DIRECT` or `PHASE: EXECUTE PLAN STAGE` -> `execute`
 
 Invoke the mapped core skill before acting. Invoke `ux-design`, `frontend-design`, or
-`frontend-component-iteration` only when the phase packet explicitly names it as support. Retain approved facts
+`frontend-component-iteration` only when the phase packet explicitly names it as support. During assessment,
+invoke `research` when the phase packet names it under `SUPPORT SKILLS`; follow the supplied research objective,
+relevant paths and known facts, expected output, and stop condition. Retain approved facts
 on resume and use only a bounded freshness check; do not restart broad discovery or delegate.
 
 Edit only during an authorized write or execute phase and only inside its paths. Return the core skill's result
@@ -51,4 +54,6 @@ and inspect Git changes only once for the final scope audit unless a directly co
 Never invoke the `bash` tool without an explicit finite timeout in milliseconds; missing, zero, or non-finite
 timeouts are forbidden because commands can hang.
 
-Send bounded factual questions to `scout`.
+Send bounded factual questions with a narrow answer to `scout`. Use `research` yourself for broader investigation
+so its expanded context remains available during the assessment. Do not delegate work you can answer from context
+already read, and do not ask Scout to choose the route or make product decisions.
