@@ -3,6 +3,9 @@
 > **Decision support only.** Not settled authority; not implementation authorization. The DB-08
 > boxes below record the implemented package-owned command surface and its safety boundaries.
 
+The durable DB-09 command surface is tracked in
+[`database-command-inventory.md`](database-command-inventory.md).
+
 ## Legend
 
 | Style | Meaning | Examples |
@@ -20,6 +23,7 @@
 flowchart TD
     %% ===== sources and retained raw data =====
     CC["Chess.com API<br/>archive + month responses"]
+    LICHESS["Fixed Lichess GitHub repository<br/>one resolved commit"]
     TSV["Five opening TSV files<br/>a.tsv .. e.tsv, local"]
     CFG["YAML config<br/>username + trainer UUID"]
     RCFG["DB-08 YAML config<br/>rebuilt_neighbour: PATH"]
@@ -33,6 +37,7 @@ flowchart TD
     %% ===== existing supported CLIs =====
     ACQ["EXISTING CLI<br/>games acquire<br/>--config PATH --raw-root PATH"]
     IMP["EXISTING CLI<br/>games import<br/>--config PATH --raw-root PATH<br/>--database PATH"]
+    OACQ["EXISTING CLI<br/>openings acquire<br/>--source-dir PATH<br/>fixed commit, five files"]
     SCHEMA["EXISTING CLI<br/>schema create --database PATH"]
     INSPECT["EXISTING CLI<br/>schema inspect --database PATH"]
     OIMP["EXISTING CLI<br/>openings import<br/>--source-dir PATH --database PATH"]
@@ -100,6 +105,7 @@ flowchart TD
     T1 -.->|"read-only inspection"| INSPECT
 
     %% ===== openings =====
+    LICHESS --> OACQ -->|"validate all five before<br/>staged local publication"| TSV
     TSV --> OIMP --> OPARSE
     OPARSE --> OPUB
     OPUB --> T2
@@ -157,7 +163,7 @@ flowchart TD
     classDef store fill:#dbe9f7,stroke:#28588c,color:#173154
     classDef olddb fill:#f9dcdc,stroke:#9c2b2b,color:#5c1717
 
-    class ACQ,IMP,SCHEMA,INSPECT,OIMP,OLOOK,PM,BENCH,BULK,WORKER cli
+    class ACQ,IMP,OACQ,SCHEMA,INSPECT,OIMP,OLOOK,PM,BENCH,BULK,WORKER cli
     class REFRESH,SNAP,VER,STAGE,REPLACE,ROLLBACK cand
     class NORM,CANON,OPARSE,OPUB,TSEL,QOPS,PUB,MUTEX internal
     class PARTIAL,READY,RREADY,PRESERVE,RESTORE internal
@@ -170,7 +176,8 @@ flowchart TD
 
 - **Acquisition vs normalization are distinct.** `games acquire` touches only the raw month
   files and never SQLite; `games import` reads local raw files and writes the database only,
-  never the network.
+  never the network. `openings acquire` resolves and publishes the local five-file Lichess
+  source set; `openings import` reads that local set and writes the database.
 - **Everything writes through one canonical identity.** Game occurrences, opening endpoints,
   standalone preference positions, and bulk-analysis route positions all create or reuse the
   same permanent `derived_position` rows.
@@ -203,3 +210,4 @@ flowchart TD
   `docs/plans/done/database-rebuild-db-01/` through `.../database-rebuild-db-07/`.
 - Legacy scripts (for example `scripts/refresh_chess_com.py`) and backend path helpers are
   conceptual evidence only and appear nowhere in this flow as implementation targets.
+- The durable DB-09 package command inventory is [`database-command-inventory.md`](database-command-inventory.md).

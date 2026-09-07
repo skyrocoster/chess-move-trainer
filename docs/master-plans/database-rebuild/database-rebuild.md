@@ -37,6 +37,12 @@ replacement safely; and perform old-database retirement only as a separately aut
 - The new toolchain is built and proven alongside the legacy tools under distinct package and command paths. Legacy
   tools remain read-only evidence until their replacements have passed their slice gates and RETIRE-01 later authorizes
   their cleanup; no legacy command name, module layout, or test-helper compatibility is required.
+- **No `scripts/` canon:** At completion of this rebuild, nothing under `scripts/` is canonical for any required
+  database-feeding, retrieval, rebuild, analysis, proof, or maintenance operation. Every required capability must have a
+  clean package-owned replacement and, when operator-facing, a supported thin CLI outside the legacy script surface. A
+  legacy script cannot remain as an accepted command, fallback, wrapper target, delegated runtime path, or DB-09 proof
+  path. If an old capability is proven unnecessary, it need not be rebuilt, but its script still does not become
+  canonical. Legacy files remain read-only evidence until RETIRE-01 authorizes physical cleanup.
 - **Authority/evidence boundary:** Only `docs/grilling-docs/database-rebuild-direction.md` and
   `docs/grilling-docs/database-rebuild-schema.md` are binding product, data, and schema authorities for this envelope.
   This master plan's approved sequencing and clean-tool-rewrite rules govern implementation. Current implemented source
@@ -81,7 +87,7 @@ operator-facing.
 Any genuine product, ownership, API, dependency, destructive, or acceptance decision discovered by grilling is an
 escalation, not an AI choice.
 
-**NEXT slice after DB-08:** `DB-08A` — Remaining rebuilt operator and tool surface.
+**NEXT slice after DB-08A:** `DB-09` — Rebuilt-database proof gate.
 
 ## Selectable slices
 
@@ -135,6 +141,10 @@ evidence.
   process control, bounded benchmark persistence, exact queue transactions, deterministic bulk targets, serial worker
   recovery, and thin operator commands accepted with 76 tests passing across retained proofs in 21.38 seconds; API and
   frontend integration remain deferred to API-03.
+- **DB-08A:** [focused Plan](../../plans/done/database-rebuild-db-08a/database-rebuild-db-08a.md) — Lichess
+  opening-source acquisition, configuration examples, and DB-09 command inventory accepted with 186 focused tests
+  passing in the consolidated offline proof; the five opening files can be safely fetched from one pinned upstream
+  commit, example YAML configs are provided, and the DB-09 command inventory proves only clean package commands remain.
 
 The focused Plan owns implementation progress and detailed evidence; this section must not become an implementation
 queue or progress log.
@@ -401,44 +411,53 @@ as the sizing evidence and does not require another comparative benchmark run.
 
 ### DB-08A — Remaining rebuilt operator and tool surface
 
-**In plain English:** Before real-data proof, confirm that every required current-use operator/tool journey is actually
-available through the rebuilt package and supported CLI, and finish only the missing tool capabilities.
+**In plain English:** Before real-data proof, rebuild the complete external Chess.com retrieval journey and ensure every
+required current-use operator/tool journey is available through the rebuilt package and supported CLI, with no accepted
+database-tool path under `scripts/`.
 
 **Grilling REQUIRED** before this slice's assessment Plan/work begins, to bound the complete operator/tool inventory,
 the distinction between rebuilt, incomplete, missing, and legacy paths, and any remaining factual support needed by
 DB-09. The assessment must explicitly trace Chess.com game retrieval and external Chess.com API support; the existing
-`games acquire` command is evidence, not proof that the complete retrieval journey is finished.
+`games acquire` command is evidence, not proof that the complete retrieval journey is finished. Grilling may settle
+factual package, command, transport, and proof details, but it may not reopen whether required retrieval is rebuilt or
+allow a path under `scripts/` to remain canonical.
 
-- **Authority:** `docs/grilling-docs/database-rebuild-direction.md:L33-L45,L111-L123,L678-L699,L864-L966`; the clean
+- **Authority:** `docs/grilling-docs/database-rebuild-direction.md:L33-L45,L111-L123,L678-L699,L864-L976`; the clean
   tool-rewrite and sequencing rules in this master plan; and the accepted DB-01 through DB-08 Plans as historical
   implementation evidence.
 - **Visible result:** A bounded inventory maps every operator-visible step needed to create, refresh, verify, analyze,
-  and prove the rebuilt database to a package-owned supported operation or a documented, coordinator-accepted gap.
-  Required current-use gaps are finished with focused package/CLI proof, including the complete supported Chess.com
-  retrieval/API journey where assessment shows it is still incomplete. The inventory distinguishes external Chess.com
-  retrieval/API support from later application HTTP API slices.
+  and prove the rebuilt database to a package-owned supported operation or an explicit finding that the capability is
+  unnecessary. No required journey may remain incomplete, legacy-only, or satisfied by a command under `scripts/`.
+  Required current-use gaps are finished with focused package/CLI proof, including a clean from-scratch replacement for
+  the complete external Chess.com retrieval/API journey. The inventory distinguishes external Chess.com retrieval/API
+  support from later application HTTP API slices.
 - **Scope and current-state touchpoints:** Assess the supported package and CLI surface under
   `src/chess_move_trainer/database/`, the retained raw-source paths under `data/chess-com/raw/`, and the legacy
   acquisition/tool evidence named in the current-state map, including `scripts/chess_com/fetch_games.py`,
   `scripts/chess_com/_cli.py`, and `scripts/refresh_chess_com.py`. Trace archive discovery, month retrieval, raw
   publication/retention, local import, opening/reference inputs, Stockfish benchmark/bulk/worker, verification,
-  snapshot/replacement, and the exact commands DB-09 will use. Implement only required current-use tool gaps in new
-  package-owned areas and thin CLIs; do not silently revive legacy code or treat a command name as a complete journey.
+  snapshot/replacement, and the exact commands DB-09 will use. Implement every required current-use tool gap from
+  scratch in new package-owned areas and thin CLIs, explicitly including complete Chess.com retrieval; do not silently
+  revive legacy code, treat a command name as a complete journey, or retain any `scripts/` command as an accepted path,
+  fallback, implementation dependency, or DB-09 invocation.
 - **Prerequisites:** DB-08 accepted.
 - **Explicit exclusions:** No DB-09 real-data proof, schema or table changes, speculative persistence, opponent profiles,
   raw-source policy change, application HTTP API, backend/frontend integration, cutover, old-database handling, Opening
   Line Library work, or legacy wrapping/copying/delegation. This slice does not authorize network-scale service design;
-  it addresses only the local trainer's required external Chess.com retrieval/API support.
+  it addresses only the local trainer's required external Chess.com retrieval/API support. It also does not authorize
+  early deletion of legacy scripts; noncanonical legacy files remain read-only evidence until RETIRE-01.
 - **Focused proof:** Retain an evidence-backed operator/tool inventory; run only focused package/CLI tests for each
   identified gap; prove source boundaries and explicit inputs/meaningful exits; and, for Chess.com retrieval/API support,
   cover archive discovery, exact month URL handling, current-month refetch/UUID merge, historical skip, safe raw
   publication, transport failure behavior, and separation from local database import without requiring a broad live
-  network run.
+  network run. The accepted DB-09 command map and source-boundary proof must show no command, import, wrapper, fallback,
+  delegation, or runtime dependency under `scripts/`.
 - **Escalate if:** A missing tool requires changing raw-source retention, standard-game/trainer filtering, opponent-profile
   exclusion, schema/persistence, a new dependency, an application HTTP API, legacy reuse, or an acceptance requirement
   beyond the current direction.
 - **Handoff/selection criterion:** Select DB-09 only after the inventory is accepted and every required tool gap has
-  either passed its focused proof or been explicitly accepted as unnecessary for the real-data proof.
+  passed its focused proof, or the corresponding capability—not its legacy implementation—has been explicitly accepted
+  as unnecessary. The exact DB-09 command path must use only the rebuilt package and supported CLI surface.
 
 ### DB-09 — Rebuilt-database proof gate
 

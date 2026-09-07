@@ -10,7 +10,7 @@ from pathlib import Path
 import typer
 
 from .connection import DEFAULT_LOCK_TIMEOUT_SECONDS
-from .games.acquisition import acquire_months
+from .games.acquisition import acquire_months, parse_month_selection
 from .games.configuration import (
     GamesConfigurationError,
     load_acquire_configuration,
@@ -19,15 +19,20 @@ from .games.configuration import (
 from .games.persistence import GameRepository, import_raw_months
 from .inspection import inspect_schema, render_schema_markdown
 from .openings import (
+    DEFAULT_REQUEST_DELAY,
+    DEFAULT_REQUEST_TIMEOUT,
     OpeningCatalogueRepository,
+    OpeningAcquisitionError,
     OpeningInputError,
     OpeningPersistenceError,
     OpeningRecognition,
     OpeningRecognitionError,
     OpeningSourceError,
+    acquire_openings,
     import_opening_catalogue,
     lookup_fen,
     replay_pgn,
+    validate_request_timing,
 )
 from .preferred_moves.ranges import (
     NormalizedPeriod,
@@ -161,9 +166,20 @@ def acquire_games(
         "--request-delay",
         help="Delay seconds (default: 0.25); must be finite and nonnegative.",
     ),
+    month: str | None = typer.Option(
+        None,
+        "--month",
+        help="Optional exact month YYYY-MM; only that listed month is acquired.",
+    ),
 ) -> None:
     """Acquire raw months from the fixed Chess.com API endpoint (not configurable)."""
 
+    try:
+        selected_month = (
+            parse_month_selection(month) if month is not None else None
+        )
+    except ValueError as error:
+        _usage_error(error, param_hint="--month")
     try:
         configuration = load_acquire_configuration(
             config,
@@ -175,7 +191,7 @@ def acquire_games(
     except GamesConfigurationError as error:
         _games_configuration_error(error)
     try:
-        result = acquire_months(configuration, raw_root)
+        result = acquire_months(configuration, raw_root, selected_month=selected_month)
     except KeyboardInterrupt:
         _interrupted()
     except Exception as error:
@@ -267,6 +283,55 @@ def import_openings(
         _operational_error(error, 1)
     else:
         _render_publication(publication, json_output)
+
+
+@openings_app.command("acquire")
+def acquire_opening_sources(
+    source_dir: Path = typer.Option(
+        ...,
+        "--source-dir",
+        help="Required explicit directory for the five fixed Lichess source files.",
+    ),
+    request_timeout: float = typer.Option(
+        DEFAULT_REQUEST_TIMEOUT,
+        "--request-timeout",
+        help="Finite positive request timeout seconds (default: 30.0).",
+    ),
+    request_delay: float = typer.Option(
+        DEFAULT_REQUEST_DELAY,
+        "--request-delay",
+        help="Finite nonnegative delay seconds between file requests (default: 0.25).",
+    ),
+) -> None:
+    """Acquire the fixed upstream https://github.com/lichess-org/chess-openings source; repository and revision are not configurable."""
+
+    try:
+        validate_request_timing(request_timeout, request_delay)
+    except ValueError as error:
+        _usage_error(error, param_hint="--request-timeout/--request-delay")
+
+    try:
+        result = acquire_openings(
+            source_dir,
+            request_timeout=request_timeout,
+            request_delay=request_delay,
+        )
+    except KeyboardInterrupt:
+        _interrupted()
+    except OpeningAcquisitionError as error:
+        _operational_error(error, 1)
+    except Exception as error:
+        _operational_error(error, 1)
+
+    for failure in result.failures:
+        typer.echo(f"Error: {failure.subject}: {failure.message}", err=True)
+    if not result.completed:
+        raise typer.Exit(code=1)
+    typer.echo(
+        f"Opening acquisition resolved {result.resolved_commit}; "
+        f"published {len(result.published_files)} file(s); "
+        f"unchanged {len(result.unchanged_files)} file(s)."
+    )
 
 
 @openings_app.command("lookup")

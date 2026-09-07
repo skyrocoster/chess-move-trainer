@@ -17,6 +17,7 @@ from chess_move_trainer.database.games.acquisition import (
     AcquisitionFailure,
     AcquisitionResult,
 )
+from chess_move_trainer.database.openings import OpeningAcquisitionResult
 from chess_move_trainer.database.openings.source import load_opening_sources
 from chess_move_trainer.database.preferred_moves.repository import PreferredMoveLockError
 from chess_move_trainer.database.stockfish import (
@@ -334,6 +335,8 @@ def test_games_help_has_exact_supported_surface_and_no_base_url() -> None:
         "30.0",
         "--request-delay",
         "0.25",
+        "--month",
+        "YYYY-MM",
     ):
         assert option in acquire.stdout
     assert "fixed Chess.com API endpoint" in acquire.stdout
@@ -364,8 +367,10 @@ def test_acquire_wires_yaml_values_defaults_and_cli_overrides(
     config = _config(tmp_path, extra="request_timeout: 9.0\nrequest_delay: 1.5\n")
     seen: list[object] = []
 
-    def acquire(configuration: object, raw_root: Path) -> AcquisitionResult:
-        seen.extend([configuration, raw_root])
+    def acquire(
+        configuration: object, raw_root: Path, *, selected_month: object = None
+    ) -> AcquisitionResult:
+        seen.extend([configuration, raw_root, selected_month])
         return AcquisitionResult(("2026-08",), (), ())
 
     monkeypatch.setattr(database_cli, "acquire_months", acquire)
@@ -394,7 +399,9 @@ def test_acquire_wires_yaml_values_defaults_and_cli_overrides(
     )
 
     assert yaml_result.exit_code == override_result.exit_code == 0
-    yaml_configuration, yaml_root, override_configuration, override_root = seen
+    yaml_configuration, yaml_root, yaml_selection, override_configuration, override_root, override_selection = seen
+    assert yaml_selection is None
+    assert override_selection is None
     assert yaml_configuration.username == "synthetic-trainer"
     assert yaml_configuration.request_timeout == 9.0
     assert yaml_configuration.request_delay == 1.5
@@ -411,8 +418,10 @@ def test_acquire_uses_exact_defaults_when_yaml_omits_timing(
 ) -> None:
     seen: list[object] = []
 
-    def acquire(configuration: object, raw_root: Path) -> AcquisitionResult:
-        del raw_root
+    def acquire(
+        configuration: object, raw_root: Path, *, selected_month: object = None
+    ) -> AcquisitionResult:
+        del raw_root, selected_month
         seen.append(configuration)
         return AcquisitionResult((), (), ())
 
@@ -470,7 +479,7 @@ def test_acquire_incomplete_and_operational_failures_are_status_one(
     monkeypatch.setattr(
         database_cli,
         "acquire_months",
-        lambda configuration, raw_root: AcquisitionResult(
+        lambda configuration, raw_root, *, selected_month=None: AcquisitionResult(
             (), (), (AcquisitionFailure("2026-08", "synthetic rate limit"),)
         ),
     )
@@ -479,8 +488,10 @@ def test_acquire_incomplete_and_operational_failures_are_status_one(
         ["games", "acquire", "--config", str(config), "--raw-root", str(tmp_path / "raw")],
     )
 
-    def fail(configuration: object, raw_root: Path) -> AcquisitionResult:
-        del configuration, raw_root
+    def fail(
+        configuration: object, raw_root: Path, *, selected_month: object = None
+    ) -> AcquisitionResult:
+        del configuration, raw_root, selected_month
         raise OSError("synthetic operational failure")
 
     monkeypatch.setattr(database_cli, "acquire_months", fail)
@@ -492,6 +503,118 @@ def test_acquire_incomplete_and_operational_failures_are_status_one(
     assert incomplete.exit_code == failed.exit_code == 1
     assert "rate limit" in incomplete.stderr
     assert "operational failure" in failed.stderr
+
+
+def test_acquire_month_option_wires_parsed_selection_and_none(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    config = _config(tmp_path)
+    seen: list[object] = []
+
+    def acquire(
+        configuration: object, raw_root: Path, *, selected_month: object = None
+    ) -> AcquisitionResult:
+        del configuration, raw_root
+        seen.append(selected_month)
+        return AcquisitionResult(("2025-07",), (), ())
+
+    monkeypatch.setattr(database_cli, "acquire_months", acquire)
+    no_month = _runner().invoke(
+        database_cli.app,
+        ["games", "acquire", "--config", str(config), "--raw-root", str(tmp_path / "raw")],
+    )
+    selected = _runner().invoke(
+        database_cli.app,
+        [
+            "games",
+            "acquire",
+            "--config",
+            str(config),
+            "--raw-root",
+            str(tmp_path / "raw"),
+            "--month",
+            "2025-07",
+        ],
+    )
+
+    assert no_month.exit_code == selected.exit_code == 0
+    assert seen[0] is None
+    assert seen[1] == (2025, 7)
+    assert "Acquisition published 1 month(s); skipped 0 immutable month(s)." in selected.stdout
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        "2026-13",
+        "2026-00",
+        "2026-1",
+        "26-07",
+        "2026/07",
+        "2026-07-01",
+        "2026-07 ",
+        "august",
+        "",
+    ],
+)
+def test_acquire_malformed_month_is_usage_error_without_acquisition(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, value: str
+) -> None:
+    def acquire(*args: object, **kwargs: object) -> AcquisitionResult:
+        raise AssertionError("acquisition must not run for a malformed month")
+
+    monkeypatch.setattr(database_cli, "acquire_months", acquire)
+    result = _runner().invoke(
+        database_cli.app,
+        [
+            "games",
+            "acquire",
+            "--config",
+            str(_config(tmp_path)),
+            "--raw-root",
+            str(tmp_path / "raw"),
+            "--month",
+            value,
+        ],
+    )
+
+    assert result.exit_code == 2
+    assert "--month" in result.stderr
+
+
+def test_acquire_selected_month_failure_is_reported_on_stderr_with_status_one(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(
+        database_cli,
+        "acquire_months",
+        lambda configuration, raw_root, *, selected_month=None: AcquisitionResult(
+            (),
+            (),
+            (
+                AcquisitionFailure(
+                    "2026-09", "selected month 2026-09 is in the future"
+                ),
+            ),
+        ),
+    )
+    result = _runner().invoke(
+        database_cli.app,
+        [
+            "games",
+            "acquire",
+            "--config",
+            str(_config(tmp_path)),
+            "--raw-root",
+            str(tmp_path / "raw"),
+            "--month",
+            "2026-09",
+        ],
+    )
+
+    assert result.exit_code == 1
+    assert "2026-09" in result.stderr
+    assert "future" in result.stderr
 
 
 def test_import_reads_only_month_files_and_completes_with_reported_skip(tmp_path: Path) -> None:
@@ -643,6 +766,7 @@ def test_openings_root_group_and_command_help_expose_only_explicit_inputs() -> N
     group = _runner().invoke(database_cli.app, ["openings", "--help"])
     commands = {
         "import": ("--source-dir", "--database", "--json"),
+        "acquire": ("--source-dir", "--request-timeout", "--request-delay"),
         "lookup": ("--database", "--fen", "--json"),
         "replay": ("--database", "--pgn-file", "--json"),
     }
@@ -654,6 +778,151 @@ def test_openings_root_group_and_command_help_expose_only_explicit_inputs() -> N
         assert result.exit_code == 0
         assert all(option in result.stdout for option in options)
     assert all(command in group.stdout for command in commands)
+
+
+def test_openings_acquire_help_exposes_fixed_upstream_and_timing_surface() -> None:
+    result = _runner().invoke(database_cli.app, ["openings", "acquire", "--help"])
+
+    assert result.exit_code == 0
+    assert "--source-dir" in result.stdout
+    assert "--request-timeout" in result.stdout
+    assert "30.0" in result.stdout
+    assert "--request-delay" in result.stdout
+    assert "0.25" in result.stdout
+    assert "https://github.com/lichess-org/chess-openings" in result.stdout
+    assert "not configurable" in result.stdout
+    assert "--base-url" not in result.stdout
+    assert "--revision" not in result.stdout
+
+
+def test_openings_acquire_requires_source_dir_without_acquisition(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def acquire(*args: object, **kwargs: object) -> object:
+        del args, kwargs
+        raise AssertionError("acquisition must not run without --source-dir")
+
+    monkeypatch.setattr(database_cli, "acquire_openings", acquire)
+    result = _runner().invoke(database_cli.app, ["openings", "acquire"])
+
+    assert result.exit_code == 2
+    assert "--source-dir" in result.stderr
+
+
+@pytest.mark.parametrize(
+    ("option", "value"),
+    [
+        ("--request-timeout", "0"),
+        ("--request-timeout", "nan"),
+        ("--request-timeout", "inf"),
+        ("--request-delay", "-1"),
+        ("--request-delay", "nan"),
+        ("--request-delay", "inf"),
+    ],
+)
+def test_openings_acquire_invalid_timing_is_status_two_without_acquisition(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    option: str,
+    value: str,
+) -> None:
+    def acquire(*args: object, **kwargs: object) -> object:
+        del args, kwargs
+        raise AssertionError("acquisition must not run after invalid timing")
+
+    monkeypatch.setattr(database_cli, "acquire_openings", acquire)
+    result = _runner().invoke(
+        database_cli.app,
+        [
+            "openings",
+            "acquire",
+            "--source-dir",
+            str(tmp_path / "sources"),
+            option,
+            value,
+        ],
+    )
+
+    assert result.exit_code == 2
+    assert option in result.stderr
+
+
+def test_openings_acquire_reports_success_commit_and_file_counts(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    seen: list[object] = []
+
+    def acquire(
+        source_dir: Path, *, request_timeout: float, request_delay: float
+    ) -> OpeningAcquisitionResult:
+        seen.extend([source_dir, request_timeout, request_delay])
+        return OpeningAcquisitionResult(
+            resolved_commit="a" * 40,
+            published_files=("a.tsv", "b.tsv"),
+            unchanged_files=("c.tsv", "d.tsv", "e.tsv"),
+        )
+
+    monkeypatch.setattr(database_cli, "acquire_openings", acquire)
+    result = _runner().invoke(
+        database_cli.app,
+        [
+            "openings",
+            "acquire",
+            "--source-dir",
+            str(tmp_path / "sources"),
+            "--request-timeout",
+            "4.0",
+            "--request-delay",
+            "0.0",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert result.stderr == ""
+    assert result.stdout == (
+        f"Opening acquisition resolved {'a' * 40}; published 2 file(s); "
+        "unchanged 3 file(s).\n"
+    )
+    assert seen == [tmp_path / "sources", 4.0, 0.0]
+
+
+def test_openings_acquire_reports_service_failure_on_stderr_with_status_one(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(
+        database_cli,
+        "acquire_openings",
+        lambda *args, **kwargs: OpeningAcquisitionResult.failure(
+            "retrieval", "synthetic service failure"
+        ),
+    )
+
+    result = _runner().invoke(
+        database_cli.app,
+        ["openings", "acquire", "--source-dir", str(tmp_path / "sources")],
+    )
+
+    assert result.exit_code == 1
+    assert result.stdout == ""
+    assert result.stderr == "Error: retrieval: synthetic service failure\n"
+
+
+def test_openings_acquire_interruption_is_status_130(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def interrupt(*args: object, **kwargs: object) -> object:
+        del args, kwargs
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(database_cli, "acquire_openings", interrupt)
+    result = _runner().invoke(
+        database_cli.app,
+        ["openings", "acquire", "--source-dir", str(tmp_path / "sources")],
+    )
+
+    assert result.exit_code == 130
+    assert result.stdout == ""
+    assert result.stderr == "Interrupted.\n"
 
 
 def test_openings_import_has_deterministic_default_and_json_output(tmp_path: Path) -> None:

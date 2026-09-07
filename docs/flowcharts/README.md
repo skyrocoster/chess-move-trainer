@@ -1,7 +1,8 @@
 # Database rebuild flowcharts (decision support)
 
-Two visual maps of the clean database toolchain built by DB-01 through DB-08, with the implemented
-DB-08 rebuild operations and the DB-09 handoff shown as decision-support context.
+Two visual maps of the clean database toolchain built by DB-01 through DB-08A, with the implemented
+DB-08 rebuild operations, the `openings acquire` source step, and the DB-09 handoff shown as
+decision-support context.
 
 - [`database-toolchain.md`](database-toolchain.md) — the complete flow: Chess.com acquisition,
   raw month ledger, game import, opening publication, preferred moves, Stockfish
@@ -12,6 +13,8 @@ DB-08 rebuild operations and the DB-09 handoff shown as decision-support context
   operator scenarios: refresh and verify, later managed-candidate staging, optional acquisition,
   direct serial initial analysis versus the API-03 queue, interruption and ordinary rerun,
   snapshot plus replacement, rollback, and DB-09 proof.
+- [`database-command-inventory.md`](database-command-inventory.md) — the durable DB-09 package
+  command inventory and the noncanonical/forbidden legacy `scripts/` boundary.
 
 ## Status: decision support only
 

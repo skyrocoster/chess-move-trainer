@@ -162,6 +162,28 @@ def test_openings_have_no_legacy_application_or_games_dependency() -> None:
     )
 
 
+def test_opening_acquisition_owns_transport_without_storage_or_process_direction() -> None:
+    acquisition_path = PACKAGE_PATH / "openings" / "acquisition.py"
+    tree = ast.parse(acquisition_path.read_text(encoding="utf-8"))
+    imported_modules: list[str] = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            imported_modules.extend(alias.name for alias in node.names)
+        elif isinstance(node, ast.ImportFrom) and node.module:
+            imported_modules.append(node.module)
+
+    assert "httpx" in imported_modules
+    assert not any(
+        module == forbidden
+        or module.startswith(f"{forbidden}.")
+        for module in imported_modules
+        for forbidden in ("backend", "games", "scripts", "legacy", "sqlite3", "subprocess")
+    )
+    acquisition_text = acquisition_path.read_text(encoding="utf-8").lower()
+    assert "sqlite" not in acquisition_text
+    assert "subprocess" not in acquisition_text
+
+
 def test_lower_level_database_packages_do_not_depend_on_openings() -> None:
     for package_name in ("positions", "games"):
         package_path = PACKAGE_PATH / package_name

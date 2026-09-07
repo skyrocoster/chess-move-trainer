@@ -15,6 +15,9 @@
 The companion page [`database-toolchain.md`](database-toolchain.md) shows the full data flow
 behind these journeys, including the untouched old database.
 
+The durable DB-09 command surface is tracked in
+[`database-command-inventory.md`](database-command-inventory.md).
+
 ## Journeys
 
 ```mermaid
@@ -38,8 +41,10 @@ flowchart TD
     end
 
     subgraph C["C - Optional acquisition first"]
+        C0["EXISTING CLI<br/>openings acquire --source-dir PATH<br/>fixed Lichess commit; five-file local source"] --> C3["Local five-file opening source directory<br/>available to openings import/rebuild"]
         C1["EXISTING CLI<br/>games acquire --config PATH --raw-root PATH<br/>network; current month UUID-merged"] --> C2["Retained local raw month ledger<br/>available to rebuild refresh/candidate"]
         C2 --> A1
+        C3 --> A1
     end
 
     subgraph D["D - Direct initial analysis versus API-03 queue"]
@@ -82,7 +87,7 @@ flowchart TD
     classDef future fill:#ece0f7,stroke:#6a3a9c,color:#3a2160
     classDef info fill:#e8e8ee,stroke:#55556b,color:#26263a
 
-    class C1,D1,D3 cli
+    class C0,C1,D1,D3 cli
     class A1,A2,B1,B2,F1,F3,G1 cand
     class D2,H1 future
     class A3,A4,B3,B4,B5,F2,F4,START,E1,E2,E3,G2 info
@@ -99,8 +104,9 @@ flowchart TD
   is resumed by the next ordinary invocation. `rebuild verify --config PATH --target candidate`
   distinguishes partial from ready.
 - **C — Optional acquisition.** Network acquisition stays an explicit, separate operator step.
-  `games acquire` publishes retained raw months; `rebuild refresh` and `rebuild candidate` consume
-  those local files and never acquire from the network.
+  `games acquire` publishes retained raw months, while `openings acquire` publishes the local
+  five-file source directory. `rebuild refresh` and `rebuild candidate` consume those local files
+  and never acquire from the network.
 - **D — Optional Stockfish population.** `stockfish bulk --preset initial` selects 20 common plus
   five fixed technical positions, runs serially, resumes eligible work, and publishes directly with
   no queue rows. The worker is a separate path for API-03 queue requests only.

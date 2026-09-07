@@ -19,6 +19,7 @@ from .raw_storage import load_month, merge_current_month, publish_month
 
 CHESSCOM_API_ORIGIN = "https://api.chess.com"
 _MONTH_PATH = re.compile(r"^/pub/player/([^/]+)/games/(\d{4})/(\d{2})$")
+_MONTH_SELECTION = re.compile(r"^([0-9]{4})-([0-9]{2})$")
 
 
 class AcquisitionError(RuntimeError):
@@ -79,15 +80,42 @@ class HttpxJsonTransport:
         return response.json()
 
 
+def parse_month_selection(value: str) -> tuple[int, int]:
+    """Parse an exact zero-padded YYYY-MM calendar month selection."""
+
+    if not isinstance(value, str):
+        raise ValueError("month must be given as the exact zero-padded form YYYY-MM")
+    match = _MONTH_SELECTION.fullmatch(value)
+    if match is None:
+        raise ValueError(f"month must use the exact zero-padded form YYYY-MM, got {value!r}")
+    year = int(match.group(1))
+    month = int(match.group(2))
+    if not 1 <= month <= 12:
+        raise ValueError(f"month {value} is not a valid calendar month")
+    return year, month
+
+
+def month_label(year: int, month: int) -> str:
+    """Render a parsed month as its stable YYYY-MM label."""
+
+    return f"{year:04d}-{month:02d}"
+
+
 def acquire_months(
     configuration: AcquireConfiguration,
     raw_root: Path,
     *,
+    selected_month: tuple[int, int] | None = None,
     transport: JsonTransport | None = None,
     clock: AcquisitionClock | None = None,
     sleep: Callable[[float], None] = time.sleep,
 ) -> AcquisitionResult:
-    """Discover listed months and safely acquire every eligible raw month."""
+    """Discover listed months and acquire every eligible raw month.
+
+    With ``selected_month`` set, only that exact listed month is processed; the
+    selection must resolve through the discovered archive and never a
+    constructed URL. Without it, every eligible listed month is processed.
+    """
 
     effective_transport = transport if transport is not None else HttpxJsonTransport()
     effective_clock = clock if clock is not None else SystemClock()
@@ -105,11 +133,29 @@ def acquire_months(
             failures=(AcquisitionFailure(month=None, message=str(error)),),
         )
 
+    if selected_month is not None and selected_month > current:
+        label = month_label(*selected_month)
+        return AcquisitionResult(
+            published_months=(),
+            skipped_months=(),
+            failures=(
+                AcquisitionFailure(
+                    month=label,
+                    message=f"selected month {label} is in the future",
+                ),
+            ),
+        )
+
     published: list[str] = []
     skipped: list[str] = []
     failures: list[AcquisitionFailure] = []
+    selected_processed = selected_month is None
     for archive_month in listed_months:
         month_key = (archive_month.year, archive_month.month)
+        if selected_month is not None:
+            if month_key != selected_month:
+                continue
+            selected_processed = True
         if month_key > current:
             continue
         target = raw_root / "games" / f"{archive_month.year:04d}" / f"{archive_month.month:02d}.json"
@@ -134,6 +180,16 @@ def acquire_months(
             )
             continue
         published.append(archive_month.label)
+
+    if not selected_processed:
+        assert selected_month is not None
+        label = month_label(*selected_month)
+        failures.append(
+            AcquisitionFailure(
+                month=label,
+                message=f"selected month {label} is not listed in the discovered archive",
+            )
+        )
 
     return AcquisitionResult(
         published_months=tuple(published),

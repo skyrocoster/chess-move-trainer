@@ -25,6 +25,13 @@ def test_common_package_and_database_namespace_are_importable() -> None:
     for name in (
         "OpeningRouteSource",
         "load_opening_sources",
+        "OpeningAcquisitionError",
+        "OpeningAcquisitionFailure",
+        "OpeningAcquisitionResult",
+        "OpeningAcquisitionTransport",
+        "HttpxOpeningAcquisitionTransport",
+        "acquire_openings",
+        "validate_request_timing",
         "CataloguePublication",
         "OpeningCatalogueRepository",
         "import_opening_catalogue",

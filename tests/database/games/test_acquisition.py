@@ -7,9 +7,12 @@ from pathlib import Path
 from typing import Any
 from uuid import UUID
 
+import pytest
+
 from chess_move_trainer.database.games.acquisition import (
     CHESSCOM_API_ORIGIN,
     acquire_months,
+    parse_month_selection,
 )
 from chess_move_trainer.database.games.configuration import AcquireConfiguration
 
@@ -53,6 +56,10 @@ def _config(*, timeout: float = 30.0, delay: float = 0.25) -> AcquireConfigurati
 
 def _archive_url() -> str:
     return f"{CHESSCOM_API_ORIGIN}/pub/player/synthetic-trainer/games/archives"
+
+
+def _month_url(year: int, month: int) -> str:
+    return f"{CHESSCOM_API_ORIGIN}/pub/player/synthetic-trainer/games/{year:04d}/{month:02d}"
 
 
 def test_fixed_endpoint_timing_archive_selection_and_transient_archive_use(tmp_path: Path) -> None:
@@ -293,3 +300,218 @@ def test_month_failure_continues_and_returns_incomplete_result(tmp_path: Path) -
     assert not (tmp_path / "games" / "2026" / "06.json").exists()
     assert (tmp_path / "games" / "2026" / "07.json").exists()
     assert (tmp_path / "games" / "2026" / "08.json").exists()
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [
+        ("2025-07", (2025, 7)),
+        ("2026-01", (2026, 1)),
+        ("2026-12", (2026, 12)),
+    ],
+)
+def test_month_selection_parses_only_exact_zero_padded_calendar_months(
+    value: str, expected: tuple[int, int]
+) -> None:
+    assert parse_month_selection(value) == expected
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        "2026-13",
+        "2026-00",
+        "2026-1",
+        "2026-7",
+        "26-07",
+        "2026/07",
+        "2026-07-01",
+        "2026-07 ",
+        " 2026-07",
+        "2026-0a",
+        "august",
+        "",
+        "２０２６-07",
+        None,
+    ],
+)
+def test_month_selection_rejects_malformed_or_invalid_months(value: object) -> None:
+    with pytest.raises(ValueError):
+        parse_month_selection(value)  # type: ignore[arg-type]
+
+
+def test_selected_month_processes_only_that_listed_month(tmp_path: Path) -> None:
+    may_url = _month_url(2026, 5)
+    june_url = _month_url(2026, 6)
+    july_url = _month_url(2026, 7)
+    august_url = _month_url(2026, 8)
+    archive = {
+        "synthetic_fixture": "selection",
+        "archives": [may_url, june_url, july_url, august_url],
+    }
+    transport = SyntheticTransport(
+        {_archive_url(): archive, june_url: _fixture("month-empty.json")}
+    )
+    delays: list[float] = []
+
+    result = acquire_months(
+        _config(timeout=8.5, delay=0.75),
+        tmp_path,
+        selected_month=(2026, 6),
+        transport=transport,
+        clock=FixedClock(datetime(2026, 8, 20, tzinfo=UTC)),
+        sleep=delays.append,
+    )
+
+    assert result.completed
+    assert result.published_months == ("2026-06",)
+    assert result.skipped_months == ()
+    assert result.failures == ()
+    assert transport.requests == [(_archive_url(), 8.5), (june_url, 8.5)]
+    assert delays == [0.75]
+    assert (tmp_path / "games" / "2026" / "06.json").exists()
+    assert not (tmp_path / "games" / "2026" / "05.json").exists()
+    assert not (tmp_path / "games" / "2026" / "07.json").exists()
+    assert not (tmp_path / "games" / "2026" / "08.json").exists()
+
+
+def test_selected_existing_historical_month_is_skipped_and_untouched(
+    tmp_path: Path,
+) -> None:
+    july_url = _month_url(2026, 7)
+    july_path = tmp_path / "games" / "2026" / "07.json"
+    july_path.parent.mkdir(parents=True)
+    july_path.write_text(json.dumps(_fixture("month-empty.json")), encoding="utf-8")
+    original_history = july_path.read_bytes()
+    archive = {"synthetic_fixture": "selected skip", "archives": [july_url]}
+    transport = SyntheticTransport({_archive_url(): archive})
+
+    result = acquire_months(
+        _config(delay=0.0),
+        tmp_path,
+        selected_month=(2026, 7),
+        transport=transport,
+        clock=FixedClock(datetime(2026, 8, 20, tzinfo=UTC)),
+        sleep=lambda _: None,
+    )
+
+    assert result.completed
+    assert result.skipped_months == ("2026-07",)
+    assert result.published_months == ()
+    assert july_path.read_bytes() == original_history
+    assert [request[0] for request in transport.requests] == [_archive_url()]
+
+
+def test_selected_future_month_fails_meaningfully_without_side_effects(
+    tmp_path: Path,
+) -> None:
+    september_url = _month_url(2026, 9)
+    archive = {"synthetic_fixture": "selected future", "archives": [september_url]}
+    transport = SyntheticTransport({_archive_url(): archive})
+
+    result = acquire_months(
+        _config(delay=0.0),
+        tmp_path,
+        selected_month=(2026, 9),
+        transport=transport,
+        clock=FixedClock(datetime(2026, 8, 20, tzinfo=UTC)),
+        sleep=lambda _: None,
+    )
+
+    assert not result.completed
+    assert result.published_months == ()
+    assert result.skipped_months == ()
+    assert result.failures[0].month == "2026-09"
+    assert "future" in result.failures[0].message
+    assert [request[0] for request in transport.requests] == [_archive_url()]
+    assert not (tmp_path / "games" / "2026" / "09.json").exists()
+
+
+def test_selected_unlisted_month_fails_meaningfully_without_side_effects(
+    tmp_path: Path,
+) -> None:
+    july_url = _month_url(2026, 7)
+    archive = {"synthetic_fixture": "selected unlisted", "archives": [july_url]}
+    transport = SyntheticTransport(
+        {
+            _archive_url(): archive,
+            july_url: AssertionError("unrelated listed month must not be requested"),
+        }
+    )
+
+    result = acquire_months(
+        _config(delay=0.0),
+        tmp_path,
+        selected_month=(2026, 6),
+        transport=transport,
+        clock=FixedClock(datetime(2026, 8, 20, tzinfo=UTC)),
+        sleep=lambda _: None,
+    )
+
+    assert not result.completed
+    assert result.published_months == ()
+    assert result.skipped_months == ()
+    assert result.failures[0].month == "2026-06"
+    assert "not listed" in result.failures[0].message
+    assert [request[0] for request in transport.requests] == [_archive_url()]
+    assert not (tmp_path / "games" / "2026" / "06.json").exists()
+
+
+def test_selected_current_month_retains_refetch_and_uuid_merge(tmp_path: Path) -> None:
+    august_url = _month_url(2026, 8)
+    current_path = tmp_path / "games" / "2026" / "08.json"
+    current_path.parent.mkdir(parents=True)
+    current_path.write_text(
+        json.dumps(_fixture("current-month-local.json")), encoding="utf-8"
+    )
+    transport = SyntheticTransport(
+        {
+            _archive_url(): {
+                "synthetic_fixture": "selected current",
+                "archives": [august_url],
+            },
+            august_url: _fixture("current-month-remote.json"),
+        }
+    )
+
+    result = acquire_months(
+        _config(delay=0.0),
+        tmp_path,
+        selected_month=(2026, 8),
+        transport=transport,
+        clock=FixedClock(datetime(2026, 8, 15, tzinfo=UTC)),
+        sleep=lambda _: None,
+    )
+    saved = json.loads(current_path.read_text(encoding="utf-8"))
+
+    assert result.completed
+    assert result.published_months == ("2026-08",)
+    assert [game["revision"] for game in saved["games"]] == [
+        "retain omitted",
+        "corrected replacement",
+        "new game",
+    ]
+
+
+def test_selected_month_transport_failure_returns_failure_result(tmp_path: Path) -> None:
+    june_url = _month_url(2026, 6)
+    archive = {"synthetic_fixture": "selected failure", "archives": [june_url]}
+    transport = SyntheticTransport(
+        {_archive_url(): archive, june_url: RuntimeError("synthetic rate limit")}
+    )
+
+    result = acquire_months(
+        _config(delay=0.0),
+        tmp_path,
+        selected_month=(2026, 6),
+        transport=transport,
+        clock=FixedClock(datetime(2026, 8, 20, tzinfo=UTC)),
+        sleep=lambda _: None,
+    )
+
+    assert not result.completed
+    assert result.published_months == ()
+    assert result.skipped_months == ()
+    assert result.failures[0].month == "2026-06"
+    assert "rate limit" in result.failures[0].message
+    assert not (tmp_path / "games" / "2026" / "06.json").exists()

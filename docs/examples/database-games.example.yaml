@@ -1,0 +1,8 @@
+# Example only — owning contracts: DB-03 games acquisition/import and DB-08.
+# Added by DB-08A. Safe placeholders only; never commit real identity data.
+username: YOUR_CHESS_COM_USERNAME
+trainer_chesscom_uuid: "00000000-0000-4000-8000-000000000000"
+
+# Optional games acquire timing overrides:
+# request_timeout: 30.0
+# request_delay: 0.25

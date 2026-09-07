@@ -936,6 +936,25 @@ after DB-08 must review the remaining tool surface and finish any rebuilt tool c
 explicitly including Chess.com retrieval and API support. Existing commands are evidence for that assessment, not proof
 that the whole operator journey is finished.
 
+### 7.7 Mandatory replacement of legacy script tools
+
+DB-08A is not merely an inventory or a decision about whether an existing retrieval tool is good enough. It must rebuild
+from scratch every required current-use database-tool capability that has not already received a clean replacement,
+explicitly including the complete external Chess.com retrieval journey: archive discovery, exact month retrieval,
+historical-file skipping, current-month refetch and UUID merge, safe atomic raw-file publication, transport and malformed-
+response failure behavior, and separation of network acquisition from local database import.
+
+For the completed database rebuild, nothing under `scripts/` is canonical for a required database-feeding, retrieval,
+rebuild, analysis, proof, or maintenance operation. A legacy script cannot satisfy DB-08A, remain as an accepted command
+or fallback, or be imported, wrapped, copied, patched, delegated to, or invoked by the rebuilt toolchain. Every required
+operation must instead be owned by the new importable package and exposed, where operator-facing, through its supported
+thin CLI. If assessment proves that an old capability is not required, that capability need not be rebuilt, but its
+legacy script still does not become canonical. DB-09 must use only the rebuilt package and supported CLI surface.
+
+This canonical boundary does not authorize early deletion of legacy files. They remain read-only evidence until the
+master plan's retirement slice authorizes cleanup; replacement and canonical ownership are settled before physical
+retirement.
+
 ## 8. Remaining routed work
 
 The conceptual database choices and the DB-08 CLI/tool-orchestration decisions are settled. Remaining work is routed
@@ -943,8 +962,9 @@ through focused Plans and assessments rather than another speculative interview:
 
 1. write and execute the DB-08 Plan for refresh, verification, safe snapshots, managed candidate replacement, rollback,
    interruption behavior, the initial-analysis invocation, focused proof, and final flowchart reconciliation;
-2. run the next master-plan slice to review and finish additional rebuilt tools, including Chess.com retrieval/API
-   support, without assuming that old scripts or current command names are authoritative;
+2. run the next master-plan slice to review and finish additional rebuilt tools, mandatorily rebuilding the complete
+   Chess.com retrieval/API journey and every other required remaining operation without leaving any accepted database-
+   tool command, implementation, fallback, or runtime dependency under `scripts/`;
 3. define and rebuild only the APIs required by the approved application capabilities;
 4. check real rebuilt queries and straightforward indexes against real rebuilt data where the relevant Plan requires
    that evidence;
