@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import os
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -12,19 +11,13 @@ import chess
 from sqlalchemy import text
 
 from ..connection import DEFAULT_LOCK_TIMEOUT_SECONDS, _open_connection
-from ..games.configuration import load_acquire_configuration
 from ..games.reading import GameReadRepository
 from ..openings.recognition import lookup_fen, replay_pgn
 from ..openings.source import OpeningRouteSource, load_opening_sources
 from ..positions import canonicalize_board
 from ..schema import _assert_compatible_schema
 from ..statistics import MoveResponseDistributionReader, PositionContextReader
-from .configuration import RebuildConfiguration, load_rebuild_configuration
-from .verification import VerificationResult, verify_database
-
-
-DEFAULT_OLD_DATABASE_PATH = Path("data/database/chess_games.db")
-OLD_DATABASE_SIDECAR_SUFFIXES = ("-wal", "-shm", ".analysis.lock")
+DEFAULT_DATABASE_PATH = Path("data/database/chess.db")
 DB09_TABLE_NAMES = (
     "datasource_game",
     "datasource_opening",
@@ -40,24 +33,53 @@ DB09_TABLE_NAMES = (
 
 
 class Db09PreflightError(ValueError):
-    """Raised when managed DB-09 paths or runtime configuration are unsafe."""
+    """Raised when fixed DB-09 proof inputs are unavailable or unsafe."""
 
 
 @dataclass(frozen=True, slots=True)
-class Db09PathPreflight:
-    """Non-private path/configuration facts established before runtime work."""
+class Db09Verification:
+    """Aggregate integrity facts for the fixed database proof target."""
 
-    rebuilt_neighbour: Path
-    managed_candidate: Path
-    old_database: Path
-    protected_old_paths: tuple[Path, ...]
-    games_configuration: Path | None
+    database_path: Path
+    schema_compatible: bool
+    user_version: int | None
+    integrity_result: str
+    foreign_key_errors: tuple[str, ...]
+    opening_count: int
+    opening_route_count: int
+    opening_move_count: int
+    position_count: int
+    game_count: int
+    game_position_count: int
 
     @property
-    def private_configuration_valid(self) -> bool:
-        """Whether supported runtime identity configuration was validated."""
+    def openings_ready(self) -> bool:
+        """Whether the opening catalogue has its required data."""
 
-        return self.games_configuration is not None
+        return (
+            self.opening_count > 0
+            and self.opening_route_count > 0
+            and self.opening_move_count > 0
+            and self.position_count > 0
+        )
+
+    @property
+    def games_ready(self) -> bool:
+        """Whether imported games and occurrences are present."""
+
+        return self.game_count > 0 and self.game_position_count > 0
+
+    @property
+    def complete(self) -> bool:
+        """Whether the fixed database passes the aggregate readiness checks."""
+
+        return (
+            self.schema_compatible
+            and self.integrity_result.lower() == "ok"
+            and not self.foreign_key_errors
+            and self.openings_ready
+            and self.games_ready
+        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -93,7 +115,7 @@ class Db09MeasurementCorpus:
 
 @dataclass(frozen=True, slots=True)
 class Db09Measurements:
-    """Privacy-safe, repeatable access-path evidence for the retained candidate."""
+    """Privacy-safe, repeatable access-path evidence for the fixed database."""
 
     database_path: Path
     corpus: Db09MeasurementCorpus
@@ -109,7 +131,7 @@ class Db09Proof:
     """Read-only aggregate facts suitable for bounded DB-09 evidence."""
 
     database_path: Path
-    verification: VerificationResult
+    verification: Db09Verification
     table_names: tuple[str, ...]
     table_counts: tuple[tuple[str, int], ...]
     preference_row_count: int
@@ -127,7 +149,7 @@ class Db09Proof:
 
     @property
     def exact_ten_table_schema(self) -> bool:
-        """Whether the candidate exposes exactly the catalogue's ten tables."""
+        """Whether the fixed database exposes exactly the catalogue's ten tables."""
 
         return self.table_names == DB09_TABLE_NAMES
 
@@ -342,7 +364,7 @@ class _MeasurementInputs:
 
 def _positive_scalar(value: object) -> int:
     if type(value) is not int or value < 1:
-        raise Db09PreflightError("real DB-09 candidate lacks a usable proof input")
+        raise Db09PreflightError("fixed DB-09 database lacks a usable proof input")
     return value
 
 
@@ -970,7 +992,7 @@ def _measurement_inputs(connection: Any) -> _MeasurementInputs:
         )
     ).first()
     if position_row is None or any(not isinstance(value, str) for value in position_row):
-        raise Db09PreflightError("real DB-09 candidate lacks a position identity")
+        raise Db09PreflightError("fixed DB-09 database lacks a position identity")
     analysis_position_id = _positive_scalar(
         connection.execute(
             text(
@@ -988,7 +1010,7 @@ def _measurement_inputs(connection: Any) -> _MeasurementInputs:
         _bulk_page_parameters(),
     ).all()
     if not first_page:
-        raise Db09PreflightError("real DB-09 candidate lacks a bulk target page")
+        raise Db09PreflightError("fixed DB-09 database lacks a bulk target page")
     try:
         bulk_cursor = (int(first_page[-1][1]), int(first_page[-1][0]))
     except (IndexError, TypeError, ValueError) as error:
@@ -1050,60 +1072,61 @@ def _median(values: tuple[float, ...]) -> float:
     return (ordered[middle - 1] + ordered[middle]) / 2
 
 
-def preflight_db09_paths(
-    configuration: RebuildConfiguration | str | Path,
-    *,
-    old_database_path: str | Path = DEFAULT_OLD_DATABASE_PATH,
-    games_configuration_path: str | Path | None = None,
-) -> Db09PathPreflight:
-    """Validate managed sibling isolation and optionally supported identity config.
+def _verify_direct_database(path: Path, *, lock_timeout: float) -> Db09Verification:
+    """Read aggregate verification facts from one already-created database."""
 
-    Identity values are read only through the package's supported games YAML loader.
-    They are deliberately not returned, logged, or included in the proof value.
-    """
-
-    rebuild_configuration = (
-        load_rebuild_configuration(Path(configuration))
-        if isinstance(configuration, (str, Path))
-        else configuration
-    )
-    if not isinstance(rebuild_configuration, RebuildConfiguration):
-        raise Db09PreflightError("configuration must be a rebuild configuration or supported path")
-
-    neighbour = rebuild_configuration.rebuilt_neighbour.resolve(strict=False)
-    candidate = rebuild_configuration.managed_candidate.resolve(strict=False)
-    old_database = Path(old_database_path).expanduser().resolve(strict=False)
-    protected = (old_database, *tuple(
-        old_database.with_name(f"{old_database.name}{suffix}")
-        for suffix in OLD_DATABASE_SIDECAR_SUFFIXES
-    ))
-
-    if _same_path(neighbour, candidate):
-        raise Db09PreflightError("managed neighbour and candidate must be distinct")
-    for managed_path in (neighbour, candidate):
-        if any(_same_path(managed_path, protected_path) for protected_path in protected):
-            raise Db09PreflightError(
-                "managed neighbour and candidate must not alias the protected old database"
+    try:
+        with _open_connection(path, "read-only", lock_timeout) as connection:
+            user_version = int(
+                connection.execute(text("PRAGMA user_version")).scalar_one()
             )
+            try:
+                _assert_compatible_schema(connection, lock_timeout)
+            except Exception:
+                return Db09Verification(
+                    database_path=path,
+                    schema_compatible=False,
+                    user_version=user_version,
+                    integrity_result="unknown",
+                    foreign_key_errors=(),
+                    opening_count=0,
+                    opening_route_count=0,
+                    opening_move_count=0,
+                    position_count=0,
+                    game_count=0,
+                    game_position_count=0,
+                )
 
-    games_configuration: Path | None = None
-    if games_configuration_path is not None:
-        games_path = Path(games_configuration_path).expanduser().resolve(strict=False)
-        try:
-            load_acquire_configuration(games_path)
-        except Exception as error:
-            raise Db09PreflightError(
-                "supported games runtime configuration could not be validated"
-            ) from error
-        games_configuration = games_path
-
-    return Db09PathPreflight(
-        rebuilt_neighbour=neighbour,
-        managed_candidate=candidate,
-        old_database=old_database,
-        protected_old_paths=tuple(protected),
-        games_configuration=games_configuration,
-    )
+            integrity_result = str(
+                connection.execute(text("PRAGMA integrity_check")).scalar_one()
+            )
+            foreign_key_errors = tuple(
+                " ".join(str(value) for value in row)
+                for row in connection.execute(text("PRAGMA foreign_key_check")).all()
+            )
+            counts = {
+                name: int(
+                    connection.execute(text(f"SELECT COUNT(*) FROM {name}")).scalar_one()
+                )
+                for name in DB09_TABLE_NAMES
+            }
+            return Db09Verification(
+                database_path=path,
+                schema_compatible=True,
+                user_version=user_version,
+                integrity_result=integrity_result,
+                foreign_key_errors=foreign_key_errors,
+                opening_count=counts["datasource_opening"],
+                opening_route_count=counts["derived_opening_route"],
+                opening_move_count=counts["derived_opening_route_move"],
+                position_count=counts["derived_position"],
+                game_count=counts["datasource_game"],
+                game_position_count=counts["derived_game_position"],
+            )
+    except Db09PreflightError:
+        raise
+    except Exception as error:
+        raise Db09PreflightError("fixed DB-09 database could not be verified") from error
 
 
 def collect_db09_proof(
@@ -1115,7 +1138,7 @@ def collect_db09_proof(
     """Collect aggregate integrity, emptiness, query-plan, and timing facts only."""
 
     path = Path(database_path).expanduser().resolve(strict=False)
-    verification = verify_database(path, lock_timeout=lock_timeout)
+    verification = _verify_direct_database(path, lock_timeout=lock_timeout)
     measurements: list[QueryPlanMeasurement] = []
     try:
         with _open_connection(path, "read-only", lock_timeout) as connection:
@@ -1304,24 +1327,18 @@ def _measure_query(
     )
 
 
-def _same_path(left: Path, right: Path) -> bool:
-    return os.path.normcase(str(left)) == os.path.normcase(str(right))
-
-
 __all__ = [
-    "DEFAULT_OLD_DATABASE_PATH",
+    "DEFAULT_DATABASE_PATH",
     "DB09_TABLE_NAMES",
     "Db09DirectCapabilities",
     "Db09MeasurementCorpus",
     "Db09Measurements",
-    "Db09PathPreflight",
     "Db09PreflightError",
     "Db09Proof",
-    "OLD_DATABASE_SIDECAR_SUFFIXES",
+    "Db09Verification",
     "QueryPlanMeasurement",
     "collect_db09_direct_capabilities",
     "collect_db09_measurements",
     "collect_db09_proof",
     "print_db09_measurements",
-    "preflight_db09_paths",
 ]

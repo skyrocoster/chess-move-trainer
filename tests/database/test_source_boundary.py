@@ -71,11 +71,12 @@ def test_package_contains_no_runtime_wrapper_or_copied_legacy_generator() -> Non
     assert "backend" not in package_text.lower()
 
 
-def test_rebuild_boundary_has_typed_inward_only_modules() -> None:
+def test_rebuild_boundary_has_only_aggregate_proof_modules() -> None:
     rebuild_path = PACKAGE_PATH / "rebuild"
-    assert (rebuild_path / "configuration.py").exists()
-    assert (rebuild_path / "operations.py").exists()
-    assert (rebuild_path / "cli.py").exists()
+    assert sorted(path.name for path in rebuild_path.glob("*.py")) == [
+        "__init__.py",
+        "proof.py",
+    ]
 
     for source_path in sorted(rebuild_path.rglob("*.py")):
         tree = ast.parse(source_path.read_text(encoding="utf-8"))
@@ -91,22 +92,32 @@ def test_rebuild_boundary_has_typed_inward_only_modules() -> None:
             for prefix in ("backend", "frontend", "scripts", "legacy")
         )
 
-    configuration_text = "\n".join(
+    proof_text = "\n".join(
         path.read_text(encoding="utf-8") for path in rebuild_path.rglob("*.py")
     )
-    assert "subprocess" not in configuration_text.lower()
-    assert "sqlite3" not in configuration_text.lower()
+    assert "data/database/chess.db" in proof_text
+    assert "subprocess" not in proof_text.lower()
+    assert "sqlite3" not in proof_text.lower()
 
 
-def test_rebuild_has_no_recovery_command_or_persistent_run_state() -> None:
+def test_rebuild_has_no_file_lifecycle_commands_or_persistent_run_state() -> None:
     rebuild_text = "\n".join(
         path.read_text(encoding="utf-8")
         for path in sorted((PACKAGE_PATH / "rebuild").rglob("*.py"))
     )
-    assert "recover" not in (PACKAGE_PATH / "rebuild" / "cli.py").read_text(
-        encoding="utf-8"
-    ).lower()
-    for forbidden in ("manifest", "audit_log", "run_history", "failure_row"):
+    for forbidden in (
+        "recover",
+        "manifest",
+        "audit_log",
+        "run_history",
+        "failure_row",
+        "managed_candidate",
+        "rebuilt_neighbour",
+        "snapshot",
+        "rollback",
+        "replacement",
+        "replacement_ready",
+    ):
         assert forbidden not in rebuild_text.lower()
 
 

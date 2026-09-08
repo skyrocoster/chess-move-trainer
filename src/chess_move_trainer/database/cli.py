@@ -5,34 +5,26 @@ from __future__ import annotations
 import json
 import math
 import sys
+from collections.abc import Callable
 from pathlib import Path
 
 import typer
 
 from .connection import DEFAULT_LOCK_TIMEOUT_SECONDS
-from .games.acquisition import acquire_months, parse_month_selection
-from .games.configuration import (
-    GamesConfigurationError,
-    load_acquire_configuration,
-    load_import_configuration,
-)
-from .games.persistence import GameRepository, import_raw_months
 from .inspection import inspect_schema, render_schema_markdown
+from .lifecycle import (
+    DEFAULT_DATABASE_PATH,
+    LifecycleResult,
+    setup_database,
+    update_games,
+    update_openings,
+)
 from .openings import (
-    DEFAULT_REQUEST_DELAY,
-    DEFAULT_REQUEST_TIMEOUT,
-    OpeningCatalogueRepository,
-    OpeningAcquisitionError,
     OpeningInputError,
-    OpeningPersistenceError,
     OpeningRecognition,
     OpeningRecognitionError,
-    OpeningSourceError,
-    acquire_openings,
-    import_opening_catalogue,
     lookup_fen,
     replay_pgn,
-    validate_request_timing,
 )
 from .preferred_moves.ranges import (
     NormalizedPeriod,
@@ -47,7 +39,6 @@ from .preferred_moves.repository import (
     PreferredMoveValidationError,
 )
 from .publication import SchemaPublicationCollisionError, publish_schema
-from .rebuild.cli import app as rebuild_app
 from .schema import SchemaIncompatibleError, create_schema
 from .stockfish import (
     BenchmarkCompatibilityError,
@@ -64,16 +55,54 @@ from .stockfish import (
 
 app = typer.Typer(add_completion=False, no_args_is_help=True)
 schema_app = typer.Typer(add_completion=False, no_args_is_help=True)
-games_app = typer.Typer(add_completion=False, no_args_is_help=True)
+update_app = typer.Typer(add_completion=False, no_args_is_help=True)
 openings_app = typer.Typer(add_completion=False, no_args_is_help=True)
 preferred_moves_app = typer.Typer(add_completion=False, no_args_is_help=True)
 stockfish_app = typer.Typer(add_completion=False, no_args_is_help=True)
 app.add_typer(schema_app, name="schema")
-app.add_typer(games_app, name="games")
+app.add_typer(update_app, name="update")
 app.add_typer(openings_app, name="openings")
 app.add_typer(preferred_moves_app, name="preferred-moves")
 app.add_typer(stockfish_app, name="stockfish")
-app.add_typer(rebuild_app, name="rebuild")
+
+
+@app.command(
+    "setup",
+    help=(
+        "Create the one fixed database at data/database/chess.db. "
+        "The destination is not configurable."
+    ),
+)
+def setup_command() -> None:
+    """Create the fixed direct database through the package lifecycle service."""
+
+    _run_lifecycle(setup_database)
+
+
+@update_app.command(
+    "games",
+    help=(
+        "Refresh games directly in data/database/chess.db. "
+        "The destination is not configurable."
+    ),
+)
+def update_games_command() -> None:
+    """Refresh the fixed direct database's game data."""
+
+    _run_lifecycle(update_games)
+
+
+@update_app.command(
+    "openings",
+    help=(
+        "Refresh openings directly in data/database/chess.db. "
+        "The destination is not configurable."
+    ),
+)
+def update_openings_command() -> None:
+    """Refresh the fixed direct database's opening data."""
+
+    _run_lifecycle(update_openings)
 
 
 @schema_app.command("create")
@@ -132,206 +161,6 @@ def inspect(
     else:
         sys.stdout.buffer.write(markdown)
         sys.stdout.buffer.flush()
-
-
-@games_app.command("acquire")
-def acquire_games(
-    config: Path = typer.Option(
-        ...,
-        "--config",
-        help="Explicit package-owned YAML configuration file.",
-    ),
-    raw_root: Path = typer.Option(
-        ...,
-        "--raw-root",
-        help="Explicit raw-data root containing games/YYYY/MM.json.",
-    ),
-    username: str | None = typer.Option(
-        None,
-        "--username",
-        help="Override the separate Chess.com username from YAML.",
-    ),
-    trainer_chesscom_uuid: str | None = typer.Option(
-        None,
-        "--trainer-chesscom-uuid",
-        help="Override the trainer participant UUID from YAML.",
-    ),
-    request_timeout: float | None = typer.Option(
-        None,
-        "--request-timeout",
-        help="Request timeout seconds (default: 30.0); must be finite and positive.",
-    ),
-    request_delay: float | None = typer.Option(
-        None,
-        "--request-delay",
-        help="Delay seconds (default: 0.25); must be finite and nonnegative.",
-    ),
-    month: str | None = typer.Option(
-        None,
-        "--month",
-        help="Optional exact month YYYY-MM; only that listed month is acquired.",
-    ),
-) -> None:
-    """Acquire raw months from the fixed Chess.com API endpoint (not configurable)."""
-
-    try:
-        selected_month = (
-            parse_month_selection(month) if month is not None else None
-        )
-    except ValueError as error:
-        _usage_error(error, param_hint="--month")
-    try:
-        configuration = load_acquire_configuration(
-            config,
-            username=username,
-            trainer_chesscom_uuid=trainer_chesscom_uuid,
-            request_timeout=request_timeout,
-            request_delay=request_delay,
-        )
-    except GamesConfigurationError as error:
-        _games_configuration_error(error)
-    try:
-        result = acquire_months(configuration, raw_root, selected_month=selected_month)
-    except KeyboardInterrupt:
-        _interrupted()
-    except Exception as error:
-        _operational_error(error, 1)
-
-    typer.echo(
-        f"Acquisition published {len(result.published_months)} month(s); "
-        f"skipped {len(result.skipped_months)} immutable month(s)."
-    )
-    if not result.completed:
-        for failure in result.failures:
-            subject = failure.month if failure.month is not None else "archive discovery"
-            typer.echo(f"Error: {subject}: {failure.message}", err=True)
-        raise typer.Exit(code=1)
-
-
-@games_app.command("import")
-def import_games(
-    config: Path = typer.Option(
-        ...,
-        "--config",
-        help="Explicit package-owned YAML configuration file.",
-    ),
-    raw_root: Path = typer.Option(
-        ...,
-        "--raw-root",
-        help="Explicit local raw-data root containing games/YYYY/MM.json.",
-    ),
-    database: Path = typer.Option(..., "--database", help="Explicit SQLite database path."),
-    trainer_chesscom_uuid: str | None = typer.Option(
-        None,
-        "--trainer-chesscom-uuid",
-        help="Override the trainer participant UUID from YAML.",
-    ),
-) -> None:
-    """Import local raw months without network access."""
-
-    try:
-        configuration = load_import_configuration(
-            config, trainer_chesscom_uuid=trainer_chesscom_uuid
-        )
-    except GamesConfigurationError as error:
-        _games_configuration_error(error)
-    try:
-        result = import_raw_months(
-            raw_root,
-            configuration.trainer_chesscom_uuid,
-            GameRepository(database),
-        )
-    except KeyboardInterrupt:
-        _interrupted()
-    except Exception as error:
-        _operational_error(error, 1)
-
-    for warning in result.warnings:
-        subject = warning.game_uuid if warning.game_uuid is not None else "unknown game"
-        typer.echo(f"Warning: {subject}: {warning.message}", err=True)
-    typer.echo(
-        f"Imported {result.imported_count} game(s); skipped {result.skipped_count} game(s)."
-    )
-    if result.failure is not None:
-        typer.echo(
-            f"Error: {result.failure.game_uuid}: {result.failure.message}", err=True
-        )
-        raise typer.Exit(code=1)
-
-
-@openings_app.command("import")
-def import_openings(
-    source_dir: Path = typer.Option(
-        ..., "--source-dir", help="Explicit directory containing a.tsv through e.tsv."
-    ),
-    database: Path = typer.Option(..., "--database", help="Explicit SQLite database path."),
-    json_output: bool = typer.Option(False, "--json", help="Emit stable JSON output."),
-) -> None:
-    """Replace the opening catalogue from one explicit five-file source directory."""
-
-    try:
-        publication = import_opening_catalogue(
-            source_dir, OpeningCatalogueRepository(database)
-        )
-    except KeyboardInterrupt:
-        _interrupted()
-    except SchemaIncompatibleError as error:
-        _operational_error(error, 3)
-    except (OpeningSourceError, OpeningPersistenceError) as error:
-        _operational_error(error, 1)
-    except Exception as error:
-        _operational_error(error, 1)
-    else:
-        _render_publication(publication, json_output)
-
-
-@openings_app.command("acquire")
-def acquire_opening_sources(
-    source_dir: Path = typer.Option(
-        ...,
-        "--source-dir",
-        help="Required explicit directory for the five fixed Lichess source files.",
-    ),
-    request_timeout: float = typer.Option(
-        DEFAULT_REQUEST_TIMEOUT,
-        "--request-timeout",
-        help="Finite positive request timeout seconds (default: 30.0).",
-    ),
-    request_delay: float = typer.Option(
-        DEFAULT_REQUEST_DELAY,
-        "--request-delay",
-        help="Finite nonnegative delay seconds between file requests (default: 0.25).",
-    ),
-) -> None:
-    """Acquire the fixed upstream https://github.com/lichess-org/chess-openings source; repository and revision are not configurable."""
-
-    try:
-        validate_request_timing(request_timeout, request_delay)
-    except ValueError as error:
-        _usage_error(error, param_hint="--request-timeout/--request-delay")
-
-    try:
-        result = acquire_openings(
-            source_dir,
-            request_timeout=request_timeout,
-            request_delay=request_delay,
-        )
-    except KeyboardInterrupt:
-        _interrupted()
-    except OpeningAcquisitionError as error:
-        _operational_error(error, 1)
-    except Exception as error:
-        _operational_error(error, 1)
-
-    for failure in result.failures:
-        typer.echo(f"Error: {failure.subject}: {failure.message}", err=True)
-    if not result.completed:
-        raise typer.Exit(code=1)
-    typer.echo(
-        f"Opening acquisition resolved {result.resolved_commit}; "
-        f"published {len(result.published_files)} file(s); "
-        f"unchanged {len(result.unchanged_files)} file(s)."
-    )
 
 
 @openings_app.command("lookup")
@@ -715,8 +544,34 @@ def _usage_error(error: Exception, *, param_hint: str = "--lock-timeout") -> Non
     raise typer.BadParameter(str(error), param_hint=param_hint)
 
 
-def _games_configuration_error(error: Exception) -> None:
-    raise typer.BadParameter(str(error), param_hint="--config")
+def _run_lifecycle(service: Callable[[], LifecycleResult]) -> None:
+    """Run one fixed-path service and render only its ordinary result data."""
+
+    try:
+        result = service()
+    except KeyboardInterrupt:
+        _interrupted()
+    except Exception as error:
+        _operational_error(error, 1)
+
+    if result.database_path != DEFAULT_DATABASE_PATH:
+        _operational_error(
+            RuntimeError(
+                "lifecycle service returned a destination other than "
+                f"{DEFAULT_DATABASE_PATH}"
+            ),
+            1,
+        )
+    if result.exit_code == 130:
+        _interrupted()
+    if result.exit_code not in (0, 1, 2):
+        _operational_error(RuntimeError("lifecycle service returned an invalid exit code"), 1)
+    typer.echo(
+        f"{result.message}\nTarget: {DEFAULT_DATABASE_PATH}",
+        err=result.exit_code != 0,
+    )
+    if result.exit_code != 0:
+        raise typer.Exit(code=result.exit_code)
 
 
 def _preference_from_options(move: str | None, no_preference: bool) -> Preference:
@@ -737,27 +592,6 @@ def _interrupted() -> None:
 def _operational_error(error: Exception, exit_code: int) -> None:
     typer.echo(f"Error: {error}", err=True)
     raise typer.Exit(code=exit_code)
-
-
-def _render_publication(publication: object, json_output: bool) -> None:
-    if json_output:
-        typer.echo(
-            json.dumps(
-                {
-                    "opening_count": publication.opening_count,
-                    "route_count": publication.route_count,
-                    "move_count": publication.move_count,
-                },
-                ensure_ascii=False,
-                sort_keys=True,
-                separators=(",", ":"),
-            )
-        )
-        return
-    typer.echo(
-        f"Imported {publication.opening_count} opening label(s), "
-        f"{publication.route_count} route(s), and {publication.move_count} move(s)."
-    )
 
 
 def _render_recognition(result: OpeningRecognition, json_output: bool) -> None:

@@ -1,21 +1,10 @@
-# Database operator journeys — refresh, stage, snapshot, replace, rollback, proof
+# Database operator journeys — direct setup and updates
 
-> **Decision support only.** Not settled authority; not implementation authorization. Amber
-> boxes show the implemented DB-08 commands and their safety ordering.
+> **Decision support only.** These journeys show the confirmed current DB-09 lifecycle. The
+> historical DB-08/DB-08A database-file operations are not supported current journeys.
 
-## Legend
-
-| Style | Meaning |
-|---|---|
-| Green | **EXISTING CLI** — supported command delivered by DB-01..DB-07 |
-| Amber | **DB-08 CLI** — implemented package-owned rebuild command |
-| Purple | **FUTURE / OUTSIDE DB-08** |
-| Grey | Scenario steps, outcomes, or decision points (not commands) |
-
-The companion page [`database-toolchain.md`](database-toolchain.md) shows the full data flow
-behind these journeys, including the untouched old database.
-
-The durable DB-09 command surface is tracked in
+The companion page [`database-toolchain.md`](database-toolchain.md) shows the internal data flow
+and retained boundaries. The durable command inventory is
 [`database-command-inventory.md`](database-command-inventory.md).
 
 ## Journeys
@@ -24,111 +13,100 @@ The durable DB-09 command surface is tracked in
 flowchart TD
     START(("Start"))
 
-    subgraph A["A - First neighboring build"]
-        A1["DB-08 CLI<br/>rebuild refresh --config PATH<br/>explicit retained local sources"] --> A2["DB-08 CLI<br/>rebuild verify --config PATH<br/>--target neighbour"]
-        A2 --> A3{"STRUCTURAL PARTIAL<br/>opening-only checkpoint;<br/>valid, not replacement-ready"}
-        A2 --> A4{"REPLACEMENT-READY<br/>ready openings + imported games<br/>and integrity/compatibility checks"}
-        A3 -->|"next normal idempotent refresh"| A1
+    subgraph A["A - First setup"]
+        A1["Check fixed path<br/>data/database/chess.db"] --> A2{"Fixed file absent?"}
+        A2 -->|"no"| A3["Clear failure<br/>existing file is preserved"]
+        A2 -->|"yes"| A4["PUBLIC DATA LOADING<br/>setup"]
+        A4 --> A5["Create schema; load complete base games<br/>and latest valid five-file openings"]
+        A5 --> A6["Create normalized and derived rows<br/>then run quick local checks"]
+        A6 --> A7["One long-lived fixed database"]
+        A5 -->|"failure after creation"| A8["Remove only the database<br/>created by this setup invocation"]
     end
 
-    subgraph B["B - Later update from retained local sources"]
-        B1["DB-08 CLI<br/>rebuild candidate --config PATH<br/>managed sibling only; explicit local sources"]
-        B1 --> B2["DB-08 CLI<br/>rebuild verify --config PATH<br/>--target candidate"]
-        B2 --> B3{"Candidate state?"}
-        B3 -->|"partial"| B4["Partial candidate<br/>not replacement-ready"]
-        B3 -->|"replacement-ready"| B5["Replacement-ready<br/>managed candidate outcome"]
-        B4 -->|"next normal idempotent<br/>rebuild candidate rerun"| B1
+    subgraph B["B - Direct incremental game update"]
+        B1["Saved monthly files<br/>only fetch ledger"] --> B2["PUBLIC DATA LOADING<br/>update games"]
+        B2 --> B3["Refetch newest saved month<br/>fill missing months through current month"]
+        B3 --> B4["Validate and process months independently"]
+        B4 --> B5["Persist new/corrected valid games directly<br/>by Chess.com game ID; retain omissions"]
+        B4 --> B6["Skip malformed, illegal, or unsupported games<br/>individually and report reasons"]
+        B5 --> B7["Quick local checks and meaningful result"]
     end
 
-    subgraph C["C - Optional acquisition first"]
-        C0["EXISTING CLI<br/>openings acquire --source-dir PATH<br/>fixed Lichess commit; five-file local source"] --> C3["Local five-file opening source directory<br/>available to openings import/rebuild"]
-        C1["EXISTING CLI<br/>games acquire --config PATH --raw-root PATH<br/>network; current month UUID-merged"] --> C2["Retained local raw month ledger<br/>available to rebuild refresh/candidate"]
-        C2 --> A1
-        C3 --> A1
+    subgraph C["C - Complete latest opening update"]
+        C1["Latest upstream a.tsv through e.tsv<br/>no configured commit/version"] --> C2["PUBLIC DATA LOADING<br/>update openings"]
+        C2 --> C3["Stage and validate all five files"]
+        C3 --> C4{"Complete valid set?"}
+        C4 -->|"no"| C5["Preserve retained source set<br/>and current catalogue"]
+        C4 -->|"yes"| C6["Publish catalogue, routes, route moves,<br/>and endpoint positions together"]
+        C6 --> C7["Game data unchanged;<br/>quick local checks and meaningful result"]
     end
 
-    subgraph D["D - Direct initial analysis versus API-03 queue"]
-        D1["EXISTING CLI<br/>stockfish bulk --preset initial<br/>20 common + five technical<br/>serial, resumable, direct publication;<br/>no queue rows"]
-        D2["FUTURE / OUTSIDE DB-08<br/>API-03 analysis request enqueue"] --> D3["EXISTING CLI<br/>stockfish worker --database --executable<br/>queue requests only"]
+    subgraph D["D - Separate Stockfish analysis"]
+        D1["Separate Stockfish operation<br/>benchmark / bulk / worker"] --> D2["Publish or read analysis data"]
+        D3["setup and both update workflows"] -.->|"never invoke"| D1
     end
 
-    subgraph E["E - Interrupted candidate, then ordinary rerun"]
-        E1["Interruption or crash-like failure<br/>during managed candidate work"] --> E2["Working neighbour remains active;<br/>partial candidate is not replacement-ready"]
-        E2 --> E3["Next normal idempotent<br/>rebuild candidate rerun"]
-        E3 --> B1
+    subgraph E["E - Rare full rebuild"]
+        E1["Operator deliberately removes or moves<br/>data/database/chess.db outside the tool"] --> E2["Run setup again"]
+        E2 --> A1
     end
 
-    subgraph F["F - Snapshot + candidate replacement"]
-        F1["DB-08 CLI<br/>rebuild snapshot --config PATH<br/>optional standalone verified WAL-safe backup;<br/>retain newest three"]
-        F2["Managed candidate artifact<br/>replacement-ready outcome<br/>from Journey B"] --> F3["DB-08 CLI<br/>rebuild replace --config PATH<br/>reverify candidate; obtain exclusive boundary"]
-        F3 --> F4["Automatic fresh verified snapshot<br/>then atomic swap only configured neighbour"]
-    end
-
-    subgraph G["G - Rollback after a bad replacement"]
-        G1["DB-08 CLI<br/>rebuild rollback --config PATH<br/>newest or explicit retained snapshot"] --> G2["Reverify snapshot; preserve current neighbour first;<br/>atomically restore only neighbour path"]
-    end
-
-    subgraph H["H - DB-09 proof"]
-        H1["FUTURE / OUTSIDE DB-08<br/>real-data proof gate over the<br/>populated neighbor using only<br/>supported CLIs from DB-01..DB-08"]
+    subgraph F["F - Proof and application boundary"]
+        F1["Separate DB-09 proof:<br/>integrity, measurements, direct reads,<br/>and bounded evidence"] --> F2["Only after acceptance:<br/>later application assessment"]
     end
 
     START --> A1
-    START -.->|"optional acquisition first"| C1
-    A4 --> B1
-    A4 -->|"optional direct initial analysis"| D1
-    B5 -->|"optional direct initial analysis"| D1
-    B5 -.->|"optional standalone snapshot"| F1
-    B5 -->|"already replacement-ready artifact"| F2
-    F4 --> G1
-    F4 --> H1
+    A7 --> B2
+    A7 --> C2
+    A7 --> F1
+    B7 --> F1
+    C7 --> F1
 
-    classDef cli fill:#dcefdd,stroke:#2f6b2f,color:#173315
-    classDef cand fill:#fdf0d5,stroke:#a3690a,color:#4a3005
-    classDef future fill:#ece0f7,stroke:#6a3a9c,color:#3a2160
+    OLD["Old production database untouched<br/>raw sources retained; no deletion"] -.-> A1
+    OTHER["Other data/database/ files<br/>outside workflow and not blockers"] -.-> A1
+
+    classDef public fill:#dcefdd,stroke:#2f6b2f,color:#173315
+    classDef internal fill:#e8e8ee,stroke:#55556b,color:#26263a
     classDef info fill:#e8e8ee,stroke:#55556b,color:#26263a
+    classDef separate fill:#ece0f7,stroke:#6a3a9c,color:#3a2160
+    classDef boundary fill:#f9dcdc,stroke:#9c2b2b,color:#5c1717
 
-    class C0,C1,D1,D3 cli
-    class A1,A2,B1,B2,F1,F3,G1 cand
-    class D2,H1 future
-    class A3,A4,B3,B4,B5,F2,F4,START,E1,E2,E3,G2 info
+    class A4,B2,C2 public
+    class A1,A2,A3,A5,A6,A7,A8,B1,B3,B4,B5,B6,B7,C1,C3,C4,C5,C6,C7,F1 info
+    class D1,D2,E1,E2,F2 separate
+    class START,D3 info
+    class OLD,OTHER boundary
 ```
 
 ## What each journey shows
 
-- **A — First neighboring build.** `rebuild refresh` creates or opens the v1 neighbor, consumes
-  explicit retained local opening and game sources, and runs the shared verifier. An opening-only
-  result is a valid structural partial checkpoint; replacement-ready additionally requires imported
-  games and all verifier checks. Initial creation is the same idempotent tooling as later refreshes.
-- **B — Later local update.** `rebuild candidate` refreshes only the managed sibling candidate and
-  verifies it without touching the working neighbor. Satisfied work is skipped and incomplete work
-  is resumed by the next ordinary invocation. `rebuild verify --config PATH --target candidate`
-  distinguishes partial from ready.
-- **C — Optional acquisition.** Network acquisition stays an explicit, separate operator step.
-  `games acquire` publishes retained raw months, while `openings acquire` publishes the local
-  five-file source directory. `rebuild refresh` and `rebuild candidate` consume those local files
-  and never acquire from the network.
-- **D — Optional Stockfish population.** `stockfish bulk --preset initial` selects 20 common plus
-  five fixed technical positions, runs serially, resumes eligible work, and publishes directly with
-  no queue rows. The worker is a separate path for API-03 queue requests only.
-- **E — Interruption and recovery.** An interrupted or crash-like managed candidate remains isolated
-  from the usable neighbor and is not replacement-ready. The next normal `rebuild candidate` rerun
-  resumes or reconstructs it; there is no recover command or permanent run/failure record.
-- **F — Snapshot plus candidate replacement.** `rebuild snapshot` uses a verified WAL-safe SQLite
-  backup and retains the newest three. `rebuild replace` verifies the managed candidate, obtains the
-  exclusive Windows mutation boundary, automatically takes a fresh verified snapshot, then atomically
-  swaps only the configured neighbor. The old database and application cutover are never involved.
-- **G — Rollback.** `rebuild rollback` re-verifies the newest or selected retained snapshot, preserves
-  the current neighbor first, and atomically restores only the neighbor path. This is distinct from
-  RETIRE-01's separate old-database restore path; the old database is never involved.
-- **H — DB-09 proof.** Real rebuilt data proves the foundation using only supported commands
-  from DB-01..DB-08. Cutover (CUT-01) remains outside DB-08 entirely.
+- **A — First setup.** `setup` uses only the exact fixed destination and refuses to touch a
+  pre-existing file. It composes schema creation, complete base game loading, latest valid
+  opening loading, and derived-row creation. A later failure removes only the newly created
+  database; there is no resume or recovery protocol.
+- **B — Games.** Saved monthly files remain the only fetch ledger. The newest saved month is
+  refetched, missing months are filled, corrected games replace their saved representation by
+  Chess.com ID, new games are added, omitted games remain, and successfully completed months
+  remain usable if a later month fails.
+- **C — Openings.** All five latest opening files are staged and validated before publication.
+  An invalid set leaves both retained sources and the current catalogue in place. A valid set
+  publishes the complete catalogue and routes without changing game data.
+- **D — Stockfish.** Analysis is a separate operation. Setup and updates do not run the engine;
+  internal analysis services do not turn Stockfish into a fourth data-loading workflow.
+- **E — Rare rebuild.** A full rebuild is deliberately initiated by the operator outside the
+  tool by removing or moving the fixed database, followed by `setup`. There is no supported
+  reset, rebuild, snapshot, replacement, rollback, recovery, or separate verification command.
+- **F — Proof and application.** Normal operations use quick local checks only. Full DB-09
+  proof is separate, and backend/frontend/API application work remains behind the pre-application
+  gate until DB-09 is accepted.
+
+The old production database, retained raw sources (with only the approved current-month
+refetch/merge), approved schema, legacy scripts, and unrelated files under `data/database/`
+remain explicit boundaries. This document does not create a database,
+authorize implementation, or rewrite completed DB-08/DB-08A Plans or prior grilling records.
 
 ## Evidence notes
 
-- DB-08 envelope: `docs/master-plans/database-rebuild/database-rebuild.md`, slice "DB-08 —
-  Rebuild, snapshot, and replacement operations" (visible result, scope, exclusions, focused
-  proof, escalate-if).
-- Idempotence, resumability, snapshot, and rollback authority:
-  `docs/grilling-docs/database-rebuild-direction.md` sections 2.3-2.5.
-- Existing commands and their proven failure/interruption behavior: focused Plans under
-  `docs/plans/done/database-rebuild-db-01/` through `.../database-rebuild-db-07/`.
+- Current behavioral authority: `docs/grilling-docs/database-rebuild-simple-lifecycle.md`.
+- Current Plan: `docs/plans/active/database-rebuild-db-09/database-rebuild-db-09.md`.
+- The historical DB-08/DB-08A records remain preserved and are not current command authority.

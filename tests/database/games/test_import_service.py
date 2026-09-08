@@ -10,7 +10,12 @@ from sqlalchemy.engine import Connection
 
 from chess_move_trainer.database import create_schema
 import chess_move_trainer.database.games.persistence as persistence_service
-from chess_move_trainer.database.games.persistence import GameRepository, import_raw_games
+from chess_move_trainer.database.games.persistence import (
+    GameRepository,
+    import_normalized_games,
+    import_raw_games,
+    normalize_raw_games,
+)
 
 
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -222,6 +227,64 @@ def test_operational_failure_rolls_back_active_game_and_returns_incomplete(tmp_p
     assert result.failure is not None
     assert "second-game failure" in result.failure.message
     assert _count(database, "datasource_game") == 1
+
+
+def test_bulk_failure_rolls_back_all_games_and_retains_skip_reporting(tmp_path: Path) -> None:
+    database = tmp_path / "bulk-failure.db"
+    create_schema(database)
+    first = _raw("game-trainer-white.json")
+    malformed = _raw("game-malformed-pgn.json")
+    second = _raw("game-trainer-black.json")
+
+    metadata_calls = 0
+
+    def fail_second_metadata(boundary: str) -> None:
+        nonlocal metadata_calls
+        if boundary == "metadata":
+            metadata_calls += 1
+            if metadata_calls == 2:
+                raise RuntimeError("synthetic bulk failure")
+
+    results = normalize_raw_games([first, malformed, second], TRAINER_UUID)
+    result = import_normalized_games(
+        results,
+        GameRepository(database, _checkpoint=fail_second_metadata),
+        bulk=True,
+    )
+
+    assert not result.completed
+    assert result.imported_count == 0
+    assert result.skipped_count == 1
+    assert len(result.warnings) == 1
+    assert result.failure is not None
+    assert "bulk failure" in result.failure.message
+    assert _count(database, "datasource_game") == 0
+    assert _count(database, "derived_game_position") == 0
+
+
+def test_bulk_interruption_rolls_back_all_games_and_propagates(tmp_path: Path) -> None:
+    database = tmp_path / "bulk-interrupt.db"
+    create_schema(database)
+    first = _raw("game-trainer-white.json")
+    second = _raw("game-trainer-black.json")
+    metadata_calls = 0
+
+    def interrupt_second_metadata(boundary: str) -> None:
+        nonlocal metadata_calls
+        if boundary == "metadata":
+            metadata_calls += 1
+            if metadata_calls == 2:
+                raise KeyboardInterrupt
+
+    with pytest.raises(KeyboardInterrupt):
+        import_normalized_games(
+            normalize_raw_games([first, second], TRAINER_UUID),
+            GameRepository(database, _checkpoint=interrupt_second_metadata),
+            bulk=True,
+        )
+
+    assert _count(database, "datasource_game") == 0
+    assert _count(database, "derived_game_position") == 0
 
 
 def test_interruption_rolls_back_only_active_game_and_propagates(tmp_path: Path) -> None:

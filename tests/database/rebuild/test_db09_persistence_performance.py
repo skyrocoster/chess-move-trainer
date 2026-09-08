@@ -7,7 +7,11 @@ from pathlib import Path
 from uuid import UUID, uuid5
 
 from chess_move_trainer.database import create_schema
-from chess_move_trainer.database.games.persistence import GameRepository, import_raw_games
+from chess_move_trainer.database.games.persistence import (
+    GameRepository,
+    import_normalized_games,
+    normalize_raw_games,
+)
 
 
 FIXTURES = Path(__file__).parents[1] / "games" / "fixtures"
@@ -33,7 +37,11 @@ def test_indexed_persistence_benchmark_is_bounded_and_aggregate_only(tmp_path: P
 
     expected_occurrences = BENCHMARK_GAME_COUNT * 5
     started = time.perf_counter()
-    result = import_raw_games(games, TRAINER_UUID, GameRepository(database))
+    result = import_normalized_games(
+        normalize_raw_games(games, TRAINER_UUID),
+        GameRepository(database),
+        bulk=True,
+    )
     elapsed_ms = (time.perf_counter() - started) * 1000
 
     with sqlite3.connect(database) as connection:
@@ -58,6 +66,7 @@ def test_indexed_persistence_benchmark_is_bounded_and_aggregate_only(tmp_path: P
     assert result.failure is None
     assert game_count == BENCHMARK_GAME_COUNT
     assert occurrence_count == expected_occurrences
+    assert elapsed_ms < 180_000
     assert index_columns == (
         "derived_position_id",
         "datasource_game_id",

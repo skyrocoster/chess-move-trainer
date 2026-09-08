@@ -1,30 +1,28 @@
 # Database rebuild flowcharts (decision support)
 
-Two visual maps of the clean database toolchain built by DB-01 through DB-08A, with the implemented
-DB-08 rebuild operations, the `openings acquire` source step, and the DB-09 handoff shown as
-decision-support context.
+Two visual maps of the confirmed current DB-09 direct lifecycle: one fixed database, exactly
+three public data-loading workflows, and a separate Stockfish analysis surface.
 
-- [`database-toolchain.md`](database-toolchain.md) — the complete flow: Chess.com acquisition,
-  raw month ledger, game import, opening publication, preferred moves, Stockfish
-  benchmark/bulk/queue/worker, the neighbor database's ten tables, `rebuild refresh`,
-  `rebuild verify`, `rebuild snapshot`, `rebuild candidate`, `rebuild replace`,
-  `rebuild rollback`, and the DB-09 proof gate.
-- [`database-operator-journeys.md`](database-operator-journeys.md) — the same toolchain seen as
-  operator scenarios: refresh and verify, later managed-candidate staging, optional acquisition,
-  direct serial initial analysis versus the API-03 queue, interruption and ordinary rerun,
-  snapshot plus replacement, rollback, and DB-09 proof.
-- [`database-command-inventory.md`](database-command-inventory.md) — the durable DB-09 package
-  command inventory and the noncanonical/forbidden legacy `scripts/` boundary.
+- [`database-toolchain.md`](database-toolchain.md) — the complete direct flow: retained game and
+  opening sources, `setup`, `update games`, `update openings`, internal composition, the fixed
+  database, separate Stockfish analysis, manual rare rebuild, and the DB-09 proof gate.
+- [`database-operator-journeys.md`](database-operator-journeys.md) — the same lifecycle as
+  operator scenarios: first setup, direct game updates, complete opening refresh, separate
+  Stockfish analysis, manual rare rebuild, and the pre-application proof boundary.
+- [`database-command-inventory.md`](database-command-inventory.md) — the exact three-workflow
+  public data-loading inventory, separate Stockfish surface, absent lifecycle machinery, and
+  noncanonical legacy-script boundary.
 
 ## Status: decision support only
 
-These diagrams are **not** settled product authority and **not** implementation authorization.
-They summarize the retained DB-08 assessment and the implemented command surface. The binding
-authorities remain the master plan's DB-08 envelope and the two grilling documents named there.
+These diagrams are **not** implementation authorization. They record the current direct-lifecycle
+correction from the confirmed simple-lifecycle grilling record and active DB-09 Plan. The
+completed DB-08/DB-08A Plans and prior grilling records remain historical and are not rewritten.
 
-Invariants shown deliberately: the old database (`data/database/chess_games.db`) is never
-modified, snapshotted, replaced, or deleted by DB-08, and application cutover (CUT-01) lies
-outside DB-08.
+Invariants shown deliberately: the fixed destination is exactly `data/database/chess.db`; the
+old production database remains untouched; raw sources are retained with only the approved
+current-month refetch/merge and no deletion; other files under `data/database/` are outside the
+workflow; and application integration/cutover remains behind the DB-09 pre-application gate.
 
 ## How to view the diagrams
 
@@ -48,10 +46,8 @@ step.
 
 ## Where the content comes from
 
-- Master plan DB-08 envelope: `docs/master-plans/database-rebuild/database-rebuild.md`
-  (slice "DB-08 — Rebuild, snapshot, and replacement operations").
-- Clean-toolchain records: `docs/plans/done/database-rebuild-db-01/` through
-  `docs/plans/done/database-rebuild-db-07/` (each focused Plan owns its accepted CLI commands,
-  package boundaries, and proof).
-- Conceptual evidence touchpoints named by the DB-08 envelope (legacy scripts, backend path
-  helpers) appear only as clearly marked legacy/future context, never as implementation targets.
+- Current behavioral authority: `docs/grilling-docs/database-rebuild-simple-lifecycle.md`.
+- Current implementation boundary: `docs/plans/active/database-rebuild-db-09/database-rebuild-db-09.md`.
+- Current master-plan record: `docs/master-plans/database-rebuild/database-rebuild.md`.
+- Completed DB-08/DB-08A Plans and prior grilling records remain historical evidence and are not
+  changed by this documentation correction.

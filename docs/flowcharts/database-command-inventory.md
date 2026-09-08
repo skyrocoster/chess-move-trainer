@@ -1,50 +1,54 @@
-# DB-09 package command inventory
+# DB-09 direct-lifecycle command inventory
 
-This is the durable command inventory for the DB-09 lifecycle. DB-09 may use only the
-package-owned commands listed here and their package-owned services. The commands remain
-noninteractive, use explicit paths or configuration, and keep their established exit and
-failure behavior.
+This is the current canonical inventory for the DB-09 data-loading surface. It records the
+confirmed direct lifecycle, not the historical DB-08 database-file operations. The fixed
+destination is exactly `data/database/chess.db`.
 
-## Supported package command surface
+## Supported public data-loading surface
 
-| DB-09 lifecycle step | Supported command | Package-owned responsibility |
+There are exactly three public data-loading workflows:
+
+| Workflow | Fixed-destination responsibility | Direct lifecycle boundary |
 |---|---|---|
-| Create or inspect the rebuilt database schema | `schema create --database PATH`; `schema inspect --database PATH` | Create or verify the compatible schema and render a deterministic inspection. |
-| Acquire retained Chess.com source data | `games acquire --config PATH --raw-root PATH` | Fetch the configured archive/month data into the raw month ledger; this is the network-facing games step. |
-| Import retained games into the database | `games import --config PATH --raw-root PATH --database PATH` | Read local raw months and publish normalized game and position data without network access. |
-| Acquire the opening source set | `openings acquire --source-dir PATH` | Resolve one fixed Lichess commit, retrieve and validate `a.tsv` through `e.tsv`, and publish the local five-file source set. Timing options are `--request-timeout` and `--request-delay`; there is no YAML acquisition config. |
-| Import the opening catalogue | `openings import --source-dir PATH --database PATH` | Strictly parse the explicit five-file source directory and publish the catalogue. |
-| Inspect opening recognition | `openings lookup --database PATH --fen FEN`; `openings replay --database PATH --pgn-file PATH` | Look up one FEN or replay one PGN through the imported catalogue. |
-| Manage preferred moves | `preferred-moves list`; `preferred-moves resolve`; `preferred-moves set`; `preferred-moves unset` | Read and write the package-owned preferred-move periods and resolve their effective state. |
-| Run direct Stockfish population or benchmark work | `stockfish benchmark`; `stockfish bulk`; `stockfish worker` | Run the explicit benchmark, direct initial/bulk analysis, or the supported queue worker and publish package-owned results. |
-| Refresh local rebuilt data | `rebuild refresh --config PATH` | Build or resume the configured neighbor from explicit retained local sources; it does not acquire from the network. |
-| Stage a candidate | `rebuild candidate --config PATH` | Build or resume only the managed sibling candidate from explicit retained local sources. |
-| Verify a lifecycle target | `rebuild verify --config PATH` | Verify the neighbor, managed candidate, or an explicit snapshot and report structural/replacement readiness. |
-| Create a retained snapshot | `rebuild snapshot --config PATH` | Create the package-owned verified WAL-safe snapshot. |
-| Replace the configured neighbor | `rebuild replace --config PATH` | Reverify, snapshot, and atomically swap only the managed neighbor under the established boundary. |
-| Roll back the configured neighbor | `rebuild rollback --config PATH` | Reverify a retained snapshot, preserve the current neighbor, and restore only the configured neighbor. |
-| Prove the real-data foundation | The DB-09 proof uses the commands above, especially `schema inspect`, `openings lookup`, `openings replay`, and the rebuild verification commands. | DB-09 is a proof gate, not a second command surface and not an authorization for application routes or cutover. |
+| `setup` | Create the absent `data/database/chess.db`, load complete base game data and the latest valid five-file opening catalogue, and create the schema-defined derived rows. | Refuses a pre-existing file. If this invocation created the database and later fails, it removes only that newly created database. It performs quick local checks only and does not run Stockfish. |
+| `update games` | Refetch the newest saved Chess.com month, fill missing months through the current month, and persist new or corrected games and their derived rows directly to `data/database/chess.db`. | Uses saved monthly files as the only fetch ledger; merges by Chess.com game ID, retains omitted games, processes months independently, skips invalid games individually with reasons, and performs quick local checks only. |
+| `update openings` | Fetch and publish the latest valid upstream `a.tsv` through `e.tsv` set, without a configured commit/version input, and rebuild the opening catalogue, routes, route moves, and endpoint positions in `data/database/chess.db`. | Validates all five files before publication. An invalid or incomplete set preserves the retained source files and current catalogue. It does not change game data, runs Stockfish, or perform full proof scans. |
 
-## Legacy scripts classification
+Acquisition, source validation, normalization, persistence, canonical-position resolution,
+and opening-route publication are internal steps of these workflows. Separate public fetch,
+import, rebuild, replacement, snapshot, rollback, recovery, or verification workflows are
+not part of the current data-loading surface.
 
-The relevant legacy families are retained only as historical context. The package commands above
-are the replacements or the authority-excluded boundary for DB-09:
+## Separate Stockfish analysis surface
 
-| Legacy family | Classification | DB-09 meaning |
-|---|---|---|
-| `scripts/chess_com/` schema/DDL helpers, including the old `create_schema` and `_schema.py` family | **Replaced** | Use `schema create` and `schema inspect`; do not import or call the old schema helpers. |
-| `scripts/chess_com/` fetch, archive, raw-ledger, and replay helpers, including the old `request`, `save_json`, `upsert_month`, `mark_state`, and `run` family | **Replaced** | Use `games acquire`, `games import`, and the package-owned normalization services. |
-| `scripts/opening_catalog/` schema, classification, recurrence, and catalogue helpers | **Replaced** | Use the package-owned opening source loader, `openings acquire`, `openings import`, `openings lookup`, and `openings replay`. |
-| `scripts/chess_com/_replay.py` and other legacy replay/opening/preference helpers | **Replaced or authority-excluded/noncanonical** | They are evidence for historical behavior only; they are not DB-09 runtime or proof dependencies. |
-| `scripts/refresh_chess_com.py` and legacy refresh wrappers | **Authority-excluded/noncanonical** | Rebuild refresh and the supported games commands are the only accepted lifecycle path. |
-| `scripts/check.py` and maintenance/test wrappers | **Authority-excluded/noncanonical** | Maintenance tooling is not a DB-09 lifecycle command or proof substitute. |
+Stockfish remains a separate analysis surface rather than a data-loading workflow. The
+package-owned `stockfish benchmark`, `stockfish bulk`, and `stockfish worker` operations may
+publish analysis data under their established analysis contract, but `setup`, `update games`,
+and `update openings` never invoke them. Internal analysis services may remain separately
+owned; they do not add a fourth data-loading workflow.
 
-**No `scripts/` command, import, wrapper, fallback, or delegation is permitted in the accepted
-DB-09 path.** A legacy name appearing in this classification does not make that script an
-acceptable command, compatibility target, fallback, or implementation dependency.
+## Deliberately absent database-file lifecycle machinery
 
-## Boundary
+The supported current lifecycle has no neighboring database, candidate database, replacement
+or swap operation, snapshot system, rollback command, recovery command, replacement-readiness
+gate, dedicated reset/rebuild command, or separate operator verification step. A rare full
+rebuild is manual: an operator deliberately removes or moves the fixed database outside these
+commands and then runs `setup`. The tool does not automate that destructive action or provide
+a resume protocol for a failed setup.
 
-This inventory does not add a schema, persistence, API, frontend, cutover, old-database, or
-real-data implementation. Application cutover remains outside DB-08/DB-09, and historical plans
-and private data remain outside this document.
+## Retained boundaries
+
+- The old production database remains untouched and is not a source or setup blocker.
+- Raw game sources remain retained; no raw-source deletion or unrelated source-policy change
+  is part of this lifecycle.
+- The approved ten-table schema and its version mechanism remain the schema boundary; no
+  lifecycle state, manifest, run-history, or other schema expansion is introduced.
+- Legacy scripts remain read-only, noncanonical evidence. No script command, import, wrapper,
+  fallback, delegation, or runtime dependency is an accepted DB-09 path.
+- Other files under `data/database/` are outside this workflow and are not inspected, cleaned,
+  reorganized, or treated as blockers.
+- Backend, frontend, HTTP API, application integration, and cutover remain outside the
+  pre-application DB-09 gate.
+
+This inventory does not create a database, change the schema or dependencies, authorize
+application work, or rewrite the completed DB-08/DB-08A Plans or prior grilling records.

@@ -1,6 +1,6 @@
 # DB-09 simple direct database lifecycle - set up and update one usable database
 
-> **Status:** pending - stage ownership and proof order corrected; implementation and real-data proof remain
+> **Status:** done - direct lifecycle, real database, separate Stockfish proof, and closeout accepted 2026-09-08
 
 - **Read trigger:** Read before implementing the DB-09 direct lifecycle, its focused proof, or its final result recording.
 - **Upstream:** [confirmed simple lifecycle](../../../grilling-docs/database-rebuild-simple-lifecycle.md) is the
@@ -43,7 +43,7 @@ Stages are sequential; no stages run in parallel. A passing proof remains valid 
 inputs, exercised behavior, configuration, dependencies, or environment. Later stages rerun only missing or invalidated
 proof. The coordinator may split an oversized stage without changing the approved outcome.
 
-### 1. pending - Document the canonical direction and supported public surface
+### 1. complete - Document the canonical direction and supported public surface
 
 **Ordered actions**
 1. Record the fixed direct destination, three public data-loading operations, setup cleanup boundary, incremental
@@ -72,7 +72,7 @@ dependency decision, an application/cutover decision, or any request to rewrite 
 **Breakpoint:** Coordinator review that the master/current flowchart correction records the new direction without
 falsifying DB-08 history.
 
-### 2. pending - Establish the direct lifecycle foundation, public adapters, and obsolete-contract removal
+### 2. complete - Establish the direct lifecycle foundation, public adapters, and obsolete-contract removal
 
 **Ordered actions**
 1. Make the package-owned lifecycle resolve only to `data/database/chess.db`; do not expose an arbitrary destination,
@@ -108,7 +108,7 @@ separate verify command.
 
 **Breakpoint:** None while the three-command boundary and fixed destination remain as confirmed.
 
-### 3. pending - Implement one-time setup into an absent database
+### 3. complete - Implement one-time setup into an absent database
 
 **Ordered actions**
 1. Check `data/database/chess.db` before any setup mutation. If any file exists, fail clearly and do not replace,
@@ -134,7 +134,7 @@ schema catalogue, add persisted progress/failure state, or guarantee resumabilit
 
 **Breakpoint:** None; the absent-path and cleanup behavior is settled by the confirmed lifecycle.
 
-### 4. pending - Implement direct incremental game updates
+### 4. complete - Implement direct incremental game updates
 
 **Ordered actions**
 1. Implement `update games` over the saved monthly files as the only fetch ledger. Start at the newest saved month,
@@ -163,7 +163,7 @@ dependency, raw-source policy, or application contract is required.
 
 **Breakpoint:** None while the saved-month ledger and direct per-game transaction semantics remain sufficient.
 
-### 5. pending - Implement complete latest-valid opening updates
+### 5. complete - Implement complete latest-valid opening updates
 
 **Ordered actions**
 1. Make `update openings` obtain the latest upstream `a.tsv` through `e.tsv` set without a configured commit/version
@@ -189,7 +189,7 @@ requires changing game data or the schema catalogue.
 
 **Breakpoint:** None; the latest-valid complete-set boundary is settled upstream.
 
-### 6. pending - Reconcile focused contracts and retain unaffected proof
+### 6. complete - Reconcile focused contracts and retain unaffected proof
 
 **Ordered actions**
 1. Update focused configuration examples, package exports, CLI tests, source-boundary tests, command inventory, and
@@ -219,7 +219,7 @@ semantics, broaden public API ownership, or absorb an unrelated `data/database/`
 
 **Breakpoint:** Coordinator review of the final supported command inventory before real-data population.
 
-### 7. pending - Populate the fixed database and complete direct DB-09 proof
+### 7. complete - Populate the fixed database and complete direct DB-09 proof
 
 **Ordered actions**
 1. Confirm only the exact precondition for `data/database/chess.db`: it must be absent before setup. If it exists,
@@ -258,7 +258,7 @@ Stockfish proof requires changing its accepted profile or persistence contract.
 **Breakpoint:** Coordinator acceptance of the real direct database and focused DB-09 evidence before any application
 slice is considered.
 
-### 8. pending - Record final evidence and close the active Plan
+### 8. complete - Record final evidence and close the active Plan
 
 **Ordered actions**
 1. Record each accepted stage, exact focused proof, retained proof, and any breakpoint decision in this Plan. State
@@ -285,18 +285,55 @@ acceptance decision.
 
 ## Progress and decisions
 
-- **Stage 1:** pending - canonical direction and the three-command public surface remain to be recorded in current
-  master/flowchart records; breakpoint: coordinator review.
-- **Stage 2:** pending - direct fixed-path lifecycle foundation, public adapters, and obsolete lifecycle removal remain;
-  breakpoint: none.
-- **Stage 3:** pending - absent-path setup and exact failure cleanup remain; breakpoint: none.
-- **Stage 4:** pending - direct incremental game update semantics remain; breakpoint: none.
-- **Stage 5:** pending - latest-valid complete opening update remains; breakpoint: none.
-- **Stage 6:** pending - focused contract adaptation, obsolete candidate-path test removal, and retained-proof
-  reconciliation remain; breakpoint: coordinator command-inventory review.
-- **Stage 7:** pending - `data/database/chess.db` real population, direct DB-09 proof, and separate bounded Stockfish
-  proof remain; breakpoint: coordinator evidence acceptance.
-- **Stage 8:** pending - final evidence/result recording and Plan closeout remain; breakpoint: coordinator acceptance.
+- **Stage 1:** complete - coordinator accepted the bounded manual/static review of the current master plan and
+  flowchart records. They now name the exact `data/database/chess.db` destination, exactly `setup`, `update games`,
+  and `update openings` as public data-loading workflows, separate Stockfish analysis, the unsupported database-file
+  lifecycle machinery, the manual rare-rebuild rule, and the old-database/raw-source/schema/legacy/pre-application
+  boundaries. No source, test, historical record, or real database changed; breakpoint passed 2026-09-08.
+- **Stage 2:** complete - coordinator accepted the fixed-path lifecycle seam, the three thin data-loading adapters,
+  and removal of obsolete candidate/snapshot/replacement/rollback/recovery/verification modules and exports while
+  retaining separate supported domain surfaces. The final focused command passed `24` tests, and the finite `setup`,
+  `update games`, `update openings`, and top-level help scenarios all exited `0`, described the non-configurable
+  `data/database/chess.db` destination, and omitted retired database-file lifecycle commands. No real database,
+  network, or engine operation occurred; breakpoint: none.
+- **Stage 3:** complete - coordinator accepted the fixed-path setup composition and its focused temporary-path proof:
+  `tests/database/test_setup.py` passed `5` tests. The accepted scenarios cover complete source composition and owned
+  derived rows, refusal before side effects with byte preservation, deletion of only a newly created failed database,
+  quick checks, and no Stockfish, legacy script, public-subcommand, or real-network use. The lifecycle behavior change
+  invalidated only its retained CLI test; `tests/database/test_lifecycle_cli.py` was rerun and passed `7` tests.
+- **Stage 4:** complete - coordinator accepted the direct saved-month-ledger update and focused proof. The exact Stage 4
+  command passed `49` tests, covering newest-month refetch, gap filling, Chess.com ID correction/omission semantics,
+  validation before source publication, independent month and transaction progress, reported per-game rejection,
+  direct normalized/derived persistence, absent fetch-state tables, and transport-free local persistence. CLI/help and
+  setup behavior were unchanged, so their retained passing proof remains valid.
+- **Stage 5:** complete - coordinator accepted the latest-valid five-file opening update and its exact focused proof,
+  which passed `64` tests. Injected-transport scenarios and retained lower-level tests prove validation before
+  publication, invalid/incomplete preservation, transient-staging cleanup, ephemeral upstream revision, complete
+  transactional catalogue/route/move/endpoint regeneration, and unchanged game/occurrence rows. CLI, setup, and game
+  update behavior were unaffected, so their accepted proof remains retained.
+- **Stage 6:** complete - coordinator accepted the reconciled fixed-path examples, package/source boundaries, command
+  inventory checks, and direct-path DB-09 proof helpers. The obsolete rebuild example and candidate-path helper were
+  deleted rather than bypassed. The final exact focused command passed `21` tests, and the bounded inventory review
+  reconfirmed exactly three public data-loading workflows, separate Stockfish, the manual rare-rebuild rule, retired
+  lifecycle absence, and all explicit preservation/pre-application boundaries. Stages 2-5 behavior and help were not
+  changed, so their proof remains retained; breakpoint passed 2026-09-08.
+- **Stage 7:** complete - the coordinator confirmed the fixed path was absent, then accepted the successful finite real
+  `setup`, `update games`, and `update openings` scenarios in order. The updates reported one month/`74` games/zero
+  skips and `3,329` opening labels/`3,810` routes/`36,925` route moves. Separate Stockfish 18 Tool-profile proof selected
+  and published one result with five ranked candidate lines. After replacing stale historical snapshot expectations
+  with direct-lifecycle aggregate and semantic assertions, the exact DB-09 proof command passed `7` tests over `3,598`
+  games, `162,277` positions, `183,682` occurrences, one analysis result, and five analysis lines; all `17` measured
+  operations completed three repetitions and produced `NO-INDEX`. No source/private details were reported, and no old
+  or sibling database, raw source, schema, dependency, application, or unsupported lifecycle operation was touched;
+  breakpoint passed 2026-09-08.
+- **Stage 8:** complete - the coordinator accepted closeout evidence from the accepted Stages 1-7 ledger, including the fixed direct
+  database result, separate Stockfish proof, retained focused tests, and the explicit retired DB-08/DB-08A distinction.
+  The exact command-inventory consistency proof passed `1` test:
+  `timeout 60s .venv/Scripts/python.exe -m pytest tests/database/test_command_inventory.py -q` (command timeout `60s`;
+  Bash tool timeout `90000ms`). Manual review against `docs/PLAN_TEMPLATE.md` confirms the title/visible-result line,
+  status, read trigger/upstream, outcome, scope, sequential stages with actions/proof/escalation/breakpoints,
+  progress and decisions, proof, and escalation-boundary sections; no design-fidelity section is applicable. The
+  visible result and evidence record were accepted, the breakpoint passed 2026-09-08, and the Plan moved to done.
 
 ## Proof
 

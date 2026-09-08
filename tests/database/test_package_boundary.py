@@ -11,6 +11,7 @@ ROOT = Path(__file__).parents[2]
 def test_common_package_and_database_namespace_are_importable() -> None:
     package = importlib.import_module("chess_move_trainer")
     database = importlib.import_module("chess_move_trainer.database")
+    lifecycle = importlib.import_module("chess_move_trainer.database.lifecycle")
     positions = importlib.import_module("chess_move_trainer.database.positions")
     games = importlib.import_module("chess_move_trainer.database.games")
     openings = importlib.import_module("chess_move_trainer.database.openings")
@@ -18,6 +19,15 @@ def test_common_package_and_database_namespace_are_importable() -> None:
 
     assert package.__name__ == "chess_move_trainer"
     assert database.__name__ == "chess_move_trainer.database"
+    assert lifecycle.__name__ == "chess_move_trainer.database.lifecycle"
+    assert lifecycle.DEFAULT_DATABASE_PATH.as_posix() == "data/database/chess.db"
+    assert tuple(operation.value for operation in lifecycle.LifecycleOperation) == (
+        "setup",
+        "update games",
+        "update openings",
+    )
+    for name in ("setup_database", "update_games", "update_openings"):
+        assert hasattr(lifecycle, name)
     assert positions.__name__ == "chess_move_trainer.database.positions"
     assert games.__name__ == "chess_move_trainer.database.games"
     assert openings.__name__ == "chess_move_trainer.database.openings"
@@ -25,16 +35,6 @@ def test_common_package_and_database_namespace_are_importable() -> None:
     for name in (
         "OpeningRouteSource",
         "load_opening_sources",
-        "OpeningAcquisitionError",
-        "OpeningAcquisitionFailure",
-        "OpeningAcquisitionResult",
-        "OpeningAcquisitionTransport",
-        "HttpxOpeningAcquisitionTransport",
-        "acquire_openings",
-        "validate_request_timing",
-        "CataloguePublication",
-        "OpeningCatalogueRepository",
-        "import_opening_catalogue",
         "OpeningInputError",
         "RecognizedOpening",
         "OpeningRecognition",
@@ -43,14 +43,25 @@ def test_common_package_and_database_namespace_are_importable() -> None:
     ):
         assert hasattr(openings, name)
     for name in (
-        "RebuildConfiguration",
-        "RebuildConfigurationError",
-        "RebuildOperation",
-        "OperationOutcome",
-        "OperationStatus",
-        "load_rebuild_configuration",
+        "DEFAULT_DATABASE_PATH",
+        "Db09Proof",
+        "collect_db09_proof",
     ):
         assert hasattr(rebuild, name)
+    for name in (
+        "OpeningAcquisitionError",
+        "OpeningAcquisitionResult",
+        "acquire_openings",
+        "import_opening_catalogue",
+        "RebuildConfiguration",
+        "RebuildOperation",
+        "verify_database",
+        "create_snapshot",
+        "replace_rebuilt_neighbour",
+        "rollback_rebuilt_neighbour",
+    ):
+        assert not hasattr(openings, name)
+        assert not hasattr(rebuild, name)
     assert Path(package.__file__).parts[-3:-1] == ("src", "chess_move_trainer")
 
 

@@ -198,6 +198,86 @@ def acquire_months(
     )
 
 
+def acquire_incremental_months(
+    configuration: AcquireConfiguration,
+    raw_root: Path,
+    *,
+    transport: JsonTransport | None = None,
+    clock: AcquisitionClock | None = None,
+    sleep: Callable[[float], None] = time.sleep,
+) -> AcquisitionResult:
+    """Refetch the saved ledger tail and acquire every later archive month.
+
+    The newest saved month is the only retained source that is refetched.  Its
+    remote response is merged over the saved games by Chess.com UUID; later
+    months are acquired as independent source files.  Every month is validated
+    before publication, so a bad response cannot replace a usable saved file.
+    """
+
+    effective_transport = transport if transport is not None else HttpxJsonTransport()
+    effective_clock = clock if clock is not None else SystemClock()
+    try:
+        archive_response = effective_transport.get_json(
+            _archive_url(configuration.username), timeout=configuration.request_timeout
+        )
+        listed_months = _discover_months(archive_response, configuration.username)
+        current = _current_month(effective_clock)
+        saved = _saved_month_paths(raw_root)
+        if not saved:
+            raise AcquisitionError("no saved monthly game file is available as an update ledger")
+        newest = max(saved)
+        archive_by_month = {(item.year, item.month): item for item in listed_months}
+        newest_archive = archive_by_month.get(newest)
+        if newest_archive is None:
+            label = month_label(*newest)
+            raise AcquisitionError(
+                f"newest saved month {label} is not listed in the discovered archive"
+            )
+    except Exception as error:
+        return AcquisitionResult(
+            published_months=(),
+            skipped_months=(),
+            failures=(AcquisitionFailure(month=None, message=str(error)),),
+        )
+
+    published: list[str] = []
+    failures: list[AcquisitionFailure] = []
+    for archive_month in listed_months:
+        month_key = (archive_month.year, archive_month.month)
+        if month_key < newest or month_key > current:
+            continue
+        target = raw_root / "games" / f"{archive_month.year:04d}" / f"{archive_month.month:02d}.json"
+        try:
+            if configuration.request_delay:
+                sleep(configuration.request_delay)
+            remote = effective_transport.get_json(
+                archive_month.url, timeout=configuration.request_timeout
+            )
+            if month_key == newest:
+                candidate = merge_current_month(load_month(target), remote)
+            else:
+                # publish_month performs the complete envelope validation for
+                # a newly acquired gap or current month.
+                candidate = remote
+            publish_month(
+                target,
+                candidate,
+                replace_existing=target.exists(),
+            )
+        except Exception as error:
+            failures.append(
+                AcquisitionFailure(month=archive_month.label, message=str(error))
+            )
+            continue
+        published.append(archive_month.label)
+
+    return AcquisitionResult(
+        published_months=tuple(published),
+        skipped_months=(),
+        failures=tuple(failures),
+    )
+
+
 def _archive_url(username: str) -> str:
     return f"{CHESSCOM_API_ORIGIN}/pub/player/{quote(username, safe='')}/games/archives"
 
@@ -239,3 +319,17 @@ def _current_month(clock: AcquisitionClock) -> tuple[int, int]:
         raise AcquisitionError("acquisition clock must return a timezone-aware datetime")
     utc_now = now.astimezone(UTC)
     return utc_now.year, utc_now.month
+
+
+def _saved_month_paths(raw_root: Path) -> dict[tuple[int, int], Path]:
+    games_root = raw_root / "games"
+    if not games_root.is_dir():
+        return {}
+    saved: dict[tuple[int, int], Path] = {}
+    for path in games_root.glob("[0-9][0-9][0-9][0-9]/[0-9][0-9].json"):
+        try:
+            key = parse_month_selection(f"{path.parent.name}-{path.stem}")
+        except ValueError:
+            continue
+        saved[key] = path
+    return saved

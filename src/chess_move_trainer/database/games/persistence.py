@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable, Iterable, Iterator
 from contextlib import ExitStack, contextmanager
 from dataclasses import dataclass
+from itertools import chain
 from pathlib import Path
 from typing import Any
 from uuid import UUID
@@ -38,6 +39,14 @@ class PersistedGame:
 class ImportFailure:
     game_uuid: str
     message: str
+
+
+class _BulkImportAbort(Exception):
+    """Carry one ordinary import failure out of the bulk transaction."""
+
+    def __init__(self, result: ImportResult) -> None:
+        super().__init__(result.failure.message if result.failure is not None else "bulk import failed")
+        self.result = result
 
 
 @dataclass(frozen=True, slots=True)
@@ -115,6 +124,24 @@ class GameRepository:
 
         if not isinstance(game, NormalizedGame):
             raise TypeError("game must be a fully normalized game")
+        with connection.begin():
+            return self._persist_in_transaction(
+                connection,
+                game,
+                position_cache=position_cache,
+            )
+
+    def _persist_in_transaction(
+        self,
+        connection: object,
+        game: NormalizedGame,
+        *,
+        position_cache: dict[PositionIdentity, int] | None = None,
+    ) -> PersistedGame:
+        """Persist one game while the caller owns the active transaction."""
+
+        if not isinstance(game, NormalizedGame):
+            raise TypeError("game must be a fully normalized game")
         existing = connection.execute(
             text(
                 """
@@ -134,7 +161,6 @@ class GameRepository:
         if existing is not None:
             game_id = int(existing[0])
             if _stored_game_matches(connection, game, existing):
-                connection.commit()
                 return PersistedGame(
                     game_id=game_id,
                     corrected=False,
@@ -142,66 +168,64 @@ class GameRepository:
                 )
         else:
             game_id = None
-        connection.commit()
 
         corrected = existing is not None
-        with connection.begin():
-            if corrected:
-                assert game_id is not None
-                connection.execute(
-                    text(_UPDATE_GAME_SQL),
-                    _metadata_parameters(game, game_id=game_id),
-                )
-            else:
-                connection.execute(text(_INSERT_GAME_SQL), _metadata_parameters(game))
-                inserted = connection.execute(
-                    text(
-                        "SELECT dg_game_id FROM datasource_game "
-                        "WHERE dg_chesscom_game_uuid = :game_uuid"
-                    ),
-                    {"game_uuid": str(game.chesscom_game_uuid)},
-                ).one()
-                game_id = int(inserted[0])
-            self._checkpoint("metadata")
-
-            run_position_cache = position_cache if position_cache is not None else {}
-            position_work = _PositionUnitOfWork(
-                connection,
-                position_cache=run_position_cache,
+        if corrected:
+            assert game_id is not None
+            connection.execute(
+                text(_UPDATE_GAME_SQL),
+                _metadata_parameters(game, game_id=game_id),
             )
-            position_ids_by_identity: dict[PositionIdentity, int] = {}
-            for occurrence in game.occurrences:
-                identity = _position_identity(occurrence.position)
-                if identity not in position_ids_by_identity:
-                    position_ids_by_identity[identity] = position_work._resolve(
-                        occurrence.position
-                    )
-                self._checkpoint("position")
+        else:
+            connection.execute(text(_INSERT_GAME_SQL), _metadata_parameters(game))
+            inserted = connection.execute(
+                text(
+                    "SELECT dg_game_id FROM datasource_game "
+                    "WHERE dg_chesscom_game_uuid = :game_uuid"
+                ),
+                {"game_uuid": str(game.chesscom_game_uuid)},
+            ).one()
+            game_id = int(inserted[0])
+        self._checkpoint("metadata")
 
-            if corrected:
-                connection.execute(
-                    text(
-                        "DELETE FROM derived_game_position "
-                        "WHERE datasource_game_id = :game_id"
-                    ),
-                    {"game_id": game_id},
+        run_position_cache = position_cache if position_cache is not None else {}
+        position_work = _PositionUnitOfWork(
+            connection,
+            position_cache=run_position_cache,
+        )
+        position_ids_by_identity: dict[PositionIdentity, int] = {}
+        for occurrence in game.occurrences:
+            identity = _position_identity(occurrence.position)
+            if identity not in position_ids_by_identity:
+                position_ids_by_identity[identity] = position_work._resolve(
+                    occurrence.position
                 )
-            occurrence_parameters = [
-                {
-                    "game_id": game_id,
-                    "ply": occurrence.ply,
-                    "position_id": position_ids_by_identity[
-                        _position_identity(occurrence.position)
-                    ],
-                    "move_uci": occurrence.move_uci,
-                    "halfmove_clock": occurrence.halfmove_clock,
-                    "fullmove_number": occurrence.fullmove_number,
-                }
-                for occurrence in game.occurrences
-            ]
-            connection.execute(text(_INSERT_OCCURRENCE_SQL), occurrence_parameters)
-            for _ in occurrence_parameters:
-                self._checkpoint("occurrence")
+            self._checkpoint("position")
+
+        if corrected:
+            connection.execute(
+                text(
+                    "DELETE FROM derived_game_position "
+                    "WHERE datasource_game_id = :game_id"
+                ),
+                {"game_id": game_id},
+            )
+        occurrence_parameters = [
+            {
+                "game_id": game_id,
+                "ply": occurrence.ply,
+                "position_id": position_ids_by_identity[
+                    _position_identity(occurrence.position)
+                ],
+                "move_uci": occurrence.move_uci,
+                "halfmove_clock": occurrence.halfmove_clock,
+                "fullmove_number": occurrence.fullmove_number,
+            }
+            for occurrence in game.occurrences
+        ]
+        connection.execute(text(_INSERT_OCCURRENCE_SQL), occurrence_parameters)
+        for _ in occurrence_parameters:
+            self._checkpoint("occurrence")
 
         if position_cache is not None:
             position_cache.update(position_work._new_positions)
@@ -258,6 +282,8 @@ def load_normalized_months(
 def import_normalized_games(
     normalized_games: Iterable[NormalizationResult],
     repository: GameRepository,
+    *,
+    bulk: bool = False,
 ) -> ImportResult:
     """Persist one already-normalized source batch in source order."""
 
@@ -266,9 +292,10 @@ def import_normalized_games(
     warnings: list[NormalizationWarning] = []
     repository._last_import_writes = 0
     position_cache: dict[PositionIdentity, int] = {}
+    normalized_iterator = iter(normalized_games)
     with ExitStack() as stack:
         connection: object | None = None
-        for normalized in normalized_games:
+        for normalized in normalized_iterator:
             if normalized.game is None:
                 skipped_count += 1
                 assert normalized.warning is not None
@@ -289,6 +316,44 @@ def import_normalized_games(
                             message=f"game could not be persisted: {error}",
                         ),
                     )
+            if bulk:
+                try:
+                    with connection.begin():
+                        for pending in chain((normalized,), normalized_iterator):
+                            if pending.game is None:
+                                skipped_count += 1
+                                assert pending.warning is not None
+                                warnings.append(pending.warning)
+                                continue
+                            try:
+                                repository._persist_in_transaction(
+                                    connection,
+                                    pending.game,
+                                    position_cache=position_cache,
+                                )
+                            except KeyboardInterrupt:
+                                raise
+                            except Exception as error:
+                                raise _BulkImportAbort(
+                                    ImportResult(
+                                        imported_count=0,
+                                        skipped_count=skipped_count,
+                                        warnings=tuple(warnings),
+                                        failure=ImportFailure(
+                                            game_uuid=str(pending.game.chesscom_game_uuid),
+                                            message=f"game could not be persisted: {error}",
+                                        ),
+                                    )
+                                ) from error
+                            imported_count += 1
+                except _BulkImportAbort as abort:
+                    return abort.result
+                return ImportResult(
+                    imported_count=imported_count,
+                    skipped_count=skipped_count,
+                    warnings=tuple(warnings),
+                    failure=None,
+                )
             try:
                 repository._persist_on_connection(
                     connection,
@@ -320,13 +385,27 @@ def import_raw_months(
     raw_root: Path,
     trainer_uuid: UUID,
     repository: GameRepository,
+    *,
+    bulk: bool = False,
 ) -> ImportResult:
     """Read only DB-03 month files in deterministic order and import their games."""
 
     return import_normalized_games(
         load_normalized_months(raw_root, trainer_uuid),
         repository,
+        bulk=bulk,
     )
+
+
+def import_raw_month(
+    month_path: Path,
+    trainer_uuid: UUID,
+    repository: GameRepository,
+) -> ImportResult:
+    """Normalize and persist one validated month independently."""
+
+    envelope = load_month(month_path)
+    return import_raw_games(envelope["games"], trainer_uuid, repository)
 
 
 def _stored_game_matches(

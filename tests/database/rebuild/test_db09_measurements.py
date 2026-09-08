@@ -8,26 +8,27 @@ from chess_move_trainer.database.rebuild.proof import (
     collect_db09_measurements,
     print_db09_measurements,
 )
+from chess_move_trainer.database.stockfish import TOOL_PROFILE
 
 
 ROOT = Path(__file__).parents[3]
-CANDIDATE = ROOT / "data/chess-com/rebuild/db-09-neighbour.db.candidate"
+DIRECT_DATABASE = ROOT / "data/database/chess.db"
 
 
-def _candidate() -> Path:
-    return Path(os.environ.get("DB09_DATABASE", str(CANDIDATE)))
+def _database() -> Path:
+    return Path(os.environ.get("DB09_DATABASE", str(DIRECT_DATABASE)))
 
 
-def test_real_candidate_records_direct_query_plans_and_timings() -> None:
-    report = collect_db09_measurements(_candidate())
+def test_real_direct_database_records_query_plans_and_timings() -> None:
+    report = collect_db09_measurements(_database())
 
-    assert report.database_path == _candidate().resolve()
+    assert report.database_path == _database().resolve()
     assert report.corpus.database_count == 1
-    assert report.corpus.game_count == 12_693
-    assert report.corpus.position_count == 529_890
-    assert report.corpus.occurrence_count == 656_606
-    assert report.corpus.analysis_result_count == 26
-    assert report.corpus.analysis_line_count == 120
+    assert report.corpus.game_count > 0
+    assert report.corpus.position_count > 0
+    assert report.corpus.occurrence_count >= report.corpus.game_count
+    assert report.corpus.analysis_result_count == 1
+    assert report.corpus.analysis_line_count == TOOL_PROFILE.multipv
 
     operation_names = {measurement.name for measurement in report.measurements}
     assert "GameReadRepository.read" in operation_names
@@ -67,33 +68,40 @@ def test_real_candidate_records_direct_query_plans_and_timings() -> None:
         assert measurement.result_row_count >= 0
         assert all(elapsed >= 0 for elapsed in measurement.elapsed_seconds)
 
-    assert report.index_decision == "INDEX-JUSTIFIED"
-    assert report.index_table == "derived_game_position"
-    assert report.index_columns == (
-        "derived_position_id",
-        "datasource_game_id",
-        "dgp_ply",
-    )
+    assert report.index_decision in {"NO-INDEX", "INDEX-JUSTIFIED"}
+    if report.index_decision == "INDEX-JUSTIFIED":
+        assert report.index_table == "derived_game_position"
+        assert report.index_columns == (
+            "derived_position_id",
+            "datasource_game_id",
+            "dgp_ply",
+        )
+    else:
+        assert report.index_table is None
+        assert report.index_columns == ()
     assert "No timing threshold" in report.decision_reason
 
     print_db09_measurements(report)
 
 
 def test_measurement_output_is_aggregate_only(capsys) -> None:
-    report = collect_db09_measurements(_candidate())
+    report = collect_db09_measurements(_database())
     print_db09_measurements(report)
     output = capsys.readouterr().out
 
-    assert "games=12693" in output
-    assert "positions=529890" in output
-    assert "occurrences=656606" in output
-    assert "analysis_results=26" in output
-    assert "analysis_lines=120" in output
+    for name, value in (
+        ("games", report.corpus.game_count),
+        ("positions", report.corpus.position_count),
+        ("occurrences", report.corpus.occurrence_count),
+        ("analysis_results", report.corpus.analysis_result_count),
+        ("analysis_lines", report.corpus.analysis_line_count),
+    ):
+        assert f"{name}={value}" in output
     assert "repetitions=3" in output
     assert "elapsed_ms_min=" in output
     assert "elapsed_ms_median=" in output
     assert "elapsed_ms_max=" in output
-    assert "decision=INDEX-JUSTIFIED" in output
+    assert f"decision={report.index_decision}" in output
 
     assert not re.search(r"https?://|[0-9a-f]{8}-[0-9a-f-]{27,}", output, re.I)
     assert not re.search(r"\b(?:SELECT|INSERT|UPDATE|DELETE|PRAGMA)\b", output, re.I)
