@@ -1,7 +1,7 @@
 # Database rebuild
 
-> **Status:** completed database foundation; `SETUP-01` is next
-> **Acceptance:** The rebuilt package, direct lifecycle, real database, and focused proof were accepted on 2026-09-08.
+> **Status:** completed database foundation and `SETUP-01`; `SETUP-02` is next
+> **Acceptance:** The rebuilt foundation and automatic preferred-move setup were accepted on 2026-09-08.
 
 ## Purpose and current starting point
 
@@ -10,10 +10,9 @@ The database rebuild is complete. The repository now has one package-owned SQLit
 separate bounded Stockfish analysis. This document records that foundation as one completed capability; it no longer
 uses the historical DB-01 through DB-09 sequence as its organizing structure.
 
-The next selectable work is `SETUP-01` grilling for reviewed preferred-move setup inference. This document does not
-authorize `SETUP-01` implementation, application integration, physical database activation, old-database cleanup, or
-deletion. Each future outcome remains separately gated by its required grilling, coordinator approval, and focused Plan
-when nontrivial.
+The next selectable work is `SETUP-02` grilling for tools that control and manage APIs. This document does not authorize
+that work, application integration, physical database activation, old-database cleanup, or deletion. Each later outcome
+remains separately gated by its required grilling, coordinator approval, and a focused Plan when nontrivial.
 
 ## Completed database foundation
 
@@ -114,9 +113,11 @@ preferred move or an explicit no-preference value; a date with no row is unconfi
 resolving, setting, and unsetting periods with legal-position validation, overlap-safe normalization, and atomic writer
 transactions.
 
-The rebuilt database currently contains no preference rows. Setup inference has not been implemented, inferred choices
-have not been fabricated, and no setup proposal is canonical state. Reviewed inference and explicit application are the
-separate `SETUP-01` outcome described below.
+The package now also supports `preferred-moves setup`, the fixed empty-schedule-only inference command accepted in
+SETUP-01. It examines trainer moves in the first 30 plies through rolling 90-day windows, requires at least 21 matching
+plays and an inclusive 80-percent share, validates the complete result, and writes it atomically without a proposal or
+review step. The accepted real invocation populated 108 periods across 91 positions; any later invocation refuses the
+now-nonempty schedule.
 
 ### Analysis, queue, and Stockfish
 
@@ -163,7 +164,7 @@ The accepted database at `data/database/chess.db` contains:
 3,810 opening routes
 36,925 route moves
 1 analysis result with 5 candidate lines
-0 preferred-move periods
+108 preferred-move periods across 91 positions
 0 queued analysis requests
 ```
 
@@ -173,8 +174,9 @@ passed (`integrity_check = ok`, no foreign-key violations), the accepted databas
 `FULL` synchronous setting and no journal/WAL/SHM sidecars, and the measured direct access paths passed their proof
 thresholds. The retained focused evidence includes the 512-game/2,560-occurrence regression under one second, the
 ledger-only proof, and complete DB-09 proof. A separate bounded Stockfish 18 Tool-profile run published the one result
-and five lines above. No API, frontend, application cutover, broad maintenance run, or old-database operation was part
-of this acceptance.
+and five lines above. SETUP-01 later examined all 12,710 accepted games, skipped none, reported seven positions with
+overlapping qualifying evidence, and atomically applied the 108 preferred-move periods. No API, frontend, application
+cutover, broad maintenance run, or old-database operation was part of either acceptance.
 
 ### Safety and application boundary
 
@@ -204,6 +206,7 @@ instructions:
 - [DB-08 Plan](../../plans/done/database-rebuild-db-08/database-rebuild-db-08.md)
 - [DB-08A Plan](../../plans/done/database-rebuild-db-08a/database-rebuild-db-08a.md)
 - [DB-09 Plan](../../plans/done/database-rebuild-db-09/database-rebuild-db-09.md)
+- [SETUP-01 Plan](../../plans/done/database-rebuild-setup-01/database-rebuild-setup-01.md)
 
 The governing evidence is:
 
@@ -214,34 +217,31 @@ The governing evidence is:
 - [`database-rebuild-schema.md`](../../grilling-docs/database-rebuild-schema.md) and
   [`data/database/schema.md`](../../../data/database/schema.md) for the catalogue boundary;
 - [`database-rebuild-db-09.md`](../../grilling-docs/database-rebuild-db-09.md) for the accepted direct proof handoff;
+- [`database-rebuild-setup-01.md`](../../grilling-docs/database-rebuild-setup-01.md) for the approved simple automatic
+  preferred-move inference direction;
 - the current package source and focused database tests for implemented behavior, not for reopening completed scope.
+
+## Completed SETUP-01
+
+### Automatic preferred-move setup inference
+
+**In plain English:** Use obvious repeated choices in real rebuilt play data to initialize preferred-move periods with
+one simple, explicit, empty-schedule-only command.
+
+The approved [SETUP-01 grilling handoff](../../grilling-docs/database-rebuild-setup-01.md) and
+[completed Plan](../../plans/done/database-rebuild-setup-01/database-rebuild-setup-01.md) govern the result. The focused
+inference, database, and CLI proofs passed, and the one real invocation applied 108 periods across 91 positions. The
+fixed command now refuses to run again because the schedule is nonempty. It added no schema, history, proposal, update,
+legacy, API, frontend, or application behavior.
 
 ## Selectable future work
 
 Select one outcome at a time. Its required grilling must produce a coordinator-approved handoff before implementation
-work or a nontrivial focused Plan begins. This sequence starts from the completed foundation above; it does not require
-the reader to navigate a separate database-proof work item.
-
-### SETUP-01 — Reviewed preferred-move setup inference
-
-**In plain English:** Use real rebuilt play data to propose, review, validate, and explicitly apply preferred-move
-periods without mistaking observed play for user intent.
-
-Grilling is required to settle the exact percentage, bounded span, grouping, same-day, ambiguity, gap, final-boundary,
-JSON proposal, and command details. The intended result is a deterministic reviewable JSON proposal followed by a
-separate explicit validation/application command that applies only to an empty `datasource_preferred_move_period`
-schedule. A qualifying candidate requires strictly more than 20 matching plays (minimum 21); the remaining density
-rules belong to grilling. No proposal silently writes preference state, overwrites a nonempty schedule, adds schema or
-history tables, or uses legacy tools.
-
-**Depends on:** completed database foundation and its existing preferred-move period storage. **Next gate:** SETUP-01
-grilling and coordinator-approved handoff.
-
-### Later selectable outcomes
+work or a nontrivial focused Plan begins. This sequence starts from the completed foundation and SETUP-01 above.
 
 | Outcome | Human-visible result | Depends on | Boundary that remains true |
 |---|---|---|---|
-| SETUP-02 | New approved tools for controlling and managing APIs are explored and installed, with downstream API slices amended as needed. | SETUP-01 | No pre-existing API is silently redesigned here. |
+| SETUP-02 | New approved tools for controlling and managing APIs are explored and installed, with downstream API slices amended as needed. | SETUP-01 accepted | No pre-existing API is silently redesigned here. |
 | API-01 | The game viewer reads rebuilt game metadata and ordered occurrences through a new backend contract. | SETUP-01 accepted | No old database fallback or old contract compatibility solely for migration. |
 | API-02 | Position Context and Move Response Distribution read rebuilt tables directly, with distinct-game and occurrence meanings preserved. | API-01 accepted | No recurrence, branch, or materialized statistics dataset without a new approved requirement. |
 | API-03 | Viewer Analyze, Update, and Retry use the rebuilt queue and current analysis results. | API-02 accepted | No old queue, batch history, partial-result, or downgrade contract. |
@@ -263,8 +263,8 @@ cutover, deletion, or cleanup operation.
   recurrence, hierarchy, projection, audit, batch, failure, or per-feature state/run table families.
 - No Opening Line Library application endpoint, page, integration, or rebuild.
 - No opponent-profile work under `data/chess-com/raw/profiles/`.
-- No automatic preference inference/application before `SETUP-01` is separately accepted; no fabricated or migrated
-  preference rows.
+- No preferred-move inference/application outside the accepted fixed, empty-schedule-only SETUP-01 command; no inferred
+  no-preference values and no fabricated or migrated preference rows.
 - No legacy database tool is patched, wrapped, imported, copied, or made a fallback. Legacy files remain evidence until
   a separately authorized retirement outcome.
 - No application/API/frontend integration is authorized merely because this foundation is complete; each later outcome

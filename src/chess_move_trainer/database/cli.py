@@ -38,6 +38,11 @@ from .preferred_moves.repository import (
     PreferredMoveStorageError,
     PreferredMoveValidationError,
 )
+from .preferred_moves.setup import (
+    PreferredMoveSetupError,
+    PreferredMoveSetupResult,
+    setup_preferred_moves as run_preferred_moves_setup,
+)
 from .publication import SchemaPublicationCollisionError, publish_schema
 from .schema import SchemaIncompatibleError, create_schema
 from .stockfish import (
@@ -238,6 +243,24 @@ def list_preferred_moves(
         _operational_error(error, 1)
     else:
         _render_preferred_periods(periods, json_output)
+
+
+@preferred_moves_app.command("setup")
+def setup_preferred_moves_command() -> None:
+    """Initialize preferred moves from the fixed rebuilt database."""
+
+    try:
+        result = run_preferred_moves_setup(DEFAULT_DATABASE_PATH)
+    except KeyboardInterrupt:
+        _interrupted()
+    except PreferredMoveSchemaError as error:
+        _operational_error(error, 3)
+    except PreferredMoveSetupError as error:
+        _operational_error(error, 1)
+    except Exception as error:
+        _operational_error(error, 1)
+    else:
+        _render_preferred_setup(result)
 
 
 @preferred_moves_app.command("resolve")
@@ -671,6 +694,22 @@ def _render_preferred_periods(
         end = period["effective_until"] or "indefinite"
         value = period["move"] or "no preference"
         typer.echo(f"- {period['effective_from']} to {end}: {value}")
+
+
+def _render_preferred_setup(result: PreferredMoveSetupResult) -> None:
+    """Render only the five ordinary setup summary counts."""
+
+    typer.echo(
+        "\n".join(
+            (
+                f"Examined games: {result.examined_games}",
+                f"Skipped games: {result.skipped_games}",
+                f"Qualifying positions: {result.qualifying_positions}",
+                f"Periods applied: {result.periods_applied}",
+                f"Conflicting positions: {result.conflicting_positions}",
+            )
+        )
+    )
 
 
 def _render_preferred_resolution(result: object, json_output: bool) -> None:
