@@ -1,7 +1,8 @@
 # Database rebuild
 
-> **Status:** completed database foundation and `SETUP-01`; `SETUP-02` is next
-> **Acceptance:** The rebuilt foundation and automatic preferred-move setup were accepted on 2026-09-08.
+> **Status:** completed database foundation, `SETUP-01`, and `SETUP-02`; `API-01` is next
+> **Acceptance:** The rebuilt foundation, automatic preferred-move setup, and health-only generated API client
+> tooling were accepted on 2026-09-08.
 
 ## Purpose and current starting point
 
@@ -10,8 +11,8 @@ The database rebuild is complete. The repository now has one package-owned SQLit
 separate bounded Stockfish analysis. This document records that foundation as one completed capability; it no longer
 uses the historical DB-01 through DB-09 sequence as its organizing structure.
 
-The next selectable work is `SETUP-02` grilling for tools that control and manage APIs. This document does not authorize
-that work, application integration, physical database activation, old-database cleanup, or deletion. Each later outcome
+The next selectable work is `API-01` for the game viewer backend contract. This document does not authorize that work,
+application integration, physical database activation, old-database cleanup, or deletion. Each later outcome
 remains separately gated by its required grilling, coordinator approval, and a focused Plan when nontrivial.
 
 ## Completed database foundation
@@ -207,6 +208,7 @@ instructions:
 - [DB-08A Plan](../../plans/done/database-rebuild-db-08a/database-rebuild-db-08a.md)
 - [DB-09 Plan](../../plans/done/database-rebuild-db-09/database-rebuild-db-09.md)
 - [SETUP-01 Plan](../../plans/done/database-rebuild-setup-01/database-rebuild-setup-01.md)
+- [SETUP-02 Plan](../../plans/done/database-rebuild-setup-02/database-rebuild-setup-02.md)
 
 The governing evidence is:
 
@@ -219,6 +221,8 @@ The governing evidence is:
 - [`database-rebuild-db-09.md`](../../grilling-docs/database-rebuild-db-09.md) for the accepted direct proof handoff;
 - [`database-rebuild-setup-01.md`](../../grilling-docs/database-rebuild-setup-01.md) for the approved simple automatic
   preferred-move inference direction;
+- [`database-rebuild-setup-02.md`](../../grilling-docs/database-rebuild-setup-02.md) for the approved health-only API
+  export and self-contained generated-client tooling direction;
 - the current package source and focused database tests for implemented behavior, not for reopening completed scope.
 
 ## Completed SETUP-01
@@ -234,15 +238,29 @@ inference, database, and CLI proofs passed, and the one real invocation applied 
 fixed command now refuses to run again because the schedule is nonempty. It added no schema, history, proposal, update,
 legacy, API, frontend, or application behavior.
 
+## Completed SETUP-02
+
+### Health-only generated API client tooling
+
+**In plain English:** One repository command now turns the real health route into a checked-in, typed TypeScript client
+without requiring a running backend or changing the production frontend.
+
+The approved [SETUP-02 grilling handoff](../../grilling-docs/database-rebuild-setup-02.md) and
+[completed Plan](../../plans/done/database-rebuild-setup-02/database-rebuild-setup-02.md) govern the result. The focused
+backend and frontend proofs passed: the export remains limited to `GET /api/health`, the generated SDK exposes only
+`getHealth()`, a real bounded call returned `{"status":"ok"}`, and byte-identical regeneration was confirmed. FastAPI
+continues to serve its full OpenAPI and docs, every other endpoint remains outside the generated contract, and no
+existing production frontend module adopted the generated client.
+
 ## Selectable future work
 
 Select one outcome at a time. Its required grilling must produce a coordinator-approved handoff before implementation
-work or a nontrivial focused Plan begins. This sequence starts from the completed foundation and SETUP-01 above.
+work or a nontrivial focused Plan begins. This sequence starts from the completed foundation, SETUP-01, and SETUP-02
+above.
 
 | Outcome | Human-visible result | Depends on | Boundary that remains true |
 |---|---|---|---|
-| SETUP-02 | New approved tools for controlling and managing APIs are explored and installed, with downstream API slices amended as needed. | SETUP-01 accepted | No pre-existing API is silently redesigned here. |
-| API-01 | The game viewer reads rebuilt game metadata and ordered occurrences through a new backend contract. | SETUP-01 accepted | No old database fallback or old contract compatibility solely for migration. |
+| API-01 | The game viewer reads rebuilt game metadata and ordered occurrences through a new backend contract. | SETUP-02 accepted | No old database fallback or old contract compatibility solely for migration. |
 | API-02 | Position Context and Move Response Distribution read rebuilt tables directly, with distinct-game and occurrence meanings preserved. | API-01 accepted | No recurrence, branch, or materialized statistics dataset without a new approved requirement. |
 | API-03 | Viewer Analyze, Update, and Retry use the rebuilt queue and current analysis results. | API-02 accepted | No old queue, batch history, partial-result, or downgrade contract. |
 | API-04 | The repertoire application reads and edits dated preferred-move periods, including no-preference and unconfigured states. | API-03 accepted | No future preference-history editor or historical-game evaluation. |
