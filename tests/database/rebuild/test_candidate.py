@@ -19,6 +19,7 @@ from chess_move_trainer.database.rebuild import (
     verify_rebuild_target,
 )
 from chess_move_trainer.database.games.persistence import GameRepository
+import chess_move_trainer.database.rebuild.candidate as candidate_service
 import chess_move_trainer.database.rebuild.refresh as refresh_service
 
 
@@ -78,6 +79,40 @@ def test_candidate_staging_uses_only_managed_sibling_and_preserves_neighbour(
     assert verify_rebuild_target(
         configuration, VerificationTarget.NEIGHBOUR
     ).replacement_ready is False
+
+
+def test_candidate_reuses_refresh_final_verification(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    neighbour = _neighbour(tmp_path)
+    configuration = RebuildConfiguration(neighbour)
+
+    def reject_duplicate_verification(*args: object, **kwargs: object) -> object:
+        raise AssertionError("candidate must reuse refresh final verification")
+
+    monkeypatch.setattr(
+        candidate_service,
+        "verify_rebuild_target",
+        reject_duplicate_verification,
+        raising=False,
+    )
+
+    outcome = stage_candidate(
+        configuration,
+        opening_source_dir=_opening_source(tmp_path),
+        raw_root=_raw_root(tmp_path, "game-trainer-white.json"),
+        trainer_chesscom_uuid=TRAINER_UUID,
+    )
+
+    assert outcome.completed
+    assert outcome.refresh is not None
+    assert outcome.refresh.verification is not None
+    assert outcome.refresh.verification.target is VerificationTarget.NEIGHBOUR
+    assert outcome.verification is not None
+    assert outcome.verification.target is VerificationTarget.CANDIDATE
+    assert outcome.verification is outcome.refresh.verification or (
+        outcome.verification.status is outcome.refresh.verification.status
+    )
 
 
 def test_incomplete_candidate_is_kept_partial_and_neighbour_bytes_are_untouched(

@@ -3,12 +3,17 @@ from __future__ import annotations
 import json
 import shutil
 import sqlite3
+from contextlib import contextmanager
 from pathlib import Path
 from uuid import UUID
 
+import pytest
 from typer.testing import CliRunner
 
-from chess_move_trainer.database import cli as database_cli
+from chess_move_trainer.database import cli as database_cli, create_schema
+import chess_move_trainer.database.games.persistence as persistence_service
+from chess_move_trainer.database.games.persistence import GameRepository, import_raw_games
+from chess_move_trainer.database.openings import OpeningCatalogueRepository, load_opening_sources
 from chess_move_trainer.database.rebuild import (
     RebuildConfiguration,
     RefreshStage,
@@ -16,6 +21,7 @@ from chess_move_trainer.database.rebuild import (
     VerificationStatus,
     refresh_database,
 )
+import chess_move_trainer.database.rebuild.refresh as refresh_service
 
 
 ROOT = Path(__file__).parents[3]
@@ -108,6 +114,36 @@ def test_refresh_builds_empty_target_and_skips_unchanged_explicit_sources(
     assert _database_snapshot(configuration.rebuilt_neighbour) == before
 
 
+def test_refresh_reuses_one_normalized_game_batch(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    configuration = _configuration(tmp_path)
+    raw_root = _raw_root(tmp_path, "game-trainer-white.json", "game-trainer-black.json")
+    original_normalize = persistence_service.normalize_game
+    normalized_uuids: list[str] = []
+
+    def count_normalization(raw_game: object, trainer_uuid: UUID) -> object:
+        result = original_normalize(raw_game, trainer_uuid)
+        if result.game is not None:
+            normalized_uuids.append(str(result.game.chesscom_game_uuid))
+        return result
+
+    def reject_second_raw_load(*args: object, **kwargs: object) -> object:
+        raise AssertionError("refresh must not reread raw months through import_raw_months")
+
+    monkeypatch.setattr(persistence_service, "normalize_game", count_normalization)
+    monkeypatch.setattr(persistence_service, "import_raw_months", reject_second_raw_load)
+
+    result = refresh_database(
+        configuration,
+        raw_root=raw_root,
+        trainer_chesscom_uuid=TRAINER_UUID,
+    )
+
+    assert _stage(result, RefreshStage.GAMES).status is RefreshStageStatus.SUCCEEDED
+    assert len(normalized_uuids) == 2
+
+
 def test_opening_only_checkpoint_survives_and_later_game_input_completes_it(
     tmp_path: Path,
 ) -> None:
@@ -184,6 +220,28 @@ def test_corrected_game_is_recomputed_on_local_rerun(tmp_path: Path) -> None:
     assert "corrected again" in stored
 
 
+def test_changed_game_does_not_rewrite_unchanged_game(tmp_path: Path) -> None:
+    database = tmp_path / "per-game-refresh.db"
+    create_schema(database)
+    first = json.loads((GAME_FIXTURES / "game-trainer-white.json").read_text(encoding="utf-8"))
+    neighbor = json.loads((GAME_FIXTURES / "game-trainer-black.json").read_text(encoding="utf-8"))
+    assert import_raw_games([first, neighbor], TRAINER_UUID, GameRepository(database)).completed
+
+    changed = dict(first)
+    changed["pgn"] = '[Event "Synthetic corrected again"]\n\n1. e4 e5 2. Bc4 Nc6 1-0'
+    checkpoints: list[str] = []
+    result = import_raw_games(
+        [changed, neighbor],
+        TRAINER_UUID,
+        GameRepository(database, _checkpoint=checkpoints.append),
+    )
+
+    assert result.completed
+    assert result.imported_count == 2
+    assert checkpoints.count("metadata") == 1
+    assert _counts(database)[2] == 2
+
+
 def test_changed_opening_source_republishes_instead_of_skipping(tmp_path: Path) -> None:
     configuration = _configuration(tmp_path)
     source = _opening_source(tmp_path)
@@ -202,6 +260,42 @@ def test_changed_opening_source_republishes_instead_of_skipping(tmp_path: Path) 
         names = [row[0] for row in connection.execute("SELECT do_name FROM datasource_opening")]
     assert "Corrected route" in names
     assert "Basic route" not in names
+
+
+def test_refresh_compares_openings_without_per_route_queries(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    database = tmp_path / "opening-match.db"
+    create_schema(database)
+    source = _opening_source(tmp_path)
+    routes = load_opening_sources(source)
+    OpeningCatalogueRepository(database).replace(routes)
+    statements: list[str] = []
+    original_open_connection = refresh_service._open_connection
+
+    class TrackingConnection:
+        def __init__(self, connection: object) -> None:
+            self._connection = connection
+
+        def exec_driver_sql(self, statement: str, *args: object, **kwargs: object) -> object:
+            statements.append(statement)
+            return self._connection.exec_driver_sql(statement, *args, **kwargs)  # type: ignore[attr-defined]
+
+    @contextmanager
+    def tracked_open_connection(*args: object, **kwargs: object):
+        with original_open_connection(*args, **kwargs) as connection:
+            yield TrackingConnection(connection)
+
+    monkeypatch.setattr(refresh_service, "_open_connection", tracked_open_connection)
+
+    assert refresh_service._opening_source_matches(database, routes, lock_timeout=5.0)
+    move_queries = [
+        statement
+        for statement in statements
+        if "FROM derived_opening_route_move" in statement
+    ]
+    assert len(move_queries) == 1
+    assert not any("WHERE derived_opening_route_id = ?" in statement for statement in statements)
 
 
 def test_refresh_cli_reports_partial_failure_as_json_and_never_acquires(

@@ -5,6 +5,7 @@ import sqlite3
 from pathlib import Path
 
 import pytest
+from sqlalchemy.engine import Connection
 
 from chess_move_trainer.database import create_schema
 from chess_move_trainer.database.openings.persistence import (
@@ -204,3 +205,73 @@ def test_schema_incompatibility_remains_distinguishable(tmp_path: Path) -> None:
 
     with pytest.raises(SchemaIncompatibleError):
         OpeningCatalogueRepository(database_path).replace(())
+
+
+def test_replace_uses_returned_ids_and_batches_route_moves(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    database_path = tmp_path / "returned-ids.db"
+    create_schema(database_path)
+    routes = load_opening_sources(_source_dir(tmp_path))
+    calls: list[tuple[str, object]] = []
+    original_execute = Connection.execute
+
+    def record_execute(
+        connection: Connection,
+        statement: object,
+        parameters: object = None,
+        *,
+        execution_options: object = None,
+    ) -> object:
+        calls.append((str(statement), parameters))
+        if parameters is None:
+            return original_execute(
+                connection,
+                statement,
+                execution_options=execution_options,
+            )
+        return original_execute(
+            connection,
+            statement,
+            parameters,
+            execution_options=execution_options,
+        )
+
+    monkeypatch.setattr(Connection, "execute", record_execute)
+    publication = OpeningCatalogueRepository(database_path).replace(routes)
+
+    assert publication.move_count == 20
+    label_inserts = [
+        (statement, parameters)
+        for statement, parameters in calls
+        if "INSERT INTO datasource_opening" in statement
+    ]
+    route_inserts = [
+        (statement, parameters)
+        for statement, parameters in calls
+        if "INSERT INTO derived_opening_route " in statement
+    ]
+    route_move_inserts = [
+        (statement, parameters)
+        for statement, parameters in calls
+        if "INSERT INTO derived_opening_route_move" in statement
+    ]
+
+    assert len(label_inserts) == 4
+    assert all("RETURNING do_opening_id" in statement for statement, _ in label_inserts)
+    assert len(route_inserts) == 5
+    assert all("RETURNING dor_route_id" in statement for statement, _ in route_inserts)
+    assert len(route_move_inserts) == 1
+    move_parameters = route_move_inserts[0][1]
+    assert isinstance(move_parameters, list)
+    assert len(move_parameters) == 20
+    route_plies = [
+        (int(parameters["route_id"]), int(parameters["ply"]))
+        for parameters in move_parameters
+    ]
+    assert route_plies == sorted(route_plies)
+    assert not any(
+        "SELECT do_opening_id FROM datasource_opening" in statement
+        or "SELECT dor_route_id FROM derived_opening_route" in statement
+        for statement, _ in calls
+    )

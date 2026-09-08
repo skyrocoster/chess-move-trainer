@@ -87,7 +87,9 @@ operator-facing.
 Any genuine product, ownership, API, dependency, destructive, or acceptance decision discovered by grilling is an
 escalation, not an AI choice.
 
-**NEXT slice after DB-08A:** `DB-09` — Rebuilt-database proof gate.
+**SELECTED slice:** `DB-09` — Rebuilt-database proof gate. Implementation is in progress: the persistence/rebuild-chain
+repair and Stages 1-4 are accepted, the retained candidate contains the completed serial initial and separate on-demand
+analysis publications, and Stage 5 focused proof plus Stages 11-12 remain before acceptance.
 
 ## Selectable slices
 
@@ -465,7 +467,15 @@ allow a path under `scripts/` to remain canonical.
 
 **Grilling REQUIRED** before this slice's implementation Plan/work begins, to finalize the real-data fixture/sample,
   integrity assertions, measured access paths/indexes, direct capability queries, analysis sample, and acceptance
-  thresholds without turning this gate into API work.
+  thresholds without turning this gate into API work. The approved handoff is
+  [`database-rebuild-db-09.md`](../../grilling-docs/database-rebuild-db-09.md).
+
+**Current execution state (2026-09-07):** The active focused Plan and its transient handoff are under
+`docs/plans/active/database-rebuild-db-09/`. The indexed retained candidate is replacement-ready without another rebuild;
+the simplified persistence chain has focused acceptance, direct meanings and disposable preference transactions are
+re-established, and the serial initial 25 plus one separate on-demand analysis result are published. DB-09 is not yet
+accepted: Stage 5's focused selector/publication/read proof, refreshed real access-plan evidence, and the final gate remain.
+No SETUP/API/application slice is authorized.
 
 - **Authority:** `docs/grilling-docs/database-rebuild-direction.md:L742-L772,L774-L805,L864-L966`; `docs/grilling-docs/database-rebuild-schema.md:L119-L157,L716-L742,L781-L830`.
 - **Visible result:** A rebuilt neighboring database containing real regenerated games, openings, positions,

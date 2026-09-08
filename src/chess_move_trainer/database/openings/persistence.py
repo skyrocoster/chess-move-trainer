@@ -6,11 +6,9 @@ from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from pathlib import Path
 
-import chess
 from sqlalchemy import text
 
 from ..connection import DEFAULT_LOCK_TIMEOUT_SECONDS, _open_existing_connection
-from ..positions import CanonicalPosition, canonicalize_board
 from ..positions.repository import _PositionUnitOfWork
 from ..schema import SchemaIncompatibleError, _assert_compatible_schema
 from .source import OpeningRouteSource, load_opening_sources
@@ -108,11 +106,10 @@ class OpeningCatalogueRepository:
         for route in routes:
             if route.endpoint_key in endpoint_ids:
                 continue
-            try:
-                board = chess.Board(route.endpoint_fen)
-            except (TypeError, ValueError) as error:
-                raise OpeningPersistenceError("route endpoint could not be reconstructed") from error
-            endpoint_ids[route.endpoint_key] = position_work.resolve_board(board)
+            # The source boundary has already replayed and canonicalized every
+            # endpoint.  Resolve that normalized identity directly instead of
+            # reconstructing a mutable board from the source FEN.
+            endpoint_ids[route.endpoint_key] = position_work._resolve(route.endpoint_position)
             self._checkpoint("endpoint")
         return endpoint_ids
 
@@ -121,17 +118,10 @@ class OpeningCatalogueRepository:
     ) -> dict[tuple[str, str], int]:
         label_ids: dict[tuple[str, str], int] = {}
         for eco, name in labels:
-            connection.execute(
-                text(
-                    "INSERT INTO datasource_opening (do_eco, do_name) "
-                    "VALUES (:eco, :name)"
-                ),
-                {"eco": eco, "name": name},
-            )
             row = connection.execute(
                 text(
-                    "SELECT do_opening_id FROM datasource_opening "
-                    "WHERE do_eco = :eco AND do_name = :name"
+                    "INSERT INTO datasource_opening (do_eco, do_name) "
+                    "VALUES (:eco, :name) RETURNING do_opening_id"
                 ),
                 {"eco": eco, "name": name},
             ).first()
@@ -150,23 +140,11 @@ class OpeningCatalogueRepository:
     ) -> dict[tuple[str, str, tuple[str, ...]], int]:
         route_ids: dict[tuple[str, str, tuple[str, ...]], int] = {}
         for route in routes:
-            connection.execute(
+            row = connection.execute(
                 text(
                     "INSERT INTO derived_opening_route "
                     "(datasource_opening_id, derived_position_id) "
-                    "VALUES (:opening_id, :position_id)"
-                ),
-                {
-                    "opening_id": label_ids[(route.eco, route.name)],
-                    "position_id": endpoint_ids[route.endpoint_key],
-                },
-            )
-            row = connection.execute(
-                text(
-                    "SELECT dor_route_id FROM derived_opening_route "
-                    "WHERE datasource_opening_id = :opening_id "
-                    "AND derived_position_id = :position_id "
-                    "ORDER BY dor_route_id DESC LIMIT 1"
+                    "VALUES (:opening_id, :position_id) RETURNING dor_route_id"
                 ),
                 {
                     "opening_id": label_ids[(route.eco, route.name)],
@@ -185,18 +163,30 @@ class OpeningCatalogueRepository:
         routes: tuple[OpeningRouteSource, ...],
         route_ids: dict[tuple[str, str, tuple[str, ...]], int],
     ) -> None:
-        for route in routes:
-            route_id = route_ids[(route.eco, route.name, route.moves_uci)]
-            for ply, move_uci in enumerate(route.moves_uci, start=1):
-                connection.execute(
-                    text(
-                        "INSERT INTO derived_opening_route_move "
-                        "(derived_opening_route_id, dorm_ply, dorm_move_uci) "
-                        "VALUES (:route_id, :ply, :move_uci)"
-                    ),
-                    {"route_id": route_id, "ply": ply, "move_uci": move_uci},
-                )
-                self._checkpoint("route_move")
+        parameters = [
+            {
+                "route_id": route_ids[(route.eco, route.name, route.moves_uci)],
+                "ply": ply,
+                "move_uci": move_uci,
+            }
+            for route in routes
+            for ply, move_uci in enumerate(route.moves_uci, start=1)
+        ]
+        if not parameters:
+            return
+
+        connection.execute(
+            text(
+                "INSERT INTO derived_opening_route_move "
+                "(derived_opening_route_id, dorm_ply, dorm_move_uci) "
+                "VALUES (:route_id, :ply, :move_uci)"
+            ),
+            parameters,
+        )
+        # Keep the existing checkpoint vocabulary for interruption tests while
+        # issuing the child inserts as one deterministic batch.
+        for _ in parameters:
+            self._checkpoint("route_move")
 
     def _verify_publication(
         self,
@@ -205,53 +195,95 @@ class OpeningCatalogueRepository:
         route_ids: dict[tuple[str, str, tuple[str, ...]], int],
         endpoint_ids: dict[tuple[str, str, str, str], int],
     ) -> None:
-        for route in routes:
-            route_id = route_ids[(route.eco, route.name, route.moves_uci)]
-            rows = connection.execute(
-                text(
-                    "SELECT dorm_ply, dorm_move_uci "
-                    "FROM derived_opening_route_move "
-                    "WHERE derived_opening_route_id = :route_id ORDER BY dorm_ply"
-                ),
-                {"route_id": route_id},
-            ).all()
-            expected_rows = tuple(
-                (ply, move_uci) for ply, move_uci in enumerate(route.moves_uci, start=1)
-            )
-            if tuple((int(row[0]), str(row[1])) for row in rows) != expected_rows:
-                raise OpeningPersistenceError("route move plies are not contiguous")
+        expected_labels = {(route.eco, route.name) for route in routes}
+        label_rows = connection.execute(
+            text("SELECT do_eco, do_name FROM datasource_opening")
+        ).all()
+        actual_labels = {(str(row[0]), str(row[1])) for row in label_rows}
+        if len(label_rows) != len(expected_labels) or actual_labels != expected_labels:
+            raise OpeningPersistenceError("published opening labels are not exact")
 
-            board = chess.Board()
-            for ply, move_uci in enumerate(route.moves_uci, start=1):
-                try:
-                    move = chess.Move.from_uci(move_uci)
-                except ValueError as error:
-                    raise OpeningPersistenceError(
-                        f"route contains invalid UCI at ply {ply}"
-                    ) from error
-                if move not in board.legal_moves:
-                    raise OpeningPersistenceError(f"route contains an illegal move at ply {ply}")
-                board.push(move)
-            replayed = canonicalize_board(board)
-            endpoint_id = endpoint_ids[route.endpoint_key]
-            endpoint_row = connection.execute(
-                text(
-                    "SELECT dp_placement, dp_side_to_move, dp_castling_rights, "
-                    "dp_legal_en_passant FROM derived_position "
-                    "WHERE dp_position_id = :position_id"
-                ),
-                {"position_id": endpoint_id},
-            ).first()
-            if endpoint_row is None:
-                raise OpeningPersistenceError("route endpoint was not stored")
-            stored = CanonicalPosition(
-                placement=str(endpoint_row[0]),
-                side_to_move=str(endpoint_row[1]),
-                castling_rights=str(endpoint_row[2]),
-                legal_en_passant=str(endpoint_row[3]),
+        route_rows = connection.execute(
+            text(
+                """
+                SELECT r.dor_route_id, o.do_eco, o.do_name,
+                       r.derived_position_id,
+                       p.dp_placement, p.dp_side_to_move,
+                       p.dp_castling_rights, p.dp_legal_en_passant
+                FROM derived_opening_route AS r
+                JOIN datasource_opening AS o
+                  ON o.do_opening_id = r.datasource_opening_id
+                JOIN derived_position AS p
+                  ON p.dp_position_id = r.derived_position_id
+                ORDER BY r.dor_route_id
+                """
             )
-            if replayed != stored or stored != route.endpoint_position:
-                raise OpeningPersistenceError("route endpoint does not match replay")
+        ).all()
+        expected_route_rows = {
+            (
+                route_ids[(route.eco, route.name, route.moves_uci)],
+                route.eco,
+                route.name,
+                endpoint_ids[route.endpoint_key],
+                *route.endpoint_key,
+            )
+            for route in routes
+        }
+        actual_route_rows = {
+            (
+                int(row[0]),
+                str(row[1]),
+                str(row[2]),
+                int(row[3]),
+                str(row[4]),
+                str(row[5]),
+                str(row[6]),
+                str(row[7]),
+            )
+            for row in route_rows
+        }
+        if len(route_rows) != len(expected_route_rows) or actual_route_rows != expected_route_rows:
+            raise OpeningPersistenceError("published opening routes are not exact")
+
+        move_rows = connection.execute(
+            text(
+                """
+                SELECT derived_opening_route_id,
+                       COUNT(*) AS move_count,
+                       MIN(dorm_ply) AS first_ply,
+                       MAX(dorm_ply) AS last_ply,
+                       COUNT(DISTINCT dorm_ply) AS distinct_plies
+                FROM derived_opening_route_move
+                GROUP BY derived_opening_route_id
+                ORDER BY derived_opening_route_id
+                """
+            )
+        ).all()
+        expected_move_rows = {
+            (
+                route_ids[(route.eco, route.name, route.moves_uci)],
+                len(route.moves_uci),
+                1,
+                len(route.moves_uci),
+                len(route.moves_uci),
+            )
+            for route in routes
+        }
+        actual_move_rows = {
+            (
+                int(row[0]),
+                int(row[1]),
+                int(row[2]),
+                int(row[3]),
+                int(row[4]),
+            )
+            for row in move_rows
+        }
+        if actual_move_rows != expected_move_rows:
+            raise OpeningPersistenceError("route move plies are not contiguous")
+
+        if connection.exec_driver_sql("PRAGMA foreign_key_check").all():
+            raise OpeningPersistenceError("published opening foreign keys are invalid")
 
 
 def import_opening_catalogue(

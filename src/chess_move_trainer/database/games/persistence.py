@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Iterator
+from contextlib import ExitStack, contextmanager
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -11,9 +12,14 @@ from uuid import UUID
 from sqlalchemy import text
 
 from ..connection import DEFAULT_LOCK_TIMEOUT_SECONDS, _open_existing_connection
-from ..positions.repository import _PositionUnitOfWork
+from ..positions.repository import PositionIdentity, _PositionUnitOfWork, _position_identity
 from ..schema import _assert_compatible_schema
-from .normalization import NormalizationWarning, NormalizedGame, normalize_game
+from .normalization import (
+    NormalizationResult,
+    NormalizationWarning,
+    NormalizedGame,
+    normalize_game,
+)
 from .raw_storage import load_month
 
 
@@ -59,6 +65,7 @@ class GameRepository:
         self._database_path = database_path
         self._lock_timeout = lock_timeout
         self._checkpoint = _checkpoint if _checkpoint is not None else lambda _: None
+        self._last_import_writes = 0
 
     def validate(self) -> None:
         """Verify that the configured target is an existing compatible v1 database."""
@@ -81,67 +88,124 @@ class GameRepository:
                 self._database_path, self._lock_timeout
             ) as connection:
                 _assert_compatible_schema(connection, self._lock_timeout)
-                with connection.begin():
-                    existing = connection.execute(
-                        text(
-                            "SELECT dg_game_id FROM datasource_game "
-                            "WHERE dg_chesscom_game_uuid = :game_uuid"
-                        ),
-                        {"game_uuid": str(game.chesscom_game_uuid)},
-                    ).first()
-                    corrected = existing is not None
-                    if corrected:
-                        game_id = int(existing[0])
-                        connection.execute(
-                            text(_UPDATE_GAME_SQL),
-                            _metadata_parameters(game, game_id=game_id),
-                        )
-                    else:
-                        connection.execute(text(_INSERT_GAME_SQL), _metadata_parameters(game))
-                        inserted = connection.execute(
-                            text(
-                                "SELECT dg_game_id FROM datasource_game "
-                                "WHERE dg_chesscom_game_uuid = :game_uuid"
-                            ),
-                            {"game_uuid": str(game.chesscom_game_uuid)},
-                        ).one()
-                        game_id = int(inserted[0])
-                    self._checkpoint("metadata")
-
-                    position_work = _PositionUnitOfWork(connection)
-                    position_ids: list[int] = []
-                    for occurrence in game.occurrences:
-                        position_ids.append(position_work._resolve(occurrence.position))
-                        self._checkpoint("position")
-
-                    if corrected:
-                        connection.execute(
-                            text(
-                                "DELETE FROM derived_game_position "
-                                "WHERE datasource_game_id = :game_id"
-                            ),
-                            {"game_id": game_id},
-                        )
-                    for occurrence, position_id in zip(
-                        game.occurrences, position_ids, strict=True
-                    ):
-                        connection.execute(
-                            text(_INSERT_OCCURRENCE_SQL),
-                            {
-                                "game_id": game_id,
-                                "ply": occurrence.ply,
-                                "position_id": position_id,
-                                "move_uci": occurrence.move_uci,
-                                "halfmove_clock": occurrence.halfmove_clock,
-                                "fullmove_number": occurrence.fullmove_number,
-                            },
-                        )
-                        self._checkpoint("occurrence")
+                return self._persist_on_connection(connection, game)
         except KeyboardInterrupt:
             raise
         except Exception as error:
             raise GamePersistenceError(f"game could not be persisted: {error}") from error
 
+    @contextmanager
+    def _validated_connection(self) -> Iterator[object]:
+        """Open one validated connection for an independent import run."""
+
+        with _open_existing_connection(
+            self._database_path, self._lock_timeout
+        ) as connection:
+            _assert_compatible_schema(connection, self._lock_timeout)
+            yield connection
+
+    def _persist_on_connection(
+        self,
+        connection: object,
+        game: NormalizedGame,
+        *,
+        position_cache: dict[PositionIdentity, int] | None = None,
+    ) -> PersistedGame:
+        """Persist one game in its own transaction on an already validated connection."""
+
+        if not isinstance(game, NormalizedGame):
+            raise TypeError("game must be a fully normalized game")
+        existing = connection.execute(
+            text(
+                """
+                SELECT dg_game_id, dg_source_url, dg_original_pgn,
+                       dg_trainer_color, dg_trainer_chesscom_uuid,
+                       dg_opponent_chesscom_uuid, dg_trainer_rating,
+                       dg_opponent_rating, dg_started_at_utc, dg_ended_at_utc,
+                       dg_trainer_outcome, dg_termination_reason,
+                       dg_time_control_source, dg_time_class
+                FROM datasource_game
+                WHERE dg_chesscom_game_uuid = :game_uuid
+                """
+            ),
+            {"game_uuid": str(game.chesscom_game_uuid)},
+        ).first()
+
+        if existing is not None:
+            game_id = int(existing[0])
+            if _stored_game_matches(connection, game, existing):
+                connection.commit()
+                return PersistedGame(
+                    game_id=game_id,
+                    corrected=False,
+                    occurrence_count=len(game.occurrences),
+                )
+        else:
+            game_id = None
+        connection.commit()
+
+        corrected = existing is not None
+        with connection.begin():
+            if corrected:
+                assert game_id is not None
+                connection.execute(
+                    text(_UPDATE_GAME_SQL),
+                    _metadata_parameters(game, game_id=game_id),
+                )
+            else:
+                connection.execute(text(_INSERT_GAME_SQL), _metadata_parameters(game))
+                inserted = connection.execute(
+                    text(
+                        "SELECT dg_game_id FROM datasource_game "
+                        "WHERE dg_chesscom_game_uuid = :game_uuid"
+                    ),
+                    {"game_uuid": str(game.chesscom_game_uuid)},
+                ).one()
+                game_id = int(inserted[0])
+            self._checkpoint("metadata")
+
+            run_position_cache = position_cache if position_cache is not None else {}
+            position_work = _PositionUnitOfWork(
+                connection,
+                position_cache=run_position_cache,
+            )
+            position_ids_by_identity: dict[PositionIdentity, int] = {}
+            for occurrence in game.occurrences:
+                identity = _position_identity(occurrence.position)
+                if identity not in position_ids_by_identity:
+                    position_ids_by_identity[identity] = position_work._resolve(
+                        occurrence.position
+                    )
+                self._checkpoint("position")
+
+            if corrected:
+                connection.execute(
+                    text(
+                        "DELETE FROM derived_game_position "
+                        "WHERE datasource_game_id = :game_id"
+                    ),
+                    {"game_id": game_id},
+                )
+            occurrence_parameters = [
+                {
+                    "game_id": game_id,
+                    "ply": occurrence.ply,
+                    "position_id": position_ids_by_identity[
+                        _position_identity(occurrence.position)
+                    ],
+                    "move_uci": occurrence.move_uci,
+                    "halfmove_clock": occurrence.halfmove_clock,
+                    "fullmove_number": occurrence.fullmove_number,
+                }
+                for occurrence in game.occurrences
+            ]
+            connection.execute(text(_INSERT_OCCURRENCE_SQL), occurrence_parameters)
+            for _ in occurrence_parameters:
+                self._checkpoint("occurrence")
+
+        if position_cache is not None:
+            position_cache.update(position_work._new_positions)
+        self._last_import_writes += 1
         return PersistedGame(
             game_id=game_id,
             corrected=corrected,
@@ -156,31 +220,94 @@ def import_raw_games(
 ) -> ImportResult:
     """Normalize first, then commit accepted games independently in source order."""
 
+    return import_normalized_games(
+        normalize_raw_games(raw_games, trainer_uuid),
+        repository,
+    )
+
+
+def normalize_raw_games(
+    raw_games: Iterable[object],
+    trainer_uuid: UUID,
+) -> tuple[NormalizationResult, ...]:
+    """Normalize a source batch once while retaining warnings in source order."""
+
+    return tuple(normalize_game(raw_game, trainer_uuid) for raw_game in raw_games)
+
+
+def load_normalized_months(
+    raw_root: Path,
+    trainer_uuid: UUID,
+) -> tuple[NormalizationResult, ...]:
+    """Load and normalize every local month once in deterministic source order."""
+
+    if not raw_root.is_dir():
+        raise GamePersistenceError(f"raw root does not exist or is not a directory: {raw_root}")
+    games_root = raw_root / "games"
+    month_paths = (
+        sorted(games_root.glob("[0-9][0-9][0-9][0-9]/[0-9][0-9].json"))
+        if games_root.is_dir()
+        else []
+    )
+    raw_games: list[object] = []
+    for month_path in month_paths:
+        raw_games.extend(load_month(month_path)["games"])
+    return normalize_raw_games(raw_games, trainer_uuid)
+
+
+def import_normalized_games(
+    normalized_games: Iterable[NormalizationResult],
+    repository: GameRepository,
+) -> ImportResult:
+    """Persist one already-normalized source batch in source order."""
+
     imported_count = 0
     skipped_count = 0
     warnings: list[NormalizationWarning] = []
-    for raw_game in raw_games:
-        normalized = normalize_game(raw_game, trainer_uuid)
-        if normalized.game is None:
-            skipped_count += 1
-            assert normalized.warning is not None
-            warnings.append(normalized.warning)
-            continue
-        try:
-            repository.persist(normalized.game)
-        except KeyboardInterrupt:
-            raise
-        except GamePersistenceError as error:
-            return ImportResult(
-                imported_count=imported_count,
-                skipped_count=skipped_count,
-                warnings=tuple(warnings),
-                failure=ImportFailure(
-                    game_uuid=str(normalized.game.chesscom_game_uuid),
-                    message=str(error),
-                ),
-            )
-        imported_count += 1
+    repository._last_import_writes = 0
+    position_cache: dict[PositionIdentity, int] = {}
+    with ExitStack() as stack:
+        connection: object | None = None
+        for normalized in normalized_games:
+            if normalized.game is None:
+                skipped_count += 1
+                assert normalized.warning is not None
+                warnings.append(normalized.warning)
+                continue
+            if connection is None:
+                try:
+                    connection = stack.enter_context(repository._validated_connection())
+                except KeyboardInterrupt:
+                    raise
+                except Exception as error:
+                    return ImportResult(
+                        imported_count=imported_count,
+                        skipped_count=skipped_count,
+                        warnings=tuple(warnings),
+                        failure=ImportFailure(
+                            game_uuid=str(normalized.game.chesscom_game_uuid),
+                            message=f"game could not be persisted: {error}",
+                        ),
+                    )
+            try:
+                repository._persist_on_connection(
+                    connection,
+                    normalized.game,
+                    position_cache=position_cache,
+                )
+            except KeyboardInterrupt:
+                raise
+            except Exception as error:
+                return ImportResult(
+                    imported_count=imported_count,
+                    skipped_count=skipped_count,
+                    warnings=tuple(warnings),
+                    failure=ImportFailure(
+                        game_uuid=str(normalized.game.chesscom_game_uuid),
+                        message=f"game could not be persisted: {error}",
+                    ),
+                )
+            imported_count += 1
     return ImportResult(
         imported_count=imported_count,
         skipped_count=skipped_count,
@@ -196,19 +323,76 @@ def import_raw_months(
 ) -> ImportResult:
     """Read only DB-03 month files in deterministic order and import their games."""
 
-    if not raw_root.is_dir():
-        raise GamePersistenceError(f"raw root does not exist or is not a directory: {raw_root}")
-    games_root = raw_root / "games"
-    month_paths = (
-        sorted(games_root.glob("[0-9][0-9][0-9][0-9]/[0-9][0-9].json"))
-        if games_root.is_dir()
-        else []
+    return import_normalized_games(
+        load_normalized_months(raw_root, trainer_uuid),
+        repository,
     )
-    raw_games: list[object] = []
-    for month_path in month_paths:
-        raw_games.extend(load_month(month_path)["games"])
-    repository.validate()
-    return import_raw_games(raw_games, trainer_uuid, repository)
+
+
+def _stored_game_matches(
+    connection: object,
+    game: NormalizedGame,
+    existing: object,
+) -> bool:
+    """Compare all persisted metadata and ordered occurrence facts for one game."""
+
+    if tuple(existing[1:]) != _game_metadata(game):
+        return False
+    stored_occurrences = tuple(
+        tuple(occurrence)
+        for occurrence in connection.execute(
+            text(
+                """
+                SELECT g.dgp_ply, p.dp_placement, p.dp_side_to_move,
+                       p.dp_castling_rights, p.dp_legal_en_passant,
+                       g.dgp_move_uci, g.dgp_halfmove_clock,
+                       g.dgp_fullmove_number
+                FROM derived_game_position AS g
+                JOIN derived_position AS p
+                  ON p.dp_position_id = g.derived_position_id
+                WHERE g.datasource_game_id = :game_id
+                ORDER BY g.dgp_ply
+                """
+            ),
+            {"game_id": int(existing[0])},
+        ).all()
+    )
+    expected_occurrences = tuple(
+        (
+            occurrence.ply,
+            occurrence.position.placement,
+            occurrence.position.side_to_move,
+            occurrence.position.castling_rights,
+            occurrence.position.legal_en_passant,
+            occurrence.move_uci,
+            occurrence.halfmove_clock,
+            occurrence.fullmove_number,
+        )
+        for occurrence in game.occurrences
+    )
+    return stored_occurrences == expected_occurrences
+
+
+def _game_metadata(game: NormalizedGame) -> tuple[object, ...]:
+    return (
+        game.source_url,
+        game.original_pgn,
+        game.trainer_color,
+        str(game.trainer_chesscom_uuid),
+        (
+            None
+            if game.opponent_chesscom_uuid is None
+            else str(game.opponent_chesscom_uuid)
+        ),
+        game.trainer_rating,
+        game.opponent_rating,
+        game.started_at_utc,
+        game.ended_at_utc,
+        game.trainer_outcome,
+        game.termination_reason,
+        game.time_control_source,
+        game.time_class,
+    )
 
 
 def _metadata_parameters(

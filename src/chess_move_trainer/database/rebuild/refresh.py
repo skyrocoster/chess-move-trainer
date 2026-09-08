@@ -13,9 +13,12 @@ from ..connection import (
     _open_connection,
     _validate_lock_timeout,
 )
-from ..games.normalization import NormalizedGame, normalize_game
-from ..games.persistence import GameRepository, ImportResult, import_raw_months
-from ..games.raw_storage import load_month
+from ..games.persistence import (
+    GameRepository,
+    ImportResult,
+    import_normalized_games,
+    load_normalized_months,
+)
 from ..openings import (
     CataloguePublication,
     OpeningCatalogueRepository,
@@ -383,28 +386,15 @@ def _run_games(
         )
 
     try:
-        normalized_games = _load_normalized_games(raw_root, inputs.trainer_chesscom_uuid)
-        if normalized_games is not None and _games_source_matches(
-            inputs.configuration.rebuilt_neighbour,
-            normalized_games,
-            lock_timeout=inputs.lock_timeout,
-        ):
-            return RefreshStageOutcome(
-                RefreshStage.GAMES,
-                RefreshStageStatus.SKIPPED,
-                (
-                    f"{len(normalized_games)} unchanged valid game(s) already match "
-                    "the current database; import skipped"
-                ),
-            )
-        result = import_raw_months(
+        normalized_games = load_normalized_months(
             raw_root,
             inputs.trainer_chesscom_uuid,
-            GameRepository(
-                inputs.configuration.rebuilt_neighbour,
-                lock_timeout=inputs.lock_timeout,
-            ),
         )
+        repository = GameRepository(
+            inputs.configuration.rebuilt_neighbour,
+            lock_timeout=inputs.lock_timeout,
+        )
+        result = import_normalized_games(normalized_games, repository)
     except KeyboardInterrupt:
         raise
     except Exception as error:
@@ -420,6 +410,16 @@ def _run_games(
             f"{result.failure.game_uuid}: {result.failure.message}"
         )
         status = RefreshStageStatus.FAILED
+    elif (
+        result.imported_count > 0
+        and result.skipped_count == 0
+        and repository._last_import_writes == 0
+    ):
+        message = (
+            f"{result.imported_count} unchanged valid game(s) already match "
+            "the current database; import skipped"
+        )
+        status = RefreshStageStatus.SKIPPED
     else:
         message = (
             f"imported {result.imported_count} game(s) and skipped "
@@ -537,7 +537,13 @@ def _opening_source_matches(
 
     expected_labels = {(route.eco, route.name) for route in routes}
     expected_routes = {
-        (route.eco, route.name, route.moves_uci, route.endpoint_key) for route in routes
+        (
+            route.eco,
+            route.name,
+            tuple((ply, move_uci) for ply, move_uci in enumerate(route.moves_uci, start=1)),
+            route.endpoint_key,
+        )
+        for route in routes
     }
     with _open_connection(database_path, "read-only", lock_timeout) as connection:
         labels = {
@@ -549,7 +555,6 @@ def _opening_source_matches(
         if labels != expected_labels:
             return False
 
-        current_routes: set[tuple[str, str, tuple[str, ...], tuple[str, ...]]] = set()
         route_rows = connection.exec_driver_sql(
             """
             SELECT r.dor_route_id, o.do_eco, o.do_name,
@@ -559,24 +564,29 @@ def _opening_source_matches(
             JOIN datasource_opening AS o
               ON o.do_opening_id = r.datasource_opening_id
             JOIN derived_position AS p
-              ON p.dp_position_id = r.derived_position_id
+            ON p.dp_position_id = r.derived_position_id
             """
         ).all()
+        move_rows = connection.exec_driver_sql(
+            """
+            SELECT derived_opening_route_id, dorm_ply, dorm_move_uci
+            FROM derived_opening_route_move
+            ORDER BY derived_opening_route_id, dorm_ply
+            """
+        ).all()
+        grouped_moves: dict[int, list[tuple[int, str]]] = {}
+        for route_id, ply, move_uci in move_rows:
+            grouped_moves.setdefault(int(route_id), []).append((int(ply), str(move_uci)))
+
+        current_routes: set[
+            tuple[str, str, tuple[tuple[int, str], ...], tuple[str, ...]]
+        ] = set()
         for route_id, eco, name, placement, side, castling, en_passant in route_rows:
-            move_rows = connection.exec_driver_sql(
-                """
-                SELECT dorm_move_uci
-                FROM derived_opening_route_move
-                WHERE derived_opening_route_id = ?
-                ORDER BY dorm_ply
-                """,
-                (route_id,),
-            ).all()
             current_routes.add(
                 (
                     str(eco),
                     str(name),
-                    tuple(str(row[0]) for row in move_rows),
+                    tuple(grouped_moves.get(int(route_id), ())),
                     (str(placement), str(side), str(castling), str(en_passant)),
                 )
             )
@@ -584,118 +594,6 @@ def _opening_source_matches(
             len(route_rows) == len(expected_routes)
             and current_routes == expected_routes
         )
-
-
-def _load_normalized_games(
-    raw_root: Path,
-    trainer_uuid: UUID,
-) -> tuple[NormalizedGame, ...] | None:
-    """Read and normalize local months, returning ``None`` for invalid games.
-
-    Invalid raw games deliberately fall back to the accepted importer so its
-    warning and continuation behavior remains unchanged.
-    """
-
-    games_root = raw_root / "games"
-    month_paths = (
-        sorted(games_root.glob("[0-9][0-9][0-9][0-9]/[0-9][0-9].json"))
-        if games_root.is_dir()
-        else []
-    )
-    raw_games: list[object] = []
-    for month_path in month_paths:
-        raw_games.extend(load_month(month_path)["games"])
-
-    normalized: list[NormalizedGame] = []
-    for raw_game in raw_games:
-        result = normalize_game(raw_game, trainer_uuid)
-        if result.game is None:
-            return None
-        normalized.append(result.game)
-    return tuple(normalized)
-
-
-def _games_source_matches(
-    database_path: Path,
-    games: tuple[NormalizedGame, ...],
-    *,
-    lock_timeout: float,
-) -> bool:
-    """Compare normalized source games with their stored per-game output."""
-
-    with _open_connection(database_path, "read-only", lock_timeout) as connection:
-        for game in games:
-            row = connection.exec_driver_sql(
-                """
-                SELECT dg_game_id, dg_source_url, dg_original_pgn,
-                       dg_trainer_color, dg_trainer_chesscom_uuid,
-                       dg_opponent_chesscom_uuid, dg_trainer_rating,
-                       dg_opponent_rating, dg_started_at_utc, dg_ended_at_utc,
-                       dg_trainer_outcome, dg_termination_reason,
-                       dg_time_control_source, dg_time_class
-                FROM datasource_game
-                WHERE dg_chesscom_game_uuid = ?
-                """,
-                (str(game.chesscom_game_uuid),),
-            ).first()
-            if row is None or tuple(row[1:]) != _game_metadata(game):
-                return False
-
-            stored_occurrences = tuple(
-                tuple(occurrence)
-                for occurrence in connection.exec_driver_sql(
-                    """
-                    SELECT g.dgp_ply, p.dp_placement, p.dp_side_to_move,
-                           p.dp_castling_rights, p.dp_legal_en_passant,
-                           g.dgp_move_uci, g.dgp_halfmove_clock,
-                           g.dgp_fullmove_number
-                    FROM derived_game_position AS g
-                    JOIN derived_position AS p
-                      ON p.dp_position_id = g.derived_position_id
-                    WHERE g.datasource_game_id = ?
-                    ORDER BY g.dgp_ply
-                    """,
-                    (int(row[0]),),
-                ).all()
-            )
-            expected_occurrences = tuple(
-                (
-                    occurrence.ply,
-                    occurrence.position.placement,
-                    occurrence.position.side_to_move,
-                    occurrence.position.castling_rights,
-                    occurrence.position.legal_en_passant,
-                    occurrence.move_uci,
-                    occurrence.halfmove_clock,
-                    occurrence.fullmove_number,
-                )
-                for occurrence in game.occurrences
-            )
-            if stored_occurrences != expected_occurrences:
-                return False
-    return True
-
-
-def _game_metadata(game: NormalizedGame) -> tuple[object, ...]:
-    return (
-        game.source_url,
-        game.original_pgn,
-        game.trainer_color,
-        str(game.trainer_chesscom_uuid),
-        (
-            None
-            if game.opponent_chesscom_uuid is None
-            else str(game.opponent_chesscom_uuid)
-        ),
-        game.trainer_rating,
-        game.opponent_rating,
-        game.started_at_utc,
-        game.ended_at_utc,
-        game.trainer_outcome,
-        game.termination_reason,
-        game.time_control_source,
-        game.time_class,
-    )
 
 
 __all__ = [

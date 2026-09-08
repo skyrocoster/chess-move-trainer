@@ -7,12 +7,18 @@ from pathlib import Path
 from uuid import UUID
 
 import pytest
+from sqlalchemy.engine import Connection
 
 from chess_move_trainer.database import create_schema
-from chess_move_trainer.database.games.normalization import NormalizedGame, normalize_game
+from chess_move_trainer.database.games.normalization import (
+    NormalizationResult,
+    NormalizedGame,
+    normalize_game,
+)
 from chess_move_trainer.database.games.persistence import (
     GamePersistenceError,
     GameRepository,
+    import_normalized_games,
 )
 
 
@@ -70,7 +76,9 @@ def test_fresh_game_persists_exact_metadata_positions_and_occurrences(tmp_path: 
     assert [row[4:] for row in occurrences] == [(0, 1), (0, 1), (0, 2), (1, 2), (2, 3)]
 
 
-def test_repeated_and_cross_game_positions_reuse_db02_identity(tmp_path: Path) -> None:
+def test_repeated_and_cross_game_positions_reuse_db02_identity(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     database = tmp_path / "reuse.db"
     create_schema(database)
     repeated = _normalized("game-repetition-counters.json")
@@ -83,12 +91,54 @@ def test_repeated_and_cross_game_positions_reuse_db02_identity(tmp_path: Path) -
 
     first_result = repository.persist(repeated)
     first_positions = [row[2] for row in _rows(database, "derived_game_position")]
-    repository.persist(second)
+    third = replace(
+        second,
+        chesscom_game_uuid=UUID("77777777-7777-4777-8777-777777777777"),
+        source_url="https://www.chess.com/game/live/synthetic-repetition-three",
+    )
+    original_execute = Connection.execute
+    position_insert_calls = 0
+
+    def count_position_inserts(
+        connection: Connection,
+        statement: object,
+        parameters: object = None,
+        *args: object,
+        **kwargs: object,
+    ) -> object:
+        nonlocal position_insert_calls
+        if "INSERT INTO derived_position" in str(statement):
+            position_insert_calls += 1
+        return original_execute(connection, statement, parameters, *args, **kwargs)
+
+    monkeypatch.setattr(Connection, "execute", count_position_inserts)
+    result = import_normalized_games(
+        [
+            NormalizationResult(game=second, warning=None),
+            NormalizationResult(game=third, warning=None),
+        ],
+        repository,
+    )
+    assert result.completed
+    assert result.imported_count == 2
     all_positions = _rows(database, "derived_game_position")
 
     assert first_positions[0] == first_positions[4] == first_positions[8]
-    assert [row[2] for row in all_positions if row[0] == first_result.game_id] == first_positions
-    assert [row[2] for row in all_positions if row[0] != first_result.game_id] == first_positions
+    game_ids = [row[0] for row in _rows(database, "datasource_game")]
+    assert game_ids[0] == first_result.game_id
+    assert [row[2] for row in all_positions if row[0] == game_ids[0]] == first_positions
+    assert [row[2] for row in all_positions if row[0] == game_ids[1]] == first_positions
+    assert [row[2] for row in all_positions if row[0] == game_ids[2]] == first_positions
+    unique_positions = {
+        (
+            occurrence.position.placement,
+            occurrence.position.side_to_move,
+            occurrence.position.castling_rights,
+            occurrence.position.legal_en_passant,
+        )
+        for occurrence in repeated.occurrences
+    }
+    assert position_insert_calls == len(unique_positions)
     assert len(_rows(database, "derived_position")) < len(all_positions)
 
 

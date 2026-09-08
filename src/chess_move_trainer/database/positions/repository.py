@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Iterator
+from typing import Iterator, TypeAlias
 
 from sqlalchemy import text
 
@@ -15,6 +15,9 @@ from .canonicalization import CanonicalPosition, canonicalize_board, canonicaliz
 
 class PositionStorageError(RuntimeError):
     """Raised when a compatible position database cannot be used safely."""
+
+
+PositionIdentity: TypeAlias = tuple[str, str, str, str]
 
 
 class PositionRepository:
@@ -74,8 +77,15 @@ def position_transaction(
 class _PositionUnitOfWork:
     """Opaque position operations bound to one package-owned transaction."""
 
-    def __init__(self, connection: object) -> None:
+    def __init__(
+        self,
+        connection: object,
+        *,
+        position_cache: dict[PositionIdentity, int] | None = None,
+    ) -> None:
         self._connection = connection
+        self._position_cache = position_cache if position_cache is not None else {}
+        self._new_position_cache: dict[PositionIdentity, int] = {}
 
     def resolve_board(self, board: object) -> int:
         return self._resolve(canonicalize_board(board))
@@ -84,8 +94,22 @@ class _PositionUnitOfWork:
         return self._resolve(canonicalize_fen(fen))
 
     def _resolve(self, position: CanonicalPosition) -> int:
+        identity = _position_identity(position)
+        cached = self._position_cache.get(identity)
+        if cached is not None:
+            return cached
+        tentative = self._new_position_cache.get(identity)
+        if tentative is not None:
+            return tentative
+
+        parameters = {
+            "placement": position.placement,
+            "side_to_move": position.side_to_move,
+            "castling_rights": position.castling_rights,
+            "legal_en_passant": position.legal_en_passant,
+        }
         try:
-            self._connection.execute(
+            row = self._connection.execute(
                 text(
                     """
                     INSERT INTO derived_position (
@@ -105,36 +129,50 @@ class _PositionUnitOfWork:
                         dp_castling_rights,
                         dp_legal_en_passant
                     ) DO NOTHING
+                    RETURNING dp_position_id
                     """
                 ),
-                {
-                    "placement": position.placement,
-                    "side_to_move": position.side_to_move,
-                    "castling_rights": position.castling_rights,
-                    "legal_en_passant": position.legal_en_passant,
-                },
-            )
-            row = self._connection.execute(
-                text(
-                    """
-                    SELECT dp_position_id
-                    FROM derived_position
-                    WHERE dp_placement = :placement
-                      AND dp_side_to_move = :side_to_move
-                      AND dp_castling_rights = :castling_rights
-                      AND dp_legal_en_passant = :legal_en_passant
-                    """
-                ),
-                {
-                    "placement": position.placement,
-                    "side_to_move": position.side_to_move,
-                    "castling_rights": position.castling_rights,
-                    "legal_en_passant": position.legal_en_passant,
-                },
+                parameters,
             ).first()
+            inserted = row is not None
+            if row is None:
+                row = self._connection.execute(
+                    text(
+                        """
+                        SELECT dp_position_id
+                        FROM derived_position
+                        WHERE dp_placement = :placement
+                          AND dp_side_to_move = :side_to_move
+                          AND dp_castling_rights = :castling_rights
+                          AND dp_legal_en_passant = :legal_en_passant
+                        LIMIT 1
+                        """
+                    ),
+                    parameters,
+                ).first()
         except Exception as error:
             raise PositionStorageError("canonical position could not be stored") from error
 
         if row is None:
             raise PositionStorageError("canonical position was not returned after storage")
-        return int(row[0])
+        position_id = int(row[0])
+        if inserted:
+            self._new_position_cache[identity] = position_id
+        else:
+            self._position_cache[identity] = position_id
+        return position_id
+
+    @property
+    def _new_positions(self) -> dict[PositionIdentity, int]:
+        """Return IDs that may be promoted after the owning transaction commits."""
+
+        return self._new_position_cache
+
+
+def _position_identity(position: CanonicalPosition) -> PositionIdentity:
+    return (
+        position.placement,
+        position.side_to_move,
+        position.castling_rights,
+        position.legal_en_passant,
+    )

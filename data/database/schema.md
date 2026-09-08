@@ -20,6 +20,7 @@
 | table | `derived_opening_route` | derived_opening_route | yes |
 | table | `derived_opening_route_move` | derived_opening_route_move | yes |
 | table | `derived_position` | derived_position | yes |
+| index | `derived_game_position_position_idx` | derived_game_position | yes |
 | index | `sqlite_autoindex_datasource_game_1` | datasource_game | no |
 | index | `sqlite_autoindex_datasource_opening_1` | datasource_opening | no |
 | index | `sqlite_autoindex_datasource_preferred_move_period_1` | datasource_preferred_move_period | no |
@@ -207,6 +208,7 @@ None recorded.
 | `sqlite_autoindex_datasource_preferred_move_period_1` | `datasource_preferred_move_period` | yes | pk | no | derived_position_id, dpm_effective_from | no |
 | `sqlite_autoindex_derived_analysis_line_1` | `derived_analysis_line` | yes | pk | no | derived_analysis_result_id, dal_rank | no |
 | `sqlite_autoindex_derived_analysis_queue_1` | `derived_analysis_queue` | yes | u | no | daq_claim_token | no |
+| `derived_game_position_position_idx` | `derived_game_position` | no | c | no | derived_position_id, datasource_game_id, dgp_ply | yes |
 | `sqlite_autoindex_derived_game_position_1` | `derived_game_position` | yes | pk | no | datasource_game_id, dgp_ply | no |
 | `sqlite_autoindex_derived_opening_route_move_1` | `derived_opening_route_move` | yes | pk | no | derived_opening_route_id, dorm_ply | no |
 | `sqlite_autoindex_derived_position_1` | `derived_position` | yes | u | no | dp_placement, dp_side_to_move, dp_castling_rights, dp_legal_en_passant | no |
@@ -401,4 +403,11 @@ CREATE TABLE derived_position (
     CHECK (dp_legal_en_passant = '-' OR dp_legal_en_passant GLOB '[a-h][36]'),
     UNIQUE (dp_placement, dp_side_to_move, dp_castling_rights, dp_legal_en_passant)
 )
+```
+
+### index `derived_game_position_position_idx`
+
+```sql
+CREATE INDEX derived_game_position_position_idx
+ON derived_game_position (derived_position_id, datasource_game_id, dgp_ply)
 ```

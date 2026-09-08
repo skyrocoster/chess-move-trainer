@@ -140,4 +140,7 @@ CREATE TABLE datasource_preferred_move_period (
     CHECK (dpm_move_uci IS NULL OR dpm_move_uci GLOB '[a-h][1-8][a-h][1-8]' OR dpm_move_uci GLOB '[a-h][1-8][a-h][1-8][qrbn]')
 );
 
+CREATE INDEX derived_game_position_position_idx
+ON derived_game_position (derived_position_id, datasource_game_id, dgp_ply);
+
 PRAGMA user_version = 1;

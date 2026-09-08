@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any
 from uuid import UUID
@@ -15,7 +15,6 @@ from .verification import (
     VerificationResult,
     VerificationStatus,
     VerificationTarget,
-    verify_rebuild_target,
 )
 
 
@@ -94,11 +93,11 @@ def stage_candidate(
             trainer_chesscom_uuid=trainer_chesscom_uuid,
             lock_timeout=timeout_seconds,
         )
-        verification = verify_rebuild_target(
-            configuration,
-            VerificationTarget.CANDIDATE,
-            lock_timeout=timeout_seconds,
-        )
+        if refresh.verification is not None:
+            verification = replace(
+                refresh.verification,
+                target=VerificationTarget.CANDIDATE,
+            )
     except KeyboardInterrupt:
         raise
     except RefreshInputError:
@@ -117,7 +116,7 @@ def stage_candidate(
             verification=verification,
         )
 
-    if refresh.completed and verification.replacement_ready:
+    if refresh.completed and verification is not None and verification.replacement_ready:
         return CandidateOutcome(
             operation=RebuildOperation.CANDIDATE,
             status=OperationStatus.SUCCEEDED,
@@ -133,7 +132,10 @@ def stage_candidate(
 
     status = (
         OperationStatus.INCOMPATIBLE
-        if verification.status is VerificationStatus.INCOMPATIBLE
+        if (
+            verification is not None
+            and verification.status is VerificationStatus.INCOMPATIBLE
+        )
         or refresh.status is OperationStatus.INCOMPATIBLE
         else OperationStatus.FAILED
     )
