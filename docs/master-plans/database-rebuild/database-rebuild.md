@@ -1,59 +1,121 @@
 # Database rebuild
 
-> **Status:** completed database foundation, `SETUP-01`, and `SETUP-02`; `API-01` is next
-> **Acceptance:** The rebuilt foundation, automatic preferred-move setup, and health-only generated API client
-> tooling were accepted on 2026-09-08.
+> **Status:** direction settled
+> **Next selectable slice:** `CLEAN-01` — create `GET /api/games` and immediately regenerate the curated OpenAPI and HeyAPI output.
+> **Acceptance:** The accepted database foundation, SETUP-01, and SETUP-02 remain intact; every clean operation is created and generated individually; every current production API workflow is migrated individually afterward; and legacy routes are retired only after their final consumers move.
 
-## Purpose and current starting point
+## Destination
 
-The database rebuild is complete. The repository now has one package-owned SQLite foundation at
-`data/database/chess.db`, populated with the accepted real game and opening data and proven through direct reads and
-separate bounded Stockfish analysis. This document records that foundation as one completed capability; it no longer
-uses the historical DB-01 through DB-09 sequence as its organizing structure.
+Expose the rebuilt chess data through one coherent, reusable HTTP API, keep its checked-in HeyAPI client current after
+every new operation, and then move each current production workflow to that client without compatibility shims,
+screen-shaped backend contracts, or a global database cutover.
 
-The next selectable work is `API-01` for the game viewer backend contract. This document does not authorize that work,
-application integration, physical database activation, old-database cleanup, or deletion. Each later outcome
-remains separately gated by its required grilling, coordinator approval, and a focused Plan when nontrivial.
+This master plan records direction and selectable slices. It does not authorize implementation. Each slice requires
+coordinator approval and a focused Plan when nontrivial.
 
-## Completed database foundation
+## Why this master plan was replaced
 
-### Package ownership and supported operations
+The former master plan organized future work as `API-01` through `API-04` around the current frontend screens. The
+confirmed [database-rebuild API direction](../../grilling-docs/database-rebuild-api-direction.md) instead settles the
+whole useful API first, then migrates individual consumers. It is authoritative for API semantics, repository
+placement, generation order, coexistence, migration, and exclusions. This document replaces the old future sequence
+rather than retrofitting it, while preserving all completed foundation, SETUP-01, and SETUP-02 evidence.
 
-The importable package under `src/chess_move_trainer/database/` owns the rebuilt database behavior. Its ownership is
-split into cohesive services with shared behavior below the thin Typer adapters:
+## Settled direction
 
-- `connection.py`, `schema.py`, `inspection.py`, `publication.py`, `lifecycle.py`, and `statistics.py` own explicit
-  SQLite access, schema creation/inspection, generated publication, the fixed lifecycle, and measurements.
-- `positions/` owns legal position validation, canonicalization, and opaque transaction-scoped position resolution.
-- `games/` owns Chess.com archive acquisition, retained raw-month storage, normalization, persistence, and reads.
-- `openings/` owns the fixed five-file source, acquisition, normalized catalogue publication, and lookup/replay.
-- `preferred_moves/` owns current period normalization, resolution, and atomic storage edits.
-- `analysis/` owns normalized result validation, current result/line publication, and reads.
-- `stockfish/` owns configuration, engine process control, the database mutex, target selection, queue, benchmark,
-  bulk analysis, and worker execution. `rebuild/proof.py` contains the retained read-only proof helpers.
+### Public capability inventory
 
-The supported command family is entered with `python -m chess_move_trainer.database` and currently exposes:
-
-- `schema create` and `schema inspect` for explicit-path schema work and deterministic inspection;
-- `openings lookup` and `openings replay` for isolated database-level opening recognition;
-- `preferred-moves list`, `resolve`, `set`, and `unset` for current dated preference storage;
-- `stockfish benchmark`, `bulk`, and `worker` for benchmark artifacts, direct on-demand publication, and queued work.
-
-Only three commands are public **data-loading lifecycle workflows**:
+Health is already implemented and generated. The remaining operations are created one at a time in this order:
 
 ```text
-python -m chess_move_trainer.database setup
-python -m chess_move_trainer.database update games
-python -m chess_move_trainer.database update openings
+GET     /api/health                         completed by SETUP-02
+
+GET     /api/games                         CLEAN-01
+GET     /api/games/{game_uuid}             CLEAN-02
+GET     /api/openings                      CLEAN-03
+GET     /api/openings/{opening_key}        CLEAN-04
+GET     /api/positions/insight             CLEAN-05
+GET     /api/analysis                      CLEAN-06
+POST    /api/analysis-requests             CLEAN-07
+GET     /api/preferred-moves               CLEAN-08
+PUT     /api/preferred-moves               CLEAN-09
+DELETE  /api/preferred-moves               CLEAN-10
 ```
 
-The lifecycle adapters use the fixed destination and return useful automation-safe output and exit status. Other
-operator commands take explicit database or input paths as appropriate. CLI adapters contain no business logic, and no
-required database operation is canonical under `scripts/`.
+Every `CLEAN-*` slice adds exactly one operation, its clean package capability, its thin HTTP adapter, and its focused
+proof. Before that slice can be accepted, the operation is added to the curated OpenAPI export and the checked-in
+HeyAPI output is regenerated and proven deterministic. Generated output therefore never lags behind an accepted API
+operation. No production frontend usage adopts a clean operation during API creation.
 
-### Database and position boundary
+### Contract principles
 
-The current schema is version 1 with exactly these ten catalogue tables:
+- FEN is the public position identity; SQLite position IDs remain private. Complete legal FENs are canonicalized by
+  placement, side to move, castling, and legal en-passant. Game occurrences retain their move counters for replay.
+- Legal positions absent from stored games are valid. Reads do not create rows; an analysis request or preferred-move
+  edit may resolve/create the internal position as part of that purposeful write.
+- Unknown request query/body fields are ignored, additive response fields are tolerated, and known invalid values or
+  invalid combinations are rejected.
+- The backend owns chess, temporal, filtering, and aggregation meanings. Callers supply explicit context rather than
+  rebuilding those meanings.
+- Clean and legacy routes coexist temporarily without `/api/v2`, fallback, or compatibility adapters. Only clean
+  operations enter the curated OpenAPI/HeyAPI contract.
+- Exact field spelling, finite page-size limits, and error codes may be settled in focused planning only when these
+  semantics remain unchanged.
+
+### Capability semantics
+
+- **Games:** `GET /api/games` is one typed, rich, combined-filter search over normalized game facts and direct opening,
+  position, outgoing-move, length, analysis, and preferred-move relationships. It uses `page`/`page_size`, deterministic
+  sorts, and rich summaries rather than full timelines. `GET /api/games/{game_uuid}` returns complete metadata, original
+  PGN, and ordered occurrences with outgoing moves.
+- **Openings:** the collection and detail operations expose a flat searchable catalogue with reusable API keys, ECO and
+  label data, route counts, and reached/deepest game-usage meanings. They do not expose route moves, a hierarchy, or
+  Opening Line Library behavior.
+- **Position insight:** `GET /api/positions/insight` requires `fen`, `trainer_color`, and `as_of` and always returns
+  canonical position data, current opening recognition, trainer-color-filtered experience, observed outgoing moves,
+  current analysis state/result, and the date-resolved preference. It has no `include` or screen-specific variant.
+  Unseen legal positions succeed sparsely without a write. Move history contains observed moves only, with explicit
+  distinct-game and occurrence meanings; legal-move generation remains in the existing frontend chess library.
+- **Analysis:** focused observation uses `not_requested -> queued -> running -> ready` without revealing internal row
+  existence. Requests ask for the desired result, not Analyze/Update/Retry actions. Quality is optional `browser` or
+  `tool`, defaults to `browser`, and exposes no arbitrary engine settings. Repeats/concurrent requests are duplicate-safe
+  and sufficient higher-quality results are reused. The contract has one current complete result and live queue state,
+  not old batch, attempt, partial-result, downgrade, or persisted-failure history.
+- **Preferred moves:** a preference is **the outgoing move after the supplied parent FEN**, not the resulting position or
+  a stored repertoire line. Values are tagged `{kind: "move", uci: "..."}` or `{kind: "no_preference"}`; deleting an
+  interval produces `unconfigured`. Mutations require `effective_from`, allow an optional exclusive `effective_until`,
+  and atomically overlay/remove normalized periods. Reads require a finite `from`/`until` window and return contiguous
+  segments covering it, including derived unconfigured gaps. Callers do not calculate splits, merges, gaps, overlaps,
+  or active dates.
+
+### Repository ownership
+
+```text
+FastAPI routes and HTTP models         backend/app/features/
+Database capabilities and queries      src/chess_move_trainer/database/
+Generated TypeScript contract          frontend/src/api/generated/
+```
+
+The rebuilt package is the only owner of SQL, transactions, canonical chess/data behavior, and reusable reads/writes.
+It accepts explicit database paths and returns ordinary Python values without FastAPI or HTTP Pydantic types. Thin
+backend feature adapters own routing, HTTP schemas, and status/error translation; they do not add another raw-SQL
+`repository.py` stack. One backend dependency supplies the rebuilt database path instead of importing configuration
+from the legacy positions repository. The package never imports `backend`.
+
+Package tests remain under `tests/database/<domain>/`; HTTP tests remain under
+`backend/tests/features/<feature>/`. Existing handwritten export/generation files remain under `scripts/api/` and
+`frontend/openapi-ts.config.ts`; all generated files remain under `frontend/src/api/generated/`; and runtime client
+configuration remains in `frontend/src/api/client.ts`.
+
+## Completed foundation retained as evidence
+
+The database foundation is accepted and not reopened. `src/chess_move_trainer/database/` owns the fixed lifecycle,
+explicit SQLite access, canonical positions, game acquisition/import/reads, opening acquisition/catalogue recognition,
+preferred-move normalization, current analysis publication/reads, and serialized Stockfish queue/worker behavior. The
+only public data-loading workflows remain `setup`, `update games`, and `update openings`, targeting
+`data/database/chess.db`. Operator commands do not become application HTTP endpoints.
+
+Schema version 1 retains exactly these ten tables:
 
 ```text
 datasource_game
@@ -68,94 +130,10 @@ derived_analysis_queue
 datasource_preferred_move_period
 ```
 
-The schema also has `PRAGMA user_version = 1`, the catalogue constraints and indexes, and no feature-specific schema,
-run, history, projection, manifest, or audit table families. `derived_position` gives every valid position one stable
-identity from placement, side to move, castling rights, and the fully legal en-passant square. Halfmove and fullmove
-counters are stored on game occurrences but are not part of position identity.
+There are no feature-specific schema, run, history, projection, manifest, audit, batch, failure, hierarchy, or
+classification table families. No old rows migrated; the old database and raw sources remain retained and unmodified.
 
-`schema_v1.sql` is the executable DDL and `data/database/schema.md` is the generated current reference. The checked-in
-`data/database/schema.txt` still describes the older multi-table DDL and old script owners; it is retained evidence,
-not a basis for present-tense claims about the rebuilt runtime database. Package connections use explicit paths,
-foreign-key enforcement, finite SQLite lock waits, and read-only access where inspection or reading requires it.
-
-### Games, raw sources, and occurrences
-
-Chess.com acquisition is package-owned. It discovers the participant archive, validates the exact HTTPS month URLs, and
-stores retained raw responses under `data/chess-com/raw/games/YYYY/MM.json`. Existing historical month files are the
-ledger and are skipped. The newest saved month is refetched during `update games`; its valid response is merged by
-Chess.com UUID so new and corrected games are included while omitted local games remain. Later missing months through
-the current month are acquired independently. Every candidate month is validated before an atomic same-directory raw
-file publication, so a malformed or incomplete response cannot replace the prior usable file.
-
-Normalization filters and validates games before persistence. Accepted standard games publish `datasource_game`,
-`derived_game_position`, and shared `derived_position` rows. A normal update commits each accepted game independently;
-corrected game facts are replaced atomically. `setup` uses the complete retained source set and bulk-imports the
-accepted game data in one outer database transaction. Invalid games are reported rather than destructively omitted, and
-raw sources remain independent of normalized acceptance.
-
-### Openings and direct recognition
-
-Opening acquisition resolves one current commit from the fixed Lichess `chess-openings` source, retrieves `a.tsv`
-through `e.tsv`, stages and validates the complete five-file set, and publishes the source files with rollback-protected
-file swaps. Windows cannot make the whole directory swap atomic, so an abrupt crash during those swaps can expose a
-mixed revision that an idempotent rerun repairs. The database catalogue replacement is one transaction: labels, routes,
-contiguous route moves, and canonical endpoint positions are published together. An invalid or incomplete source leaves
-the prior valid catalogue usable.
-
-`openings lookup` recognizes a complete FEN without writing, and `openings replay` replays one standard-start PGN.
-Recognition returns ordered labels and the current label while distinguishing exact route matches from transpositions,
-matching persisted canonical endpoints without exposing unreached future variations. This is an isolated package/tool
-capability, not the excluded Opening Line Library HTTP surface.
-
-### Preferred-move storage
-
-`datasource_preferred_move_period` stores normalized half-open UTC calendar-date periods. A period can contain a legal
-preferred move or an explicit no-preference value; a date with no row is unconfigured. The package supports listing,
-resolving, setting, and unsetting periods with legal-position validation, overlap-safe normalization, and atomic writer
-transactions.
-
-The package now also supports `preferred-moves setup`, the fixed empty-schedule-only inference command accepted in
-SETUP-01. It examines trainer moves in the first 30 plies through rolling 90-day windows, requires at least 21 matching
-plays and an inclusive 80-percent share, validates the complete result, and writes it atomically without a proposal or
-review step. The accepted real invocation populated 108 periods across 91 positions; any later invocation refuses the
-now-nonempty schedule.
-
-### Analysis, queue, and Stockfish
-
-The package validates and atomically publishes one current complete `derived_analysis_result` and its
-`derived_analysis_line` children per canonical position, enforcing terminal behavior, legal complete lines, quality,
-and no-downgrade rules. `derived_analysis_queue` is a live six-column queue with queued/running states, claim tokens,
-finite stale-claim recovery, and no persisted failure or run history.
-
-`stockfish benchmark` runs an explicit resumable benchmark and writes contained artifacts. `stockfish bulk` selects
-eligible positions on demand and publishes results directly; `stockfish worker` drains queued requests. Bulk and worker
-engine work is serialized behind the database mutex, while the benchmark remains a separate artifact-producing
-operation. All Stockfish work is separate from the three setup/update workflows. Setup and updates never run Stockfish
-or populate analysis as a side effect.
-
-### Direct lifecycle and transaction boundaries
-
-The fixed direct lifecycle is deliberately small:
-
-- `setup` succeeds only when `data/database/chess.db` is absent. It creates schema v1, acquires/uses the retained game
-  sources and latest valid opening source, imports the data, and performs only quick local checks. If setup fails after
-  creating the file, it removes only that newly created database and its exact sidecars; it does not remove sources or
-  replace a pre-existing database.
-- `update games` uses the retained raw-month ledger, refetches and merges the newest saved month, fills later months,
-  and imports each published month through independent transactions. It does not persist fetch-state, ETags, or a
-  current-month flag.
-- `update openings` validates the complete five-file source before replacing the catalogue in one transaction and does
-  not change game data.
-
-Full integrity checks, measurements, direct capability queries, and Stockfish analysis are separate from setup and
-updates. The supported lifecycle uses only the fixed database file and has no alternate-file operation, replacement or
-swap, snapshot, rollback, recovery, reset, dedicated rebuild, replacement-readiness, or separate verification workflow.
-For a rare full rebuild an operator deliberately moves or removes the fixed database outside these commands and then
-runs `setup`; no command automates that destructive action.
-
-### Accepted real-data proof
-
-The accepted database at `data/database/chess.db` contains:
+The accepted `data/database/chess.db` evidence is:
 
 ```text
 12,710 games
@@ -169,123 +147,159 @@ The accepted database at `data/database/chess.db` contains:
 0 queued analysis requests
 ```
 
-The source ledger covered 32 months and 12,716 records: 12,710 accepted games and 6 explicitly rejected games, with
-zero duplicate normalized, source, or database identifiers and exact UUID-to-start-month agreement. Integrity checks
-passed (`integrity_check = ok`, no foreign-key violations), the accepted database remains `DELETE` journal mode with
-`FULL` synchronous setting and no journal/WAL/SHM sidecars, and the measured direct access paths passed their proof
-thresholds. The retained focused evidence includes the 512-game/2,560-occurrence regression under one second, the
-ledger-only proof, and complete DB-09 proof. A separate bounded Stockfish 18 Tool-profile run published the one result
-and five lines above. SETUP-01 later examined all 12,710 accepted games, skipped none, reported seven positions with
-overlapping qualifying evidence, and atomically applied the 108 preferred-move periods. No API, frontend, application
-cutover, broad maintenance run, or old-database operation was part of either acceptance.
+The 32-month source ledger held 12,716 records: 12,710 accepted and 6 explicitly rejected, with no duplicate normalized,
+source, or database identifiers. Integrity, foreign-key, direct-read performance, ledger, DB-09, and bounded Stockfish
+proof passed. SETUP-01 then inferred and atomically applied the accepted 108 periods. No API, frontend, cutover, broad
+maintenance run, or old-database operation was part of that acceptance.
 
-### Safety and application boundary
+- **SETUP-01:** the fixed empty-schedule-only preferred-move inference command is accepted; it now refuses the nonempty
+  schedule and added no API/frontend/schema/history behavior.
+- **SETUP-02:** health-only deterministic OpenAPI export and checked-in HeyAPI generation are accepted; `getHealth()`
+  passed a real bounded call, and no production module adopted it.
 
-No rows migrate from the old database. Raw month files and historical workflow records remain retained, the old
-database remains unmodified, and legacy scripts remain read-only noncanonical evidence until separately authorized
-retirement. No new table or schema machinery is introduced outside the ten-table catalogue.
+Completed evidence remains in the [DB-01](../../plans/done/database-rebuild-db-01/database-rebuild-db-01.md),
+[DB-02](../../plans/done/database-rebuild-db-02/database-rebuild-db-02.md),
+[DB-03](../../plans/done/database-rebuild-db-03/database-rebuild-db-03.md),
+[DB-04](../../plans/done/database-rebuild-db-04/database-rebuild-db-04.md),
+[DB-05](../../plans/done/database-rebuild-db-05/database-rebuild-db-05.md),
+[DB-06](../../plans/done/database-rebuild-db-06/database-rebuild-db-06.md),
+[DB-07](../../plans/done/database-rebuild-db-07/database-rebuild-db-07.md),
+[DB-08](../../plans/done/database-rebuild-db-08/database-rebuild-db-08.md),
+[DB-08A](../../plans/done/database-rebuild-db-08a/database-rebuild-db-08a.md),
+[DB-09](../../plans/done/database-rebuild-db-09/database-rebuild-db-09.md),
+[SETUP-01](../../plans/done/database-rebuild-setup-01/database-rebuild-setup-01.md), and
+[SETUP-02](../../plans/done/database-rebuild-setup-02/database-rebuild-setup-02.md) Plans. Governing retained references
+also include [simple lifecycle](../../grilling-docs/database-rebuild-simple-lifecycle.md),
+[database direction](../../grilling-docs/database-rebuild-direction.md),
+[schema direction](../../grilling-docs/database-rebuild-schema.md),
+[DB-09 proof](../../grilling-docs/database-rebuild-db-09.md),
+[SETUP-01 direction](../../grilling-docs/database-rebuild-setup-01.md),
+[SETUP-02 direction](../../grilling-docs/database-rebuild-setup-02.md), and the generated
+[schema reference](../../../data/database/schema.md).
 
-The clean package currently targets `data/database/chess.db`. The existing application still has bounded legacy
-consumer references: `backend/app/features/positions/repository.py:10-11` defaults to `data/database/chess_games.db`
-and permits `CHESS_DATABASE_PATH`, while current backend feature consumers and the registered
-`/api/openings/line-library` surface still describe the old application boundary. The rebuilt package proof did not
-change backend, frontend, HTTP contracts, or application routes. Those consumers are future replacement touchpoints,
-not evidence that the application has already cut over.
+## Selectable slices
 
-## Historical evidence and provenance
+All slices are sequential. Each is independently selectable and reviewable, but none is implementation authorization.
 
-The following completed records are preserved as historical proof and are not selectable slices or current lifecycle
-instructions:
-
-- [DB-01 Plan](../../plans/done/database-rebuild-db-01/database-rebuild-db-01.md)
-- [DB-02 Plan](../../plans/done/database-rebuild-db-02/database-rebuild-db-02.md)
-- [DB-03 Plan](../../plans/done/database-rebuild-db-03/database-rebuild-db-03.md)
-- [DB-04 Plan](../../plans/done/database-rebuild-db-04/database-rebuild-db-04.md)
-- [DB-05 Plan](../../plans/done/database-rebuild-db-05/database-rebuild-db-05.md)
-- [DB-06 Plan](../../plans/done/database-rebuild-db-06/database-rebuild-db-06.md)
-- [DB-07 Plan](../../plans/done/database-rebuild-db-07/database-rebuild-db-07.md)
-- [DB-08 Plan](../../plans/done/database-rebuild-db-08/database-rebuild-db-08.md)
-- [DB-08A Plan](../../plans/done/database-rebuild-db-08a/database-rebuild-db-08a.md)
-- [DB-09 Plan](../../plans/done/database-rebuild-db-09/database-rebuild-db-09.md)
-- [SETUP-01 Plan](../../plans/done/database-rebuild-setup-01/database-rebuild-setup-01.md)
-- [SETUP-02 Plan](../../plans/done/database-rebuild-setup-02/database-rebuild-setup-02.md)
-
-The governing evidence is:
-
-- [`database-rebuild-simple-lifecycle.md`](../../grilling-docs/database-rebuild-simple-lifecycle.md) for the fixed
-  direct lifecycle;
-- [`database-rebuild-direction.md`](../../grilling-docs/database-rebuild-direction.md) for approved product and data
-  direction;
-- [`database-rebuild-schema.md`](../../grilling-docs/database-rebuild-schema.md) and
-  [`data/database/schema.md`](../../../data/database/schema.md) for the catalogue boundary;
-- [`database-rebuild-db-09.md`](../../grilling-docs/database-rebuild-db-09.md) for the accepted direct proof handoff;
-- [`database-rebuild-setup-01.md`](../../grilling-docs/database-rebuild-setup-01.md) for the approved simple automatic
-  preferred-move inference direction;
-- [`database-rebuild-setup-02.md`](../../grilling-docs/database-rebuild-setup-02.md) for the approved health-only API
-  export and self-contained generated-client tooling direction;
-- the current package source and focused database tests for implemented behavior, not for reopening completed scope.
-
-## Completed SETUP-01
-
-### Automatic preferred-move setup inference
-
-**In plain English:** Use obvious repeated choices in real rebuilt play data to initialize preferred-move periods with
-one simple, explicit, empty-schedule-only command.
-
-The approved [SETUP-01 grilling handoff](../../grilling-docs/database-rebuild-setup-01.md) and
-[completed Plan](../../plans/done/database-rebuild-setup-01/database-rebuild-setup-01.md) govern the result. The focused
-inference, database, and CLI proofs passed, and the one real invocation applied 108 periods across 91 positions. The
-fixed command now refuses to run again because the schedule is nonempty. It added no schema, history, proposal, update,
-legacy, API, frontend, or application behavior.
-
-## Completed SETUP-02
-
-### Health-only generated API client tooling
-
-**In plain English:** One repository command now turns the real health route into a checked-in, typed TypeScript client
-without requiring a running backend or changing the production frontend.
-
-The approved [SETUP-02 grilling handoff](../../grilling-docs/database-rebuild-setup-02.md) and
-[completed Plan](../../plans/done/database-rebuild-setup-02/database-rebuild-setup-02.md) govern the result. The focused
-backend and frontend proofs passed: the export remains limited to `GET /api/health`, the generated SDK exposes only
-`getHealth()`, a real bounded call returned `{"status":"ok"}`, and byte-identical regeneration was confirmed. FastAPI
-continues to serve its full OpenAPI and docs, every other endpoint remains outside the generated contract, and no
-existing production frontend module adopted the generated client.
-
-## Selectable future work
-
-Select one outcome at a time. Its required grilling must produce a coordinator-approved handoff before implementation
-work or a nontrivial focused Plan begins. This sequence starts from the completed foundation, SETUP-01, and SETUP-02
-above.
-
-| Outcome | Human-visible result | Depends on | Boundary that remains true |
+| Slice | Human-visible result | Depends on | Explicit exclusion |
 |---|---|---|---|
-| API-01 | The game viewer reads rebuilt game metadata and ordered occurrences through a new backend contract. | SETUP-02 accepted | No old database fallback or old contract compatibility solely for migration. |
-| API-02 | Position Context and Move Response Distribution read rebuilt tables directly, with distinct-game and occurrence meanings preserved. | API-01 accepted | No recurrence, branch, or materialized statistics dataset without a new approved requirement. |
-| API-03 | Viewer Analyze, Update, and Retry use the rebuilt queue and current analysis results. | API-02 accepted | No old queue, batch history, partial-result, or downgrade contract. |
-| API-04 | The repertoire application reads and edits dated preferred-move periods, including no-preference and unconfigured states. | API-03 accepted | No future preference-history editor or historical-game evaluation. |
-| CUT-01 | A separately assessed application activation and live proof make the rebuilt database active while preserving the old database. | API-04 accepted | Exact physical activation, configuration, switch, rollback, and the required handling of the excluded Opening Line Library route require fresh grilling; this document does not choose them. |
-| RETIRE-01 | After accepted cutover, remaining old-database references are cleaned and the old database is deleted only after separate immediate authorization. | CUT-01 accepted | Exact file inventory, backup/restore, cleanup, and deletion proof require fresh grilling; raw sources and historical records are never deleted. |
+| `CLEAN-01` | Rich paginated game search is available and generated. | SETUP-02 | No frontend adoption or legacy removal. |
+| `CLEAN-02` | Complete game detail by UUID is available and generated. | CLEAN-01 | No game-consumer migration or fallback. |
+| `CLEAN-03` | The flat searchable opening catalogue is available and generated. | CLEAN-02 | No route moves, tree, or line library. |
+| `CLEAN-04` | Flat opening detail and usage are available and generated. | CLEAN-03 | No hierarchy or frontend adoption. |
+| `CLEAN-05` | Complete sparse-capable position insight is available and generated. | CLEAN-04 | No hidden writes, legal-move list, or screen variant. |
+| `CLEAN-06` | Focused current analysis observation is available and generated. | CLEAN-05 | No old action/history contract. |
+| `CLEAN-07` | Desired-result analysis requests are available and generated. | CLEAN-06 | No arbitrary settings or batch API. |
+| `CLEAN-08` | Finite complete preferred-move timelines are available and generated. | CLEAN-07 | No caller-side calendar arithmetic. |
+| `CLEAN-09` | Preferred move/no-preference intervals can be overlaid and generated. | CLEAN-08 | No frontend adoption or repertoire lines. |
+| `CLEAN-10` | Preferred-move intervals can be removed and the operation is generated. | CLEAN-09 | No legacy removal or data cleanup. |
+| `CONSUMER-01` | Status uses generated `getHealth()`. | CLEAN-10 | No other frontend adoption. |
+| `CONSUMER-02` | Viewer game loading uses generated clean game detail. | CONSUMER-01 | No Repertoire migration. |
+| `CONSUMER-03` | Repertoire game loading uses generated clean game detail. | CONSUMER-02 | No Viewer change. |
+| `CONSUMER-04` | Viewer position context uses generated clean insight. | CONSUMER-03 | No Repertoire or move-response migration. |
+| `CONSUMER-05` | Repertoire position context uses generated clean insight. | CONSUMER-04 | No Viewer or move-response migration. |
+| `CONSUMER-06` | Repertoire move-response distribution uses clean observed-move insight. | CONSUMER-05 | No Viewer change or new projection. |
+| `CONSUMER-07` | Viewer analysis uses clean observation/request polling. | CONSUMER-06 | No Repertoire analysis migration. |
+| `CONSUMER-08` | Repertoire parent/displayed analysis uses the clean lifecycle. | CONSUMER-07 | No Viewer change or compatibility layer. |
+| `CONSUMER-09` | Repertoire uses clean preferred timelines and interval mutations. | CONSUMER-08 | No calendar UI or authored repertoire lines. |
+| `RETIRE-01` | The old game-position route is removed after both game consumers migrate. | CONSUMER-09 | No old-database cutover/deletion. |
+| `RETIRE-02` | The old position-context route is removed after both context consumers migrate. | RETIRE-01 | No recurrence migration. |
+| `RETIRE-03` | The old move-response route is removed after its Repertoire consumer migrates. | RETIRE-02 | No new projection. |
+| `RETIRE-04` | The old evaluation read/action/status routes are removed after both analysis consumers migrate. | RETIRE-03 | No queue-history compatibility. |
+| `RETIRE-05` | The old preferred-move operations are removed after Repertoire migrates. | RETIRE-04 | No old-database cleanup. |
+| `RETIRE-06` | The unused Opening Line Library route is removed after a final no-consumer audit. | RETIRE-05 | No replacement or rebuild. |
 
-Application integration, physical activation, rollback design, and old-database retirement remain future work. The
-registered `/api/openings/line-library` surface remains excluded rather than rebuilt; any future activation assessment
-must account for its current old-schema registration before activation. Nothing in this master plan authorizes a
-cutover, deletion, or cleanup operation.
+## Slice envelopes
 
-## Continuing exclusions
+### Clean operation creation
 
-- No migration or modification of old database rows; no raw-source deletion; raw-source changes are limited to the
-  supported safe game-month and opening-source acquisition/publication behavior already described; no unrelated
-  raw-source mutation is authorized. No deletion of historical workflow records.
-- No expansion beyond the exact ten-table schema catalogue and no fetch-state, manifest, source-history, classification,
-  recurrence, hierarchy, projection, audit, batch, failure, or per-feature state/run table families.
-- No Opening Line Library application endpoint, page, integration, or rebuild.
+Each `CLEAN-*` slice must preserve the matching capability semantics above and:
+
+1. add or extend the owning explicit-path package capability under `src/chess_move_trainer/database/`;
+2. add one thin operation under `backend/app/features/` without backend SQL;
+3. add focused package and HTTP contract proof, including read-only/atomic/concurrency behavior where applicable;
+4. add only that operation to the curated exporter;
+5. run finite client generation and deterministic `--check` proof immediately; and
+6. prove all previously accepted clean operations remain generated, no legacy route entered the contract, and no
+   production frontend module adopted the client.
+
+The focused Plan for each slice must name exact finite commands and timeouts. Lint, formatting, broad type/build,
+source-size, aggregate maintenance, and repository-hygiene checks are not implementation proof.
+
+### Individual production consumer migrations
+
+These begin only after `CLEAN-10`. Each slice moves one production workflow to the already-generated client, preserves
+that workflow's visible behavior except where the clean contract deliberately changes it, and proves no other consumer
+moved silently.
+
+| Slice | Current production usage | Clean operations | Primary current area |
+|---|---|---|---|
+| `CONSUMER-01` | Status health check | `GET /api/health` | `frontend/src/features/status/` |
+| `CONSUMER-02` | Viewer game loading | game detail | `frontend/src/features/viewer/` |
+| `CONSUMER-03` | Repertoire game loading | game detail | `frontend/src/features/repertoire-builder/` |
+| `CONSUMER-04` | Viewer position context | position insight with required trainer color and `as_of` | `frontend/src/features/viewer/` |
+| `CONSUMER-05` | Repertoire position context | position insight with required trainer color and `as_of` | `frontend/src/features/repertoire-builder/` |
+| `CONSUMER-06` | Repertoire move-response distribution | observed moves in position insight | `frontend/src/features/move-response-distribution/`, `repertoire-builder/` |
+| `CONSUMER-07` | Viewer analysis observation/request/polling | analysis GET/POST | `frontend/src/features/viewer/` |
+| `CONSUMER-08` | Repertoire parent and displayed-position analysis workflow | analysis GET/POST | `frontend/src/features/repertoire-builder/` |
+| `CONSUMER-09` | Repertoire preferred resolve/read/write/delete workflow | preferred GET/PUT/DELETE | `frontend/src/features/repertoire-builder/` |
+
+Viewer and Repertoire remain separate even where they share current clients or hooks. `CONSUMER-08` contains the two
+analysis observations in one Repertoire workflow because they share one injected analysis client and one user-visible
+analysis interaction; a focused assessment may split them if independent migration is required without changing the
+outcome. Any shared-module change that would silently migrate another listed workflow must stop for coordinator scope
+review. Unmigrated usages remain explicitly documented as expected legacy usage or expected breakage; no adapter or
+fallback hides them.
+
+`CONSUMER-09` adopts the clean interval API needed by later calendar work but does not design or build that future
+calendar interface. It must remove the current corpus-only save restriction so a legal novel parent FEN can be
+configured. The backend continues to own interval calculation.
+
+### Explicit legacy-route retirement
+
+Retirement is separate from consumer migration. Each retirement slice performs a bounded production-consumer audit,
+removes only the named legacy HTTP surface and now-unused adapter code, and proves the clean generated operations remain.
+
+| Slice | Legacy surface | Required migrated consumers |
+|---|---|---|
+| `RETIRE-01` | `/api/games/{game_uuid}/positions` | CONSUMER-02, CONSUMER-03 |
+| `RETIRE-02` | `/api/position-context` | CONSUMER-04, CONSUMER-05 |
+| `RETIRE-03` | `/api/move-response-distribution` | CONSUMER-06 |
+| `RETIRE-04` | `/api/evaluation` GET/POST and `/api/evaluation/status` | CONSUMER-07, CONSUMER-08 |
+| `RETIRE-05` | `/api/preferred-move` GET/PUT/DELETE | CONSUMER-09 |
+| `RETIRE-06` | `/api/openings/line-library` | no production consumer; final bounded audit required |
+
+Health remains. Route retirement never implies old-database cleanup or deletion.
+
+## Slice results
+
+No selectable slice in this replacement plan is complete. The foundation, SETUP-01, and SETUP-02 results above remain
+accepted historical evidence rather than future slices.
+
+## Risks and escalation boundaries
+
+- Current Viewer and Repertoire features share game, position-context, and analysis modules/hooks. A focused Plan must
+  preserve the individual workflow boundary or escalate before combining consumer slices or adding compatibility.
+- Current clean package seams include game detail, opening recognition, current analysis reads/publication, queue
+  primitives, position resolution, and preferred period normalization. Rich search, flat opening reads, composed
+  insight, FEN-facing analysis orchestration, and complete finite timelines need focused assessment, but never justify a
+  second backend SQL stack.
+- Exact API names may be settled only within the confirmed semantics. Escalate any change to behavior, route direction,
+  dependency, accepted schema, ownership, destructive effect, or acceptance.
+- Escalate if query proof requires changing the accepted schema, if a new production consumer is discovered, if a
+  consumer cannot migrate independently, or if a legacy route cannot retire after its stated consumers move.
+
+## Exclusions
+
+- No database lifecycle, source update, Stockfish worker, bulk analysis, schema inspection, or other operator command
+  becomes an application HTTP endpoint.
+- No new table family, opening tree, Opening Line Library rebuild, repertoire-line store, hierarchy, classification,
+  recurrence, projection, history, audit, batch, failure, or per-feature state/run data model.
+- No automatic preferred-move inference/application beyond accepted SETUP-01. Manual preferred-move HTTP edits are the
+  approved behavior and are not excluded by this boundary.
+- No old-database row migration, fallback, physical activation, global cutover, cleanup, deletion, or rollback design.
+  Raw sources and completed workflow records remain retained.
 - No opponent-profile work under `data/chess-com/raw/profiles/`.
-- No preferred-move inference/application outside the accepted fixed, empty-schedule-only SETUP-01 command; no inferred
-  no-preference values and no fabricated or migrated preference rows.
-- No legacy database tool is patched, wrapped, imported, copied, or made a fallback. Legacy files remain evidence until
-  a separately authorized retirement outcome.
-- No application/API/frontend integration is authorized merely because this foundation is complete; each later outcome
-  remains separately gated, and no cutover or destructive operation is authorized by this document.
-- No loose one-off script becomes canonical for database behavior, and no commits, pushes, branches, worktrees, stashes,
-  or unrelated record changes are implied.
+- No production frontend adoption during `CLEAN-*`; no legacy operation in curated OpenAPI/HeyAPI; no generic query
+  language, `/api/v2`, compatibility adapter, silent cross-consumer migration, loose canonical script, commit, push,
+  branch, worktree, stash, broad maintenance closeout, or unrelated change.
