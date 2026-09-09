@@ -37,10 +37,7 @@ describe("AppShell", () => {
     expect(statusLinks).toHaveLength(1);
     expect(statusLinks[0]).toHaveAttribute("href", "/");
     expect(statusLinks[0]).toHaveAttribute("aria-current", "page");
-    const viewerLinks = screen.getAllByRole("link", { name: "Viewer" });
-    expect(viewerLinks).toHaveLength(1);
-    expect(viewerLinks[0]).toHaveAttribute("href", "/viewer");
-    expect(viewerLinks[0]).not.toHaveAttribute("aria-current", "page");
+    expect(screen.queryByRole("link", { name: "Viewer" })).not.toBeInTheDocument();
     const repertoireLinks = screen.getAllByRole("link", { name: "Repertoire Builder" });
     expect(repertoireLinks).toHaveLength(1);
     expect(repertoireLinks[0]).toHaveAttribute("href", "/repertoire");
@@ -100,11 +97,15 @@ describe("AppShell", () => {
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
-  it("marks Viewer as the active navigation destination", () => {
+  it("renders no Viewer navigation entry for the /viewer path", () => {
     renderShell(["/viewer"]);
 
-    expect(screen.getByRole("link", { name: "Viewer" })).toHaveAttribute("aria-current", "page");
+    expect(screen.queryByRole("link", { name: "Viewer" })).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Status" })).not.toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+    expect(screen.getByRole("link", { name: "Repertoire Builder" })).not.toHaveAttribute(
       "aria-current",
       "page",
     );
@@ -118,10 +119,6 @@ describe("AppShell", () => {
       "page",
     );
     expect(screen.getByRole("link", { name: "Status" })).not.toHaveAttribute(
-      "aria-current",
-      "page",
-    );
-    expect(screen.getByRole("link", { name: "Viewer" })).not.toHaveAttribute(
       "aria-current",
       "page",
     );

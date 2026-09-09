@@ -10,13 +10,13 @@ import {
   type PromotionCommit,
   usePromotionController,
 } from "../board-adapter/PromotionPicker";
-import { defaultAnalysisClient, type AnalysisClient } from "../viewer/analysisApi";
-import { analysisPanelDisplay } from "../viewer/analysisFormatting";
-import { useAnalysisState } from "../viewer/analysisState";
-import { GameLoader, type GameLoaderStatus, type GameLoaderValues } from "../viewer/GameLoader";
-import { fetchGame, type GameLookup } from "../viewer/positionApi";
-import type { PositionContextClient } from "../viewer/positionContextApi";
-import { evaluationDisplay } from "../viewer/evalBarDisplay";
+import { defaultAnalysisClient, type AnalysisClient } from "../analysis/analysisApi";
+import { analysisPanelDisplay } from "../analysis/analysisFormatting";
+import { useAnalysisState } from "../analysis/analysisState";
+import { GameLoader, type GameLoaderStatus, type GameLoaderValues } from "../game/GameLoader";
+import { fetchGame, type GameLookup } from "../game/positionApi";
+import type { PositionContextClient } from "../position-context/positionContextApi";
+import { evaluationDisplay } from "../analysis/evalBarDisplay";
 import type { MoveResponseDistributionClient } from "../move-response-distribution/moveResponseDistributionApi";
 import type { PreferredMoveClient } from "./preferredMoveApi";
 import { usePreferredMoveWorkflow } from "./preferredMoveWorkflowState";
@@ -42,7 +42,7 @@ import {
   type PositionPickerNavigation,
   type PositionPickerSession,
 } from "./positionPickerSession";
-import type { Ply } from "../viewer/chessPrimitives";
+import type { Ply } from "../chess/chessPrimitives";
 import styles from "./RepertoireBuilderWorkspace.module.css";
 import { RepertoireSessionPanel } from "./RepertoireSessionPanel";
 import {

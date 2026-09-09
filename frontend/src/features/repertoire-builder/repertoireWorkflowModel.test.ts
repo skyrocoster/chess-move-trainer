@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type { PositionContextResponse } from "../viewer/positionContextApi";
+import type { PositionContextResponse } from "../position-context/positionContextApi";
 import { canonicalMoveUci, deriveRepertoirePositionModel } from "./repertoireWorkflowModel";
 import type { PositionPickerMoveRecord } from "./positionPickerSession";
 

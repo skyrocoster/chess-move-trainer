@@ -2,9 +2,10 @@ import { expect, userEvent, within } from "storybook/test";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import "../../styles/cmt-tokens.css";
 import "../../styles/cmt-typescale.css";
-import { completeGameLookup, storyCandidateAnalysisClient } from "../viewer/viewerStoryHelpers";
-import { VIEWER_GAME, VIEWER_GAME_UUID } from "../viewer/viewerFixtures";
-import { PROMOTION_GAME } from "../viewer/viewerStoryFixtures";
+import { completeGameLookup } from "../game/gameStoryHelpers";
+import { storyCandidateAnalysisClient } from "../analysis/analysisStoryClients";
+import { GAME, GAME_UUID } from "../game/gameFixtures";
+import { PROMOTION_GAME } from "../game/gameStoryFixtures";
 import RepertoireBuilderWorkspace from "./RepertoireBuilderWorkspace";
 import {
   expectActiveSessionHistoryEntry,
@@ -33,7 +34,7 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-const STARTING_FEN = VIEWER_GAME.positions[0].fen;
+const STARTING_FEN = GAME.positions[0].fen;
 const STAGED_E4_FEN = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1";
 const stagedIdentityClient = storyCandidateAnalysisClient(["e2e4"]);
 const stagedObservedFens: string[] = [];
@@ -169,10 +170,10 @@ export const StoredPrefixBlackSubject: Story = {
     }),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await loadGame(canvas, VIEWER_GAME_UUID, "2");
+    await loadGame(canvas, GAME_UUID, "2");
     await expect(
       canvas.getByRole("group", {
-        name: `Chess board: game ${VIEWER_GAME_UUID}, ply 2, Black at the bottom`,
+        name: `Chess board: game ${GAME_UUID}, ply 2, Black at the bottom`,
       }),
     ).toBeVisible();
     await expect(canvas.getByTestId("session-origin")).toHaveTextContent(
@@ -229,7 +230,7 @@ export const OpponentImmediate: Story = {
     }),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await loadGame(canvas, VIEWER_GAME_UUID, "2");
+    await loadGame(canvas, GAME_UUID, "2");
     await userEvent.click(await canvas.findByRole("button", { name: "2. Nf3" }));
     await expect(canvas.getByTestId("session-status")).toHaveTextContent(
       "Opponent move played locally: Nf3.",
@@ -256,7 +257,7 @@ export const ConstrainedStoredPrefixAndLocalLine: Story = {
     }),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await loadGame(canvas, VIEWER_GAME_UUID, "2");
+    await loadGame(canvas, GAME_UUID, "2");
     await userEvent.click(await canvas.findByRole("button", { name: "2. Nf3" }));
     await expectSessionHistory(canvasElement, [
       "Initial position",
@@ -367,7 +368,7 @@ export const Promotion: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     const body = within(canvasElement.ownerDocument.body);
-    await loadGame(canvas, VIEWER_GAME_UUID, "0");
+    await loadGame(canvas, GAME_UUID, "0");
     const description = canvas.getByRole("button", { name: "Position description" });
     await userEvent.click(description);
     await expect(description).toHaveAttribute("aria-expanded", "true");
@@ -448,7 +449,7 @@ export const ResponseDistributionIntegration: Story = {
     const responsesTab = within(engineLane).getByRole("tab", { name: "Move responses" });
     await expect(analysisTab).toHaveAttribute("aria-selected", "true");
     await userEvent.click(responsesTab);
-    await loadGame(canvas, VIEWER_GAME_UUID, "2");
+    await loadGame(canvas, GAME_UUID, "2");
 
     const distribution = canvas.getByTestId("move-response-distribution");
     const distributionQueries = within(distribution);

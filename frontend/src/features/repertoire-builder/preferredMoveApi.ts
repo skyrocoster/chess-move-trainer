@@ -1,6 +1,6 @@
 import { Chess, validateFen, type Square } from "chess.js";
 
-import type { Fen } from "../viewer/chessPrimitives";
+import type { Fen } from "../chess/chessPrimitives";
 
 const API_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:5666";
 

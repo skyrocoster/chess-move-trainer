@@ -4,9 +4,9 @@ import { cleanup, fireEvent, screen, waitFor, within } from "@testing-library/re
 import { afterEach, describe, expect, it, vi } from "vitest";
 import axeMatchers from "@chialab/vitest-axe";
 import type {} from "@chialab/vitest-axe/matchers";
-import type { GameLookupResult } from "../viewer/positionApi";
-import { PROMOTION_GAME } from "../viewer/viewerStoryFixtures";
-import { VIEWER_GAME, VIEWER_GAME_UUID } from "../viewer/viewerFixtures";
+import type { GameLookupResult } from "../game/positionApi";
+import { PROMOTION_GAME } from "../game/gameStoryFixtures";
+import { GAME, GAME_UUID } from "../game/gameFixtures";
 import {
   AFTER_D4_FEN,
   AFTER_E4_FEN,
@@ -114,20 +114,20 @@ describe("RepertoireBuilderWorkspace", () => {
   it("loads a stored game with the complete prefix through the selected Ply and subject orientation", async () => {
     const lookup = vi.fn().mockResolvedValue({
       status: "success",
-      game: { ...VIEWER_GAME, initial_ply: 2, subject_color: "black" },
+      game: { ...GAME, initial_ply: 2, subject_color: "black" },
     });
     const user = userEvent.setup();
     renderWorkspace({ lookup });
-    await user.type(screen.getByLabelText("Game UUID"), VIEWER_GAME_UUID);
+    await user.type(screen.getByLabelText("Game UUID"), GAME_UUID);
     await user.type(screen.getByLabelText(/Ply/), "2");
     await user.click(screen.getByRole("button", { name: "Load game" }));
 
     await waitFor(() =>
       expect(screen.getByRole("group", { name: STORED_BOARD_LABEL })).toBeVisible(),
     );
-    expect(lookup).toHaveBeenCalledWith(VIEWER_GAME_UUID, 2, expect.any(AbortSignal));
+    expect(lookup).toHaveBeenCalledWith(GAME_UUID, 2, expect.any(AbortSignal));
     expect(screen.getByTestId("session-origin")).toHaveTextContent(
-      `Game ${VIEWER_GAME_UUID}; complete prefix through Ply 2. Current Ply 2.`,
+      `Game ${GAME_UUID}; complete prefix through Ply 2. Current Ply 2.`,
     );
     expect(historyEntry("White, move 1, e4")).toBeVisible();
     expect(historyEntry("Black, move 1, e5")).toHaveAttribute("aria-current", "step");
@@ -139,7 +139,7 @@ describe("RepertoireBuilderWorkspace", () => {
   it("selects stored and local positions through one controlled history path", async () => {
     const lookup = vi.fn().mockResolvedValue({
       status: "success" as const,
-      game: { ...VIEWER_GAME, initial_ply: 2, subject_color: "black" as const },
+      game: { ...GAME, initial_ply: 2, subject_color: "black" as const },
     });
     const clients = testClients();
     const user = userEvent.setup();
@@ -148,7 +148,7 @@ describe("RepertoireBuilderWorkspace", () => {
       preferredMoveClient: clients.preferredMoveClient,
       positionContextClient: clients.positionContextClient,
     });
-    await user.type(screen.getByLabelText("Game UUID"), VIEWER_GAME_UUID);
+    await user.type(screen.getByLabelText("Game UUID"), GAME_UUID);
     await user.type(screen.getByLabelText(/Ply/), "2");
     await user.click(screen.getByRole("button", { name: "Load game" }));
     await waitFor(() => expect(historyEntry("Black, move 1, e5")).toBeVisible());
@@ -161,12 +161,12 @@ describe("RepertoireBuilderWorkspace", () => {
     expect(historyEntry("White, move 1, e4")).toHaveAttribute("aria-current", "step");
     expect(screen.getByTestId("mock-chessboard")).toHaveAttribute(
       "data-position",
-      VIEWER_GAME.positions[1].fen,
+      GAME.positions[1].fen,
     );
     expect(screen.getByTestId("session-origin")).toHaveTextContent("Current Ply 1.");
     expect(sharedPositionSummary()).toHaveTextContent("Side to moveBlack");
     await waitFor(() =>
-      expect(clients.preferredMoveClient.get).toHaveBeenCalledWith(VIEWER_GAME.positions[1].fen, {
+      expect(clients.preferredMoveClient.get).toHaveBeenCalledWith(GAME.positions[1].fen, {
         signal: expect.any(AbortSignal),
       }),
     );
@@ -255,15 +255,15 @@ describe("RepertoireBuilderWorkspace", () => {
     );
     const user = userEvent.setup();
     renderWorkspace({ lookup });
-    await user.type(screen.getByLabelText("Game UUID"), VIEWER_GAME_UUID);
+    await user.type(screen.getByLabelText("Game UUID"), GAME_UUID);
     await user.click(screen.getByRole("button", { name: "Load game" }));
     expect(screen.getByText("Loading the complete game...")).toBeVisible();
     expect(screen.getByRole("button", { name: "Load game" })).toBeDisabled();
-    resolveLookup({ status: "success", game: VIEWER_GAME });
+    resolveLookup({ status: "success", game: GAME });
     await waitFor(() => expect(screen.getByRole("button", { name: "Load game" })).toBeEnabled());
     expect(
       screen.getByRole("group", {
-        name: `Chess board: game ${VIEWER_GAME_UUID}, ply 0, White at the bottom`,
+        name: `Chess board: game ${GAME_UUID}, ply 0, White at the bottom`,
       }),
     ).toBeVisible();
   });
@@ -289,7 +289,7 @@ describe("RepertoireBuilderWorkspace", () => {
     const user = userEvent.setup();
     renderWorkspace({ lookup });
 
-    await user.type(screen.getByLabelText("Game UUID"), VIEWER_GAME_UUID);
+    await user.type(screen.getByLabelText("Game UUID"), GAME_UUID);
     await user.click(screen.getByRole("button", { name: "Load game" }));
 
     expect(await screen.findByText("Game not found")).toBeVisible();
@@ -301,7 +301,7 @@ describe("RepertoireBuilderWorkspace", () => {
     expect(screen.queryByText("Game not found")).not.toBeInTheDocument();
   });
   it("clears a staged preview on Reset and when a new game loads", async () => {
-    const lookup = vi.fn().mockResolvedValue({ status: "success", game: VIEWER_GAME });
+    const lookup = vi.fn().mockResolvedValue({ status: "success", game: GAME });
     const user = userEvent.setup();
     renderWorkspace({ lookup });
     await user.click(screen.getByTestId("move-e2-e4"));
@@ -314,13 +314,13 @@ describe("RepertoireBuilderWorkspace", () => {
     expect(screen.getByTestId("board-square-e4")).toHaveAttribute("data-highlighted", "false");
     expect(historyEntry("Initial position")).toBeVisible();
     await user.click(screen.getByTestId("move-e2-e4"));
-    await user.type(screen.getByLabelText("Game UUID"), VIEWER_GAME_UUID);
+    await user.type(screen.getByLabelText("Game UUID"), GAME_UUID);
     await user.click(screen.getByRole("button", { name: "Load game" }));
 
     await waitFor(() =>
       expect(
         screen.getByRole("group", {
-          name: `Chess board: game ${VIEWER_GAME_UUID}, ply 0, White at the bottom`,
+          name: `Chess board: game ${GAME_UUID}, ply 0, White at the bottom`,
         }),
       ).toBeVisible(),
     );
@@ -490,12 +490,12 @@ describe("RepertoireBuilderWorkspace", () => {
     const lookup = vi.fn().mockResolvedValue({ status: "success", game: PROMOTION_GAME });
     const user = userEvent.setup();
     renderWorkspace({ lookup });
-    await user.type(screen.getByLabelText("Game UUID"), VIEWER_GAME_UUID);
+    await user.type(screen.getByLabelText("Game UUID"), GAME_UUID);
     await user.click(screen.getByRole("button", { name: "Load game" }));
     await waitFor(() =>
       expect(
         screen.getByRole("group", {
-          name: `Chess board: game ${VIEWER_GAME_UUID}, ply 0, White at the bottom`,
+          name: `Chess board: game ${GAME_UUID}, ply 0, White at the bottom`,
         }),
       ).toBeVisible(),
     );

@@ -1,4 +1,4 @@
-import type { ChessSide } from "../viewer/chessPrimitives";
+import type { ChessSide } from "../chess/chessPrimitives";
 import type {
   MoveResponseDistributionReply,
   MoveResponseDistributionResponse,

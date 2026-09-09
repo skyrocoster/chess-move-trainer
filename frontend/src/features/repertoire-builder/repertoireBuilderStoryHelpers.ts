@@ -5,8 +5,8 @@ import type {
   PositionContextClient,
   PositionContextFailureCode,
   PositionContextResponse,
-} from "../viewer/positionContextApi";
-import type { Fen } from "../viewer/chessPrimitives";
+} from "../position-context/positionContextApi";
+import type { Fen } from "../chess/chessPrimitives";
 import type {
   MoveResponseDistributionClient,
   MoveResponseDistributionResponse,

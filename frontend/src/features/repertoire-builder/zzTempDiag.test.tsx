@@ -2,7 +2,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, it } from "vitest";
 
-import { storyCandidateAnalysisClient } from "../viewer/viewerStoryHelpers";
+import { storyCandidateAnalysisClient } from "../analysis/analysisStoryClients";
 import RepertoireBuilderWorkspace from "./RepertoireBuilderWorkspace";
 import {
   storyPositionContextClient,

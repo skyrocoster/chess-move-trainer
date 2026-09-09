@@ -3,10 +3,10 @@ import "../../styles/cmt-typescale.css";
 import { expect, userEvent, waitFor, within } from "storybook/test";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 
-import { storyCandidateAnalysisClient } from "../viewer/viewerStoryHelpers";
-import { completeGameLookup } from "../viewer/viewerStoryHelpers";
-import { VIEWER_GAME_UUID } from "../viewer/viewerFixtures";
-import { PROMOTION_GAME } from "../viewer/viewerStoryFixtures";
+import { storyCandidateAnalysisClient } from "../analysis/analysisStoryClients";
+import { completeGameLookup } from "../game/gameStoryHelpers";
+import { GAME_UUID } from "../game/gameFixtures";
+import { PROMOTION_GAME } from "../game/gameStoryFixtures";
 import RepertoireBuilderWorkspace from "./RepertoireBuilderWorkspace";
 import {
   expectActiveSessionHistoryEntry,
@@ -290,7 +290,7 @@ export const PromotionPreferred: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     const body = within(canvasElement.ownerDocument.body);
-    await loadGame(canvas, VIEWER_GAME_UUID, "0");
+    await loadGame(canvas, GAME_UUID, "0");
     await userEvent.click(await canvas.findByRole("button", { name: "1. e8=Q+" }));
     await expect(body.getByRole("dialog", { name: "Choose a promotion piece" })).toBeVisible();
     await userEvent.click(body.getByRole("button", { name: "Promote to knight" }));

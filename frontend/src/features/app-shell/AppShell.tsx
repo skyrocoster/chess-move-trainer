@@ -17,10 +17,6 @@ function NavigationItems({ onSelect }: { onSelect?: () => void }) {
         <Activity aria-hidden="true" size={20} />
         <span>Status</span>
       </NavLink>
-      <NavLink className={styles.navigationLink} to="/viewer" onClick={onSelect}>
-        <Activity aria-hidden="true" size={20} />
-        <span>Viewer</span>
-      </NavLink>
       <NavLink className={styles.navigationLink} to="/repertoire" onClick={onSelect}>
         <Activity aria-hidden="true" size={20} />
         <span>Repertoire Builder</span>

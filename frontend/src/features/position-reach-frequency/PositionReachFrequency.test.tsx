@@ -4,7 +4,7 @@ import matchers from "@chialab/vitest-axe";
 import type {} from "@chialab/vitest-axe/matchers";
 import { afterEach, describe, expect, it } from "vitest";
 
-import type { PositionContextResponse } from "../viewer/positionContextApi";
+import type { PositionContextResponse } from "../position-context/positionContextApi";
 import { PositionReachFrequency } from "./PositionReachFrequency";
 
 expect.extend(matchers);

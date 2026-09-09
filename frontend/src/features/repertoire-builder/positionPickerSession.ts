@@ -2,8 +2,8 @@ import { Chess, type Square } from "chess.js";
 
 import { STARTING_FEN } from "../board-adapter/BoardAdapter";
 import type { BoardOrientation } from "../board-adapter/BoardAdapter";
-import { strictFen, type ChessSide, type Ply } from "../viewer/chessPrimitives";
-import type { Game, GamePosition } from "../viewer/gameModel";
+import { strictFen, type ChessSide, type Ply } from "../chess/chessPrimitives";
+import type { Game, GamePosition } from "../game/gameModel";
 import type { PromotionPiece } from "../board-adapter/PromotionPicker";
 
 export type PositionPickerOrigin =

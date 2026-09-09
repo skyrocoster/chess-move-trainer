@@ -11,13 +11,13 @@ import {
 
 import { type CalendarDateValue } from "../design-system/CalendarDate";
 import { normalizeToUtcMidnight } from "../design-system/CalendarDateUtils";
-import type { ChessSide } from "../viewer/chessPrimitives";
+import type { ChessSide } from "../chess/chessPrimitives";
 import {
   type PositionContextClient,
   type PositionContextResponse,
   fetchPositionContext,
-} from "../viewer/positionContextApi";
-import { usePositionContextState } from "../viewer/positionContextState";
+} from "../position-context/positionContextApi";
+import { usePositionContextState } from "../position-context/positionContextState";
 import {
   defaultPreferredMoveClient,
   type PreferredMoveClient,

@@ -1,8 +1,8 @@
 import { Meter } from "@base-ui/react/meter";
 import { useId } from "react";
 
-import type { ChessSide } from "../viewer/chessPrimitives";
-import type { PositionContextResponse } from "../viewer/positionContextApi";
+import type { ChessSide } from "../chess/chessPrimitives";
+import type { PositionContextResponse } from "../position-context/positionContextApi";
 import { derivePositionReachFrequencyModel } from "./positionReachFrequencyModel";
 import styles from "./PositionReachFrequency.module.css";
 

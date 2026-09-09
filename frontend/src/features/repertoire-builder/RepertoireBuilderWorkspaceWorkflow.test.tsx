@@ -9,8 +9,8 @@ import type {
   PreferredMoveMutationResult,
   PreferredMoveResult,
 } from "./preferredMoveApi";
-import { PROMOTION_GAME } from "../viewer/viewerStoryFixtures";
-import { VIEWER_GAME_UUID } from "../viewer/viewerFixtures";
+import { PROMOTION_GAME } from "../game/gameStoryFixtures";
+import { GAME_UUID } from "../game/gameFixtures";
 import {
   AFTER_D4_FEN,
   AFTER_E4_FEN,
@@ -161,7 +161,7 @@ describe("RepertoireBuilderWorkspace workflow", () => {
       remove: vi.fn(),
     };
     renderWorkspace({ lookup, preferredMoveClient });
-    await user.type(screen.getByLabelText("Game UUID"), VIEWER_GAME_UUID);
+    await user.type(screen.getByLabelText("Game UUID"), GAME_UUID);
     await user.click(screen.getByRole("button", { name: "Load game" }));
     await waitFor(() => expect(screen.getByTestId("saved-move")).toBeVisible());
     expectDateFreePreferredPanel();

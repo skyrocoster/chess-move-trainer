@@ -25,12 +25,15 @@ describe("App routes", () => {
     expect(screen.getByRole("status")).toHaveTextContent("Checking backend health");
   });
 
-  it("renders the viewer workspace at /viewer", async () => {
+  it("renders the ordinary in-shell not-found state for /viewer with no compatibility surface", () => {
     renderApp(["/viewer"]);
 
-    expect(
-      await screen.findByRole("heading", { name: "Position viewer", level: 1 }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Page not found", level: 1 })).toBeInTheDocument();
+    expect(screen.getByText("The page you requested could not be found.")).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "System status" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Position viewer" })).not.toBeInTheDocument();
+    expect(screen.queryByText("Loading position viewer...")).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Viewer" })).not.toBeInTheDocument();
   });
 
   it("renders the Repertoire Builder scaffold at /repertoire", async () => {
@@ -56,6 +59,5 @@ describe("App routes", () => {
     expect(screen.getByRole("heading", { name: "Page not found", level: 1 })).toBeInTheDocument();
     expect(screen.getByText("The page you requested could not be found.")).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "System status" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "Position viewer" })).not.toBeInTheDocument();
   });
 });

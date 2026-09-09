@@ -19,12 +19,7 @@ async function openProduction(page: Page, width: number) {
     .first();
   await expect(statusLink).toHaveAttribute("href", "/");
   await expect(statusLink).toHaveAttribute("aria-current", "page");
-  const viewerLink = page
-    .locator('a[href="/viewer"]')
-    .filter({ hasText: "Viewer" })
-    .first();
-  await expect(viewerLink).toHaveAttribute("href", "/viewer");
-  await expect(viewerLink).not.toHaveAttribute("aria-current", "page");
+  await expect(page.locator('a[href="/viewer"]')).toHaveCount(0);
 }
 
 async function expectNoHorizontalOverflow(page: Page) {
@@ -135,20 +130,17 @@ test("supports drawer focus containment and every required dismissal path", asyn
   const drawer = page.getByRole("dialog");
   const close = drawer.getByRole("button", { name: "Close navigation menu" });
   const status = drawer.getByRole("link", { name: "Status" });
-  const viewer = drawer.getByRole("link", { name: "Viewer" });
   const repertoire = drawer.getByRole("link", { name: "Repertoire Builder" });
   await expect(drawer).toBeVisible();
   await expect(
     drawer.getByRole("heading", { name: "Navigation" }),
   ).toBeVisible();
   await expect(close).toBeFocused();
-  await expect(viewer).toHaveAttribute("href", "/viewer");
+  await expect(drawer.locator('a[href="/viewer"]')).toHaveCount(0);
   await expect(repertoire).toHaveAttribute("href", "/repertoire");
 
   await page.keyboard.press("Tab");
   await expect(status).toBeFocused();
-  await page.keyboard.press("Tab");
-  await expect(viewer).toBeFocused();
   await page.keyboard.press("Tab");
   await expect(repertoire).toBeFocused();
   await page.keyboard.press("Tab");
@@ -209,20 +201,6 @@ test("keeps the shell available for an unavailable backend", async ({
   await expect(
     page.getByRole("link", { name: "Status" }).first(),
   ).toHaveAttribute("href", "/");
-  await expect(page.locator('a[href="/viewer"]')).toHaveCount(1);
+  await expect(page.locator('a[href="/viewer"]')).toHaveCount(0);
 });
 
-test("closes the drawer when Viewer is selected", async ({ page }) => {
-  await openProduction(page, 412);
-  const trigger = page.getByRole("button", { name: "Open navigation menu" });
-
-  await trigger.click();
-  const drawer = page.getByRole("dialog");
-  await drawer.getByRole("link", { name: "Viewer" }).click();
-
-  await expect(page).toHaveURL(/\/viewer$/);
-  await expect(drawer).toBeHidden();
-  await expect(
-    page.getByRole("heading", { name: "Position viewer" }),
-  ).toBeVisible();
-});

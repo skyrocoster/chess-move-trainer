@@ -1,8 +1,8 @@
 import type { ComponentProps, ReactNode } from "react";
 
-import type { Game } from "../viewer/gameModel";
-import { storyAnalysisClient } from "../viewer/viewerStoryHelpers";
-import { VIEWER_GAME } from "../viewer/viewerFixtures";
+import type { Game } from "../game/gameModel";
+import { storyAnalysisClient } from "../analysis/analysisStoryClients";
+import { GAME } from "../game/gameFixtures";
 import RepertoireBuilderWorkspace from "./RepertoireBuilderWorkspace";
 import {
   storyPositionContextClient,
@@ -12,7 +12,7 @@ import {
   type StoryPreferredMoveOptions,
 } from "./repertoireBuilderStoryHelpers";
 
-export const BLACK_SUBJECT_GAME: Game = { ...VIEWER_GAME, subject_color: "black" };
+export const BLACK_SUBJECT_GAME: Game = { ...GAME, subject_color: "black" };
 
 export const constrainedViewport = {
   viewport: {

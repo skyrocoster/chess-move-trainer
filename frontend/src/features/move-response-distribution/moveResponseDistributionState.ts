@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import type { ChessSide, Fen } from "../viewer/chessPrimitives";
+import type { ChessSide, Fen } from "../chess/chessPrimitives";
 import {
   fetchMoveResponseDistribution,
   type MoveResponseDistributionClient,

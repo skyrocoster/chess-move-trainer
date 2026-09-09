@@ -1,12 +1,9 @@
 import { expect, userEvent, within } from "storybook/test";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 
-import {
-  completeGameLookup,
-  storyAnalysisClient,
-  storyCandidateAnalysisClient,
-} from "../viewer/viewerStoryHelpers";
-import { VIEWER_GAME_UUID } from "../viewer/viewerFixtures";
+import { completeGameLookup } from "../game/gameStoryHelpers";
+import { storyAnalysisClient, storyCandidateAnalysisClient } from "../analysis/analysisStoryClients";
+import { GAME_UUID } from "../game/gameFixtures";
 import RepertoireBuilderWorkspace from "./RepertoireBuilderWorkspace";
 import {
   expectActiveSessionHistoryEntry,
@@ -96,7 +93,7 @@ export const OpponentLocalOnly: Story = {
     ),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await loadGame(canvas, VIEWER_GAME_UUID, "2");
+    await loadGame(canvas, GAME_UUID, "2");
     const description = canvas.getByRole("button", { name: "Position description" });
     await userEvent.click(description);
     await expect(description).toHaveAttribute("aria-expanded", "true");
@@ -129,7 +126,7 @@ export const OpponentTurnGate: Story = {
     ),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await loadGame(canvas, VIEWER_GAME_UUID, "2");
+    await loadGame(canvas, GAME_UUID, "2");
     await expect(
       canvas.getByText("Wait for your turn to stage or save a preferred move."),
     ).toBeVisible();

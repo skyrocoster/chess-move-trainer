@@ -1,5 +1,5 @@
-import type { ChessSide } from "../viewer/chessPrimitives";
-import type { PositionContextResponse } from "../viewer/positionContextApi";
+import type { ChessSide } from "../chess/chessPrimitives";
+import type { PositionContextResponse } from "../position-context/positionContextApi";
 
 export type PositionReachFrequencyState = "available" | "absent" | "unavailable";
 

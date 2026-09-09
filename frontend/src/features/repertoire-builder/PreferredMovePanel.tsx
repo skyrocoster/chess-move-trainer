@@ -6,7 +6,7 @@ import { Button } from "../design-system/Button";
 import { type CalendarDateValue } from "../design-system/CalendarDate";
 import { InlineFeedback } from "../design-system/feedback/InlineFeedback";
 import { PanelFeedback } from "../design-system/feedback/PanelFeedback";
-import type { PositionContextFailureCode } from "../viewer/positionContextApi";
+import type { PositionContextFailureCode } from "../position-context/positionContextApi";
 import type { PreferredMoveFailureCode } from "./preferredMoveApi";
 import { PreferredMoveActionLayout } from "./PreferredMovePrimitives";
 import { RemovePreferredMoveButton, SavePreferredMoveButton } from "./PreferredMoveActionButtons";

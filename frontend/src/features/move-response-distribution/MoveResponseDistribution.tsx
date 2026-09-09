@@ -1,7 +1,7 @@
 import { useId, useMemo, useState } from "react";
 
 import { Button } from "../design-system/Button";
-import type { ChessSide, Fen } from "../viewer/chessPrimitives";
+import type { ChessSide, Fen } from "../chess/chessPrimitives";
 import {
   type MoveResponseDistributionClient,
   fetchMoveResponseDistribution,

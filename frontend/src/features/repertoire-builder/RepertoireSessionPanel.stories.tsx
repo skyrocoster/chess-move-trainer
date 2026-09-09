@@ -3,7 +3,7 @@ import "../../styles/cmt-typescale.css";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect, fn, within } from "storybook/test";
 
-import type { PositionContextResponse } from "../viewer/positionContextApi";
+import type { PositionContextResponse } from "../position-context/positionContextApi";
 import { RepertoireSessionPanel, type RepertoireSessionPanelProps } from "./RepertoireSessionPanel";
 import type { RepertoirePositionModel } from "./repertoireWorkflowModel";
 

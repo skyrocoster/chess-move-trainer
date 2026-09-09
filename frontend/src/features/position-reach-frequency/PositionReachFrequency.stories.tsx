@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 
 import "../../styles/cmt-tokens.css";
 import "../../styles/cmt-typescale.css";
-import type { PositionContextResponse } from "../viewer/positionContextApi";
+import type { PositionContextResponse } from "../position-context/positionContextApi";
 import { PositionReachFrequency } from "./PositionReachFrequency";
 
 const FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";

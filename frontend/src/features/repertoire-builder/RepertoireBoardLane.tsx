@@ -8,8 +8,8 @@ import type {
   MoveHistoryControlledState,
   MoveHistoryInput,
 } from "../move-history/moveHistoryTypes";
-import { BoardControl, type BoardControlProps } from "../viewer/BoardControl";
-import { BoardEvalStage, type BoardEvalStageProps } from "../viewer/BoardEvalStage";
+import { BoardControl, type BoardControlProps } from "../board-adapter/BoardControl";
+import { BoardEvalStage, type BoardEvalStageProps } from "../board-adapter/BoardEvalStage";
 import styles from "./RepertoireBoardLane.module.css";
 
 type BoardContentProps = Omit<InteractiveBoardAdapterProps, "orientation">;

@@ -6,7 +6,7 @@ import {
   type PreferredMoveReader,
   type PreferredMoveResponse,
 } from "./preferredMoveApi";
-import type { Fen } from "../viewer/chessPrimitives";
+import type { Fen } from "../chess/chessPrimitives";
 
 export type PreferredMoveReadState = {
   preferredMove: PreferredMoveResponse | null;

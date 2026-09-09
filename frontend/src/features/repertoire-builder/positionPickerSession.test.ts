@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { VIEWER_GAME } from "../viewer/viewerFixtures";
+import { GAME } from "../game/gameFixtures";
 import {
   createStandardStartSession,
   createStoredGameSession,
@@ -39,21 +39,21 @@ describe("position picker session", () => {
 
   it("preserves the complete stored prefix through the selected Ply and starts at that position", () => {
     const session = createStoredGameSession({
-      ...VIEWER_GAME,
+      ...GAME,
       initial_ply: 2,
       subject_color: "black",
     });
 
     expect(session.origin).toMatchObject({
       kind: "stored",
-      gameUuid: VIEWER_GAME.game_uuid,
+      gameUuid: GAME.game_uuid,
       selectedPly: 2,
       subjectColor: "black",
       bottomColor: "black",
     });
     expect(session.prefix.map((position) => position.ply)).toEqual([0, 1, 2]);
-    expect(session.prefix.at(-1)).toEqual(VIEWER_GAME.positions[2]);
-    expect(session.currentPosition).toEqual(VIEWER_GAME.positions[2]);
+    expect(session.prefix.at(-1)).toEqual(GAME.positions[2]);
+    expect(session.currentPosition).toEqual(GAME.positions[2]);
     expect(session.currentPly).toBe(2);
     expect(session.localContinuation).toEqual([]);
     expect(session.localMoves).toEqual([]);
@@ -65,16 +65,16 @@ describe("position picker session", () => {
   it("rejects a success value without a complete prefix through its selected Ply", () => {
     expect(() =>
       createStoredGameSession({
-        ...VIEWER_GAME,
+        ...GAME,
         initial_ply: 2,
-        positions: VIEWER_GAME.positions.slice(0, 2),
+        positions: GAME.positions.slice(0, 2),
       }),
     ).toThrow("complete prefix");
   });
 
   it("represents the complete stored prefix followed by a local continuation", () => {
     let session = createStoredGameSession({
-      ...VIEWER_GAME,
+      ...GAME,
       initial_ply: 2,
       subject_color: "black",
     });
@@ -101,7 +101,7 @@ describe("position picker session", () => {
 
   it("selects any represented prefix or local position without dropping local continuation", () => {
     let session = createStoredGameSession({
-      ...VIEWER_GAME,
+      ...GAME,
       initial_ply: 2,
       subject_color: "black",
     });
@@ -116,7 +116,7 @@ describe("position picker session", () => {
     })!.session;
 
     const prefixPosition = selectPositionPickerPly(session, 1)!;
-    expect(prefixPosition.currentPosition).toEqual(VIEWER_GAME.positions[1]);
+    expect(prefixPosition.currentPosition).toEqual(GAME.positions[1]);
     expect(prefixPosition.currentPly).toBe(1);
     expect(prefixPosition.localCursor).toBe(0);
     expect(prefixPosition.localContinuation).toHaveLength(2);
@@ -131,7 +131,7 @@ describe("position picker session", () => {
 
   it("navigates combined history through represented bounds and cancels staging", () => {
     let session = createStoredGameSession({
-      ...VIEWER_GAME,
+      ...GAME,
       initial_ply: 2,
       subject_color: "black",
     });

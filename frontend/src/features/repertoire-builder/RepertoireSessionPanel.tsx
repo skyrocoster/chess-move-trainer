@@ -1,6 +1,6 @@
 import { InlineFeedback } from "../design-system/feedback/InlineFeedback";
 import { PositionReachFrequency } from "../position-reach-frequency/PositionReachFrequency";
-import type { PositionContextResponse } from "../viewer/positionContextApi";
+import type { PositionContextResponse } from "../position-context/positionContextApi";
 import { PreferredMovePanel, type PreferredMovePanelProps } from "./PreferredMovePanel";
 import styles from "./RepertoireSessionPanel.module.css";
 

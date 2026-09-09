@@ -8,7 +8,7 @@ vi.mock("../board-adapter/InteractiveBoardAdapter", () => ({
     <div data-testid="mock-interactive-board" data-orientation={orientation} />
   ),
 }));
-vi.mock("../viewer/BoardEvalStage", () => ({
+vi.mock("../board-adapter/BoardEvalStage", () => ({
   BoardEvalStage: ({
     children,
     orientation,
@@ -21,7 +21,7 @@ vi.mock("../viewer/BoardEvalStage", () => ({
     </div>
   ),
 }));
-vi.mock("../viewer/BoardControl", () => ({
+vi.mock("../board-adapter/BoardControl", () => ({
   BoardControl: ({ onFlip }: { onFlip: () => void }) => (
     <button type="button" onClick={onFlip}>
       Flip
