@@ -45,6 +45,68 @@ class QueueStorageError(QueueError):
     """Raised when the queue cannot safely use its compatible database."""
 
 
+def _read_observed_queue_state(connection: object, position_id: int) -> str | None:
+    """Read and validate one live queue row without changing it."""
+
+    live = _read_live_queue_request(connection, position_id)
+    return None if live is None else live.state
+
+
+@dataclass(frozen=True, slots=True)
+class _LiveQueueRequest:
+    """Validated live queue data for package-internal composition."""
+
+    quality: AnalysisQuality
+    state: str
+    requested_at_utc: str
+    claimed_at_utc: str | None
+    claim_token: str | None
+
+
+def _read_live_queue_request(
+    connection: object,
+    position_id: int,
+) -> _LiveQueueRequest | None:
+    """Read one validated live request without changing it."""
+
+    try:
+        row = connection.execute(
+            text(
+                """
+                SELECT daq_requested_quality, daq_state, daq_requested_at_utc,
+                       daq_claimed_at_utc, daq_claim_token
+                FROM derived_analysis_queue
+                WHERE derived_position_id = :position_id
+                """
+            ),
+            {"position_id": position_id},
+        ).first()
+        if row is None:
+            return None
+        quality = _normalize_quality(row[0])
+        if row[1] not in ("queued", "running"):
+            raise ValueError("analysis queue state is malformed")
+        _validate_observation_timestamp(row[2], "analysis queue request timestamp")
+        if row[1] == "queued":
+            if row[3] is not None or row[4] is not None:
+                raise ValueError("queued analysis has claim data")
+        else:
+            if not isinstance(row[4], str) or not row[4]:
+                raise ValueError("running analysis has no claim token")
+            _validate_observation_timestamp(row[3], "analysis queue claim timestamp")
+        return _LiveQueueRequest(
+            quality=quality,
+            state=row[1],
+            requested_at_utc=row[2],
+            claimed_at_utc=row[3],
+            claim_token=row[4],
+        )
+    except QueueStorageError:
+        raise
+    except Exception as error:
+        raise QueueStorageError("analysis queue state is malformed") from error
+
+
 class QueueQualityError(QueueValidationError):
     """Raised when a completion does not match its immutable claimed quality."""
 
@@ -124,34 +186,11 @@ class QueueService:
         with self._connection() as connection:
             transaction = _begin_immediate(connection)
             try:
-                connection.execute(
-                    text(
-                        """
-                        INSERT INTO derived_analysis_queue (
-                            derived_position_id,
-                            daq_requested_quality,
-                            daq_state,
-                            daq_requested_at_utc,
-                            daq_claimed_at_utc,
-                            daq_claim_token
-                        ) VALUES (
-                            :position_id, :quality, 'queued', :requested_at, NULL, NULL
-                        )
-                        ON CONFLICT (derived_position_id) DO UPDATE SET
-                            daq_requested_quality = CASE
-                                WHEN derived_analysis_queue.daq_requested_quality = 'tool'
-                                  OR excluded.daq_requested_quality = 'tool'
-                                THEN 'tool'
-                                ELSE 'browser'
-                            END,
-                            daq_requested_at_utc = excluded.daq_requested_at_utc
-                        """
-                    ),
-                    {
-                        "position_id": position_id,
-                        "quality": normalized_quality.value,
-                        "requested_at": requested_at_utc,
-                    },
+                _enqueue_in_transaction(
+                    connection,
+                    position_id,
+                    normalized_quality,
+                    requested_at=requested_at_utc,
                 )
                 transaction.commit()
             except BaseException as error:
@@ -489,6 +528,54 @@ class QueueService:
         raise QueueStorageError("could not create a fresh unique queue claim token")
 
 
+def _enqueue_in_transaction(
+    connection: object,
+    position_id: int,
+    quality: AnalysisQuality | str,
+    *,
+    requested_at: datetime | str | None = None,
+) -> None:
+    """Insert or promote one request on a caller-owned transaction.
+
+    The caller owns the immediate transaction and its rollback/commit.  The
+    statement intentionally matches ``QueueService.enqueue``: quality uses
+    max semantics and the running claim columns are not updated.
+    """
+
+    _validate_position_id(position_id)
+    normalized_quality = _normalize_quality(quality)
+    requested_at_utc = _format_timestamp(requested_at)
+    connection.execute(
+        text(
+            """
+            INSERT INTO derived_analysis_queue (
+                derived_position_id,
+                daq_requested_quality,
+                daq_state,
+                daq_requested_at_utc,
+                daq_claimed_at_utc,
+                daq_claim_token
+            ) VALUES (
+                :position_id, :quality, 'queued', :requested_at, NULL, NULL
+            )
+            ON CONFLICT (derived_position_id) DO UPDATE SET
+                daq_requested_quality = CASE
+                    WHEN derived_analysis_queue.daq_requested_quality = 'tool'
+                      OR excluded.daq_requested_quality = 'tool'
+                    THEN 'tool'
+                    ELSE 'browser'
+                END,
+                daq_requested_at_utc = excluded.daq_requested_at_utc
+            """
+        ),
+        {
+            "position_id": position_id,
+            "quality": normalized_quality.value,
+            "requested_at": requested_at_utc,
+        },
+    )
+
+
 AnalysisQueue = QueueService
 QueueRepository = QueueService
 
@@ -602,6 +689,17 @@ def _parse_timestamp(value: datetime | str | None) -> datetime:
 
 def _format_timestamp(value: datetime | str | None) -> str:
     return _parse_timestamp(value).isoformat(timespec="microseconds").replace("+00:00", "Z")
+
+
+def _validate_observation_timestamp(value: object, field: str) -> None:
+    if not isinstance(value, str) or not value:
+        raise ValueError(f"{field} is malformed")
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError as error:
+        raise ValueError(f"{field} is malformed") from error
+    if parsed.tzinfo is None or parsed.utcoffset() is None:
+        raise ValueError(f"{field} is malformed")
 
 
 def _random_token() -> str:

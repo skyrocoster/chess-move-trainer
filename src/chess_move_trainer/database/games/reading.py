@@ -37,6 +37,21 @@ class GameOccurrenceRead:
 
         return self.position_id
 
+    @property
+    def fen(self) -> str:
+        """Return the complete occurrence FEN, including its replay counters."""
+
+        return " ".join(
+            (
+                self.position.placement,
+                self.position.side_to_move,
+                self.position.castling_rights,
+                self.position.legal_en_passant,
+                str(self.halfmove_clock),
+                str(self.fullmove_number),
+            )
+        )
+
 
 @dataclass(frozen=True, slots=True)
 class GameRead:
@@ -64,6 +79,36 @@ class GameRead:
         """Return the metadata-bearing read value without another database query."""
 
         return self
+
+
+@dataclass(frozen=True, slots=True)
+class GameDetailOccurrence:
+    """One public replay occurrence without SQLite identity fields."""
+
+    ply: int
+    fen: str
+    move_uci: str | None
+
+
+@dataclass(frozen=True, slots=True)
+class GameDetail:
+    """One public game detail with replayable occurrences."""
+
+    game_uuid: str
+    source_url: str
+    original_pgn: str
+    trainer_color: TrainerColor
+    trainer_chesscom_uuid: str
+    opponent_chesscom_uuid: str | None
+    trainer_rating: int | None
+    opponent_rating: int | None
+    started_at_utc: str | None
+    ended_at_utc: str | None
+    trainer_outcome: Literal["win", "loss", "draw"] | None
+    termination_reason: str | None
+    time_control: str | None
+    time_class: str | None
+    occurrences: tuple[GameDetailOccurrence, ...]
 
 
 class GameReadRepository:
@@ -169,6 +214,38 @@ class GameReadRepository:
     get = read
 
 
+def read_game(database_path: str | Path, game_uuid: str) -> GameDetail | None:
+    """Read one public game detail from an explicit database path."""
+
+    game = GameReadRepository(database_path).read_by_uuid(game_uuid)
+    if game is None:
+        return None
+    return GameDetail(
+        game_uuid=game.chesscom_game_uuid,
+        source_url=game.source_url,
+        original_pgn=game.original_pgn,
+        trainer_color=game.trainer_color,
+        trainer_chesscom_uuid=game.trainer_chesscom_uuid,
+        opponent_chesscom_uuid=game.opponent_chesscom_uuid,
+        trainer_rating=game.trainer_rating,
+        opponent_rating=game.opponent_rating,
+        started_at_utc=game.started_at_utc,
+        ended_at_utc=game.ended_at_utc,
+        trainer_outcome=game.trainer_outcome,
+        termination_reason=game.termination_reason,
+        time_control=game.time_control_source,
+        time_class=game.time_class,
+        occurrences=tuple(
+            GameDetailOccurrence(
+                ply=occurrence.ply,
+                fen=occurrence.fen,
+                move_uci=occurrence.move_uci,
+            )
+            for occurrence in game.occurrences
+        ),
+    )
+
+
 def _materialize_game(rows: list[object]) -> GameRead:
     first = rows[0]
     try:
@@ -249,8 +326,11 @@ def _trainer_outcome(value: object) -> Literal["win", "loss", "draw"] | None:
 
 
 __all__ = [
+    "GameDetail",
+    "GameDetailOccurrence",
     "GameOccurrenceRead",
     "GameRead",
     "GameReadError",
     "GameReadRepository",
+    "read_game",
 ]

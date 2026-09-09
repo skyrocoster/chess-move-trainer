@@ -2,23 +2,13 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-
 import chess
+
+from .._position_identity import CanonicalPosition
 
 
 class PositionValidationError(ValueError):
     """Raised when an input does not describe an acceptable chess position."""
-
-
-@dataclass(frozen=True, slots=True)
-class CanonicalPosition:
-    """The four-field immutable identity used by the rebuilt database."""
-
-    placement: str
-    side_to_move: str
-    castling_rights: str
-    legal_en_passant: str
 
 
 def canonicalize_fen(fen: str) -> CanonicalPosition:

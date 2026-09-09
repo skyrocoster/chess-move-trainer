@@ -10,9 +10,17 @@ import chess
 from sqlalchemy import text
 from sqlalchemy.exc import OperationalError
 
-from ..connection import DEFAULT_LOCK_TIMEOUT_SECONDS, _open_existing_connection
+from ..connection import (
+    DEFAULT_LOCK_TIMEOUT_SECONDS,
+    _open_connection,
+    _open_existing_connection,
+)
 from ..positions import CanonicalPosition, PositionValidationError, canonicalize_fen
-from ..positions.repository import PositionStorageError, _PositionUnitOfWork
+from ..positions.repository import (
+    PositionStorageError,
+    _PositionUnitOfWork,
+    _find_existing_position_id,
+)
 from ..schema import SchemaIncompatibleError, _assert_compatible_schema
 from .ranges import (
     DateResolution,
@@ -67,15 +75,51 @@ class PreferredMoveRepository:
 
         position = _canonicalize_four_field_fen(fen)
         try:
-            with _open_existing_connection(
-                self._database_path, self._lock_timeout
+            with _open_connection(
+                self._database_path, "read-only", self._lock_timeout
             ) as connection:
                 _assert_compatible_schema(connection, self._lock_timeout)
-                position_id = _find_position_id(connection, position)
+                position_id = _find_existing_position_id(connection, position)
                 if position_id is None:
                     connection.rollback()
                     return ()
                 schedule = _load_schedule(connection, position_id)
+                connection.rollback()
+                return schedule
+        except KeyboardInterrupt:
+            raise
+        except PreferredMoveError:
+            raise
+        except SchemaIncompatibleError as error:
+            raise PreferredMoveSchemaError(str(error)) from error
+        except (PositionValidationError, RangeValidationError) as error:
+            raise PreferredMoveValidationError(str(error)) from error
+        except Exception as error:
+            raise _translate_storage_error(error) from error
+
+    def read_periods_for_position(
+        self, position: CanonicalPosition
+    ) -> tuple[NormalizedPeriod, ...]:
+        """Read one canonical position schedule through a read-only connection."""
+
+        if not isinstance(position, CanonicalPosition):
+            raise PreferredMoveValidationError(
+                "position must be a CanonicalPosition value"
+            )
+        try:
+            with _open_connection(
+                self._database_path, "read-only", self._lock_timeout
+            ) as connection:
+                _assert_compatible_schema(connection, self._lock_timeout)
+                position_id = _find_existing_position_id(connection, position)
+                if position_id is None:
+                    connection.rollback()
+                    return ()
+                schedule = _load_schedule(
+                    connection,
+                    position_id,
+                    position=position,
+                )
                 connection.rollback()
                 return schedule
         except KeyboardInterrupt:
@@ -154,7 +198,11 @@ class PreferredMoveRepository:
                     self._checkpoint("locked")
                     position_id = _PositionUnitOfWork(connection)._resolve(position)
                     self._checkpoint("position")
-                    current = _load_schedule(connection, position_id)
+                    current = _load_schedule(
+                        connection,
+                        position_id,
+                        position=position,
+                    )
                     replacement = normalize_periods(amendment(current))
                     self._checkpoint("normalized")
                     _replace_schedule(connection, position_id, replacement)
@@ -192,7 +240,12 @@ def _canonicalize_four_field_fen(fen: str) -> CanonicalPosition:
         raise PreferredMoveValidationError(str(error)) from error
 
 
-def _validate_preference(position: CanonicalPosition, preference: Preference) -> None:
+def _validate_preference(
+    position: CanonicalPosition,
+    preference: Preference,
+    *,
+    require_canonical_uci: bool = False,
+) -> None:
     if not isinstance(preference, Preference):
         raise PreferredMoveValidationError("preference must be a Preference")
     if preference.state is PreferenceState.NO_PREFERENCE:
@@ -213,38 +266,17 @@ def _validate_preference(position: CanonicalPosition, preference: Preference) ->
         move = chess.Move.from_uci(preference.move or "")
     except ValueError as error:
         raise PreferredMoveValidationError("move must be valid UCI") from error
+    if require_canonical_uci and move.uci() != preference.move:
+        raise PreferredMoveValidationError("move must be valid UCI")
     if move not in board.legal_moves:
         raise PreferredMoveValidationError("move must be legal from the canonical position")
 
 
-def _identity_parameters(position: CanonicalPosition) -> dict[str, str]:
-    return {
-        "placement": position.placement,
-        "side_to_move": position.side_to_move,
-        "castling_rights": position.castling_rights,
-        "legal_en_passant": position.legal_en_passant,
-    }
-
-
-def _find_position_id(connection: object, position: CanonicalPosition) -> int | None:
-    row = connection.execute(
-        text(
-            """
-            SELECT dp_position_id
-            FROM derived_position
-            WHERE dp_placement = :placement
-              AND dp_side_to_move = :side_to_move
-              AND dp_castling_rights = :castling_rights
-              AND dp_legal_en_passant = :legal_en_passant
-            """
-        ),
-        _identity_parameters(position),
-    ).first()
-    return None if row is None else int(row[0])
-
-
 def _load_schedule(
-    connection: object, position_id: int
+    connection: object,
+    position_id: int,
+    *,
+    position: CanonicalPosition | None = None,
 ) -> tuple[NormalizedPeriod, ...]:
     try:
         rows = connection.execute(
@@ -258,21 +290,53 @@ def _load_schedule(
             ),
             {"position_id": position_id},
         ).all()
-        periods = tuple(
-            period_from_literals(
-                str(row[0]),
-                None if row[1] is None else str(row[1]),
-                Preference.no_preference()
-                if row[2] is None
-                else Preference.preferred_move(str(row[2])),
+        periods_list: list[NormalizedPeriod] = []
+        for row in rows:
+            if not isinstance(row[0], str):
+                raise ValueError("stored preferred-move start date is malformed")
+            if row[1] is not None and not isinstance(row[1], str):
+                raise ValueError("stored preferred-move end date is malformed")
+            if row[2] is not None and not isinstance(row[2], str):
+                raise ValueError("stored preferred-move is malformed")
+            move = row[2]
+            if move is not None and position is not None:
+                _validate_stored_move(position, move)
+            periods_list.append(
+                period_from_literals(
+                    row[0],
+                    row[1],
+                    Preference.no_preference()
+                    if move is None
+                    else Preference.preferred_move(move),
+                )
             )
-            for row in rows
-        )
+        periods = tuple(periods_list)
         return normalize_periods(periods)
-    except RangeValidationError as error:
+    except (IndexError, TypeError, ValueError, RangeValidationError) as error:
         raise PreferredMoveStorageError(
-            "stored preferred-move schedule is not normalized"
+            "stored preferred-move schedule is malformed"
         ) from error
+
+
+def _validate_stored_move(position: CanonicalPosition, move_uci: str) -> None:
+    board = chess.Board(
+        " ".join(
+            (
+                position.placement,
+                position.side_to_move,
+                position.castling_rights,
+                position.legal_en_passant,
+                "0",
+                "1",
+            )
+        )
+    )
+    try:
+        move = chess.Move.from_uci(move_uci)
+    except ValueError as error:
+        raise ValueError("stored preferred-move is not valid UCI") from error
+    if move.uci() != move_uci or move not in board.legal_moves:
+        raise ValueError("stored preferred-move is not legal")
 
 
 def _replace_schedule(

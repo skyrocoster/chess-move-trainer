@@ -5,6 +5,373 @@ export type ClientOptions = {
 };
 
 /**
+ * AnalysisObservationErrorResponse
+ */
+export type AnalysisObservationErrorResponse = {
+    /**
+     * Code
+     */
+    code: 'invalid_fen' | 'analysis_unavailable' | 'unexpected_failure';
+    /**
+     * Message
+     */
+    message: string;
+};
+
+/**
+ * AnalysisObservationLineResponse
+ */
+export type AnalysisObservationLineResponse = {
+    /**
+     * Depth
+     */
+    depth: number;
+    /**
+     * Pv Uci
+     */
+    pv_uci: Array<string>;
+    /**
+     * Rank
+     */
+    rank: number;
+    /**
+     * Score Kind
+     */
+    score_kind: 'cp' | 'mate';
+    /**
+     * Score Value
+     */
+    score_value: number;
+    /**
+     * Wdl Draws
+     */
+    wdl_draws: number;
+    /**
+     * Wdl Losses
+     */
+    wdl_losses: number;
+    /**
+     * Wdl Wins
+     */
+    wdl_wins: number;
+};
+
+/**
+ * AnalysisObservationResponse
+ */
+export type AnalysisObservationResponse = {
+    /**
+     * Fen
+     */
+    fen: string;
+    result: AnalysisObservationResultResponse | null;
+    /**
+     * State
+     */
+    state: 'not_requested' | 'queued' | 'running' | 'ready';
+};
+
+/**
+ * AnalysisObservationResultResponse
+ */
+export type AnalysisObservationResultResponse = {
+    /**
+     * Configuration Version
+     */
+    configuration_version: number;
+    /**
+     * Engine Name
+     */
+    engine_name: string;
+    /**
+     * Engine Version
+     */
+    engine_version: string;
+    /**
+     * Lines
+     */
+    lines: Array<AnalysisObservationLineResponse>;
+    /**
+     * Quality
+     */
+    quality: 'browser' | 'tool';
+    /**
+     * Settings
+     */
+    settings: {
+        [key: string]: unknown;
+    };
+    /**
+     * Terminal Kind
+     */
+    terminal_kind: 'checkmate' | 'stalemate' | 'insufficient_material' | null;
+};
+
+/**
+ * AnalysisRequestBody
+ *
+ * Strict known request fields while tolerating future client fields.
+ */
+export type AnalysisRequestBody = {
+    /**
+     * Fen
+     */
+    fen: string;
+    /**
+     * Quality
+     */
+    quality?: 'browser' | 'tool';
+};
+
+/**
+ * AnalysisRequestErrorResponse
+ *
+ * Stable error body for the desired-analysis operation.
+ */
+export type AnalysisRequestErrorResponse = {
+    /**
+     * Code
+     */
+    code: 'invalid_fen' | 'invalid_quality' | 'analysis_unavailable' | 'unexpected_failure';
+    /**
+     * Message
+     */
+    message: string;
+};
+
+/**
+ * GameCoverageResponse
+ */
+export type GameCoverageResponse = {
+    /**
+     * Analysis Coverage
+     */
+    analysis_coverage: 'none' | 'partial' | 'complete';
+    /**
+     * Analyzed Position Count
+     */
+    analyzed_position_count: number;
+    /**
+     * Distinct Position Count
+     */
+    distinct_position_count: number;
+    /**
+     * Preferred Coverage
+     */
+    preferred_coverage: 'none' | 'partial' | 'complete';
+    /**
+     * Preferred Position Count
+     */
+    preferred_position_count: number;
+};
+
+/**
+ * GameDetailOccurrenceResponse
+ */
+export type GameDetailOccurrenceResponse = {
+    /**
+     * Fen
+     */
+    fen: string;
+    /**
+     * Move Uci
+     */
+    move_uci: string | null;
+    /**
+     * Ply
+     */
+    ply: number;
+};
+
+/**
+ * GameDetailResponse
+ */
+export type GameDetailResponse = {
+    /**
+     * Ended At Utc
+     */
+    ended_at_utc: string | null;
+    /**
+     * Game Uuid
+     */
+    game_uuid: string;
+    /**
+     * Occurrences
+     */
+    occurrences: Array<GameDetailOccurrenceResponse>;
+    /**
+     * Opponent Chesscom Uuid
+     */
+    opponent_chesscom_uuid: string | null;
+    /**
+     * Opponent Rating
+     */
+    opponent_rating: number | null;
+    /**
+     * Original Pgn
+     */
+    original_pgn: string;
+    /**
+     * Source Url
+     */
+    source_url: string;
+    /**
+     * Started At Utc
+     */
+    started_at_utc: string | null;
+    /**
+     * Termination Reason
+     */
+    termination_reason: string | null;
+    /**
+     * Time Class
+     */
+    time_class: 'bullet' | 'blitz' | 'rapid' | 'daily' | null;
+    /**
+     * Time Control
+     */
+    time_control: string | null;
+    /**
+     * Trainer Chesscom Uuid
+     */
+    trainer_chesscom_uuid: string;
+    /**
+     * Trainer Color
+     */
+    trainer_color: 'white' | 'black';
+    /**
+     * Trainer Outcome
+     */
+    trainer_outcome: 'win' | 'loss' | 'draw' | null;
+    /**
+     * Trainer Rating
+     */
+    trainer_rating: number | null;
+};
+
+/**
+ * GameSummaryResponse
+ */
+export type GameSummaryResponse = {
+    coverage: GameCoverageResponse;
+    deepest_opening: OpeningSummaryResponse | null;
+    /**
+     * Ended At Utc
+     */
+    ended_at_utc: string | null;
+    /**
+     * Game Uuid
+     */
+    game_uuid: string;
+    /**
+     * Length Plies
+     */
+    length_plies: number;
+    /**
+     * Occurrence Count
+     */
+    occurrence_count: number;
+    /**
+     * Opponent Chesscom Uuid
+     */
+    opponent_chesscom_uuid: string | null;
+    /**
+     * Opponent Rating
+     */
+    opponent_rating: number | null;
+    /**
+     * Source Url
+     */
+    source_url: string;
+    /**
+     * Started At Utc
+     */
+    started_at_utc: string | null;
+    /**
+     * Termination Reason
+     */
+    termination_reason: string | null;
+    /**
+     * Time Class
+     */
+    time_class: 'bullet' | 'blitz' | 'rapid' | 'daily' | null;
+    /**
+     * Time Control
+     */
+    time_control: string | null;
+    /**
+     * Trainer Chesscom Uuid
+     */
+    trainer_chesscom_uuid: string;
+    /**
+     * Trainer Color
+     */
+    trainer_color: 'white' | 'black';
+    /**
+     * Trainer Outcome
+     */
+    trainer_outcome: 'win' | 'loss' | 'draw' | null;
+    /**
+     * Trainer Rating
+     */
+    trainer_rating: number | null;
+};
+
+/**
+ * GamesErrorResponse
+ */
+export type GamesErrorResponse = {
+    /**
+     * Code
+     */
+    code: 'invalid_filter' | 'game_not_found' | 'games_unavailable' | 'unexpected_failure';
+    /**
+     * Message
+     */
+    message: string;
+};
+
+/**
+ * GamesResponse
+ */
+export type GamesResponse = {
+    /**
+     * Has Next
+     */
+    has_next: boolean;
+    /**
+     * Items
+     */
+    items: Array<GameSummaryResponse>;
+    /**
+     * Page
+     */
+    page: number;
+    /**
+     * Page Size
+     */
+    page_size: number;
+    /**
+     * Total
+     */
+    total: number;
+    /**
+     * Total Pages
+     */
+    total_pages: number;
+};
+
+/**
+ * HTTPValidationError
+ */
+export type HttpValidationError = {
+    /**
+     * Detail
+     */
+    detail?: Array<ValidationError>;
+};
+
+/**
  * HealthResponse
  */
 export type HealthResponse = {
@@ -13,6 +380,821 @@ export type HealthResponse = {
      */
     status: string;
 };
+
+/**
+ * MovePreferenceResponse
+ */
+export type MovePreferenceResponse = {
+    /**
+     * Kind
+     */
+    kind: 'move';
+    /**
+     * Uci
+     */
+    uci: string;
+};
+
+/**
+ * MutationMovePreferenceRequest
+ */
+export type MutationMovePreferenceRequest = {
+    /**
+     * Kind
+     */
+    kind: 'move';
+    /**
+     * Uci
+     */
+    uci: string;
+};
+
+/**
+ * MutationNoPreferenceRequest
+ */
+export type MutationNoPreferenceRequest = {
+    /**
+     * Kind
+     */
+    kind: 'no_preference';
+    /**
+     * Uci
+     */
+    uci?: string | null;
+};
+
+/**
+ * NoPreferenceResponse
+ */
+export type NoPreferenceResponse = {
+    /**
+     * Kind
+     */
+    kind: 'no_preference';
+};
+
+/**
+ * OpeningCatalogueErrorResponse
+ */
+export type OpeningCatalogueErrorResponse = {
+    /**
+     * Code
+     */
+    code: 'invalid_filter' | 'openings_unavailable' | 'unexpected_failure';
+    /**
+     * Message
+     */
+    message: string;
+};
+
+/**
+ * OpeningCatalogueItemResponse
+ */
+export type OpeningCatalogueItemResponse = {
+    /**
+     * Eco
+     */
+    eco: string;
+    /**
+     * Games Deepest
+     */
+    games_deepest: number;
+    /**
+     * Games Reached
+     */
+    games_reached: number;
+    /**
+     * Key
+     */
+    key: string;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Route Count
+     */
+    route_count: number;
+};
+
+/**
+ * OpeningCatalogueResponse
+ */
+export type OpeningCatalogueResponse = {
+    /**
+     * Has Next
+     */
+    has_next: boolean;
+    /**
+     * Items
+     */
+    items: Array<OpeningCatalogueItemResponse>;
+    /**
+     * Page
+     */
+    page: number;
+    /**
+     * Page Size
+     */
+    page_size: number;
+    /**
+     * Total
+     */
+    total: number;
+    /**
+     * Total Pages
+     */
+    total_pages: number;
+};
+
+/**
+ * OpeningDetailErrorResponse
+ */
+export type OpeningDetailErrorResponse = {
+    /**
+     * Code
+     */
+    code: 'invalid_opening_key' | 'opening_not_found' | 'openings_unavailable' | 'unexpected_failure';
+    /**
+     * Message
+     */
+    message: string;
+};
+
+/**
+ * OpeningSummaryResponse
+ */
+export type OpeningSummaryResponse = {
+    /**
+     * Eco
+     */
+    eco: string;
+    /**
+     * Key
+     */
+    key: string;
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Ply
+     */
+    ply: number;
+};
+
+/**
+ * PositionInsightAnalysisResponse
+ */
+export type PositionInsightAnalysisResponse = {
+    result: PositionInsightResultResponse | null;
+    /**
+     * State
+     */
+    state: 'not_requested' | 'queued' | 'running' | 'ready';
+};
+
+/**
+ * PositionInsightErrorResponse
+ */
+export type PositionInsightErrorResponse = {
+    /**
+     * Code
+     */
+    code: 'invalid_fen' | 'invalid_trainer_color' | 'invalid_as_of' | 'position_insight_unavailable' | 'unexpected_failure';
+    /**
+     * Message
+     */
+    message: string;
+};
+
+/**
+ * PositionInsightExperienceResponse
+ */
+export type PositionInsightExperienceResponse = {
+    /**
+     * Distinct Game Count
+     */
+    distinct_game_count: number;
+    /**
+     * Occurrence Count
+     */
+    occurrence_count: number;
+};
+
+/**
+ * PositionInsightLineResponse
+ */
+export type PositionInsightLineResponse = {
+    /**
+     * Depth
+     */
+    depth: number;
+    /**
+     * Pv Uci
+     */
+    pv_uci: Array<string>;
+    /**
+     * Rank
+     */
+    rank: number;
+    /**
+     * Score Kind
+     */
+    score_kind: 'cp' | 'mate';
+    /**
+     * Score Value
+     */
+    score_value: number;
+    /**
+     * Wdl Draws
+     */
+    wdl_draws: number;
+    /**
+     * Wdl Losses
+     */
+    wdl_losses: number;
+    /**
+     * Wdl Wins
+     */
+    wdl_wins: number;
+};
+
+/**
+ * PositionInsightObservedMoveResponse
+ */
+export type PositionInsightObservedMoveResponse = {
+    /**
+     * Distinct Game Count
+     */
+    distinct_game_count: number;
+    /**
+     * Move Uci
+     */
+    move_uci: string;
+    /**
+     * Occurrence Count
+     */
+    occurrence_count: number;
+};
+
+/**
+ * PositionInsightOpeningResponse
+ */
+export type PositionInsightOpeningResponse = {
+    /**
+     * Eco
+     */
+    eco: string;
+    /**
+     * Key
+     */
+    key: string;
+    /**
+     * Match
+     */
+    match: 'route' | 'transposition';
+    /**
+     * Name
+     */
+    name: string;
+    /**
+     * Ply
+     */
+    ply: number;
+};
+
+/**
+ * PositionInsightResponse
+ */
+export type PositionInsightResponse = {
+    analysis: PositionInsightAnalysisResponse;
+    /**
+     * As Of
+     */
+    as_of: string;
+    experience: PositionInsightExperienceResponse;
+    /**
+     * Fen
+     */
+    fen: string;
+    /**
+     * Observed Moves
+     */
+    observed_moves: Array<PositionInsightObservedMoveResponse>;
+    opening: PositionInsightOpeningResponse | null;
+    /**
+     * Preference
+     */
+    preference: ({
+        kind: 'move';
+    } & MovePreferenceResponse) | ({
+        kind: 'no_preference';
+    } & NoPreferenceResponse) | ({
+        kind: 'unconfigured';
+    } & UnconfiguredPreferenceResponse);
+    /**
+     * Trainer Color
+     */
+    trainer_color: 'white' | 'black';
+};
+
+/**
+ * PositionInsightResultResponse
+ */
+export type PositionInsightResultResponse = {
+    /**
+     * Configuration Version
+     */
+    configuration_version: number;
+    /**
+     * Engine Name
+     */
+    engine_name: string;
+    /**
+     * Engine Version
+     */
+    engine_version: string;
+    /**
+     * Lines
+     */
+    lines: Array<PositionInsightLineResponse>;
+    /**
+     * Quality
+     */
+    quality: 'browser' | 'tool';
+    /**
+     * Settings
+     */
+    settings: {
+        [key: string]: unknown;
+    };
+    /**
+     * Terminal Kind
+     */
+    terminal_kind: 'checkmate' | 'stalemate' | 'insufficient_material' | null;
+};
+
+/**
+ * PreferredMovesErrorResponse
+ */
+export type PreferredMovesErrorResponse = {
+    /**
+     * Code
+     */
+    code: 'invalid_fen' | 'invalid_from' | 'invalid_until' | 'invalid_window' | 'invalid_effective_from' | 'invalid_effective_until' | 'invalid_preference' | 'invalid_uci' | 'illegal_move' | 'preferred_moves_unavailable' | 'unexpected_failure';
+    /**
+     * Message
+     */
+    message: string;
+};
+
+/**
+ * PreferredMovesMutationRequest
+ */
+export type PreferredMovesMutationRequest = {
+    /**
+     * Effective From
+     */
+    effective_from: string;
+    /**
+     * Effective Until
+     */
+    effective_until?: string | null;
+    /**
+     * Fen
+     */
+    fen: string;
+    /**
+     * Preference
+     */
+    preference: ({
+        kind: 'move';
+    } & MutationMovePreferenceRequest) | ({
+        kind: 'no_preference';
+    } & MutationNoPreferenceRequest);
+};
+
+/**
+ * PreferredMovesMutationResponse
+ */
+export type PreferredMovesMutationResponse = {
+    /**
+     * Effective From
+     */
+    effective_from: string;
+    /**
+     * Effective Until
+     */
+    effective_until: string | null;
+    /**
+     * Fen
+     */
+    fen: string;
+    /**
+     * Periods
+     */
+    periods: Array<PreferredMovesPeriodResponse>;
+    /**
+     * Preference
+     */
+    preference: ({
+        kind: 'move';
+    } & MovePreferenceResponse) | ({
+        kind: 'no_preference';
+    } & NoPreferenceResponse);
+};
+
+/**
+ * PreferredMovesPeriodResponse
+ */
+export type PreferredMovesPeriodResponse = {
+    /**
+     * Effective From
+     */
+    effective_from: string;
+    /**
+     * Effective Until
+     */
+    effective_until: string | null;
+    /**
+     * Preference
+     */
+    preference: ({
+        kind: 'move';
+    } & MovePreferenceResponse) | ({
+        kind: 'no_preference';
+    } & NoPreferenceResponse);
+};
+
+/**
+ * PreferredMovesRemovalRequest
+ */
+export type PreferredMovesRemovalRequest = {
+    /**
+     * Effective From
+     */
+    effective_from: string;
+    /**
+     * Effective Until
+     */
+    effective_until?: string | null;
+    /**
+     * Fen
+     */
+    fen: string;
+};
+
+/**
+ * PreferredMovesRemovalResponse
+ */
+export type PreferredMovesRemovalResponse = {
+    /**
+     * Effective From
+     */
+    effective_from: string;
+    /**
+     * Effective Until
+     */
+    effective_until: string | null;
+    /**
+     * Fen
+     */
+    fen: string;
+    /**
+     * Periods
+     */
+    periods: Array<PreferredMovesPeriodResponse>;
+};
+
+/**
+ * PreferredMovesResponse
+ */
+export type PreferredMovesResponse = {
+    /**
+     * Fen
+     */
+    fen: string;
+    /**
+     * From
+     */
+    from: string;
+    /**
+     * Segments
+     */
+    segments: Array<PreferredMovesSegmentResponse>;
+    /**
+     * Until
+     */
+    until: string;
+};
+
+/**
+ * PreferredMovesSegmentResponse
+ */
+export type PreferredMovesSegmentResponse = {
+    /**
+     * From
+     */
+    from: string;
+    /**
+     * Preference
+     */
+    preference: ({
+        kind: 'move';
+    } & MovePreferenceResponse) | ({
+        kind: 'no_preference';
+    } & NoPreferenceResponse) | ({
+        kind: 'unconfigured';
+    } & UnconfiguredPreferenceResponse);
+    /**
+     * Until
+     */
+    until: string;
+};
+
+/**
+ * UnconfiguredPreferenceResponse
+ */
+export type UnconfiguredPreferenceResponse = {
+    /**
+     * Kind
+     */
+    kind: 'unconfigured';
+};
+
+/**
+ * ValidationError
+ */
+export type ValidationError = {
+    /**
+     * Location
+     */
+    loc: Array<string | number>;
+    /**
+     * Message
+     */
+    msg: string;
+    /**
+     * Error Type
+     */
+    type: string;
+};
+
+export type GetAnalysisData = {
+    body?: never;
+    path?: never;
+    query: {
+        /**
+         * Fen
+         */
+        fen: string;
+    };
+    url: '/api/analysis';
+};
+
+export type GetAnalysisErrors = {
+    /**
+     * Unprocessable Entity
+     */
+    422: AnalysisObservationErrorResponse;
+    /**
+     * Internal Server Error
+     */
+    500: AnalysisObservationErrorResponse;
+    /**
+     * Service Unavailable
+     */
+    503: AnalysisObservationErrorResponse;
+};
+
+export type GetAnalysisError = GetAnalysisErrors[keyof GetAnalysisErrors];
+
+export type GetAnalysisResponses = {
+    /**
+     * Successful Response
+     */
+    200: AnalysisObservationResponse;
+};
+
+export type GetAnalysisResponse = GetAnalysisResponses[keyof GetAnalysisResponses];
+
+export type RequestAnalysisData = {
+    body: AnalysisRequestBody;
+    path?: never;
+    query?: never;
+    url: '/api/analysis-requests';
+};
+
+export type RequestAnalysisErrors = {
+    /**
+     * Unprocessable Entity
+     */
+    422: AnalysisRequestErrorResponse;
+    /**
+     * Internal Server Error
+     */
+    500: AnalysisRequestErrorResponse;
+    /**
+     * Service Unavailable
+     */
+    503: AnalysisRequestErrorResponse;
+};
+
+export type RequestAnalysisError = RequestAnalysisErrors[keyof RequestAnalysisErrors];
+
+export type RequestAnalysisResponses = {
+    /**
+     * Successful Response
+     */
+    200: AnalysisObservationResponse;
+    /**
+     * Accepted
+     */
+    202: AnalysisObservationResponse;
+};
+
+export type RequestAnalysisResponse = RequestAnalysisResponses[keyof RequestAnalysisResponses];
+
+export type GetGamesData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Page
+         */
+        page?: number;
+        /**
+         * Page Size
+         */
+        page_size?: number;
+        /**
+         * Started At From
+         */
+        started_at_from?: string | null;
+        /**
+         * Started At To
+         */
+        started_at_to?: string | null;
+        /**
+         * Ended At From
+         */
+        ended_at_from?: string | null;
+        /**
+         * Ended At To
+         */
+        ended_at_to?: string | null;
+        /**
+         * Trainer Color
+         */
+        trainer_color?: string | null;
+        /**
+         * Trainer Outcome
+         */
+        trainer_outcome?: string | null;
+        /**
+         * Termination Reason
+         */
+        termination_reason?: string | null;
+        /**
+         * Trainer Rating Min
+         */
+        trainer_rating_min?: number | null;
+        /**
+         * Trainer Rating Max
+         */
+        trainer_rating_max?: number | null;
+        /**
+         * Opponent Rating Min
+         */
+        opponent_rating_min?: number | null;
+        /**
+         * Opponent Rating Max
+         */
+        opponent_rating_max?: number | null;
+        /**
+         * Opponent Chesscom Uuid
+         */
+        opponent_chesscom_uuid?: string | null;
+        /**
+         * Time Class
+         */
+        time_class?: string | null;
+        /**
+         * Time Control
+         */
+        time_control?: string | null;
+        /**
+         * Opening Key
+         */
+        opening_key?: string | null;
+        /**
+         * Opening Match
+         */
+        opening_match?: string | null;
+        /**
+         * Contains Fen
+         */
+        contains_fen?: string | null;
+        /**
+         * Move Fen
+         */
+        move_fen?: string | null;
+        /**
+         * Move Uci
+         */
+        move_uci?: string | null;
+        /**
+         * Min Length Plies
+         */
+        min_length_plies?: number | null;
+        /**
+         * Max Length Plies
+         */
+        max_length_plies?: number | null;
+        /**
+         * Analysis Coverage
+         */
+        analysis_coverage?: string | null;
+        /**
+         * Preferred Coverage
+         */
+        preferred_coverage?: string | null;
+        /**
+         * Sort
+         */
+        sort?: string;
+    };
+    url: '/api/games';
+};
+
+export type GetGamesErrors = {
+    /**
+     * Unprocessable Entity
+     */
+    422: GamesErrorResponse;
+    /**
+     * Internal Server Error
+     */
+    500: GamesErrorResponse;
+    /**
+     * Service Unavailable
+     */
+    503: GamesErrorResponse;
+};
+
+export type GetGamesError = GetGamesErrors[keyof GetGamesErrors];
+
+export type GetGamesResponses = {
+    /**
+     * Successful Response
+     */
+    200: GamesResponse;
+};
+
+export type GetGamesResponse = GetGamesResponses[keyof GetGamesResponses];
+
+export type GetGameData = {
+    body?: never;
+    path: {
+        /**
+         * Game Uuid
+         */
+        game_uuid: string;
+    };
+    query?: never;
+    url: '/api/games/{game_uuid}';
+};
+
+export type GetGameErrors = {
+    /**
+     * Not Found
+     */
+    404: GamesErrorResponse;
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+    /**
+     * Internal Server Error
+     */
+    500: GamesErrorResponse;
+    /**
+     * Service Unavailable
+     */
+    503: GamesErrorResponse;
+};
+
+export type GetGameError = GetGameErrors[keyof GetGameErrors];
+
+export type GetGameResponses = {
+    /**
+     * Successful Response
+     */
+    200: GameDetailResponse;
+};
+
+export type GetGameResponse = GetGameResponses[keyof GetGameResponses];
 
 export type GetHealthData = {
     body?: never;
@@ -29,3 +1211,261 @@ export type GetHealthResponses = {
 };
 
 export type GetHealthResponse = GetHealthResponses[keyof GetHealthResponses];
+
+export type GetOpeningsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Page
+         */
+        page?: number;
+        /**
+         * Page Size
+         */
+        page_size?: number;
+        /**
+         * Search
+         */
+        search?: string | null;
+        /**
+         * Eco From
+         */
+        eco_from?: string | null;
+        /**
+         * Eco To
+         */
+        eco_to?: string | null;
+        /**
+         * Sort
+         */
+        sort?: string;
+    };
+    url: '/api/openings';
+};
+
+export type GetOpeningsErrors = {
+    /**
+     * Unprocessable Entity
+     */
+    422: OpeningCatalogueErrorResponse;
+    /**
+     * Internal Server Error
+     */
+    500: OpeningCatalogueErrorResponse;
+    /**
+     * Service Unavailable
+     */
+    503: OpeningCatalogueErrorResponse;
+};
+
+export type GetOpeningsError = GetOpeningsErrors[keyof GetOpeningsErrors];
+
+export type GetOpeningsResponses = {
+    /**
+     * Successful Response
+     */
+    200: OpeningCatalogueResponse;
+};
+
+export type GetOpeningsResponse = GetOpeningsResponses[keyof GetOpeningsResponses];
+
+export type GetOpeningByKeyData = {
+    body?: never;
+    path: {
+        /**
+         * Opening Key
+         */
+        opening_key: string;
+    };
+    query?: never;
+    url: '/api/openings/{opening_key}';
+};
+
+export type GetOpeningByKeyErrors = {
+    /**
+     * Not Found
+     */
+    404: OpeningDetailErrorResponse;
+    /**
+     * Unprocessable Entity
+     */
+    422: OpeningDetailErrorResponse;
+    /**
+     * Internal Server Error
+     */
+    500: OpeningDetailErrorResponse;
+    /**
+     * Service Unavailable
+     */
+    503: OpeningDetailErrorResponse;
+};
+
+export type GetOpeningByKeyError = GetOpeningByKeyErrors[keyof GetOpeningByKeyErrors];
+
+export type GetOpeningByKeyResponses = {
+    /**
+     * Successful Response
+     */
+    200: OpeningCatalogueItemResponse;
+};
+
+export type GetOpeningByKeyResponse = GetOpeningByKeyResponses[keyof GetOpeningByKeyResponses];
+
+export type GetPositionInsightData = {
+    body?: never;
+    path?: never;
+    query: {
+        /**
+         * Fen
+         */
+        fen: string;
+        /**
+         * Trainer Color
+         */
+        trainer_color: string;
+        /**
+         * As Of
+         */
+        as_of: string;
+    };
+    url: '/api/positions/insight';
+};
+
+export type GetPositionInsightErrors = {
+    /**
+     * Unprocessable Entity
+     */
+    422: PositionInsightErrorResponse;
+    /**
+     * Internal Server Error
+     */
+    500: PositionInsightErrorResponse;
+    /**
+     * Service Unavailable
+     */
+    503: PositionInsightErrorResponse;
+};
+
+export type GetPositionInsightError = GetPositionInsightErrors[keyof GetPositionInsightErrors];
+
+export type GetPositionInsightResponses = {
+    /**
+     * Successful Response
+     */
+    200: PositionInsightResponse;
+};
+
+export type GetPositionInsightResponse = GetPositionInsightResponses[keyof GetPositionInsightResponses];
+
+export type DeletePreferredMovesData = {
+    body: PreferredMovesRemovalRequest;
+    path?: never;
+    query?: never;
+    url: '/api/preferred-moves';
+};
+
+export type DeletePreferredMovesErrors = {
+    /**
+     * Unprocessable Entity
+     */
+    422: PreferredMovesErrorResponse;
+    /**
+     * Internal Server Error
+     */
+    500: PreferredMovesErrorResponse;
+    /**
+     * Service Unavailable
+     */
+    503: PreferredMovesErrorResponse;
+};
+
+export type DeletePreferredMovesError = DeletePreferredMovesErrors[keyof DeletePreferredMovesErrors];
+
+export type DeletePreferredMovesResponses = {
+    /**
+     * Successful Response
+     */
+    200: PreferredMovesRemovalResponse;
+};
+
+export type DeletePreferredMovesResponse = DeletePreferredMovesResponses[keyof DeletePreferredMovesResponses];
+
+export type GetPreferredMovesData = {
+    body?: never;
+    path?: never;
+    query: {
+        /**
+         * Fen
+         */
+        fen: string;
+        /**
+         * From
+         */
+        from: string;
+        /**
+         * Until
+         */
+        until: string;
+    };
+    url: '/api/preferred-moves';
+};
+
+export type GetPreferredMovesErrors = {
+    /**
+     * Unprocessable Entity
+     */
+    422: PreferredMovesErrorResponse;
+    /**
+     * Internal Server Error
+     */
+    500: PreferredMovesErrorResponse;
+    /**
+     * Service Unavailable
+     */
+    503: PreferredMovesErrorResponse;
+};
+
+export type GetPreferredMovesError = GetPreferredMovesErrors[keyof GetPreferredMovesErrors];
+
+export type GetPreferredMovesResponses = {
+    /**
+     * Successful Response
+     */
+    200: PreferredMovesResponse;
+};
+
+export type GetPreferredMovesResponse = GetPreferredMovesResponses[keyof GetPreferredMovesResponses];
+
+export type PutPreferredMovesData = {
+    body: PreferredMovesMutationRequest;
+    path?: never;
+    query?: never;
+    url: '/api/preferred-moves';
+};
+
+export type PutPreferredMovesErrors = {
+    /**
+     * Unprocessable Entity
+     */
+    422: PreferredMovesErrorResponse;
+    /**
+     * Internal Server Error
+     */
+    500: PreferredMovesErrorResponse;
+    /**
+     * Service Unavailable
+     */
+    503: PreferredMovesErrorResponse;
+};
+
+export type PutPreferredMovesError = PutPreferredMovesErrors[keyof PutPreferredMovesErrors];
+
+export type PutPreferredMovesResponses = {
+    /**
+     * Successful Response
+     */
+    200: PreferredMovesMutationResponse;
+};
+
+export type PutPreferredMovesResponse = PutPreferredMovesResponses[keyof PutPreferredMovesResponses];

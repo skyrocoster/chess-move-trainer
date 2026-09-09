@@ -273,3 +273,5 @@ The replacement master plan should use this order:
 
 This deliberately separates clean contract construction from consumer migration while still keeping the OpenAPI and
 HeyAPI artifacts current after every API addition.
+
+(THIS IS chess.db)

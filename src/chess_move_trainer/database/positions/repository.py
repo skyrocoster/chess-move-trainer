@@ -20,6 +20,48 @@ class PositionStorageError(RuntimeError):
 PositionIdentity: TypeAlias = tuple[str, str, str, str]
 
 
+def _find_existing_position_id(
+    connection: object, position: CanonicalPosition
+) -> int | None:
+    """Find one canonical position without resolving or creating it."""
+
+    row = connection.execute(
+        text(
+            """
+            SELECT dp_position_id, dp_placement, dp_side_to_move,
+                   dp_castling_rights, dp_legal_en_passant
+            FROM derived_position
+            WHERE dp_placement = :placement
+              AND dp_side_to_move = :side_to_move
+              AND dp_castling_rights = :castling_rights
+              AND dp_legal_en_passant = :legal_en_passant
+            """
+        ),
+        {
+            "placement": position.placement,
+            "side_to_move": position.side_to_move,
+            "castling_rights": position.castling_rights,
+            "legal_en_passant": position.legal_en_passant,
+        },
+    ).first()
+    if row is None:
+        return None
+    if type(row[0]) is not int or row[0] < 1:
+        raise PositionStorageError("stored position identifier is malformed")
+    try:
+        stored = CanonicalPosition(
+            placement=row[1],
+            side_to_move=row[2],
+            castling_rights=row[3],
+            legal_en_passant=row[4],
+        )
+    except (TypeError, ValueError) as error:
+        raise PositionStorageError("stored position is malformed") from error
+    if stored != position:
+        raise PositionStorageError("stored position is not canonical")
+    return row[0]
+
+
 class PositionRepository:
     """Resolve canonical positions using package-owned connections and transactions."""
 
@@ -176,3 +218,22 @@ def _position_identity(position: CanonicalPosition) -> PositionIdentity:
         position.castling_rights,
         position.legal_en_passant,
     )
+
+
+def _resolve_canonical_position(
+    connection: object,
+    position: CanonicalPosition,
+) -> int:
+    """Resolve one canonical position on a caller-owned transaction.
+
+    This is a package-private participant seam for operations that must compose
+    position resolution with another write before committing.  The normal
+    ``PositionRepository`` methods continue to own their existing transactions.
+    """
+
+    unit_of_work = _PositionUnitOfWork(connection)
+    position_id = unit_of_work._resolve(position)
+    stored_position_id = _find_existing_position_id(connection, position)
+    if stored_position_id != position_id:
+        raise PositionStorageError("canonical position was not resolved consistently")
+    return position_id

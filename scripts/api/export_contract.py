@@ -1,4 +1,4 @@
-"""Export the approved SETUP-02 health-only OpenAPI contract.
+"""Export the approved clean OpenAPI contract.
 
 Derives the contract from the real FastAPI application schema, filters it to the
 explicitly approved allow-list, and writes deterministic JSON. Fails closed if the
@@ -19,9 +19,19 @@ if str(REPO_ROOT) not in sys.path:
 
 from backend.app.main import create_app  # noqa: E402
 
-# The only operations approved for the SETUP-02 exported contract. Adding an entry
+# The only operations approved for the exported clean contract. Adding an entry
 # here is a settled API-contract decision and must return to the coordinator.
-APPROVED_OPERATIONS: dict[str, set[str]] = {"/api/health": {"get"}}
+APPROVED_OPERATIONS: dict[str, set[str]] = {
+    "/api/health": {"get"},
+    "/api/games": {"get"},
+    "/api/games/{game_uuid}": {"get"},
+    "/api/openings": {"get"},
+    "/api/openings/{opening_key}": {"get"},
+    "/api/positions/insight": {"get"},
+    "/api/analysis": {"get"},
+    "/api/analysis-requests": {"post"},
+    "/api/preferred-moves": {"delete", "get", "put"},
+}
 
 SCHEMA_REF_PREFIX = "#/components/schemas/"
 
@@ -44,8 +54,8 @@ def _collect_schema_refs(node: Any, refs: set[str]) -> None:
             _collect_schema_refs(item, refs)
 
 
-def build_health_contract() -> dict[str, Any]:
-    """Build the health-only contract from the real app schema without mutating it."""
+def build_contract() -> dict[str, Any]:
+    """Build the approved clean contract from the real app schema without mutating it."""
     app = create_app()
     spec = app.openapi()
 
@@ -68,6 +78,13 @@ def build_health_contract() -> dict[str, Any]:
     _collect_schema_refs(filtered_paths, refs)
 
     schemas = spec.get("components", {}).get("schemas", {})
+    processed_refs: set[str] = set()
+    while pending_refs := refs - processed_refs:
+        for name in sorted(pending_refs):
+            processed_refs.add(name)
+            if name in schemas:
+                _collect_schema_refs(schemas[name], refs)
+
     missing_schemas = sorted(refs - set(schemas))
     if missing_schemas:
         raise ExportError(f"referenced schemas absent from the app schema: {missing_schemas}")
@@ -81,8 +98,8 @@ def build_health_contract() -> dict[str, Any]:
 
 
 def export_contract(output_path: Path) -> None:
-    """Write the deterministic health-only contract JSON to ``output_path``."""
-    contract = build_health_contract()
+    """Write the deterministic clean contract JSON to ``output_path``."""
+    contract = build_contract()
     unexpected_paths = sorted(set(contract["paths"]) - set(APPROVED_OPERATIONS))
     if unexpected_paths:
         raise ExportError(f"unexpected paths in filtered contract: {unexpected_paths}")

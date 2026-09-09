@@ -4,10 +4,10 @@ mode: subagent
 color: "#06B6D4"
 #model: opencode-go/deepseek-v4-flash
 #variant: medium
-model: opencode/mimo-v2.5-free
+#model: opencode/mimo-v2.5-free
 #variant: max
-#model: opencode-go/hy3
-#variant: high
+model: opencode-go/glm-5.3-flash
+variant: low
 permission:
   edit: deny
   bash: allow

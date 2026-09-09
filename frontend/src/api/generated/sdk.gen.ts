@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { GetHealthData, GetHealthResponses } from './types.gen';
+import type { DeletePreferredMovesData, DeletePreferredMovesErrors, DeletePreferredMovesResponses, GetAnalysisData, GetAnalysisErrors, GetAnalysisResponses, GetGameData, GetGameErrors, GetGameResponses, GetGamesData, GetGamesErrors, GetGamesResponses, GetHealthData, GetHealthResponses, GetOpeningByKeyData, GetOpeningByKeyErrors, GetOpeningByKeyResponses, GetOpeningsData, GetOpeningsErrors, GetOpeningsResponses, GetPositionInsightData, GetPositionInsightErrors, GetPositionInsightResponses, GetPreferredMovesData, GetPreferredMovesErrors, GetPreferredMovesResponses, PutPreferredMovesData, PutPreferredMovesErrors, PutPreferredMovesResponses, RequestAnalysisData, RequestAnalysisErrors, RequestAnalysisResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -19,6 +19,77 @@ export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends 
 };
 
 /**
+ * Get Analysis
+ */
+export const getAnalysis = <ThrowOnError extends boolean = false>(options: Options<GetAnalysisData, ThrowOnError>): RequestResult<GetAnalysisResponses, GetAnalysisErrors, ThrowOnError> => (options.client ?? client).get<GetAnalysisResponses, GetAnalysisErrors, ThrowOnError>({ url: '/api/analysis', ...options });
+
+/**
+ * Post Analysis Request
+ */
+export const requestAnalysis = <ThrowOnError extends boolean = false>(options: Options<RequestAnalysisData, ThrowOnError>): RequestResult<RequestAnalysisResponses, RequestAnalysisErrors, ThrowOnError> => (options.client ?? client).post<RequestAnalysisResponses, RequestAnalysisErrors, ThrowOnError>({
+    url: '/api/analysis-requests',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Get Games
+ */
+export const getGames = <ThrowOnError extends boolean = false>(options?: Options<GetGamesData, ThrowOnError>): RequestResult<GetGamesResponses, GetGamesErrors, ThrowOnError> => (options?.client ?? client).get<GetGamesResponses, GetGamesErrors, ThrowOnError>({ url: '/api/games', ...options });
+
+/**
+ * Get Game
+ */
+export const getGame = <ThrowOnError extends boolean = false>(options: Options<GetGameData, ThrowOnError>): RequestResult<GetGameResponses, GetGameErrors, ThrowOnError> => (options.client ?? client).get<GetGameResponses, GetGameErrors, ThrowOnError>({ url: '/api/games/{game_uuid}', ...options });
+
+/**
  * Health
  */
 export const getHealth = <ThrowOnError extends boolean = false>(options?: Options<GetHealthData, ThrowOnError>): RequestResult<GetHealthResponses, unknown, ThrowOnError> => (options?.client ?? client).get<GetHealthResponses, unknown, ThrowOnError>({ url: '/api/health', ...options });
+
+/**
+ * Get Openings
+ */
+export const getOpenings = <ThrowOnError extends boolean = false>(options?: Options<GetOpeningsData, ThrowOnError>): RequestResult<GetOpeningsResponses, GetOpeningsErrors, ThrowOnError> => (options?.client ?? client).get<GetOpeningsResponses, GetOpeningsErrors, ThrowOnError>({ url: '/api/openings', ...options });
+
+/**
+ * Get Opening By Key
+ */
+export const getOpeningByKey = <ThrowOnError extends boolean = false>(options: Options<GetOpeningByKeyData, ThrowOnError>): RequestResult<GetOpeningByKeyResponses, GetOpeningByKeyErrors, ThrowOnError> => (options.client ?? client).get<GetOpeningByKeyResponses, GetOpeningByKeyErrors, ThrowOnError>({ url: '/api/openings/{opening_key}', ...options });
+
+/**
+ * Get Position Insight
+ */
+export const getPositionInsight = <ThrowOnError extends boolean = false>(options: Options<GetPositionInsightData, ThrowOnError>): RequestResult<GetPositionInsightResponses, GetPositionInsightErrors, ThrowOnError> => (options.client ?? client).get<GetPositionInsightResponses, GetPositionInsightErrors, ThrowOnError>({ url: '/api/positions/insight', ...options });
+
+/**
+ * Delete Preferred Moves
+ */
+export const deletePreferredMoves = <ThrowOnError extends boolean = false>(options: Options<DeletePreferredMovesData, ThrowOnError>): RequestResult<DeletePreferredMovesResponses, DeletePreferredMovesErrors, ThrowOnError> => (options.client ?? client).delete<DeletePreferredMovesResponses, DeletePreferredMovesErrors, ThrowOnError>({
+    url: '/api/preferred-moves',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Get Preferred Moves
+ */
+export const getPreferredMoves = <ThrowOnError extends boolean = false>(options: Options<GetPreferredMovesData, ThrowOnError>): RequestResult<GetPreferredMovesResponses, GetPreferredMovesErrors, ThrowOnError> => (options.client ?? client).get<GetPreferredMovesResponses, GetPreferredMovesErrors, ThrowOnError>({ url: '/api/preferred-moves', ...options });
+
+/**
+ * Put Preferred Moves
+ */
+export const putPreferredMoves = <ThrowOnError extends boolean = false>(options: Options<PutPreferredMovesData, ThrowOnError>): RequestResult<PutPreferredMovesResponses, PutPreferredMovesErrors, ThrowOnError> => (options.client ?? client).put<PutPreferredMovesResponses, PutPreferredMovesErrors, ThrowOnError>({
+    url: '/api/preferred-moves',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});

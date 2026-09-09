@@ -70,34 +70,7 @@ class AnalysisReadRepository:
                 self._database_path, "read-only", self._lock_timeout
             ) as connection:
                 _assert_compatible_schema(connection, self._lock_timeout)
-                parent = connection.execute(
-                    text(
-                        """
-                        SELECT derived_position_id, dar_quality,
-                               dar_configuration_version, dar_settings_json,
-                               dar_engine_name, dar_engine_version, dar_terminal_kind
-                        FROM derived_analysis_result
-                        WHERE derived_position_id = :position_id
-                        ORDER BY CASE dar_quality WHEN 'browser' THEN 0 WHEN 'tool' THEN 1 END
-                        """
-                    ),
-                    {"position_id": position_id},
-                ).first()
-                if parent is None:
-                    return None
-                line_rows = connection.execute(
-                    text(
-                        """
-                        SELECT dal_rank, dal_score_kind, dal_score_value,
-                               dal_wdl_wins, dal_wdl_draws, dal_wdl_losses,
-                               dal_pv_uci_json, dal_depth
-                        FROM derived_analysis_line
-                        WHERE derived_analysis_result_id = :position_id
-                        ORDER BY dal_rank
-                        """
-                    ),
-                    {"position_id": position_id},
-                ).all()
+                current = _read_current_result(connection, position_id)
         except SchemaIncompatibleError:
             raise
         except AnalysisReadError:
@@ -105,10 +78,46 @@ class AnalysisReadRepository:
         except Exception as error:
             raise AnalysisReadError("analysis result could not be read") from error
 
-        return _materialize_result(parent, line_rows)
+        return current
 
     read_current = read
     get = read
+
+
+def _read_current_result(
+    connection: object, position_id: int
+) -> AnalysisReadResult | None:
+    """Read and validate one complete current result on an owned connection."""
+
+    parent = connection.execute(
+        text(
+            """
+            SELECT derived_position_id, dar_quality,
+                   dar_configuration_version, dar_settings_json,
+                   dar_engine_name, dar_engine_version, dar_terminal_kind
+            FROM derived_analysis_result
+            WHERE derived_position_id = :position_id
+            ORDER BY CASE dar_quality WHEN 'browser' THEN 0 WHEN 'tool' THEN 1 END
+            """
+        ),
+        {"position_id": position_id},
+    ).first()
+    if parent is None:
+        return None
+    line_rows = connection.execute(
+        text(
+            """
+            SELECT dal_rank, dal_score_kind, dal_score_value,
+                   dal_wdl_wins, dal_wdl_draws, dal_wdl_losses,
+                   dal_pv_uci_json, dal_depth
+            FROM derived_analysis_line
+            WHERE derived_analysis_result_id = :position_id
+            ORDER BY dal_rank
+            """
+        ),
+        {"position_id": position_id},
+    ).all()
+    return _materialize_result(parent, line_rows)
 
 
 def _materialize_result(parent: object, line_rows: list[object]) -> AnalysisReadResult:

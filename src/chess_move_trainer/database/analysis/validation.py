@@ -19,7 +19,7 @@ from .models import (
     ValidatedAnalysisResult,
     _FrozenJsonObject,
 )
-from ..positions import CanonicalPosition
+from .._position_identity import CanonicalPosition
 
 
 def _normalize_quality(value: object) -> AnalysisQuality:

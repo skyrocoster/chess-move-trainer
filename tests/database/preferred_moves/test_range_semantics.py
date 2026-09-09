@@ -163,6 +163,24 @@ def test_unset_creates_an_unconfigured_gap_and_preserves_outside_dates() -> None
     )
 
 
+def test_unset_open_end_removes_the_tail_without_storing_unconfigured() -> None:
+    result = unset_preference(
+        [period("2026-01-01", None, MOVE_A)],
+        "2026-03-01",
+        None,
+    )
+
+    assert result == (period("2026-01-01", "2026-03-01", MOVE_A),)
+
+
+def test_unset_full_coverage_returns_an_empty_configured_schedule() -> None:
+    assert unset_preference(
+        [period("2026-01-01", "2026-04-01", NO_PREFERENCE)],
+        "2025-01-01",
+        "2027-01-01",
+    ) == ()
+
+
 def test_adjacent_equal_move_and_no_preference_states_merge() -> None:
     assert normalize_periods(
         [

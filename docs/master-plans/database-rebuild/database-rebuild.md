@@ -1,7 +1,7 @@
 # Database rebuild
 
-> **Status:** direction settled
-> **Next selectable slice:** `CLEAN-01` — create `GET /api/games` and immediately regenerate the curated OpenAPI and HeyAPI output.
+> **Status:** direction settled; CLEAN-01 through CLEAN-10 accepted
+> **Next selectable slice:** `CONSUMER-01` — migrate the status health check to generated `getHealth()`.
 > **Acceptance:** The accepted database foundation, SETUP-01, and SETUP-02 remain intact; every clean operation is created and generated individually; every current production API workflow is migrated individually afterward; and legacy routes are retired only after their final consumers move.
 
 ## Destination
@@ -273,8 +273,8 @@ Health remains. Route retirement never implies old-database cleanup or deletion.
 
 ## Slice results
 
-No selectable slice in this replacement plan is complete. The foundation, SETUP-01, and SETUP-02 results above remain
-accepted historical evidence rather than future slices.
+- **Accepted:** `CLEAN-01` through `CLEAN-10`.
+- **Next selectable:** `CONSUMER-01`.
 
 ## Risks and escalation boundaries
 

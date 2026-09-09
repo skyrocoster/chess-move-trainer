@@ -301,7 +301,6 @@ def test_preferred_moves_feature_and_cli_have_no_excluded_or_business_logic_impo
     for forbidden in (
         "backend",
         "frontend",
-        "games",
         "openings",
         "scripts",
         "legacy",

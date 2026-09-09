@@ -9,9 +9,19 @@ from chess_move_trainer.database.preferred_moves import (
     PreferenceState,
     PreferredMoveError,
     PreferredMoveLockError,
+    PreferredMoveMutationRequest,
+    PreferredMoveMutationResult,
+    PreferredMoveRemovalRequest,
+    PreferredMoveRemovalResult,
     PreferredMoveRepository,
     PreferredMoveSchemaError,
     PreferredMoveStorageError,
+    PreferredMoveTimeline,
+    PreferredMoveTimelinePreference,
+    PreferredMoveTimelineRepository,
+    PreferredMoveTimelineRequest,
+    PreferredMoveTimelineResult,
+    PreferredMoveTimelineSegment,
     PreferredMoveValidationError,
     RangeValidationError,
     ResolutionState,
@@ -19,8 +29,12 @@ from chess_move_trainer.database.preferred_moves import (
     parse_date_literal,
     period_from_literals,
     resolve_date,
+    get_preferred_moves,
+    delete_preferred_move,
+    read_preferred_moves,
     set_preference,
     unset_preference,
+    put_preferred_move,
 )
 
 
@@ -34,16 +48,31 @@ def test_preferred_moves_public_api_exports_ordinary_contracts() -> None:
         "PreferenceState",
         "PreferredMoveError",
         "PreferredMoveLockError",
+        "PreferredMoveMutationRequest",
+        "PreferredMoveMutationResult",
+        "PreferredMoveRemovalRequest",
+        "PreferredMoveRemovalResult",
         "PreferredMoveRepository",
         "PreferredMoveSchemaError",
         "PreferredMoveStorageError",
+        "PreferredMoveTimeline",
+        "PreferredMoveTimelinePreference",
+        "PreferredMoveTimelineRepository",
+        "PreferredMoveTimelineRequest",
+        "PreferredMoveTimelineResult",
+        "PreferredMoveTimelineSegment",
         "PreferredMoveValidationError",
         "RangeValidationError",
         "ResolutionState",
+        "TimelinePreferenceKind",
+        "get_preferred_moves",
         "normalize_periods",
         "parse_date_literal",
+        "delete_preferred_move",
+        "put_preferred_move",
         "period_from_literals",
         "resolve_date",
+        "read_preferred_moves",
         "set_preference",
         "unset_preference",
     ]
@@ -78,6 +107,8 @@ def test_preferred_moves_public_api_does_not_promote_handles_or_internals() -> N
         assert not hasattr(package, name)
     assert not hasattr(PreferredMoveRepository, "connection")
     assert not hasattr(PreferredMoveRepository, "raw_connection")
+    assert not hasattr(PreferredMoveTimelineRepository, "connection")
+    assert not hasattr(PreferredMoveTimelineRepository, "raw_connection")
 
 
 def test_preferred_moves_public_exports_are_usable_without_handles() -> None:
@@ -93,3 +124,19 @@ def test_preferred_moves_public_exports_are_usable_without_handles() -> None:
     assert resolve_date([], "2026-01-01") == DateResolution(
         ResolutionState.UNCONFIGURED
     )
+    request = PreferredMoveTimelineRequest(
+        "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+        "2026-01-01",
+        "2026-02-01",
+    )
+    assert isinstance(request, PreferredMoveTimelineRequest)
+    assert PreferredMoveTimelineResult is PreferredMoveTimeline
+    assert PreferredMoveTimelinePreference.unconfigured().kind == "unconfigured"
+    assert callable(get_preferred_moves)
+    assert callable(read_preferred_moves)
+    assert callable(put_preferred_move)
+    assert callable(delete_preferred_move)
+    assert PreferredMoveMutationRequest.__name__ == "PreferredMoveMutationRequest"
+    assert PreferredMoveMutationResult.__name__ == "PreferredMoveMutationResult"
+    assert PreferredMoveRemovalRequest.__name__ == "PreferredMoveRemovalRequest"
+    assert PreferredMoveRemovalResult.__name__ == "PreferredMoveRemovalResult"
