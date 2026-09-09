@@ -1,25 +1,16 @@
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 
-import { fetchHealth } from "./statusApi";
-import { StatusView } from "./StatusView";
-
-type ViewState = { kind: "loading" } | { kind: "success" } | { kind: "error"; message: string };
+import { getHealthOptions } from "../../api/client";
+import { StatusView, type StatusViewState } from "./StatusView";
 
 export function StatusPage() {
-  const [state, setState] = useState<ViewState>({ kind: "loading" });
+  const healthQuery = useQuery({ ...getHealthOptions(), gcTime: 0 });
 
-  useEffect(() => {
-    const controller = new AbortController();
-    fetchHealth(controller.signal)
-      .then(() => setState({ kind: "success" }))
-      .catch((error: unknown) => {
-        if (!controller.signal.aborted) {
-          const message = error instanceof Error ? error.message : "Unable to reach the backend";
-          setState({ kind: "error", message });
-        }
-      });
-    return () => controller.abort();
-  }, []);
-
-  return <StatusView state={state} />;
+  if (healthQuery.isPending) {
+    return <StatusView state={{ kind: "loading" }} />;
+  }
+  if (healthQuery.isError || healthQuery.data.status !== "ok") {
+    return <StatusView state={{ kind: "error" }} />;
+  }
+  return <StatusView state={{ kind: "success" }} />;
 }

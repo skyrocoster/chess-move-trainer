@@ -3,14 +3,17 @@ import { afterEach, describe, expect, it } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 
 import App from "./App";
+import { QueryClientTestProvider } from "./test-utils/QueryClientTestProvider";
 
 afterEach(cleanup);
 
 function renderApp(initialEntries: string[]) {
   return render(
-    <MemoryRouter initialEntries={initialEntries}>
-      <App />
-    </MemoryRouter>,
+    <QueryClientTestProvider>
+      <MemoryRouter initialEntries={initialEntries}>
+        <App />
+      </MemoryRouter>
+    </QueryClientTestProvider>,
   );
 }
 

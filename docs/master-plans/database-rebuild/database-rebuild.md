@@ -1,7 +1,7 @@
 # Database rebuild
 
-> **Status:** direction settled; CLEAN-01 through CLEAN-10 accepted
-> **Next selectable slice:** `CONSUMER-01` — migrate the status health check to generated `getHealth()`.
+> **Status:** direction settled; CLEAN-01 through CLEAN-10 and CONSUMER-01 accepted
+> **Next selectable slice:** `CONSUMER-02` — migrate Viewer game loading to generated clean game detail.
 > **Acceptance:** The accepted database foundation, SETUP-01, and SETUP-02 remain intact; every clean operation is created and generated individually; every current production API workflow is migrated individually afterward; and legacy routes are retired only after their final consumers move.
 
 ## Destination
@@ -273,8 +273,8 @@ Health remains. Route retirement never implies old-database cleanup or deletion.
 
 ## Slice results
 
-- **Accepted:** `CLEAN-01` through `CLEAN-10`.
-- **Next selectable:** `CONSUMER-01`.
+- **Accepted:** `CLEAN-01` through `CLEAN-10` and `CONSUMER-01`.
+- **Next selectable:** `CONSUMER-02`.
 
 ## Risks and escalation boundaries
 

@@ -1,4 +1,5 @@
 import { client } from "./generated/client.gen";
+import { getHealthOptions } from "./generated/@tanstack/react-query.gen";
 
 /**
  * Central handwritten configuration for the generated API client.
@@ -6,12 +7,19 @@ import { client } from "./generated/client.gen";
  * This module is the single import surface for the SETUP-02 generated client:
  * it applies the existing API base URL convention in one place and re-exports
  * the approved generated entrypoint and its clean response types. It is never
- * overwritten by generation (the generator cleans only `./generated/`) and is
- * intentionally unused by production application modules.
+ * overwritten by generation (the generator cleans only `./generated/`).
+ *
+ * CONSUMER-01 makes this module the approved import surface for the Status
+ * feature beginning in Stage 3: it re-exports the single generated TanStack
+ * query option Status consumes (`getHealthOptions`). The generated TanStack
+ * artifact is not exported through the generated entrypoint, so `getHealthOptions`
+ * is exported explicitly from the TanStack artifact import, separate from the
+ * generated entrypoint re-exports below.
  */
 const baseUrl = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:5666";
 client.setConfig({ baseUrl });
 
+export { getHealthOptions };
 export {
   deletePreferredMoves,
   getAnalysis,

@@ -37,6 +37,6 @@ export const Healthy: Story = {
 };
 
 export const Unavailable: Story = {
-  args: { state: { kind: "error", message: "Health request failed with HTTP 503" } },
-  render: () => frame({ kind: "error", message: "Health request failed with HTTP 503" }),
+  args: { state: { kind: "error" } },
+  render: () => frame({ kind: "error" }),
 };

@@ -4,7 +4,7 @@ import styles from "./StatusView.module.css";
 export type StatusViewState =
   | { kind: "loading" }
   | { kind: "success" }
-  | { kind: "error"; message: string };
+  | { kind: "error" };
 
 interface StatusViewProps {
   state: StatusViewState;
@@ -26,7 +26,7 @@ export function StatusView({ state }: StatusViewProps) {
           }
         : {
             severity: "error" as const,
-            message: `Backend unavailable: ${state.message}`,
+            message: "Backend unavailable.",
             role: "alert" as const,
           };
 

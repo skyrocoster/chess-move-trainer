@@ -12,11 +12,7 @@ describe("StatusView", () => {
   it.each([
     [{ kind: "loading" as const }, "Checking backend health…", "status"],
     [{ kind: "success" as const }, "Backend connected and healthy.", "status"],
-    [
-      { kind: "error" as const, message: "Health request failed with HTTP 503" },
-      "Backend unavailable: Health request failed with HTTP 503",
-      "alert",
-    ],
+    [{ kind: "error" as const }, "Backend unavailable.", "alert"],
   ])("renders the %s state with exact copy and role", (state, message, role) => {
     render(<StatusView state={state} />);
 
@@ -25,8 +21,14 @@ describe("StatusView", () => {
     expect(screen.getByText(message)).toBeInTheDocument();
   });
 
+  it("renders the error state without technical detail", () => {
+    render(<StatusView state={{ kind: "error" }} />);
+
+    expect(screen.queryByText(/HTTP|malformed|refused/i)).not.toBeInTheDocument();
+  });
+
   it("passes a focused accessibility check", async () => {
-    const { container } = render(<StatusView state={{ kind: "error", message: "Offline" }} />);
+    const { container } = render(<StatusView state={{ kind: "error" }} />);
 
     expect(await axe.run(container)).toHaveNoViolations();
   });

@@ -1,13 +1,36 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import "../../styles/cmt-tokens.css";
 import "../../styles/cmt-typescale.css";
 import { StatusPage } from "./StatusPage";
 
+/**
+ * One stable client for a story render. The conservative defaults match the
+ * production provider in `main.tsx`. The story keeps its real rendering
+ * behavior; no API mocking is added.
+ */
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: false,
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
+    },
+  },
+});
+
 const meta = {
   title: "Application/Status/Status Page",
   component: StatusPage,
   parameters: { layout: "fullscreen" },
+  decorators: [
+    (Story) => (
+      <QueryClientProvider client={queryClient}>
+        <Story />
+      </QueryClientProvider>
+    ),
+  ],
 } satisfies Meta<typeof StatusPage>;
 
 export default meta;
