@@ -1,6 +1,7 @@
 import { Chess } from "chess.js";
 import { expect, fn, userEvent, within } from "storybook/test";
 
+import type { GameDetailResponse } from "../../api/client";
 import type {
   PositionContextClient,
   PositionContextFailureCode,
@@ -21,8 +22,52 @@ import {
   preferredMoveRelationshipFixtures,
   type PreferredMoveRelationship,
 } from "./preferredMoveStoryFixtures";
+import type { GameDetailClient } from "./RepertoireBuilderWorkspace";
 
 const DEFAULT_MOVE: PreferredMoveValue = { uci: "e2e4", san: "e4" };
+
+export const STORY_GAME_DETAIL: GameDetailResponse = {
+  ended_at_utc: null,
+  game_uuid: "0007925c-5a8d-11f0-9740-f690a301000f",
+  occurrences: [
+    {
+      ply: 0,
+      fen: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+      move_uci: "e2e4",
+    },
+    {
+      ply: 1,
+      fen: "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1",
+      move_uci: "e7e5",
+    },
+    {
+      ply: 2,
+      fen: "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2",
+      move_uci: "g1f3",
+    },
+    {
+      ply: 3,
+      fen: "rnbqkbnr/pppp1ppp/8/4p3/5N2/8/PPPP1PPP/RNBQKB1R b KQkq - 1 2",
+      move_uci: null,
+    },
+  ],
+  opponent_chesscom_uuid: null,
+  opponent_rating: null,
+  original_pgn: "1. e4 e5 2. Nf3",
+  source_url: "https://www.chess.com/game/live/140399891142",
+  started_at_utc: null,
+  termination_reason: null,
+  time_class: "blitz",
+  time_control: "300+0",
+  trainer_chesscom_uuid: "trainer-id",
+  trainer_color: "white",
+  trainer_outcome: null,
+  trainer_rating: null,
+};
+
+export function storyGameClient(detail: GameDetailResponse = STORY_GAME_DETAIL): GameDetailClient {
+  return fn(async () => ({ data: detail, error: undefined }));
+}
 
 export type StoryPreferredMoveOptions = {
   relationship?: PreferredMoveRelationship;

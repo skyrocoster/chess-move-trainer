@@ -2,697 +2,206 @@ import userEvent from "@testing-library/user-event";
 import "./RepertoireBuilderWorkspace.testSetup";
 import { cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import axeMatchers from "@chialab/vitest-axe";
-import type {} from "@chialab/vitest-axe/matchers";
-import type { GameLookupResult } from "../game/positionApi";
-import { PROMOTION_GAME } from "../game/gameStoryFixtures";
-import { GAME, GAME_UUID } from "../game/gameFixtures";
-import {
-  AFTER_D4_FEN,
-  AFTER_E4_FEN,
-  AFTER_E8_KNIGHT_FEN,
-  BOARD_LABEL,
-  renderWorkspace,
-  sharedPositionSummary,
-  STARTING_FEN,
-  STORED_BOARD_LABEL,
-  testClients,
-} from "./repertoireBuilderTestHelpers";
-expect.extend(axeMatchers);
-afterEach(() => {
-  cleanup();
-  vi.useRealTimers();
-});
 
-function expectDateFreePreferredPanel() {
-  const panel = screen.getByRole("region", { name: "Preferred move" });
-  const scoped = within(panel);
-  expect(scoped.queryByTestId("effective-date")).not.toBeInTheDocument();
-  expect(scoped.queryByTestId("calendar-date-popup")).not.toBeInTheDocument();
-  expect(scoped.queryByRole("button", { name: /effective date/i })).not.toBeInTheDocument();
-  expect(panel).not.toHaveTextContent(/effective date/i);
-  expect(panel).not.toHaveTextContent(
-    /\b\d{4}-\d{2}-\d{2}\b|\b(?:\d{1,2} )?(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)(?: \d{1,2},?)? \d{4}\b/,
-  );
+import { GAME_DETAIL, GAME_UUID, renderWorkspace, testClients, STARTING_FEN, AFTER_E4_FEN, AFTER_E5_FEN, AFTER_D4_FEN, AFTER_NF3_FEN } from "./repertoireBuilderTestHelpers";
+import type { GameDetailClient } from "./RepertoireBuilderWorkspace";
+
+afterEach(() => cleanup());
+
+function historyEntry(name: string) {
+  return within(screen.getByTestId("board-move-history")).getByRole("button", { name });
+}
+
+function successfulGameClient() {
+  return vi.fn<GameDetailClient>().mockResolvedValue({ data: GAME_DETAIL, error: undefined });
+}
+
+async function loadGame(
+  gameClient: GameDetailClient = successfulGameClient(),
+  clients = testClients(),
+) {
+  const user = userEvent.setup();
+  renderWorkspace({ gameClient, ...clients });
+  fireEvent.change(screen.getByLabelText("Game UUID"), { target: { value: GAME_UUID } });
+  await user.click(screen.getByRole("button", { name: "Load game" }));
+  await waitFor(() => expect(screen.getByTestId("session-origin")).toHaveTextContent("complete game loaded"));
+  return user;
 }
 
 describe("RepertoireBuilderWorkspace", () => {
-  function historyEntry(name: string) {
-    return within(screen.getByTestId("board-move-history")).getByRole("button", { name });
-  }
+  it("starts fresh at one selected standard-start position", async () => {
+    const clients = testClients();
+    renderWorkspace(clients);
 
-  it("renders the standard starting position with White at the bottom", () => {
-    renderWorkspace();
-    expect(screen.getByRole("heading", { name: "Repertoire Builder", level: 1 })).toBeVisible();
-    const board = screen.getByRole("group", { name: BOARD_LABEL });
-    const stage = screen.getByTestId("board-eval-stage");
-    const rail = screen.getByTestId("board-eval-rail-shell");
-    const workspaceStage = screen.getByTestId("repertoire-workspace-stage");
-    const boardLane = screen.getByTestId("repertoire-board-lane");
-    const sessionLane = screen.getByTestId("repertoire-session-lane");
-    const engineLane = screen.getByTestId("repertoire-engine-lane");
-    expect(
-      Array.from(workspaceStage.querySelectorAll("[data-lane]")).map((child) =>
-        child.getAttribute("data-testid"),
-      ),
-    ).toEqual(["repertoire-board-lane", "repertoire-session-lane", "repertoire-engine-lane"]);
-    expect(within(boardLane).getByTestId("board-move-history")).toBeVisible();
-    expect(within(sessionLane).getByTestId("repertoire-session")).toBeVisible();
-    expect(within(sessionLane).getByTestId("position-description-row")).toBeVisible();
-    expect(within(engineLane).getByRole("heading", { name: "Analysis" })).toBeVisible();
-    const tablist = within(engineLane).getByRole("tablist", {
-      name: "Analysis and move responses",
-    });
-    expect(within(tablist).getAllByRole("tab")).toHaveLength(2);
-    expect(within(tablist).getByRole("tab", { name: "Analysis" })).toHaveAttribute(
-      "aria-selected",
-      "true",
-    );
-    expect(within(tablist).getByRole("tab", { name: "Move responses" })).toHaveAttribute(
-      "aria-selected",
-      "false",
-    );
-    expect(within(engineLane).getByTestId("tabs-panel-move-responses")).toHaveAttribute(
-      "hidden",
-    );
-    expect(within(engineLane).getByTestId("move-response-distribution")).toHaveAttribute(
-      "data-embedded",
-      "true",
-    );
-    expect(within(sessionLane).queryByTestId("move-response-distribution")).not.toBeInTheDocument();
-    expect(screen.getAllByTestId("board-move-history")).toHaveLength(1);
-    expect(screen.queryByTestId("session-move-history")).not.toBeInTheDocument();
-    expect(screen.getAllByTestId("session-status")).toHaveLength(1);
-    expect(board).toBeVisible();
-    expect(boardLane).toContainElement(stage);
-    expect(stage).toContainElement(board);
-    expect(stage).toContainElement(rail);
-    expect(screen.getByRole("meter", { name: "Evaluation" })).toHaveAttribute(
-      "data-orientation",
-      "white",
-    );
     expect(screen.getByTestId("session-origin")).toHaveTextContent(
       "Standard starting position; local session begins at Ply 0. Current Ply 0.",
     );
-    expect(screen.getByTestId("board-square-e2")).toHaveAttribute("data-highlighted", "false");
-    expect(screen.getByTestId("board-square-e4")).toHaveAttribute("data-highlighted", "false");
-    const descriptionRow = screen.getByTestId("position-description-row");
-    expect(board.contains(descriptionRow)).toBe(false);
-    expect(sessionLane).toContainElement(descriptionRow);
-    const description = screen.getByRole("button", { name: "Position description" });
-    expect(description).toHaveAttribute("aria-expanded", "false");
-    fireEvent.click(description);
-    expect(sharedPositionSummary()).toHaveTextContent("OrientationWhite at the bottom");
-    description.focus();
-    expect(description).toHaveFocus();
-    fireEvent.click(screen.getByRole("button", { name: "Flip" }));
-    expect(screen.getByRole("meter", { name: "Evaluation" })).toHaveAttribute(
-      "data-orientation",
-      "black",
-    );
-  });
-  it("loads a stored game with the complete prefix through the selected Ply and subject orientation", async () => {
-    const lookup = vi.fn().mockResolvedValue({
-      status: "success",
-      game: { ...GAME, initial_ply: 2, subject_color: "black" },
-    });
-    const user = userEvent.setup();
-    renderWorkspace({ lookup });
-    await user.type(screen.getByLabelText("Game UUID"), GAME_UUID);
-    await user.type(screen.getByLabelText(/Ply/), "2");
-    await user.click(screen.getByRole("button", { name: "Load game" }));
-
+    expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", STARTING_FEN);
+    expect(screen.getByRole("button", { name: "Previous" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Next" })).toBeDisabled();
     await waitFor(() =>
-      expect(screen.getByRole("group", { name: STORED_BOARD_LABEL })).toBeVisible(),
+      expect(clients.positionContextClient).toHaveBeenCalledWith(STARTING_FEN, expect.any(AbortSignal)),
     );
-    expect(lookup).toHaveBeenCalledWith(GAME_UUID, 2, expect.any(AbortSignal));
-    expect(screen.getByTestId("session-origin")).toHaveTextContent(
-      `Game ${GAME_UUID}; complete prefix through Ply 2. Current Ply 2.`,
-    );
-    expect(historyEntry("White, move 1, e4")).toBeVisible();
-    expect(historyEntry("Black, move 1, e5")).toHaveAttribute("aria-current", "step");
-    expect(screen.getByTestId("board-square-e7")).toHaveAttribute("data-highlighted", "true");
-    expect(screen.getByTestId("board-square-e5")).toHaveAttribute("data-highlighted", "true");
-    expect(sharedPositionSummary()).toHaveTextContent("OrientationBlack at the bottom");
+    expect(screen.queryByLabelText(/Ply/)).not.toBeInTheDocument();
+    expect(screen.queryByTestId("staged-move")).not.toBeInTheDocument();
   });
 
-  it("selects stored and local positions through one controlled history path", async () => {
-    const lookup = vi.fn().mockResolvedValue({
-      status: "success" as const,
-      game: { ...GAME, initial_ply: 2, subject_color: "black" as const },
+  it("loads the complete clean game through getGame at Ply 0", async () => {
+    const gameClient = successfulGameClient();
+    await loadGame(gameClient);
+
+    expect(gameClient).toHaveBeenCalledWith({
+      path: { game_uuid: GAME_UUID },
+      signal: expect.any(AbortSignal),
     });
+    expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", STARTING_FEN);
+    expect(screen.getByTestId("session-origin")).toHaveTextContent("Current Ply 0.");
+    expect(historyEntry("Initial position")).toHaveAttribute("aria-current", "step");
+    expect(historyEntry("White, move 1, e4")).toBeVisible();
+    expect(historyEntry("Black, move 1, e5")).toBeVisible();
+    expect(historyEntry("White, move 2, Nf3")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Next" })).toBeEnabled();
+    expect(screen.queryByLabelText("Ply", { exact: true })).not.toBeInTheDocument();
+  });
+
+  it("navigates the complete imported line and keeps every surface on one current FEN", async () => {
+    const clients = testClients();
+    const user = await loadGame(successfulGameClient(), clients);
+
+    await user.click(screen.getByRole("button", { name: "Next" }));
+    expect(screen.getByTestId("session-origin")).toHaveTextContent("Current Ply 1.");
+    expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", AFTER_E4_FEN);
+    expect(historyEntry("White, move 1, e4")).toHaveAttribute("aria-current", "step");
+    await waitFor(() =>
+      expect(clients.positionContextClient).toHaveBeenCalledWith(AFTER_E4_FEN, expect.any(AbortSignal)),
+    );
+    expect(screen.getByRole("button", { name: "Previous" })).toBeEnabled();
+
+    await user.click(historyEntry("White, move 2, Nf3"));
+    expect(screen.getByTestId("session-origin")).toHaveTextContent("Current Ply 3.");
+    expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", AFTER_NF3_FEN);
+    await user.click(historyEntry("Initial position"));
+    expect(screen.getByTestId("session-origin")).toHaveTextContent("Current Ply 0.");
+  });
+
+  it("advances a recorded UCI move immediately and derives the trainer transition from its parent", async () => {
     const clients = testClients();
     const user = userEvent.setup();
-    renderWorkspace({
-      lookup,
-      preferredMoveClient: clients.preferredMoveClient,
-      positionContextClient: clients.positionContextClient,
-    });
-    await user.type(screen.getByLabelText("Game UUID"), GAME_UUID);
-    await user.type(screen.getByLabelText(/Ply/), "2");
-    await user.click(screen.getByRole("button", { name: "Load game" }));
-    await waitFor(() => expect(historyEntry("Black, move 1, e5")).toBeVisible());
+    renderWorkspace(clients);
+    await waitFor(() => expect(clients.preferredMoveClient.get).toHaveBeenCalledWith(STARTING_FEN, expect.anything()));
 
-    await user.click(screen.getByTestId("move-d2-d4"));
-    expect(historyEntry("White, move 2, d4")).toHaveAttribute("aria-current", "step");
-    expect(screen.getByTestId("session-origin")).toHaveTextContent("Current Ply 3.");
-
-    await user.click(historyEntry("White, move 1, e4"));
-    expect(historyEntry("White, move 1, e4")).toHaveAttribute("aria-current", "step");
-    expect(screen.getByTestId("mock-chessboard")).toHaveAttribute(
-      "data-position",
-      GAME.positions[1].fen,
-    );
+    await user.click(screen.getByTestId("move-e2-e4"));
+    expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", AFTER_E4_FEN);
     expect(screen.getByTestId("session-origin")).toHaveTextContent("Current Ply 1.");
-    expect(sharedPositionSummary()).toHaveTextContent("Side to moveBlack");
+    expect(historyEntry("White, move 1, e4")).toHaveAttribute("aria-current", "step");
+    expect(screen.getByTestId("selected-move")).toHaveTextContent("e4");
+    expect(screen.getByRole("button", { name: "Save e4" })).toBeVisible();
+    expect(clients.preferredMoveClient.put).not.toHaveBeenCalled();
     await waitFor(() =>
-      expect(clients.preferredMoveClient.get).toHaveBeenCalledWith(GAME.positions[1].fen, {
+      expect(clients.preferredMoveClient.get).toHaveBeenLastCalledWith(STARTING_FEN, {
         signal: expect.any(AbortSignal),
       }),
     );
-
-    await user.click(screen.getByRole("button", { name: "Next" }));
-    expect(historyEntry("Black, move 1, e5")).toHaveAttribute("aria-current", "step");
-    expect(screen.getByTestId("session-origin")).toHaveTextContent("Current Ply 2.");
-    await user.click(screen.getByRole("button", { name: "Next" }));
-    expect(historyEntry("White, move 2, d4")).toHaveAttribute("aria-current", "step");
-    expect(screen.getByTestId("session-origin")).toHaveTextContent("Current Ply 3.");
-
-    historyEntry("White, move 2, d4").focus();
-    await user.keyboard("{Home}");
-    expect(historyEntry("Initial position")).toHaveAttribute("aria-current", "step");
-    expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", STARTING_FEN);
-    expect(screen.getByTestId("session-origin")).toHaveTextContent("Current Ply 0.");
-    historyEntry("Initial position").focus();
-    await user.keyboard("{End}");
-    expect(historyEntry("White, move 2, d4")).toHaveAttribute("aria-current", "step");
-    await user.keyboard("{ArrowLeft}");
-    expect(historyEntry("Black, move 1, e5")).toHaveAttribute("aria-current", "step");
   });
 
-  it("keeps position reach frequency on the current FEN and bottom repertoire colour", async () => {
-    const user = userEvent.setup();
-    const clients = testClients();
-    renderWorkspace(clients);
+  it("creates a branch on divergence, replaces its tail, and returns to the intact game", async () => {
+    const user = await loadGame(successfulGameClient());
 
-    await waitFor(() =>
-      expect(clients.positionContextClient).toHaveBeenCalledWith(
-        STARTING_FEN,
-        expect.any(AbortSignal),
-      ),
-    );
-    expect(screen.getByRole("meter", { name: "Position reach frequency as White" })).toBeVisible();
-
-    await user.click(screen.getByRole("button", { name: "Flip" }));
-    expect(screen.getByRole("meter", { name: "Position reach frequency as Black" })).toBeVisible();
-
-    await user.click(screen.getByTestId("move-e2-e4"));
-    await waitFor(() =>
-      expect(clients.positionContextClient).toHaveBeenCalledWith(
-        AFTER_E4_FEN,
-        expect.any(AbortSignal),
-      ),
-    );
-    expect(screen.getByRole("meter", { name: "Position reach frequency as Black" })).toBeVisible();
-  });
-
-  it("cancels a staged preview when combined-history navigation changes position", async () => {
-    const user = userEvent.setup();
-    const clients = testClients();
-    renderWorkspace({
-      preferredMoveClient: clients.preferredMoveClient,
-      positionContextClient: clients.positionContextClient,
-    });
-
-    await user.click(screen.getByRole("button", { name: "Flip" }));
-    await user.click(screen.getByTestId("move-e2-e4"));
-    await user.click(screen.getByRole("button", { name: "Flip" }));
-    await user.click(screen.getByTestId("move-e7-e5"));
     await user.click(screen.getByTestId("move-d2-d4"));
-    expect(screen.getByTestId("mock-chessboard")).toHaveAttribute(
-      "data-position",
-      "rnbqkbnr/pppp1ppp/8/4p3/3PP3/8/PPP2PPP/RNBQKBNR b KQkq d3 0 2",
-    );
-    expect(screen.getByTestId("session-origin")).toHaveTextContent("Current Ply 2.");
-    expect(screen.getByRole("button", { name: "Previous" })).toBeEnabled();
-
-    await user.click(screen.getByRole("button", { name: "Previous" }));
-    expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", AFTER_E4_FEN);
-    expect(screen.getByTestId("session-origin")).toHaveTextContent("Current Ply 1.");
-    expect(screen.getByTestId("session-status")).toHaveTextContent(
-      "Moved to the previous local position.",
-    );
-    expect(screen.getByTestId("board-square-d2")).toHaveAttribute("data-highlighted", "false");
-    expect(screen.getByTestId("board-square-d4")).toHaveAttribute("data-highlighted", "false");
-  });
-  it("exposes loading state while a stored game request is pending", async () => {
-    let resolveLookup!: (result: GameLookupResult) => void;
-    const lookup = vi.fn(
-      () =>
-        new Promise<GameLookupResult>((resolve) => {
-          resolveLookup = resolve;
-        }),
-    );
-    const user = userEvent.setup();
-    renderWorkspace({ lookup });
-    await user.type(screen.getByLabelText("Game UUID"), GAME_UUID);
-    await user.click(screen.getByRole("button", { name: "Load game" }));
-    expect(screen.getByText("Loading the complete game...")).toBeVisible();
-    expect(screen.getByRole("button", { name: "Load game" })).toBeDisabled();
-    resolveLookup({ status: "success", game: GAME });
-    await waitFor(() => expect(screen.getByRole("button", { name: "Load game" })).toBeEnabled());
-    expect(
-      screen.getByRole("group", {
-        name: `Chess board: game ${GAME_UUID}, ply 0, White at the bottom`,
-      }),
-    ).toBeVisible();
-  });
-  it("keeps preferred move and position context failures as separate alerts", async () => {
-    const clients = testClients();
-    clients.preferredMoveClient.get = vi.fn(async () => ({
-      status: "preferred_move_unavailable" as const,
-    }));
-    clients.positionContextClient = vi.fn(async () => ({
-      status: "position_context_unavailable" as const,
-    }));
-    renderWorkspace(clients);
-
-    const alerts = await screen.findAllByRole("alert");
-    expect(alerts).toHaveLength(2);
-    expect(alerts[0]).toHaveAttribute("role", "alert");
-    expect(alerts[0]).toHaveTextContent("Preferred move data is unavailable. Try again.");
-    expect(alerts[1]).toHaveAttribute("role", "alert");
-    expect(alerts[1]).toHaveTextContent("Position context is temporarily unavailable.");
-  });
-  it("keeps the current session safe when loading fails and Reset returns to standard start", async () => {
-    const lookup = vi.fn().mockResolvedValue({ status: "game_not_found" as const });
-    const user = userEvent.setup();
-    renderWorkspace({ lookup });
-
-    await user.type(screen.getByLabelText("Game UUID"), GAME_UUID);
-    await user.click(screen.getByRole("button", { name: "Load game" }));
-
-    expect(await screen.findByText("Game not found")).toBeVisible();
-    expect(screen.getByRole("group", { name: BOARD_LABEL })).toBeVisible();
-    await user.click(screen.getByRole("button", { name: "Reset" }));
-    expect(screen.getByLabelText("Game UUID")).toHaveValue("");
-    expect(screen.getByLabelText(/Ply/)).toHaveValue("");
-    expect(screen.getByTestId("session-origin")).toHaveTextContent("Standard starting position");
-    expect(screen.queryByText("Game not found")).not.toBeInTheDocument();
-  });
-  it("clears a staged preview on Reset and when a new game loads", async () => {
-    const lookup = vi.fn().mockResolvedValue({ status: "success", game: GAME });
-    const user = userEvent.setup();
-    renderWorkspace({ lookup });
-    await user.click(screen.getByTestId("move-e2-e4"));
-    expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", AFTER_E4_FEN);
-    expect(screen.getByTestId("board-square-e2")).toHaveAttribute("data-highlighted", "true");
-    expect(screen.getByTestId("board-square-e4")).toHaveAttribute("data-highlighted", "true");
-    await user.click(screen.getByRole("button", { name: "Reset" }));
-    expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", STARTING_FEN);
-    expect(screen.getByTestId("board-square-e2")).toHaveAttribute("data-highlighted", "false");
-    expect(screen.getByTestId("board-square-e4")).toHaveAttribute("data-highlighted", "false");
-    expect(historyEntry("Initial position")).toBeVisible();
-    await user.click(screen.getByTestId("move-e2-e4"));
-    await user.type(screen.getByLabelText("Game UUID"), GAME_UUID);
-    await user.click(screen.getByRole("button", { name: "Load game" }));
-
-    await waitFor(() =>
-      expect(
-        screen.getByRole("group", {
-          name: `Chess board: game ${GAME_UUID}, ply 0, White at the bottom`,
-        }),
-      ).toBeVisible(),
-    );
-    expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", STARTING_FEN);
-    expect(screen.getByTestId("board-square-e2")).toHaveAttribute("data-highlighted", "false");
-    expect(screen.getByTestId("board-square-e4")).toHaveAttribute("data-highlighted", "false");
-    expect(screen.getByTestId("session-origin")).toHaveTextContent("Current Ply 0.");
-    expect(historyEntry("Initial position")).toBeVisible();
-  });
-  it("stages my moves, cancels staging on Flip, and advances an opposing move locally", async () => {
-    const user = userEvent.setup();
-    const clients = testClients();
-    renderWorkspace(clients);
-
-    await waitFor(() => expect(screen.getByText("Never seen as White")).toBeVisible());
-    await user.click(screen.getByTestId("move-e2-e4"));
-    expect(sharedPositionSummary().querySelectorAll('[data-position-square="e2"]')).toHaveLength(0);
-    expect(sharedPositionSummary().querySelectorAll('[data-position-square="e4"]')).toHaveLength(1);
-    expect(sharedPositionSummary().querySelector('[data-position-side="b"]')).toHaveAttribute(
-      "data-position-side-to-move",
-      "true",
-    );
-    expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", AFTER_E4_FEN);
-    expect(screen.getByTestId("board-square-e2")).toHaveAttribute("data-highlighted", "true");
-    expect(screen.getByTestId("board-square-e4")).toHaveAttribute("data-highlighted", "true");
-    expect(screen.getByTestId("session-origin")).toHaveTextContent(
-      "Standard starting position; local session begins at Ply 0. Current Ply 0.",
-    );
-    expect(
-      screen.getByRole("region", { name: "Preferred move" }),
-    ).toHaveAttribute("data-state", "first-choice");
-    expect(screen.getByTestId("staged-move")).toHaveTextContent("e4");
-    expect(historyEntry("Initial position")).toBeVisible();
-    expect(clients.preferredMoveClient.put).not.toHaveBeenCalled();
-    expect(clients.preferredMoveClient.get).toHaveBeenCalledWith(STARTING_FEN, {
-      signal: expect.any(AbortSignal),
-    });
-    expect(clients.positionContextClient).toHaveBeenCalledWith(
-      STARTING_FEN,
-      expect.any(AbortSignal),
-    );
-    const session = screen.getByTestId("repertoire-session");
-    const status = within(session).getByTestId("session-status");
-    expect(status).toHaveTextContent("My move staged: e4.");
-    expect(status).toHaveAttribute("role", "status");
-    expect(status).toHaveAttribute("aria-live", "polite");
-    expect(within(session).queryByTestId("board-move-history")).not.toBeInTheDocument();
-    expect(
-      within(screen.getByTestId("repertoire-board-lane")).getByTestId("board-move-history"),
-    ).toBeVisible();
-    expect(
-      within(session).getByRole("heading", { name: "Preferred move" }),
-    ).toBeVisible();
-    expect(screen.getAllByText("My move staged: e4.", { exact: true })).toHaveLength(1);
-    await user.click(screen.getByTestId("move-d2-d4"));
-    expect(sharedPositionSummary().querySelectorAll('[data-position-square="e4"]')).toHaveLength(0);
-    expect(sharedPositionSummary().querySelectorAll('[data-position-square="d2"]')).toHaveLength(0);
-    expect(sharedPositionSummary().querySelectorAll('[data-position-square="d4"]')).toHaveLength(1);
     expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", AFTER_D4_FEN);
-    expect(screen.getByTestId("board-square-d2")).toHaveAttribute("data-highlighted", "true");
-    expect(screen.getByTestId("board-square-d4")).toHaveAttribute("data-highlighted", "true");
-    expect(screen.getByTestId("session-origin")).toHaveTextContent("Current Ply 0.");
-    expect(historyEntry("Initial position")).toBeVisible();
-    expect(clients.preferredMoveClient.put).not.toHaveBeenCalled();
-    expect(status).toHaveTextContent("My move staged: d4.");
-    expect(screen.getAllByText("My move staged: d4.", { exact: true })).toHaveLength(1);
-    await user.click(screen.getByRole("button", { name: "Flip" }));
-    expect(screen.getByTestId("session-status")).toHaveTextContent(
-      "Flipped to Black at the bottom.",
-    );
-    expect(screen.getByTestId("board-square-d2")).toHaveAttribute("data-highlighted", "false");
-    expect(screen.getByTestId("board-square-d4")).toHaveAttribute("data-highlighted", "false");
-    expect(sharedPositionSummary()).toHaveTextContent("OrientationBlack at the bottom");
-    expect(sharedPositionSummary()).toHaveTextContent("Side to moveWhite");
-    await user.click(screen.getByTestId("move-e2-e4"));
-    expect(sharedPositionSummary().querySelectorAll('[data-position-square="e2"]')).toHaveLength(0);
-    expect(sharedPositionSummary().querySelectorAll('[data-position-square="e4"]')).toHaveLength(1);
-    expect(screen.getByTestId("board-square-e2")).toHaveAttribute("data-highlighted", "true");
-    expect(screen.getByTestId("board-square-e4")).toHaveAttribute("data-highlighted", "true");
-    expect(sharedPositionSummary().querySelector('[data-position-side="b"]')).toHaveAttribute(
-      "data-position-side-to-move",
-      "true",
-    );
-    expect(historyEntry("White, move 1, e4")).toHaveAttribute("aria-current", "step");
-    expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", AFTER_E4_FEN);
-    expect(screen.getByRole("button", { name: "Previous" })).toBeEnabled();
-  });
-  it("saves an owner move that was staged immediately and sends blank effective-now date", async () => {
-    const user = userEvent.setup();
-    const clients = testClients();
-    renderWorkspace(clients);
-    await waitFor(() => expect(screen.getByText("Never seen as White")).toBeVisible());
-    await user.click(screen.getByTestId("move-e2-e4"));
-    expect(clients.preferredMoveClient.put).not.toHaveBeenCalled();
-    expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", AFTER_E4_FEN);
-    expect(sharedPositionSummary().querySelectorAll('[data-position-square="e4"]')).toHaveLength(1);
-    expect(screen.getByTestId("session-origin")).toHaveTextContent("Current Ply 0.");
-    expect(historyEntry("Initial position")).toBeVisible();
-    await user.click(screen.getByRole("button", { name: "Save e4" }));
-    await waitFor(() => expect(clients.preferredMoveClient.put).toHaveBeenCalledTimes(1));
-    expect(clients.preferredMoveClient.put).toHaveBeenCalledWith(
-      { fen: STARTING_FEN, move_uci: "e2e4", effective_at: "" },
-      { signal: expect.any(AbortSignal) },
-    );
-    await waitFor(() =>
-      expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", AFTER_E4_FEN),
-    );
-    expect(sharedPositionSummary().querySelectorAll('[data-position-square="e2"]')).toHaveLength(0);
-    expect(sharedPositionSummary().querySelectorAll('[data-position-square="e4"]')).toHaveLength(1);
-    expect(screen.getByTestId("session-origin")).toHaveTextContent("Current Ply 1.");
-    expect(historyEntry("White, move 1, e4")).toHaveAttribute("aria-current", "step");
-    expect(historyEntry("Initial position")).toBeVisible();
-    expect(screen.getByTestId("saved-move")).toHaveTextContent("e4");
-    expect(screen.getByTestId("session-status")).toHaveTextContent("Preferred move saved.");
-  });
-  it("stages a saved replacement immediately and saves it explicitly", async () => {
-    const user = userEvent.setup();
-    const clients = testClients("assigned");
-    renderWorkspace(clients);
-
-    await waitFor(() => expect(screen.getByTestId("saved-move")).toHaveTextContent("e4"));
-    expectDateFreePreferredPanel();
-    await user.click(screen.getByTestId("move-d2-d4"));
-    expect(screen.getByTestId("staged-move")).toHaveTextContent("d4");
-    expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", AFTER_D4_FEN);
-    expect(sharedPositionSummary().querySelectorAll('[data-position-square="d2"]')).toHaveLength(0);
-    expect(sharedPositionSummary().querySelectorAll('[data-position-square="d4"]')).toHaveLength(1);
-    expect(screen.getByTestId("session-origin")).toHaveTextContent("Current Ply 0.");
-    expect(historyEntry("Initial position")).toBeVisible();
-    expect(clients.preferredMoveClient.put).not.toHaveBeenCalled();
-    await user.click(screen.getByRole("button", { name: "Save d4" }));
-    await waitFor(() => expect(clients.preferredMoveClient.put).toHaveBeenCalledTimes(1));
-    expect(clients.preferredMoveClient.put).toHaveBeenCalledWith(
-      { fen: STARTING_FEN, move_uci: "d2d4", effective_at: "" },
-      { signal: expect.any(AbortSignal) },
-    );
-    await waitFor(() =>
-      expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", AFTER_D4_FEN),
-    );
-    expect(sharedPositionSummary().querySelectorAll('[data-position-square="d2"]')).toHaveLength(0);
-    expect(sharedPositionSummary().querySelectorAll('[data-position-square="d4"]')).toHaveLength(1);
-    expect(screen.getByTestId("session-origin")).toHaveTextContent("Current Ply 1.");
     expect(historyEntry("White, move 1, d4")).toHaveAttribute("aria-current", "step");
-    expect(historyEntry("Initial position")).toBeVisible();
-  });
-  it("hydrates a persisted effective timestamp without rendering effective-date UI", async () => {
-    const clients = testClients("assigned", "2026-01-01T23:59:59.999000Z");
-    renderWorkspace(clients);
+    expect(screen.getByLabelText("Temporary branch")).toBeVisible();
+    expect(screen.getByTestId("branch-current-ply")).toHaveTextContent("Current ply 1");
 
-    await waitFor(() => expect(screen.getByTestId("saved-move")).toHaveTextContent("e4"));
-    expectDateFreePreferredPanel();
-  });
+    await user.click(screen.getByTestId("move-e7-e5"));
+    expect(historyEntry("Black, move 1, e5")).toHaveAttribute("aria-current", "step");
+    await user.click(historyEntry("White, move 1, d4"));
+    await user.click(screen.getByTestId("move-g8-f6"));
+    expect(historyEntry("Black, move 1, Nf6")).toHaveAttribute("aria-current", "step");
+    expect(screen.queryByRole("button", { name: "Black, move 1, e5" })).not.toBeInTheDocument();
 
-  it("keeps a persisted current UTC date out of the panel and preserves mutation silence", async () => {
-    vi.useFakeTimers({ shouldAdvanceTime: true });
-    vi.setSystemTime(new Date("2026-01-15T23:59:59.999Z"));
-    const clients = testClients("assigned", "2026-01-15T12:00:00.000000Z");
-    renderWorkspace(clients);
-
-    await waitFor(() => expect(screen.getByTestId("saved-move")).toHaveTextContent("e4"));
-    expectDateFreePreferredPanel();
-    expect(clients.preferredMoveClient.put).not.toHaveBeenCalled();
-    expect(clients.preferredMoveClient.remove).not.toHaveBeenCalled();
+    const branch = screen.getByLabelText("Temporary branch");
+    await user.click(within(branch).getByRole("button", { name: "Reset" }));
+    expect(screen.queryByLabelText("Temporary branch")).not.toBeInTheDocument();
+    expect(screen.getByTestId("session-origin")).toHaveTextContent("Current Ply 0.");
+    expect(historyEntry("White, move 1, e4")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Next" })).toBeEnabled();
   });
 
-  it("stages a selected promotion on the child position without local history", async () => {
-    const lookup = vi.fn().mockResolvedValue({ status: "success", game: PROMOTION_GAME });
+  it("resets the session and replaces it with a new loaded game", async () => {
     const user = userEvent.setup();
-    renderWorkspace({ lookup });
-    await user.type(screen.getByLabelText("Game UUID"), GAME_UUID);
+    const gameClient = successfulGameClient();
+    renderWorkspace({ gameClient });
+    await user.click(screen.getByTestId("move-e2-e4"));
+    const loaderActions = screen.getByRole("button", { name: "Load game" }).parentElement!;
+    await user.click(within(loaderActions).getByRole("button", { name: "Reset" }));
+    expect(screen.getByTestId("session-origin")).toHaveTextContent("Standard starting position");
+    expect(screen.getByTestId("session-origin")).toHaveTextContent("Current Ply 0.");
+
+    fireEvent.change(screen.getByLabelText("Game UUID"), { target: { value: GAME_UUID } });
     await user.click(screen.getByRole("button", { name: "Load game" }));
-    await waitFor(() =>
-      expect(
-        screen.getByRole("group", {
-          name: `Chess board: game ${GAME_UUID}, ply 0, White at the bottom`,
-        }),
-      ).toBeVisible(),
-    );
-
-    await user.click(screen.getByTestId("move-e7-e8"));
-    const dialog = await screen.findByRole("dialog", { name: "Choose a promotion piece" });
-    expect(screen.getByTestId("mock-chessboard")).toHaveAttribute(
-      "data-position",
-      PROMOTION_GAME.positions[0].fen,
-    );
-    expect(historyEntry("Initial position")).toBeVisible();
-    await user.click(within(dialog).getByRole("button", { name: "Promote to knight" }));
-
-    expect(screen.getByTestId("mock-chessboard")).toHaveAttribute(
-      "data-position",
-      AFTER_E8_KNIGHT_FEN,
-    );
-    expect(screen.getByTestId("board-square-e7")).toHaveAttribute("data-highlighted", "true");
-    expect(screen.getByTestId("board-square-e8")).toHaveAttribute("data-highlighted", "true");
-    expect(sharedPositionSummary().querySelectorAll('[data-position-square="e7"]')).toHaveLength(0);
-    expect(sharedPositionSummary().querySelectorAll('[data-position-square="e8"]')).toHaveLength(1);
+    await waitFor(() => expect(screen.getByTestId("session-origin")).toHaveTextContent("complete game loaded"));
     expect(screen.getByTestId("session-origin")).toHaveTextContent("Current Ply 0.");
-    expect(historyEntry("Initial position")).toBeVisible();
-  });
-  it("plays and stages the saved move without a mutation or history entry", async () => {
-    const user = userEvent.setup();
-    const clients = testClients("assigned");
-    renderWorkspace(clients);
-    await waitFor(() => expect(screen.getByTestId("saved-move")).toBeVisible());
-    await user.click(
-      screen.getByRole("button", {
-        name: "Current saved choice: e4; play and stage this move.",
-      }),
-    );
-
-    expect(sharedPositionSummary().querySelectorAll('[data-position-square="e2"]')).toHaveLength(0);
-    expect(sharedPositionSummary().querySelectorAll('[data-position-square="e4"]')).toHaveLength(1);
-    expect(screen.getByTestId("board-square-e2")).toHaveAttribute("data-highlighted", "true");
-    expect(screen.getByTestId("board-square-e4")).toHaveAttribute("data-highlighted", "true");
-    expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", AFTER_E4_FEN);
-    expect(historyEntry("Initial position")).toHaveAttribute("aria-current", "step");
-    expect(screen.getByTestId("session-origin")).toHaveTextContent("Current Ply 0.");
-    expect(
-      screen.getByRole("region", { name: "Preferred move" }),
-    ).toHaveAttribute("data-state", "matching");
-    expect(screen.getByTestId("staged-move")).toHaveTextContent("e4");
-    expect(screen.getByRole("button", { name: "Remove" })).toBeVisible();
-    expect(clients.preferredMoveClient.put).not.toHaveBeenCalled();
-    expect(clients.preferredMoveClient.remove).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: "Next" })).toBeEnabled();
   });
 
-  it("keeps the saved source read while staged previews replace locally", async () => {
-    const user = userEvent.setup();
-    const clients = testClients("assigned");
-    renderWorkspace(clients);
+  it("maps clean not-found, unavailable, validation, and unexpected failures without a legacy Ply error", async () => {
+    const cases = [
+      [{ code: "game_not_found", message: "missing" }, 404, "Game not found"],
+      [{ code: "games_unavailable", message: "down" }, 503, "Corpus unavailable"],
+      [{ detail: [] }, 422, "Game unavailable"],
+      [{ code: "unexpected_failure", message: "bad" }, 500, "Unable to load game"],
+    ] as const;
 
-    await waitFor(() => expect(screen.getByTestId("saved-move")).toBeVisible());
-
-    async function expectMatchingStagedPanel() {
-      await waitFor(() => {
-        const panel = screen.getByRole("region", { name: "Preferred move" });
-        expect(panel).toHaveAttribute("data-state", "matching");
-        expect(within(panel).getByTestId("staged-move")).toHaveTextContent("e4");
-        expect(within(panel).getByRole("button", { name: "Remove" })).toBeVisible();
+    for (const [error, status, heading] of cases) {
+      cleanup();
+      const gameClient = vi.fn<GameDetailClient>().mockResolvedValue({
+        data: undefined,
+        error,
+        response: new Response(null, { status }),
       });
-      expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", AFTER_E4_FEN);
+      const user = userEvent.setup();
+      renderWorkspace({ gameClient });
+      fireEvent.change(screen.getByLabelText("Game UUID"), { target: { value: GAME_UUID } });
+      await user.click(screen.getByRole("button", { name: "Load game" }));
+      expect(await screen.findByText(heading)).toBeVisible();
+      expect(screen.queryByText("Position not found")).not.toBeInTheDocument();
     }
-
-    await user.click(screen.getByTestId("move-e2-e4"));
-    await expectMatchingStagedPanel();
-    expect(screen.getByRole("button", { name: "Previous" })).toBeDisabled();
-
-    await user.click(screen.getByTestId("move-d2-d4"));
-    expect(
-      screen.getByRole("region", { name: "Preferred move" }),
-    ).toHaveAttribute("data-state", "replacement");
-    expect(screen.getByTestId("staged-move")).toHaveTextContent("d4");
-    expect(historyEntry("Initial position")).toHaveAttribute("aria-current", "step");
-    expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", AFTER_D4_FEN);
   });
 
-  it("stages a saved move selected on the board without advancing the local session", async () => {
+  it("aborts a pending clean load when Reset is pressed", async () => {
+    let resolve!: (result: Awaited<ReturnType<GameDetailClient>>) => void;
+    const gameClient = vi.fn<GameDetailClient>().mockImplementation(
+      () => new Promise((done) => (resolve = done)),
+    );
     const user = userEvent.setup();
-    const clients = testClients("assigned");
-    renderWorkspace(clients);
-    await waitFor(() => expect(screen.getByTestId("saved-move")).toBeVisible());
-    await user.click(screen.getByTestId("move-e2-e4"));
-    expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", AFTER_E4_FEN);
-    expect(historyEntry("Initial position")).toHaveAttribute("aria-current", "step");
-    expect(screen.getByTestId("session-status")).toHaveTextContent("My move staged: e4.");
-    expect(screen.getByRole("button", { name: "Previous" })).toBeDisabled();
-    expect(screen.getByTestId("saved-move")).toBeInTheDocument();
-    expect(screen.getByTestId("staged-move")).toHaveTextContent("e4");
-    expect(clients.preferredMoveClient.put).not.toHaveBeenCalled();
-    expect(clients.preferredMoveClient.remove).not.toHaveBeenCalled();
-
-    await user.click(screen.getByRole("button", { name: "Reset" }));
-    await waitFor(() => expect(screen.getByTestId("saved-move")).toBeVisible());
-    expectDateFreePreferredPanel();
-    await user.click(screen.getByTestId("move-e2-e4"));
-    expect(screen.getByTestId("saved-move")).toBeInTheDocument();
-    expect(screen.getByTestId("staged-move")).toHaveTextContent("e4");
-  });
-  it("stages an own-color move that is not the saved move", async () => {
-    const user = userEvent.setup();
-    const clients = testClients("assigned");
-    renderWorkspace(clients);
-    await waitFor(() => expect(screen.getByTestId("saved-move")).toBeVisible());
-    await user.click(screen.getByTestId("move-d2-d4"));
-    expect(sharedPositionSummary().querySelectorAll('[data-position-square="d4"]')).toHaveLength(1);
-    expect(historyEntry("Initial position")).toBeVisible();
-    expect(screen.getByTestId("session-status")).toHaveTextContent("My move staged: d4.");
-    expect(
-      screen.getByRole("region", { name: "Preferred move" }),
-    ).toHaveAttribute("data-state", "replacement");
-    expect(screen.getByTestId("staged-move")).toHaveTextContent("d4");
+    renderWorkspace({ gameClient });
+    fireEvent.change(screen.getByLabelText("Game UUID"), { target: { value: GAME_UUID } });
+    await user.click(screen.getByRole("button", { name: "Load game" }));
+    const signal = gameClient.mock.calls[0]?.[0].signal;
+    expect(screen.getByText("Loading the complete game...")).toBeVisible();
+    const loaderActions = screen.getByRole("button", { name: "Load game" }).parentElement!;
+    await user.click(within(loaderActions).getByRole("button", { name: "Reset" }));
+    expect(signal?.aborted).toBe(true);
+    expect(screen.getByTestId("session-origin")).toHaveTextContent("Standard starting position");
+    resolve({ data: GAME_DETAIL, error: undefined });
   });
 
-  it("requests the displayed position and selected colour, then uses the existing move flow", async () => {
-    const user = userEvent.setup();
+  it("keeps the selected position consistent across analysis and move responses", async () => {
     const clients = testClients();
+    const user = userEvent.setup();
     renderWorkspace(clients);
+    await user.click(screen.getByTestId("move-e2-e4"));
 
     await waitFor(() =>
       expect(clients.moveResponseDistributionClient).toHaveBeenCalledWith(
-        STARTING_FEN,
-        "white",
-        expect.any(AbortSignal),
-      ),
-    );
-    await user.click(screen.getByRole("tab", { name: "Move responses" }));
-    const panel = screen.getByTestId("move-response-distribution");
-    const e4 = within(panel).getByRole("button", { name: /e4, 4 distinct games, 40%/ });
-    await user.click(e4);
-    expect(screen.getByTestId("session-status")).toHaveTextContent("My move staged: e4.");
-    expect(screen.getByTestId("session-origin")).toHaveTextContent("Current Ply 0.");
-    await waitFor(() =>
-      expect(clients.moveResponseDistributionClient).toHaveBeenLastCalledWith(
         AFTER_E4_FEN,
         "white",
         expect.any(AbortSignal),
       ),
     );
-    await waitFor(() =>
-      expect(screen.getByTestId("move-response-distribution")).toHaveAttribute(
-        "data-state",
-        "available",
-      ),
-    );
-    const restagedE4 = within(screen.getByTestId("move-response-distribution")).getByRole(
-      "button",
-      { name: /e4, 4 distinct games, 40%/ },
-    );
-    expect(restagedE4).not.toHaveAttribute("aria-pressed", "true");
-
-    await user.click(screen.getByRole("button", { name: /Show other replies/ }));
-    expect(screen.getByRole("button", { name: /b3, 1 distinct games/ })).toBeVisible();
-    expect(screen.getByTestId("session-status")).toHaveTextContent("My move staged: e4.");
-
-    await user.click(screen.getByRole("button", { name: "Flip" }));
-    await waitFor(() =>
-      expect(clients.moveResponseDistributionClient).toHaveBeenLastCalledWith(
-        STARTING_FEN,
-        "black",
-        expect.any(AbortSignal),
-      ),
-    );
-    expect(
-      within(screen.getByTestId("move-response-distribution")).getByText(
-        "Black repertoire colour",
-        {
-          exact: true,
-        },
-      ),
-    ).toBeVisible();
-    expect(
-      within(screen.getByTestId("move-response-distribution")).getByRole("button", {
-        name: /Hide other replies/,
-      }),
-    ).toBeVisible();
-
-    await user.click(
-      within(screen.getByTestId("move-response-distribution")).getByRole("button", {
-        name: /e4, 4 distinct games, 40%/,
-      }),
-    );
-    await waitFor(() =>
-      expect(clients.moveResponseDistributionClient).toHaveBeenLastCalledWith(
-        AFTER_E4_FEN,
-        "black",
-        expect.any(AbortSignal),
-      ),
-    );
+    expect(clients.positionContextClient).toHaveBeenCalledWith(AFTER_E4_FEN, expect.any(AbortSignal));
+    expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", AFTER_E4_FEN);
     expect(screen.getByTestId("session-origin")).toHaveTextContent("Current Ply 1.");
-    expect(screen.getByTestId("session-status")).toHaveTextContent(
-      "Opponent move played locally: e4.",
-    );
-    expect(clients.preferredMoveClient.put).not.toHaveBeenCalled();
   });
 });

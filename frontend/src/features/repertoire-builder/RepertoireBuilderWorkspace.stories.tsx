@@ -23,7 +23,7 @@ import {
   mediumViewport,
   workspace,
 } from "./repertoireBuilderStoryRender";
-import { expectNoHorizontalOverflow, loadGame } from "./repertoireBuilderStoryHelpers";
+import { expectNoHorizontalOverflow, loadGame, storyGameClient } from "./repertoireBuilderStoryHelpers";
 
 const meta = {
   title: "Application/Repertoire Builder/Workspace",
@@ -138,6 +138,12 @@ export const Wide: Story = {
   render: () => workspace(),
   play: async ({ canvasElement }) => verifyStandardWorkspace(canvasElement),
 };
+
+export const ImportedGameSession: Story = {
+  name: "Imported game session - navigation, branching, and preferred parent",
+  render: () => workspace({ gameClient: storyGameClient() }),
+};
+
 export const Constrained: Story = {
   name: "Standard starting position - Constrained",
   parameters: constrainedViewport,

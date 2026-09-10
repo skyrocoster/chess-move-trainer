@@ -8,6 +8,7 @@ const STORY_IDS = {
   wide: "application-repertoire-builder-workspace--wide",
   medium: "application-repertoire-builder-workspace--medium",
   constrained: "application-repertoire-builder-workspace--constrained",
+  importedGameSession: "application-repertoire-builder-workspace--imported-game-session",
   stagedMy: "application-repertoire-builder-workspace--staged-my",
   storedPrefix: "application-repertoire-builder-workspace--stored-prefix-black-subject",
   opponent: "application-repertoire-builder-workspace--opponent-immediate",
@@ -71,7 +72,7 @@ async function openStory(
 function preferredPanel(page: Page) {
   return page
     .getByTestId("repertoire-session-lane")
-    .getByRole("region", { name: "What is saved, and what is staged?" });
+    .getByRole("region", { name: "Preferred move" });
 }
 
 function responsiveStage(page: Page) {
@@ -884,6 +885,85 @@ test.describe("Repertoire Builder Storybook surface", () => {
     await expectPositionSquares(page, "e8", 1);
     await expect(page.getByTestId("session-origin")).toHaveText(/Current Ply 0/);
     await checkA11y(page);
+  });
+
+  test("proves imported game session navigation, immediate branching, return, and preferred parent", async ({ page }) => {
+    await openStory(page, STORY_IDS.importedGameSession, 1280, 1000);
+
+    const root = page.locator(STORYBOOK_ROOT);
+    const history = page.getByTestId("repertoire-board-lane").getByTestId("board-move-history");
+    const next = page.getByRole("button", { name: "Next" });
+    const previous = page.getByRole("button", { name: "Previous" });
+    const engineLane = page.getByTestId("repertoire-engine-lane");
+
+    await page.getByLabel("Game UUID").fill(GAME_UUID);
+    await page.getByRole("button", { name: "Load game" }).click();
+    await expect(page.getByTestId("session-origin")).toContainText(
+      "complete game loaded at Ply 0",
+    );
+    await expectSessionHistory(page, [
+      "Initial position",
+      "White, move 1, e4",
+      "Black, move 1, e5",
+      "White, move 2, Nf3",
+    ]);
+    await expectActiveSessionHistoryEntry(page, "Initial position");
+    await expect(next).toBeEnabled();
+    await expect(previous).toBeDisabled();
+    await expect(root).not.toContainText("1. e4 e5 2. Nf3");
+    await expect(root).not.toContainText("https://www.chess.com");
+    await expect(root).not.toContainText("trainer-id");
+
+    await next.click();
+    await expectActiveSessionHistoryEntry(page, "White, move 1, e4");
+    await expect(page.getByTestId("session-origin")).toContainText("Current Ply 1.");
+    await next.click();
+    await expectActiveSessionHistoryEntry(page, "Black, move 1, e5");
+    await expect(page.getByTestId("session-origin")).toContainText("Current Ply 2.");
+    await next.click();
+    await expectActiveSessionHistoryEntry(page, "White, move 2, Nf3");
+    await expect(page.getByTestId("session-origin")).toContainText("Current Ply 3.");
+    await expect(next).toBeDisabled();
+
+    await history.getByRole("button", { name: "Initial position" }).click();
+    await expectActiveSessionHistoryEntry(page, "Initial position");
+    await expect(previous).toBeDisabled();
+
+    const responsesTab = engineLane.getByRole("tab", { name: "Move responses" });
+    await responsesTab.click();
+    const distribution = engineLane.getByTestId("move-response-distribution");
+    await expect(distribution).toHaveAttribute("data-state", "available");
+
+    await distribution.getByRole("button", { name: /^e4, 4 distinct games/ }).click();
+    await expect(page.getByTestId("session-origin")).toContainText("Current Ply 1.");
+    await expectActiveSessionHistoryEntry(page, "White, move 1, e4");
+    await expect(preferredPanel(page)).toHaveAttribute("data-state", "first-choice");
+    await expect(preferredPanel(page).getByRole("button", { name: "Save e4", exact: true })).toBeVisible();
+
+    await distribution.getByRole("button", { name: /^c5, 3 distinct games/ }).click();
+    await expect(page.getByLabel("Temporary branch", { exact: true })).toBeVisible();
+    await expect(page.getByTestId("branch-current-ply")).toContainText("Current ply 2");
+    await expectSessionHistory(page, [
+      "Initial position",
+      "White, move 1, e4",
+      "Black, move 1, c5",
+    ]);
+    await expectActiveSessionHistoryEntry(page, "Black, move 1, c5");
+
+    await history.getByRole("button", { name: "White, move 1, e4" }).click();
+    await distribution.getByRole("button", { name: /^c6, 1 distinct games/ }).click();
+    await expectActiveSessionHistoryEntry(page, "Black, move 1, c6");
+    await expect(history.getByRole("button", { name: "Black, move 1, c5" })).toHaveCount(0);
+
+    await page
+      .getByLabel("Temporary branch", { exact: true })
+      .getByRole("button", { name: "Reset", exact: true })
+      .click();
+    await expect(page.getByLabel("Temporary branch", { exact: true })).toHaveCount(0);
+    await expect(page.getByTestId("session-status")).toContainText("Returned to the imported game.");
+    await expectActiveSessionHistoryEntry(page, "White, move 1, e4");
+    await expect(next).toBeEnabled();
+    await expect(preferredPanel(page).getByRole("button", { name: "Save e4", exact: true })).toBeVisible();
   });
 
   test("proves preserved move-history navigation and responsive focus semantics", async ({ page }) => {

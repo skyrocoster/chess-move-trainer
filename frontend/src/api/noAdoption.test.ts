@@ -8,29 +8,60 @@ const dirname = path.dirname(fileURLToPath(import.meta.url));
 const srcDir = path.resolve(dirname, "..");
 
 const SOURCE_EXTENSIONS = new Set([".ts", ".tsx"]);
+const ALLOWED_RUNTIME_CLIENT_IMPORTS: Record<string, ReadonlySet<string>> = {
+  "features/status/StatusPage.tsx": new Set(["getHealthOptions"]),
+  "features/repertoire-builder/RepertoireBuilderWorkspace.tsx": new Set(["getGame"]),
+};
 
-function collectSourceFiles(dir: string): string[] {
+function collectProductionSourceFiles(dir: string): string[] {
   const files: string[] = [];
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     const entryPath = path.join(dir, entry.name);
     if (entry.isDirectory()) {
-      // The central module and its tests legitimately live under src/api/.
       if (entryPath === path.resolve(dirname)) continue;
-      files.push(...collectSourceFiles(entryPath));
-    } else if (SOURCE_EXTENSIONS.has(path.extname(entry.name))) {
+      files.push(...collectProductionSourceFiles(entryPath));
+    } else if (
+      SOURCE_EXTENSIONS.has(path.extname(entry.name)) &&
+      !entry.name.includes(".test.") &&
+      !entry.name.includes(".stories.")
+    ) {
       files.push(entryPath);
     }
   }
   return files;
 }
 
-describe("SETUP-02 no production adoption", () => {
-  it("no production module imports the generated directory or the central client module", () => {
+function runtimeClientImportNames(content: string): string[] | null {
+  const match = content.match(/import\s+(?!type\b)\{([^}]*)\}\s+from\s+["'][^"']*api\/client["']/m);
+  return match?.[1]
+    .split(",")
+    .map((name) => name.trim().split(/\s+as\s+/)[0] ?? "")
+    .filter(Boolean) ?? null;
+}
+
+describe("generated client adoption guard", () => {
+  it("allows only the approved Status and Repertoire runtime imports", () => {
     const offenders: string[] = [];
-    for (const filePath of collectSourceFiles(srcDir)) {
+    for (const filePath of collectProductionSourceFiles(srcDir)) {
       const content = readFileSync(filePath, "utf8");
-      if (content.includes("api/generated") || content.includes("api/client")) {
-        offenders.push(path.relative(srcDir, filePath));
+      const relativePath = path.relative(srcDir, filePath).replaceAll(path.sep, "/");
+      const names = runtimeClientImportNames(content);
+      if (names === null) continue;
+
+      const allowed = ALLOWED_RUNTIME_CLIENT_IMPORTS[relativePath];
+      if (allowed === undefined || names.some((name) => !allowed.has(name))) {
+        offenders.push(relativePath);
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
+
+  it("prohibits direct generated-directory imports outside the central API module", () => {
+    const offenders: string[] = [];
+    for (const filePath of collectProductionSourceFiles(srcDir)) {
+      const content = readFileSync(filePath, "utf8");
+      if (content.includes("api/generated")) {
+        offenders.push(path.relative(srcDir, filePath).replaceAll(path.sep, "/"));
       }
     }
     expect(offenders).toEqual([]);

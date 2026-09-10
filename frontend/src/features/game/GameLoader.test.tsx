@@ -21,36 +21,26 @@ const rawStyles = readFileSync(join(here, "GameLoader.module.css"), "utf8");
 
 type LoaderHarnessProps = Omit<
   ComponentProps<typeof GameLoader>,
-  "gameUuid" | "ply" | "onGameUuidChange" | "onPlyChange"
+  "gameUuid" | "onGameUuidChange"
 > & {
   gameUuid?: string;
-  ply?: string;
   onGameUuidChange?: (value: string) => void;
-  onPlyChange?: (value: string) => void;
 };
 
 function ControlledGameLoader({
   gameUuid: initialGameUuid = "",
-  ply: initialPly = "",
   onGameUuidChange,
-  onPlyChange,
   ...props
 }: LoaderHarnessProps) {
   const [gameUuid, setGameUuid] = useState(initialGameUuid);
-  const [ply, setPly] = useState(initialPly);
 
   return (
     <GameLoader
       {...props}
       gameUuid={gameUuid}
-      ply={ply}
       onGameUuidChange={(value) => {
         setGameUuid(value);
         onGameUuidChange?.(value);
-      }}
-      onPlyChange={(value) => {
-        setPly(value);
-        onPlyChange?.(value);
       }}
     />
   );
@@ -61,39 +51,24 @@ function renderLoader(props: LoaderHarnessProps = {}) {
 }
 
 describe("GameLoader", () => {
-  it("follows parent-controlled values and emits raw field changes", async () => {
+  it("follows parent-controlled UUID values and emits field changes", async () => {
     const onGameUuidChange = vi.fn();
-    const onPlyChange = vi.fn();
     const { rerender } = render(
       <GameLoader
         gameUuid=""
-        ply=""
         onGameUuidChange={onGameUuidChange}
-        onPlyChange={onPlyChange}
       />,
     );
     const user = userEvent.setup();
 
     await user.type(screen.getByLabelText("Game UUID"), "x");
-    await user.type(screen.getByLabelText(/Ply/), "7");
-
     expect(onGameUuidChange).toHaveBeenLastCalledWith("x");
-    expect(onPlyChange).toHaveBeenLastCalledWith("7");
 
-    rerender(
-      <GameLoader
-        gameUuid={GAME_UUID}
-        ply="2"
-        onGameUuidChange={onGameUuidChange}
-        onPlyChange={onPlyChange}
-      />,
-    );
-
+    rerender(<GameLoader gameUuid={GAME_UUID} onGameUuidChange={onGameUuidChange} />);
     expect(screen.getByLabelText("Game UUID")).toHaveValue(GAME_UUID);
-    expect(screen.getByLabelText(/Ply/)).toHaveValue("2");
   });
 
-  it("starts expanded with optional Ply and native form controls", () => {
+  it("starts expanded with only the UUID field", () => {
     renderLoader();
 
     expect(screen.getByRole("button", { name: "Game Loader" })).toHaveAttribute(
@@ -101,66 +76,36 @@ describe("GameLoader", () => {
       "true",
     );
     expect(screen.getByLabelText("Game UUID")).toBeVisible();
-    expect(screen.getByLabelText(/Ply/)).toBeVisible();
+    expect(screen.queryByLabelText(/Ply/)).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Load game" })).toHaveAttribute("type", "submit");
   });
 
-  it("accepts blank Ply as zero without adding a request concern to the component", async () => {
+  it("trims a valid UUID only for submission", async () => {
+    const onGameUuidChange = vi.fn();
     const onSubmit = vi.fn();
     const user = userEvent.setup();
-    renderLoader({ onSubmit });
+    renderLoader({ onGameUuidChange, onSubmit });
 
-    await user.type(screen.getByLabelText("Game UUID"), GAME_UUID);
+    await user.type(screen.getByLabelText("Game UUID"), ` ${GAME_UUID} `);
     await user.click(screen.getByRole("button", { name: "Load game" }));
 
-    expect(onSubmit).toHaveBeenCalledWith({ gameUuid: GAME_UUID, ply: "" });
+    expect(onGameUuidChange).toHaveBeenLastCalledWith(` ${GAME_UUID} `);
+    expect(onSubmit).toHaveBeenCalledWith({ gameUuid: GAME_UUID });
   });
 
-  it("rejects malformed UUID and non-whole Ply before submission", async () => {
+  it("rejects a malformed UUID before submission", async () => {
     const onSubmit = vi.fn();
     const user = userEvent.setup();
     renderLoader({ onSubmit });
 
     await user.type(screen.getByLabelText("Game UUID"), "not-a-uuid");
-    await user.type(screen.getByLabelText(/Ply/), "-1");
     await user.click(screen.getByRole("button", { name: "Load game" }));
 
     expect(screen.getByRole("alert")).toHaveTextContent("valid game UUID");
     expect(onSubmit).not.toHaveBeenCalled();
   });
 
-  it("rejects a non-whole Ply after accepting a valid UUID", async () => {
-    const onSubmit = vi.fn();
-    const user = userEvent.setup();
-    renderLoader({ onSubmit });
-
-    await user.type(screen.getByLabelText("Game UUID"), GAME_UUID);
-    await user.type(screen.getByLabelText(/Ply/), "-1");
-    await user.click(screen.getByRole("button", { name: "Load game" }));
-
-    expect(screen.getByRole("alert")).toHaveTextContent("Enter a whole Ply of zero or greater");
-    expect(screen.getByLabelText("Game UUID")).toHaveAttribute("aria-invalid", "false");
-    expect(screen.getByLabelText(/Ply/)).toHaveAttribute("aria-invalid", "true");
-    expect(onSubmit).not.toHaveBeenCalled();
-  });
-
-  it("trims valid UUID and Ply values only for submission", async () => {
-    const onGameUuidChange = vi.fn();
-    const onPlyChange = vi.fn();
-    const onSubmit = vi.fn();
-    const user = userEvent.setup();
-    renderLoader({ onGameUuidChange, onPlyChange, onSubmit });
-
-    await user.type(screen.getByLabelText("Game UUID"), ` ${GAME_UUID} `);
-    await user.type(screen.getByLabelText(/Ply/), " 2 ");
-    await user.click(screen.getByRole("button", { name: "Load game" }));
-
-    expect(onGameUuidChange).toHaveBeenLastCalledWith(` ${GAME_UUID} `);
-    expect(onPlyChange).toHaveBeenLastCalledWith(" 2 ");
-    expect(onSubmit).toHaveBeenCalledWith({ gameUuid: GAME_UUID, ply: "2" });
-  });
-
-  it("clears validation feedback after either field changes", async () => {
+  it("clears validation feedback after the UUID changes", async () => {
     const user = userEvent.setup();
     renderLoader();
 
@@ -172,17 +117,28 @@ describe("GameLoader", () => {
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 
-  it("keeps Reset available while loading and exposes a polite loading state", () => {
-    renderLoader({ status: "loading", gameUuid: GAME_UUID });
+  it("keeps Reset available while loading and clears the controlled UUID", async () => {
+    const onGameUuidChange = vi.fn();
+    const onReset = vi.fn();
+    const user = userEvent.setup();
+    renderLoader({
+      status: "loading",
+      gameUuid: GAME_UUID,
+      onGameUuidChange,
+      onReset,
+    });
 
     expect(screen.getByRole("button", { name: "Load game" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Reset" })).toBeEnabled();
     expect(screen.getByRole("status")).toHaveTextContent("Loading the complete game");
+    await user.click(screen.getByRole("button", { name: "Reset" }));
+
+    expect(onGameUuidChange).toHaveBeenLastCalledWith("");
+    expect(onReset).toHaveBeenCalledOnce();
   });
 
   it.each([
     ["game_not_found", "Game not found"],
-    ["position_not_found", "Position not found"],
     ["corpus_unavailable", "Corpus unavailable"],
     ["game_unavailable", "Game unavailable"],
     ["unexpected_failure", "Unable to load game"],
@@ -193,43 +149,19 @@ describe("GameLoader", () => {
     expect(screen.getByRole("alert")).toHaveAttribute("aria-live", "assertive");
   });
 
-  it("keeps Reset available while loading and emits empty controlled values", async () => {
-    const onGameUuidChange = vi.fn();
-    const onPlyChange = vi.fn();
-    const onReset = vi.fn();
-    const user = userEvent.setup();
-    renderLoader({
-      status: "loading",
-      gameUuid: GAME_UUID,
-      ply: "2",
-      onGameUuidChange,
-      onPlyChange,
-      onReset,
-    });
-
-    expect(screen.getByRole("status")).toHaveAttribute("aria-live", "polite");
-    await user.click(screen.getByRole("button", { name: "Reset" }));
-
-    expect(onGameUuidChange).toHaveBeenLastCalledWith("");
-    expect(onPlyChange).toHaveBeenLastCalledWith("");
-    expect(onReset).toHaveBeenCalledOnce();
-  });
-
   it("clears local values and calls reset", async () => {
     const onReset = vi.fn();
     const user = userEvent.setup();
     renderLoader({ onReset });
 
     await user.type(screen.getByLabelText("Game UUID"), GAME_UUID);
-    await user.type(screen.getByLabelText(/Ply/), "2");
     await user.click(screen.getByRole("button", { name: "Reset" }));
 
     expect(screen.getByLabelText("Game UUID")).toHaveValue("");
-    expect(screen.getByLabelText(/Ply/)).toHaveValue("");
     expect(onReset).toHaveBeenCalledOnce();
   });
 
-  it("toggles the default-open disclosure and preserves native keyboard focus order", async () => {
+  it("preserves native keyboard focus order", async () => {
     const user = userEvent.setup();
     renderLoader();
     const disclosure = screen.getByRole("button", { name: "Game Loader" });
@@ -237,15 +169,10 @@ describe("GameLoader", () => {
     await user.click(disclosure);
     expect(disclosure).toHaveAttribute("aria-expanded", "false");
     expect(screen.queryByLabelText("Game UUID")).not.toBeInTheDocument();
-
     await user.click(disclosure);
-    expect(disclosure).toHaveAttribute("aria-expanded", "true");
-
     expect(disclosure).toHaveFocus();
     await user.tab();
     expect(screen.getByLabelText("Game UUID")).toHaveFocus();
-    await user.tab();
-    expect(screen.getByLabelText(/Ply/)).toHaveFocus();
     await user.tab();
     expect(screen.getByRole("button", { name: "Load game" })).toHaveFocus();
     await user.tab();

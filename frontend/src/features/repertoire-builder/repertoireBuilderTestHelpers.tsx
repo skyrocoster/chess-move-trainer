@@ -9,6 +9,7 @@ import type {
   EvaluationObservation,
   EvaluationStatus,
 } from "../analysis/analysisApi";
+import type { GameDetailResponse } from "../../api/client";
 import type { PositionContextClient } from "../position-context/positionContextApi";
 import { GAME, GAME_UUID } from "../game/gameFixtures";
 import type {
@@ -20,15 +21,41 @@ import type {
   PreferredMoveMutationResult,
   PreferredMoveResponse,
 } from "./preferredMoveApi";
-import RepertoireBuilderWorkspace from "./RepertoireBuilderWorkspace";
+import RepertoireBuilderWorkspace, { type GameDetailClient } from "./RepertoireBuilderWorkspace";
+
+export { GAME_UUID } from "../game/gameFixtures";
 
 export const BOARD_LABEL = "Chess board: standard starting position, White at the bottom";
 export const STORED_BOARD_LABEL = `Chess board: game ${GAME_UUID}, ply 2, Black at the bottom`;
 export const STARTING_FEN = GAME.positions[0].fen;
-export const AFTER_E4_FEN = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1";
-export const AFTER_E5_FEN = "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq e6 0 2";
-export const AFTER_D4_FEN = "rnbqkbnr/pppppppp/8/8/3P4/8/PPP1PPPP/RNBQKBNR b KQkq d3 0 1";
+export const AFTER_E4_FEN = GAME.positions[1].fen;
+export const AFTER_E5_FEN = GAME.positions[2].fen;
+export const AFTER_D4_FEN = "rnbqkbnr/pppppppp/8/8/3P4/8/PPP1PPPP/RNBQKBNR b KQkq - 0 1";
 export const AFTER_E8_KNIGHT_FEN = "k3N3/8/8/8/8/8/8/4K3 b - - 0 1";
+export const AFTER_NF3_FEN = "rnbqkbnr/pppp1ppp/8/4p3/5N2/8/PPPP1PPP/RNBQKB1R b KQkq - 1 2";
+
+export const GAME_DETAIL: GameDetailResponse = {
+  ended_at_utc: null,
+  game_uuid: GAME_UUID,
+  occurrences: [
+    { ply: 0, fen: STARTING_FEN, move_uci: "e2e4" },
+    { ply: 1, fen: AFTER_E4_FEN, move_uci: "e7e5" },
+    { ply: 2, fen: AFTER_E5_FEN, move_uci: "g1f3" },
+    { ply: 3, fen: AFTER_NF3_FEN, move_uci: null },
+  ],
+  opponent_chesscom_uuid: null,
+  opponent_rating: null,
+  original_pgn: "1. e4 e5 2. Nf3",
+  source_url: "https://www.chess.com/game/live/140399891142",
+  started_at_utc: null,
+  termination_reason: null,
+  time_class: "blitz",
+  time_control: "300+0",
+  trainer_chesscom_uuid: "trainer-id",
+  trainer_color: "white",
+  trainer_outcome: null,
+  trainer_rating: null,
+};
 export const CONTEXT = {
   overall_exists: true,
   white_count: 0,
@@ -222,6 +249,10 @@ export function testClients(
   return { preferredMoveClient, positionContextClient, moveResponseDistributionClient };
 }
 
+export function gameClient(detail: GameDetailResponse = GAME_DETAIL): GameDetailClient {
+  return vi.fn(async () => ({ data: detail, error: undefined }));
+}
+
 export function renderWorkspace(
   props: ComponentProps<typeof RepertoireBuilderWorkspace> = {},
 ): ReturnType<typeof render> {
@@ -229,6 +260,7 @@ export function renderWorkspace(
   return render(
     <RepertoireBuilderWorkspace
       analysisClient={noAnalysisClient()}
+      gameClient={gameClient()}
       preferredMoveClient={clients.preferredMoveClient}
       positionContextClient={clients.positionContextClient}
       moveResponseDistributionClient={clients.moveResponseDistributionClient}

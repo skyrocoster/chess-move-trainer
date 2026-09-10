@@ -111,7 +111,7 @@ function statusLabel({
   }
 }
 
-function stagedEmptyDescription(
+function selectedEmptyDescription(
   model: RepertoirePositionModel,
   contextLoading: boolean,
   contextError: PositionContextFailureCode | null,
@@ -120,15 +120,15 @@ function stagedEmptyDescription(
     return undefined;
   }
   if (model.relationship === "empty")
-    return "Stage a legal move to propose the first saved choice.";
+    return "Play a legal move to select the first saved choice.";
   if (model.relationship === "saved" && model.saved) {
-    return `Stage a legal move to propose replacing ${model.saved.move.san}.`;
+    return `Play a legal move to propose replacing ${model.saved.move.san}.`;
   }
   return undefined;
 }
 
 type RuntimeChoiceBoxProps = {
-  label: "Saved" | "Staged";
+  label: "Saved" | "Selected";
   semanticLabel: string;
   tone: "warning" | "success" | "neutral" | "blocked";
   move?: { san: string; uci?: string | null } | null;
@@ -310,7 +310,7 @@ export function PreferredMovePanel({
 
   const preferredKnown = model.savedPresence !== "unknown";
   const savedMove = preferredKnown ? (model.saved?.move ?? null) : null;
-  const stagedMove = model.staged?.move ?? null;
+  const selectedMove = model.selected;
   const hasPreferredError = preferredError !== null;
   const hasContextError = contextError !== null;
   const preferredReady = preferredKnown || preferredLoading || hasPreferredError;
@@ -320,12 +320,12 @@ export function PreferredMovePanel({
     model.saveability === "savable" &&
     contextReady &&
     preferredReady &&
-    model.staged !== null &&
+    model.selected !== null &&
     (model.relationship === "first-choice" || model.relationship === "replacement") &&
     !hasPreferredError;
   const saveRelationship =
     model.ownTurn &&
-    model.staged !== null &&
+    model.selected !== null &&
     (model.relationship === "first-choice" || model.relationship === "replacement");
   const showSave =
     (mutation === "save" || (saveRelationship && model.saveability === "savable")) &&
@@ -342,12 +342,12 @@ export function PreferredMovePanel({
   const savedRelation = model.savedPresence === "present";
   const showRemove = model.ownTurn && savedRelation && !hasPreferredError;
   const persistenceDisabled = mutation !== null || preferredLoading || contextLoading;
-  const stagedTone =
+  const selectedTone =
     !model.ownTurn || model.saveability === "unsavable"
       ? "blocked"
       : model.relationship === "matching"
         ? "matching"
-        : stagedMove
+        : selectedMove
           ? "proposal"
           : "empty";
   const savedEmptyTitle = preferredKnown
@@ -366,11 +366,11 @@ export function PreferredMovePanel({
       : contextError
         ? contextFailureMessage(contextError)
         : null);
-  const emptyDescription = stagedEmptyDescription(model, contextLoading, contextError);
-  const stagedEmptyTitle =
+  const emptyDescription = selectedEmptyDescription(model, contextLoading, contextError);
+  const selectedEmptyTitle =
     model.relationship === "saved" && model.saved
-      ? `Stage a move to propose replacing ${model.saved.move.san}`
-       : "No move staged";
+      ? `Select a move to propose replacing ${model.saved.move.san}`
+      : "No move selected";
   const savedSubLabel = savedMove?.uci ?? undefined;
   const canonicalNormal =
     model.ownTurn &&
@@ -429,7 +429,7 @@ export function PreferredMovePanel({
         </p>
       ) : null}
       {!model.ownTurn ? (
-        <p className={styles.gate}>Wait for your turn to stage or save a preferred move.</p>
+        <p className={styles.gate}>Wait for your turn to select or save a preferred move.</p>
       ) : null}
 
       {preferredError ? (
@@ -461,7 +461,7 @@ export function PreferredMovePanel({
           onActivate={savedMove && model.ownTurn ? onPlaySavedMove : undefined}
           activationLabel={
             savedMove
-              ? `Current saved choice: ${savedMove.san}; play and stage this move.`
+               ? `Current saved choice: ${savedMove.san}; play this move.`
               : undefined
           }
           disabled={mutation !== null || preferredLoading}
@@ -469,22 +469,22 @@ export function PreferredMovePanel({
         />
         <RuntimeConnector />
         <RuntimeChoiceBox
-          label="Staged"
-          semanticLabel="Staged move"
+          label="Selected"
+          semanticLabel="Selected move"
           tone={
-            stagedTone === "proposal"
+            selectedTone === "proposal"
               ? "warning"
-              : stagedTone === "matching"
+              : selectedTone === "matching"
                 ? "success"
-                : stagedTone === "blocked"
+                : selectedTone === "blocked"
                   ? "blocked"
                   : "neutral"
           }
-          move={stagedMove ? { san: stagedMove.san, uci: model.staged?.uci } : null}
-          subLabel={stagedMove ? model.staged?.uci ?? undefined : undefined}
-          emptyTitle={stagedEmptyTitle}
-          emptyDescription={stagedEmptyTitle === "No move staged" ? emptyDescription : undefined}
-          data-testid="staged-move"
+          move={selectedMove ? { san: selectedMove.san, uci: selectedMove.uci } : null}
+          subLabel={selectedMove ? selectedMove.uci : undefined}
+          emptyTitle={selectedEmptyTitle}
+          emptyDescription={selectedEmptyTitle === "No move selected" ? emptyDescription : undefined}
+          data-testid="selected-move"
         />
       </div>
 
@@ -499,7 +499,7 @@ export function PreferredMovePanel({
             {showSave ? (
               <SavePreferredMoveButton
                 className={styles.primaryAction}
-                label={stagedMove ? `Save ${stagedMove.san}` : undefined}
+                label={selectedMove ? `Save ${selectedMove.san}` : undefined}
                 pending={mutation === "save"}
                 disabled={!canSave || persistenceDisabled}
                 onClick={onSave}

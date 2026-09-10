@@ -1,3 +1,4 @@
+import { Chess, type Square } from "chess.js";
 import {
   useCallback,
   useEffect,
@@ -11,7 +12,13 @@ import {
 
 import { type CalendarDateValue } from "../design-system/CalendarDate";
 import { normalizeToUtcMidnight } from "../design-system/CalendarDateUtils";
-import type { ChessSide } from "../chess/chessPrimitives";
+import { strictFen, type ChessSide } from "../chess/chessPrimitives";
+import type { PromotionPiece } from "../board-adapter/PromotionPicker";
+import {
+  applySessionMove,
+  type PositionPickerSessionBoundary,
+  type SessionMove,
+} from "./positionPickerSessionBoundary";
 import {
   type PositionContextClient,
   type PositionContextResponse,
@@ -25,13 +32,6 @@ import {
 } from "./preferredMoveApi";
 import { usePreferredMoveState } from "./preferredMoveState";
 import { deriveRepertoirePositionModel } from "./repertoireWorkflowModel";
-import {
-  commitStagedMove,
-  playAndStagePositionPickerMove,
-  positionPickerSelectedTransition,
-  type PositionPickerMove,
-  type PositionPickerSession,
-} from "./positionPickerSession";
 import type { PreferredMoveMutationKind } from "./PreferredMovePanel";
 
 export const PREFERRED_MOVE_DATE_UNAVAILABLE = "Date changes are temporarily unavailable";
@@ -51,11 +51,12 @@ const unavailableDateCapability: PreferredMoveDateCapability = {
 };
 
 type WorkflowArgs = {
-  session: PositionPickerSession;
+  session: PositionPickerSessionBoundary;
   sideToMove: ChessSide;
+  bottomColor: ChessSide;
   preferredMoveClient?: PreferredMoveClient;
   positionContextClient?: PositionContextClient;
-  setSession: Dispatch<SetStateAction<PositionPickerSession>>;
+  setSession: Dispatch<SetStateAction<PositionPickerSessionBoundary>>;
   setSessionStatus: Dispatch<SetStateAction<string>>;
 };
 
@@ -82,7 +83,13 @@ type PendingRefresh = {
   id: number;
   key: number;
   kind: PreferredMoveMutationKind;
-  stagedUci: string | null;
+  selectedUci: string | null;
+};
+
+type PositionPickerMove = {
+  sourceSquare: Square;
+  targetSquare: Square;
+  promotion?: PromotionPiece;
 };
 
 function moveFromUci(uci: string): PositionPickerMove | null {
@@ -98,9 +105,35 @@ function moveFromUci(uci: string): PositionPickerMove | null {
   };
 }
 
+function sideFromFen(fen: string): ChessSide {
+  return new Chess(fen).turn() === "w" ? "white" : "black";
+}
+
+function sessionMove(
+  session: PositionPickerSessionBoundary,
+  move: PositionPickerMove,
+): SessionMove | null {
+  const chess = new Chess(session.currentPosition.fen);
+  try {
+    const played = chess.move({
+      from: move.sourceSquare,
+      to: move.targetSquare,
+      ...(move.promotion ? { promotion: move.promotion } : {}),
+    });
+    return {
+      outgoingUCI: `${move.sourceSquare}${move.targetSquare}${move.promotion ?? ""}`,
+      resultingFEN: strictFen(chess),
+      san: played.san,
+    };
+  } catch {
+    return null;
+  }
+}
+
 export function usePreferredMoveWorkflow({
   session,
   sideToMove,
+  bottomColor,
   preferredMoveClient = defaultPreferredMoveClient,
   positionContextClient = fetchPositionContext,
   setSession,
@@ -124,11 +157,14 @@ export function usePreferredMoveWorkflow({
     (fen: string, signal?: AbortSignal) => positionContextClient(fen, signal),
     [positionContextClient],
   );
-  const selectedTransition = useMemo(() => positionPickerSelectedTransition(session), [session]);
+  const selectedTransition = session.selectedTransition;
   const focusedOwnerTransition =
-    selectedTransition?.move.color === session.bottomColor ? selectedTransition : null;
+    selectedTransition !== null && sideFromFen(selectedTransition.parentFEN) === bottomColor
+      ? selectedTransition
+      : null;
   const preferredPositionFen =
-    focusedOwnerTransition?.sourcePosition.fen ?? session.currentPosition.fen;
+    focusedOwnerTransition?.parentFEN ?? session.currentPosition.fen;
+  const preferredSideToMove = sideFromFen(preferredPositionFen);
   const preferredState = usePreferredMoveState(preferredPositionFen, preferredReader, refreshToken);
   const contextState = usePositionContextState(
     session.currentPosition.fen,
@@ -140,10 +176,10 @@ export function usePreferredMoveWorkflow({
       deriveRepertoirePositionModel({
         context: contextState.context,
         preferredMove: preferredState.preferredMove,
-        sideToMove,
-        bottomColor: session.bottomColor,
+        sideToMove: preferredSideToMove,
+        bottomColor,
         sourceFen: preferredPositionFen,
-        stagedMove: session.stagedMove,
+        selectedTransition: focusedOwnerTransition,
         preferredMoveKnown:
           preferredState.preferredMove !== null ||
           (!preferredState.loading && preferredState.error === null),
@@ -154,9 +190,9 @@ export function usePreferredMoveWorkflow({
       preferredState.error,
       preferredState.loading,
       preferredState.preferredMove,
-      session.bottomColor,
-      session.stagedMove,
-      sideToMove,
+      bottomColor,
+      session.selectedTransition,
+      preferredSideToMove,
     ],
   );
 
@@ -176,7 +212,7 @@ export function usePreferredMoveWorkflow({
 
   useEffect(() => {
     resetPositionState();
-  }, [resetPositionState, session.currentPosition.fen, session.bottomColor]);
+  }, [resetPositionState, session.currentPosition.fen, bottomColor, preferredPositionFen]);
 
   const persistedDate = useMemo(() => {
     if (!positionModel.saved?.effectiveAt) {
@@ -206,7 +242,7 @@ export function usePreferredMoveWorkflow({
     const refreshed = preferredState.preferredMove;
     const confirmed =
       pendingRefresh.kind === "save"
-        ? refreshed?.state === "assigned" && refreshed.move?.uci === pendingRefresh.stagedUci
+        ? refreshed?.state === "assigned" && refreshed.move?.uci === pendingRefresh.selectedUci
         : refreshed?.state === "unassigned";
     if (!confirmed) {
       setPendingRefresh(null);
@@ -216,15 +252,6 @@ export function usePreferredMoveWorkflow({
       return;
     }
 
-    if (pendingRefresh.kind === "save") {
-      setSession((current) => {
-        const staged = current.stagedMove;
-        const stagedUci = staged
-          ? `${staged.sourceSquare}${staged.targetSquare}${staged.promotion ?? ""}`
-          : null;
-        return stagedUci === pendingRefresh.stagedUci ? commitStagedMove(current) : current;
-      });
-    }
     setPendingRefresh(null);
     setMutation(null);
     setFailedMutation(null);
@@ -243,7 +270,7 @@ export function usePreferredMoveWorkflow({
 
   const runMutation = useCallback(
     async (kind: PreferredMoveMutationKind) => {
-      const ownTurn = sideToMove === session.bottomColor;
+      const ownTurn = positionModel.ownTurn;
       const mutationFen = positionModel.sourceFen;
       const mutationSavedMove = positionModel.saved?.move ?? null;
       const canSave =
@@ -251,12 +278,12 @@ export function usePreferredMoveWorkflow({
         positionModel.saveability === "savable" &&
         positionModel.savedPresence !== "unknown" &&
         positionModel.relationship !== "matching" &&
-        positionModel.staged !== null &&
+        positionModel.selected !== null &&
         !preferredState.loading &&
         preferredState.error === null &&
         !contextState.loading &&
         contextState.error === null;
-      const move = positionModel.staged?.move ?? null;
+      const move = positionModel.selected;
 
       if (
         mutation !== null ||
@@ -290,7 +317,7 @@ export function usePreferredMoveWorkflow({
             : await preferredMoveClient.put(
                 {
                   fen: mutationFen,
-                  move_uci: `${move!.sourceSquare}${move!.targetSquare}${move!.promotion ?? ""}`,
+                  move_uci: move!.uci,
                   effective_at: "",
                 },
                 { signal: controller.signal },
@@ -316,7 +343,7 @@ export function usePreferredMoveWorkflow({
         id,
         key: nextRefreshToken,
         kind,
-        stagedUci: kind === "save" ? (positionModel.staged?.uci ?? null) : null,
+        selectedUci: kind === "save" ? (positionModel.selected?.uci ?? null) : null,
       });
       setRefreshToken(nextRefreshToken);
     },
@@ -330,7 +357,7 @@ export function usePreferredMoveWorkflow({
       positionModel.saveability,
       positionModel.sourceFen,
       positionModel.saved,
-      positionModel.staged,
+      positionModel.selected,
       preferredMoveClient,
       preferredState.error,
       preferredState.loading,
@@ -343,18 +370,21 @@ export function usePreferredMoveWorkflow({
   const onPlaySavedMove = useCallback(() => {
     const savedMove = positionModel.saved?.move ?? null;
     const move = savedMove ? moveFromUci(savedMove.uci) : null;
-    const result =
-      move && positionModel.ownTurn && mutation === null
-        ? playAndStagePositionPickerMove(session, move)
+    const nextMove =
+      move &&
+      positionModel.ownTurn &&
+      mutation === null &&
+      session.currentPosition.fen === positionModel.sourceFen
+        ? sessionMove(session, move)
         : null;
-    if (!result) {
+    if (nextMove === null) {
       setSessionStatus("Saved move rejected because it is illegal in the current position.");
       return;
     }
     setWorkflowError(null);
-    setSession(result.session);
-    setSessionStatus(`Saved move staged locally: ${savedMove!.san}.`);
-  }, [mutation, positionModel.ownTurn, positionModel.saved, session, setSession, setSessionStatus]);
+    setSession(applySessionMove(session, nextMove));
+    setSessionStatus(`Move played locally: ${nextMove.san}.`);
+  }, [mutation, positionModel.ownTurn, positionModel.saved, positionModel.sourceFen, session, setSession, setSessionStatus]);
 
   const onRetry = useCallback(() => {
     if (failedMutation !== null) {

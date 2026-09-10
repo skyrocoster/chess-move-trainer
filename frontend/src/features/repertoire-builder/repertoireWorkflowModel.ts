@@ -1,7 +1,8 @@
 import type { ChessSide } from "../chess/chessPrimitives";
+import { sanFromFenAndUci } from "../game/gameModel";
 import type { PositionContextResponse } from "../position-context/positionContextApi";
 import type { PreferredMoveResponse, PreferredMoveValue } from "./preferredMoveApi";
-import type { PositionPickerMoveRecord } from "./positionPickerSession";
+import type { SelectedTransition } from "./positionPickerSessionBoundary";
 
 export type PositionSaveability = "unknown" | "savable" | "unsavable";
 
@@ -21,8 +22,9 @@ export type RepertoireSavedMoveFact = {
   sourceFen: string;
 };
 
-export type RepertoireStagedMoveFact = {
-  move: PositionPickerMoveRecord;
+export type RepertoireSelectedMoveFact = {
+  transition: SelectedTransition;
+  san: string;
   uci: string;
 };
 
@@ -35,7 +37,7 @@ export type RepertoirePositionModel = {
   saveability: PositionSaveability;
   savedPresence: "unknown" | "absent" | "present";
   saved: RepertoireSavedMoveFact | null;
-  staged: RepertoireStagedMoveFact | null;
+  selected: RepertoireSelectedMoveFact | null;
   comparison: PreferredMoveComparison;
   relationship: RepertoirePositionRelationship;
 };
@@ -50,7 +52,7 @@ export function deriveRepertoirePositionModel({
   sideToMove,
   bottomColor,
   sourceFen = preferredMove?.fen ?? "",
-  stagedMove = null,
+  selectedTransition = null,
   preferredMoveKnown = true,
 }: {
   context: PositionContextResponse | null;
@@ -58,7 +60,7 @@ export function deriveRepertoirePositionModel({
   sideToMove: ChessSide;
   bottomColor: ChessSide;
   sourceFen?: string;
-  stagedMove?: PositionPickerMoveRecord | null;
+  selectedTransition?: SelectedTransition | null;
   preferredMoveKnown?: boolean;
 }): RepertoirePositionModel {
   const personalCount =
@@ -71,9 +73,13 @@ export function deriveRepertoirePositionModel({
       ? "present"
       : "absent";
   const savedMove = savedPresence === "present" ? (preferredMove?.move ?? null) : null;
-  const stagedFact =
-    stagedMove !== null && stagedMove.color === bottomColor
-      ? { move: stagedMove, uci: canonicalMoveUci(stagedMove)! }
+  const selected =
+    selectedTransition !== null && ownTurn
+      ? {
+          transition: selectedTransition,
+          san: sanFromFenAndUci(selectedTransition.parentFEN, selectedTransition.outgoingUCI),
+          uci: selectedTransition.outgoingUCI,
+        }
       : null;
   const saved =
     savedMove !== null && preferredMove !== null
@@ -82,19 +88,19 @@ export function deriveRepertoirePositionModel({
   const comparison: PreferredMoveComparison =
     savedPresence === "unknown"
       ? "unknown"
-      : saved === null || stagedFact === null
+      : saved === null || selected === null
         ? "not-applicable"
-        : stagedFact.uci === saved.move.uci
+        : selected.uci === saved.move.uci
           ? "matching"
           : "different";
   const relationship: RepertoirePositionRelationship =
     savedPresence === "unknown"
       ? "unknown"
       : saved === null
-        ? stagedFact === null
+        ? selected === null
           ? "empty"
           : "first-choice"
-        : stagedFact === null
+        : selected === null
           ? "saved"
           : comparison === "matching"
             ? "matching"
@@ -113,14 +119,8 @@ export function deriveRepertoirePositionModel({
     saveability: context === null ? "unknown" : context.overall_exists ? "savable" : "unsavable",
     savedPresence,
     saved,
-    staged: stagedFact,
+    selected,
     comparison,
     relationship,
   };
-}
-
-export function canonicalMoveUci(move: PositionPickerMoveRecord | null | undefined): string | null {
-  return move === null || move === undefined
-    ? null
-    : `${move.sourceSquare}${move.targetSquare}${move.promotion ?? ""}`;
 }

@@ -1,7 +1,9 @@
 # Database rebuild
 
-> **Status:** direction settled; CLEAN-01 through CLEAN-10, CONSUMER-01, and VIEWER-REMOVE-01 accepted
-> **Next selectable slice:** `CONSUMER-02` — migrate Repertoire game loading to generated clean game detail.
+> **Status:** direction settled; CLEAN-01 through CLEAN-10, CONSUMER-01, VIEWER-REMOVE-01, and CONSUMER-02 accepted;
+> `POSITION-INSIGHT-01` is the active prerequisite
+> **Next selectable slice:** `POSITION-INSIGHT-01` — Additive position-insight counts and explicit denominators must be
+> available before `CONSUMER-03`; see the [focused Plan](../../plans/active/database-rebuild-position-insight-01/database-rebuild-position-insight-01.md).
 > **Acceptance:** The accepted database foundation, SETUP-01, and SETUP-02 remain intact; every clean operation is created and generated individually; every retained production API workflow is migrated individually afterward; and legacy routes are retired only after their final consumers move.
 
 ## Destination
@@ -73,9 +75,13 @@ operation. No production frontend usage adopts a clean operation during API crea
   Opening Line Library behavior.
 - **Position insight:** `GET /api/positions/insight` requires `fen`, `trainer_color`, and `as_of` and always returns
   canonical position data, current opening recognition, trainer-color-filtered experience, observed outgoing moves,
-  current analysis state/result, and the date-resolved preference. It has no `include` or screen-specific variant.
-  Unseen legal positions succeed sparsely without a write. Move history contains observed moves only, with explicit
-  distinct-game and occurrence meanings; legal-move generation remains in the existing frontend chess library.
+  current analysis state/result, and the date-resolved preference. Its additive counts include the requested-color
+  all-games denominator, an all-color imported-game observation flag, explicit outgoing distinct-game/occurrence totals,
+  and separate terminal distinct-game/occurrence totals. Existing fields and meanings remain intact. It has no `include`
+  or screen-specific variant, returns integer counts rather than percentages or presentation strings, and does not add a
+  second-color dataset. Unseen legal positions succeed sparsely without a write; move history contains observed moves
+  only, with explicit distinct-game and occurrence meanings; legal-move generation remains in the existing frontend chess
+  library.
 - **Analysis:** focused observation uses `not_requested -> queued -> running -> ready` without revealing internal row
   existence. Requests ask for the desired result, not Analyze/Update/Retry actions. Quality is optional `browser` or
   `tool`, defaults to `browser`, and exposes no arbitrary engine settings. Repeats/concurrent requests are duplicate-safe
@@ -174,7 +180,7 @@ also include [simple lifecycle](../../grilling-docs/database-rebuild-simple-life
 [schema direction](../../grilling-docs/database-rebuild-schema.md),
 [DB-09 proof](../../grilling-docs/database-rebuild-db-09.md),
 [SETUP-01 direction](../../grilling-docs/database-rebuild-setup-01.md),
-[SETUP-02 direction](../../grilling-docs/database-rebuild-setup-02.md), [Viewer removal direction](../../grilling-docs/database-rebuild-viewer-removal.md), and the generated
+[SETUP-02 direction](../../grilling-docs/database-rebuild-setup-02.md), [Viewer removal direction](../../grilling-docs/database-rebuild-viewer-removal.md), [expanded CONSUMER-02 grilling record](../../grilling-docs/database-rebuild-consumer-02.md), [position-insight enrichment synthesis](../../grilling-docs/database-rebuild-position-insight-enrichment.md), and the generated
 [schema reference](../../../data/database/schema.md).
 
 ## Selectable slices
@@ -195,10 +201,11 @@ All slices are sequential. Each is independently selectable and reviewable, but 
 | `CLEAN-10` | Preferred-move intervals can be removed and the operation is generated. | CLEAN-09 | No legacy removal or data cleanup. |
 | `CONSUMER-01` | Status uses generated `getHealth()`. | CLEAN-10 | No other frontend adoption. |
 | `VIEWER-REMOVE-01` | Production Viewer is gone; `/viewer` falls through to ordinary Not Found and Repertoire is unchanged. | CONSUMER-01 | No clean API adoption, backend route retirement, or Viewer-only behavior preservation. |
-| `CONSUMER-02` | Repertoire game loading uses generated clean game detail. | VIEWER-REMOVE-01 | No Viewer migration or fallback. |
-| `CONSUMER-03` | Repertoire position context uses generated clean insight. | CONSUMER-02 | No Viewer or move-response migration. |
+| `CONSUMER-02` | Repertoire loads complete clean game detail into one navigable session: full imported history, immediate moves, one temporary alternative, and explicit parent-based Preferred Move selection. | VIEWER-REMOVE-01 | No Viewer migration, fallback, later-consumer API migration, or legacy-route retirement. |
+| `POSITION-INSIGHT-01` | The existing generated position insight adds authoritative game, observation, outgoing-move, and terminal counts. | CLEAN-05, CONSUMER-02 | No new endpoint, schema change, frontend adoption, percentages, presentation strings, or C03 product change. |
+| `CONSUMER-03` | Repertoire position context uses the enriched generated clean insight. | POSITION-INSIGHT-01 | No Viewer or move-response migration. |
 | `CONSUMER-04` | Repertoire move-response distribution uses clean observed-move insight. | CONSUMER-03 | No new projection. |
-| `CONSUMER-05` | Repertoire parent and displayed-position analysis uses the clean lifecycle. | CONSUMER-04 | No Viewer migration or compatibility layer. |
+| `CONSUMER-05` | Repertoire selected/current-position analysis uses the clean lifecycle. | CONSUMER-04 | No Viewer migration or compatibility layer. |
 | `CONSUMER-06` | Repertoire uses clean preferred timelines and interval mutations. | CONSUMER-05 | No calendar UI or authored repertoire lines. |
 | `RETIRE-01` | The old game-position route is removed after the retained game consumer migrates. | CONSUMER-06 | No old-database cutover/deletion. |
 | `RETIRE-02` | The old position-context route is removed after the retained context consumer migrates. | RETIRE-01 | No recurrence migration. |
@@ -235,25 +242,33 @@ backend route, and does not preserve a redirect, compatibility surface, or Viewe
 ### Individual production consumer migrations
 
 These begin only after `CLEAN-10`. Each slice moves one production workflow to the already-generated client, preserves
-that workflow's visible behavior except where the clean contract deliberately changes it, and proves no other consumer
-moved silently.
+that workflow's visible behavior except where the clean contract or confirmed slice-specific direction deliberately
+changes it, and proves no other consumer moved silently.
 
 | Slice | Current production usage | Clean operations | Primary current area |
 |---|---|---|---|
 | `CONSUMER-01` | Status health check | `GET /api/health` | `frontend/src/features/status/` |
 | `CONSUMER-02` | Repertoire game loading | game detail | `frontend/src/features/repertoire-builder/` |
-| `CONSUMER-03` | Repertoire position context | position insight with required trainer color and `as_of` | `frontend/src/features/repertoire-builder/` |
+| `CONSUMER-03` | Repertoire position context | enriched position insight with required trainer color, `as_of`, and approved observation/denominator fields | `frontend/src/features/repertoire-builder/` |
 | `CONSUMER-04` | Repertoire move-response distribution | observed moves in position insight | `frontend/src/features/move-response-distribution/`, `repertoire-builder/` |
-| `CONSUMER-05` | Repertoire parent and displayed-position analysis workflow | analysis GET/POST | `frontend/src/features/repertoire-builder/` |
+| `CONSUMER-05` | Repertoire selected/current-position analysis workflow | analysis GET/POST | `frontend/src/features/repertoire-builder/` |
 | `CONSUMER-06` | Repertoire preferred resolve/read/write/delete workflow | preferred GET/PUT/DELETE | `frontend/src/features/repertoire-builder/` |
 
 `VIEWER-REMOVE-01` relocates only the shared modules that retained Repertoire behavior still needs; it does not migrate
-Repertoire to a clean operation. The remaining consumer slices are Repertoire-only. `CONSUMER-05` contains the two
-analysis observations in one Repertoire workflow because they share one injected analysis client and one user-visible
-analysis interaction; a focused assessment may split them if independent migration is required without changing the
-outcome. Any shared-module change that would silently migrate another listed workflow must stop for coordinator scope
-review. Unmigrated usages remain explicitly documented as expected legacy usage or expected breakage; no adapter or
-fallback hides them.
+Repertoire to a clean operation. The remaining consumer slices are Repertoire-only. After `CONSUMER-02`, `CONSUMER-05`
+covers the one selected/current-position Repertoire analysis workflow rather than preserving a parent-versus-displayed-
+position split. It remains one workflow because it shares one injected analysis client and one user-visible analysis
+interaction; a focused assessment may split it only if independent migration is required without changing the outcome.
+Any shared-module change that would silently migrate another listed workflow must stop for coordinator scope review.
+Unmigrated usages remain explicitly documented as expected legacy usage or expected breakage; no adapter or fallback
+hides them.
+
+`CONSUMER-02` is the confirmed expanded game-session slice. Its focused Plan moves Repertoire from the legacy game
+lookup and staged preview into a direct generated `getGame()` load, retaining the complete immutable imported main
+line at Ply 0. The selected position drives the existing panels; every move advances immediately; a divergent move
+creates only one disposable linear branch with a Return to game action; and the selected trainer transition carries
+its parent FEN and outgoing UCI for explicit Preferred Move actions. This does not migrate any later consumer API,
+retire `/api/games/{game_uuid}/positions`, add a cache or fallback, or introduce persistence or a repertoire tree.
 
 `CONSUMER-06` adopts the clean interval API needed by later calendar work but does not design or build that future
 calendar interface. It must remove the current corpus-only save restriction so a legal novel parent FEN can be
@@ -277,14 +292,17 @@ Health remains. Route retirement never implies old-database cleanup or deletion.
 
 ## Slice results
 
-- **Accepted:** `CLEAN-01` through `CLEAN-10`, `CONSUMER-01`, and `VIEWER-REMOVE-01`.
-- **Next selectable:** `CONSUMER-02`.
+- **Accepted:** `CLEAN-01` through `CLEAN-10`, `CONSUMER-01`, `VIEWER-REMOVE-01`, and `CONSUMER-02`.
+- **Next selectable:** `POSITION-INSIGHT-01`.
 
 ## Risks and escalation boundaries
 
 - Accepted `VIEWER-REMOVE-01` removed Viewer and relocated retained game, position-context, analysis, chess, and board
   modules into neutral ownership. Future consumer slices must preserve those individual workflow boundaries without
   reintroducing compatibility or Viewer behavior.
+- The expanded `CONSUMER-02` session outcome crosses the existing game mapping, navigation, move, and Preferred Move
+  seams. Its Plan must keep the imported main line immutable, avoid reintroducing staged parent/child state, and prove
+  that selected-position workflows remain lazy while later consumer APIs remain unmigrated.
 - Current clean package seams include game detail, opening recognition, current analysis reads/publication, queue
   primitives, position resolution, and preferred period normalization. Rich search, flat opening reads, composed
   insight, FEN-facing analysis orchestration, and complete finite timelines need focused assessment, but never justify a

@@ -1,6 +1,6 @@
-import type { PositionPickerNavigation } from "./positionPickerSession";
+import type { SessionNavigation } from "./positionPickerSessionBoundary";
 
-type HistorySelectionHandler = (selection: PositionPickerNavigation, status: string) => void;
+type HistorySelectionHandler = (selection: SessionNavigation, status: string) => void;
 
 export function historyNavigationHandlers(onSelection: HistorySelectionHandler) {
   return {

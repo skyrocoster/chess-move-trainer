@@ -1,6 +1,8 @@
 import { Chess, type Square } from "chess.js";
 import { useCallback, useMemo, useRef, useState } from "react";
 
+import { getGame } from "../../api/client";
+import type { GameDetailResponse } from "../../api/client";
 import type { InteractiveBoardMoveIntent } from "../board-adapter/InteractiveBoardAdapter";
 import { deriveLastMove, lastMoveFromSquares } from "../board-adapter/lastMove";
 import { PositionDescription } from "../board-adapter/PositionDescription";
@@ -8,15 +10,16 @@ import { createPositionModel } from "../board-adapter/positionDescriptionModel";
 import {
   isPromotionTarget,
   type PromotionCommit,
+  type PromotionPiece,
   usePromotionController,
 } from "../board-adapter/PromotionPicker";
 import { defaultAnalysisClient, type AnalysisClient } from "../analysis/analysisApi";
 import { analysisPanelDisplay } from "../analysis/analysisFormatting";
 import { useAnalysisState } from "../analysis/analysisState";
-import { GameLoader, type GameLoaderStatus, type GameLoaderValues } from "../game/GameLoader";
-import { fetchGame, type GameLookup } from "../game/positionApi";
-import type { PositionContextClient } from "../position-context/positionContextApi";
 import { evaluationDisplay } from "../analysis/evalBarDisplay";
+import { GameLoader, type GameLoaderStatus, type GameLoaderValues } from "../game/GameLoader";
+import { mapGameDetailResponse } from "../game/gameModel";
+import type { PositionContextClient } from "../position-context/positionContextApi";
 import type { MoveResponseDistributionClient } from "../move-response-distribution/moveResponseDistributionApi";
 import type { PreferredMoveClient } from "./preferredMoveApi";
 import { usePreferredMoveWorkflow } from "./preferredMoveWorkflowState";
@@ -24,25 +27,26 @@ import { RepertoireBoardLane } from "./RepertoireBoardLane";
 import { RepertoireResponsiveStage } from "./RepertoireResponsiveStage";
 import {
   boardLabel,
-  branchMove,
+  branchMoves,
   originDescription,
   promotionPiece,
   sessionViewKey,
 } from "./repertoireBuilderWorkspaceModel";
 import { RepertoireAnalysisTabs } from "./RepertoireAnalysisTabs";
 import {
-  createStandardStartSession,
-  createStoredGameSession,
-  flipPositionPickerSession,
-  navigatePositionPickerSession,
-  positionPickerHistory,
-  selectPositionPickerPly,
-  applyPositionPickerMove,
-  type PositionPickerMove,
-  type PositionPickerNavigation,
-  type PositionPickerSession,
-} from "./positionPickerSession";
-import type { Ply } from "../chess/chessPrimitives";
+  applySessionMove,
+  createFreshSession,
+  loadImportedSession,
+  navigateSession,
+  returnToGame,
+  resetSession,
+  selectSessionPly,
+  sessionHistory,
+  type PositionPickerSessionBoundary,
+  type SessionMove,
+  type SessionNavigation,
+} from "./positionPickerSessionBoundary";
+import type { ChessSide, Ply } from "../chess/chessPrimitives";
 import styles from "./RepertoireBuilderWorkspace.module.css";
 import { RepertoireSessionPanel } from "./RepertoireSessionPanel";
 import {
@@ -51,8 +55,13 @@ import {
 } from "./repertoireBuilderWorkspaceHandlers";
 import { useMoveResponseSelection } from "./moveResponseSelection";
 
+export type GameDetailClient = (options: {
+  path: { game_uuid: string };
+  signal?: AbortSignal;
+}) => ReturnType<typeof getGame>;
+
 export type RepertoireBuilderWorkspaceProps = {
-  lookup?: GameLookup;
+  gameClient?: GameDetailClient;
   analysisClient?: AnalysisClient;
   analysisPollIntervalMs?: number;
   preferredMoveClient?: PreferredMoveClient;
@@ -60,8 +69,58 @@ export type RepertoireBuilderWorkspaceProps = {
   moveResponseDistributionClient?: MoveResponseDistributionClient;
 };
 
+type PositionPickerMove = {
+  sourceSquare: Square;
+  targetSquare: Square;
+  promotion?: PromotionPiece;
+};
+
+function moveToSessionMove(
+  session: PositionPickerSessionBoundary,
+  move: PositionPickerMove,
+): SessionMove | null {
+  const chess = new Chess(session.currentPosition.fen);
+  try {
+    const played = chess.move({
+      from: move.sourceSquare,
+      to: move.targetSquare,
+      ...(move.promotion ? { promotion: move.promotion } : {}),
+    });
+    return {
+      outgoingUCI: `${move.sourceSquare}${move.targetSquare}${move.promotion ?? ""}`,
+      resultingFEN: chess.fen({ forceEnpassantSquare: true }),
+      san: played.san,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function failureCode(value: unknown): string | null {
+  return typeof value === "object" && value !== null && "code" in value && typeof value.code === "string"
+    ? value.code
+    : null;
+}
+
+function loadFailure(
+  result: Awaited<ReturnType<GameDetailClient>>,
+): Exclude<GameLoaderStatus, "idle" | "loading"> {
+  const code = failureCode(result.error);
+  const status = result.response?.status;
+  if (code === "game_not_found" || status === 404) {
+    return "game_not_found";
+  }
+  if (code === "games_unavailable" || status === 503) {
+    return "corpus_unavailable";
+  }
+  if (status === 422) {
+    return "game_unavailable";
+  }
+  return code === "unexpected_failure" || status === 500 ? "unexpected_failure" : "unexpected_failure";
+}
+
 export default function RepertoireBuilderWorkspace({
-  lookup = fetchGame,
+  gameClient = getGame,
   analysisClient = defaultAnalysisClient,
   analysisPollIntervalMs,
   preferredMoveClient,
@@ -69,45 +128,32 @@ export default function RepertoireBuilderWorkspace({
   moveResponseDistributionClient,
 }: RepertoireBuilderWorkspaceProps) {
   const [gameUuidInput, setGameUuidInput] = useState("");
-  const [plyInput, setPlyInput] = useState("");
   const [status, setStatus] = useState<GameLoaderStatus>("idle");
-  const [session, setSession] = useState<PositionPickerSession>(createStandardStartSession);
+  const [session, setSession] = useState<PositionPickerSessionBoundary>(createFreshSession);
+  const [orientation, setOrientation] = useState<ChessSide>("white");
   const [sessionStatus, setSessionStatus] = useState(
     "Select a legal move to start the local line.",
   );
-  const [chessVersion, setChessVersion] = useState(0);
   const requestId = useRef(0);
   const controller = useRef<AbortController | null>(null);
 
   const currentPosition = session.currentPosition;
-  const displayedPosition = session.stagedMove?.position ?? currentPosition;
   const viewKey = sessionViewKey(session);
-  const chess = useMemo(() => {
-    void chessVersion;
-    return new Chess(currentPosition.fen);
-  }, [chessVersion, currentPosition.fen]);
-  const positionModel = useMemo(
-    () => createPositionModel(displayedPosition.fen, session.orientation),
-    [displayedPosition.fen, session.orientation],
-  );
-  const parentAnalysisState = useAnalysisState(
+  const chess = useMemo(() => new Chess(currentPosition.fen), [currentPosition.fen]);
+  const analysisState = useAnalysisState(
     currentPosition.fen,
     analysisClient,
     analysisPollIntervalMs,
   );
-  const displayedAnalysisState = useAnalysisState(
-    displayedPosition.fen,
-    analysisClient,
-    analysisPollIntervalMs,
-  );
-  const analysisDisplay = analysisPanelDisplay(parentAnalysisState, {
-    displayedPly: session.currentPly,
+  const analysisDisplay = analysisPanelDisplay(analysisState, {
+    displayedPly: currentPosition.ply,
   });
-  const displayedEvaluationDisplay = evaluationDisplay(displayedAnalysisState);
+  const displayedEvaluationDisplay = evaluationDisplay(analysisState);
   const sideToMoveColor = chess.turn() === "w" ? "white" : "black";
   const workflow = usePreferredMoveWorkflow({
     session,
     sideToMove: sideToMoveColor,
+    bottomColor: orientation,
     preferredMoveClient,
     positionContextClient,
     setSession,
@@ -115,30 +161,32 @@ export default function RepertoireBuilderWorkspace({
   });
   const { onPlaySavedMove, reset: resetWorkflow } = workflow;
 
+  const applyMove = useCallback(
+    (move: PositionPickerMove): boolean => {
+      const sessionMove = moveToSessionMove(session, move);
+      if (sessionMove === null) {
+        setSessionStatus("Move rejected because it is illegal.");
+        return false;
+      }
+
+      setSession(applySessionMove(session, sessionMove));
+      resetWorkflow();
+      setSessionStatus(`Move played locally: ${sessionMove.san}.`);
+      return true;
+    },
+    [resetWorkflow, session],
+  );
+
   const handlePromotionCommit = useCallback(
     (commit: PromotionCommit) => {
       const selectedPromotion = promotionPiece(commit.move.promotion);
-      const result = applyPositionPickerMove(session, {
+      applyMove({
         sourceSquare: commit.move.from,
         targetSquare: commit.move.to,
         ...(selectedPromotion ? { promotion: selectedPromotion } : {}),
       });
-      if (!result) {
-        setSessionStatus("Move rejected because it is illegal.");
-        return;
-      }
-      setSession(result.session);
-      if (result.disposition === "advanced") {
-        resetWorkflow();
-      }
-      setChessVersion((version) => version + 1);
-      setSessionStatus(
-        result.disposition === "staged"
-          ? `My move staged: ${result.move.san}.`
-          : `Opponent move played locally: ${result.move.san}.`,
-      );
     },
-    [resetWorkflow, session],
+    [applyMove],
   );
 
   const handlePromotionReject = useCallback((reason: "illegal" | "stale") => {
@@ -162,7 +210,8 @@ export default function RepertoireBuilderWorkspace({
     selectPromotion,
     cancelPromotion,
   } = promotionController;
-  const representedHistory = useMemo(() => positionPickerHistory(session), [session]);
+
+  const representedHistory = useMemo(() => sessionHistory(session), [session]);
   const historyInput = useMemo(
     () => ({
       initialPosition: { ply: representedHistory[0]!.ply },
@@ -173,22 +222,16 @@ export default function RepertoireBuilderWorkspace({
     }),
     [representedHistory],
   );
-  const hasPrevious = session.currentPly > representedHistory[0]!.ply;
-  const hasNext = session.currentPly < representedHistory.at(-1)!.ply;
-  const label = boardLabel(session);
-  const localMoves = session.localMoves.slice(0, session.localCursor).map(branchMove);
-  const localLastMove =
-    session.localCursor > 0 ? session.localMoves[session.localCursor - 1] : null;
-  const currentHistoryIndex = representedHistory.findIndex(
-    (position) => position.ply === session.currentPly,
-  );
-  const previousHistoryPosition =
-    currentHistoryIndex > 0 ? representedHistory[currentHistoryIndex - 1] : undefined;
-  const lastMove = session.stagedMove
-    ? lastMoveFromSquares(session.stagedMove.sourceSquare, session.stagedMove.targetSquare)
-    : localLastMove
-      ? lastMoveFromSquares(localLastMove.sourceSquare, localLastMove.targetSquare)
-      : deriveLastMove(previousHistoryPosition?.fen, session.currentPosition.san);
+  const hasPrevious = session.currentIndex > 0;
+  const hasNext = session.currentIndex < representedHistory.length - 1;
+  const label = boardLabel(session, orientation);
+  const localMoves = branchMoves(session);
+  const lastMove = session.selectedTransition
+      ? lastMoveFromSquares(
+        session.selectedTransition.outgoingUCI.slice(0, 2) as Square,
+        session.selectedTransition.outgoingUCI.slice(2, 4) as Square,
+      )
+    : deriveLastMove(undefined, null);
 
   function invalidateRequest() {
     requestId.current += 1;
@@ -201,9 +244,9 @@ export default function RepertoireBuilderWorkspace({
     invalidateRequest();
     resetWorkflow();
     setGameUuidInput("");
-    setPlyInput("");
     setStatus("idle");
-    setSession(createStandardStartSession());
+    setSession(resetSession());
+    setOrientation("white");
     clearSelectedResponse();
     setSessionStatus("Select a legal move to start the local line.");
   }
@@ -218,15 +261,18 @@ export default function RepertoireBuilderWorkspace({
     controller.current = nextController;
     setStatus("loading");
 
-    const initialPly = values.ply === "" ? undefined : Number(values.ply);
-    let result: Awaited<ReturnType<GameLookup>>;
+    let result: Awaited<ReturnType<GameDetailClient>>;
     try {
-      result = await lookup(values.gameUuid, initialPly, nextController.signal);
+      result = await gameClient({
+        path: { game_uuid: values.gameUuid },
+        signal: nextController.signal,
+      });
     } catch {
       if (nextController.signal.aborted || currentRequestId !== requestId.current) {
         return;
       }
-      result = { status: "unexpected_failure" };
+      setStatus("unexpected_failure");
+      return;
     }
 
     if (nextController.signal.aborted || currentRequestId !== requestId.current) {
@@ -236,10 +282,12 @@ export default function RepertoireBuilderWorkspace({
       controller.current = null;
     }
 
-    if (result.status === "success") {
+    if (result.data !== undefined) {
       try {
-        setSession(createStoredGameSession(result.game));
-        setSessionStatus("Select a legal move to continue the local line.");
+        const mainLine = mapGameDetailResponse(result.data as GameDetailResponse);
+        setSession(loadImportedSession(mainLine));
+        setOrientation(mainLine.trainerOrientation);
+        setSessionStatus("Select a legal move to continue the imported game.");
         setStatus("idle");
       } catch {
         setStatus("game_unavailable");
@@ -247,35 +295,14 @@ export default function RepertoireBuilderWorkspace({
       return;
     }
 
-    setStatus(result.status);
+    setStatus(loadFailure(result));
   }
 
-  const applyMove = useCallback(
-    (move: PositionPickerMove): boolean => {
-      const result = applyPositionPickerMove(session, move);
-      if (!result) {
-        setSessionStatus("Move rejected because it is illegal.");
-        return false;
-      }
-
-      setSession(result.session);
-      if (result.disposition === "advanced") {
-        resetWorkflow();
-      }
-      if (result.disposition === "staged") {
-        setSessionStatus(`My move staged: ${result.move.san}.`);
-        return false;
-      }
-      setSessionStatus(`Opponent move played locally: ${result.move.san}.`);
-      return true;
-    },
-    [resetWorkflow, session],
-  );
   const {
     clear: clearSelectedResponse,
     select: selectResponse,
     selectedUci: selectedResponseUci,
-  } = useMoveResponseSelection(displayedPosition.fen, session.bottomColor);
+  } = useMoveResponseSelection(currentPosition.fen, orientation);
 
   const handleMoveIntent = useCallback(
     (intent: InteractiveBoardMoveIntent): boolean => {
@@ -335,35 +362,47 @@ export default function RepertoireBuilderWorkspace({
 
   const handleHistorySelection = useCallback(
     (
-      selection: Ply | PositionPickerNavigation,
-      status = "Moved to the selected history position.",
+      selection: Ply | SessionNavigation,
+      statusMessage = "Moved to the selected history position.",
     ) => {
       cancelPromotion();
       resetWorkflow();
       setSession((current) => {
         const next =
           typeof selection === "number"
-            ? selectPositionPickerPly(current, selection)
-            : navigatePositionPickerSession(current, selection);
+            ? selectSessionPly(current, selection)
+            : navigateSession(current, selection);
         return next ?? current;
       });
       clearSelectedResponse();
-      setSessionStatus(status);
+      setSessionStatus(statusMessage);
     },
     [cancelPromotion, clearSelectedResponse, resetWorkflow],
   );
 
   const historyControls = historyNavigationHandlers(handleHistorySelection);
 
+  const handleReturnToGame = useCallback(() => {
+    cancelPromotion();
+    resetWorkflow();
+    clearSelectedResponse();
+    setSession((current) => returnToGame(current));
+    setSessionStatus("Returned to the imported game.");
+  }, [cancelPromotion, clearSelectedResponse, resetWorkflow]);
+
   const handleFlip = useCallback(() => {
     cancelPromotion();
     resetWorkflow();
     clearSelectedResponse();
-    setSession((current) => flipPositionPickerSession(current));
+    setOrientation((current) => (current === "white" ? "black" : "white"));
     setSessionStatus(
-      `Flipped to ${session.orientation === "white" ? "Black" : "White"} at the bottom.`,
+      `Flipped to ${orientation === "white" ? "Black" : "White"} at the bottom.`,
     );
-  }, [cancelPromotion, clearSelectedResponse, resetWorkflow, session.orientation]);
+  }, [cancelPromotion, clearSelectedResponse, orientation, resetWorkflow]);
+
+  const branchOrigin = session.branch
+    ? sessionHistory({ ...session, branch: null }).at(session.branch.branchPointIndex)!
+    : representedHistory[0]!;
 
   return (
     <div className={styles.repertoire}>
@@ -373,31 +412,29 @@ export default function RepertoireBuilderWorkspace({
           <GameLoader
             status={status}
             gameUuid={gameUuidInput}
-            ply={plyInput}
             onGameUuidChange={setGameUuidInput}
-            onPlyChange={setPlyInput}
             onSubmit={handleSubmit}
             onReset={resetWorkspace}
           />
         </div>
         <p className={styles.origin} data-testid="session-origin">
-          {originDescription(session)} Current Ply {session.currentPly}.
+          {originDescription(session)} Current Ply {currentPosition.ply}.
         </p>
         <RepertoireResponsiveStage
           board={
             <RepertoireBoardLane
-              orientation={session.orientation}
+              orientation={orientation}
               evaluation={displayedEvaluationDisplay}
               viewKey={viewKey}
               board={{
                 branchSnapshot: {
                   viewKey,
                   resetToken: 0,
-                  originFen: session.prefix.at(-1)!.fen,
-                  currentFen: displayedPosition.fen,
-                  originPly: session.origin.selectedPly,
+                  originFen: branchOrigin.fen,
+                  currentFen: currentPosition.fen,
+                  originPly: branchOrigin.ply,
                   moves: localMoves,
-                  active: localMoves.length > 0,
+                  active: session.branch !== null && localMoves.length > 0,
                 },
                 label,
                 notice: sessionStatus,
@@ -407,12 +444,12 @@ export default function RepertoireBuilderWorkspace({
                 promotionColor: chess.turn(),
                 promotionSourceElement,
                 promotionAnchorElement,
-                showBranchPanel: false,
+                showBranchPanel: session.branch !== null,
                 onMoveIntent: handleMoveIntent,
                 onPromotionSelect: selectPromotion,
                 onPromotionCancel: handlePromotionCancel,
                 onUndo: () => undefined,
-                onReset: () => undefined,
+                onReset: handleReturnToGame,
               }}
               controls={{
                 hasGame: true,
@@ -425,7 +462,7 @@ export default function RepertoireBuilderWorkspace({
               history={{
                 initialPosition: historyInput.initialPosition,
                 moves: historyInput.moves,
-                activePly: session.currentPly,
+                activePly: currentPosition.ply,
                 onActivePlyChange: handleHistorySelection,
               }}
             />
@@ -456,7 +493,7 @@ export default function RepertoireBuilderWorkspace({
                 onRetry={workflow.onRetry}
               />
               <div className={styles.positionDescription} data-testid="position-description-row">
-                <PositionDescription model={positionModel} />
+                <PositionDescription model={createPositionModel(currentPosition.fen, orientation)} />
               </div>
             </section>
           }
@@ -470,15 +507,15 @@ export default function RepertoireBuilderWorkspace({
               <RepertoireAnalysisTabs
                 analysis={{
                   display: analysisDisplay,
-                  onAnalyze: () => parentAnalysisState.handleAction("analyze"),
-                  onUpdate: () => parentAnalysisState.handleAction("update"),
-                  onRetry: () => parentAnalysisState.handleAction("retry"),
-                  onRetryObservation: parentAnalysisState.retryObservation,
+                  onAnalyze: () => analysisState.handleAction("analyze"),
+                  onUpdate: () => analysisState.handleAction("update"),
+                  onRetry: () => analysisState.handleAction("retry"),
+                  onRetryObservation: analysisState.retryObservation,
                   onCandidateMove: handleCandidateMove,
                 }}
                 moveResponseDistribution={{
-                  fen: displayedPosition.fen,
-                  color: session.bottomColor,
+                  fen: currentPosition.fen,
+                  color: orientation,
                   selectedUci: selectedResponseUci,
                   client: moveResponseDistributionClient,
                   onMoveSelect: handleResponseMove,
