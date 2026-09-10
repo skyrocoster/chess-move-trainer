@@ -1059,11 +1059,17 @@
             "minimum": 0.0,
             "title": "Occurrence Count",
             "type": "integer"
+          },
+          "total_game_count": {
+            "minimum": 0.0,
+            "title": "Total Game Count",
+            "type": "integer"
           }
         },
         "required": [
           "distinct_game_count",
-          "occurrence_count"
+          "occurrence_count",
+          "total_game_count"
         ],
         "title": "PositionInsightExperienceResponse",
         "type": "object"
@@ -1155,6 +1161,31 @@
         "title": "PositionInsightObservedMoveResponse",
         "type": "object"
       },
+      "PositionInsightObservedMoveTotalsResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "distinct_game_count": {
+            "minimum": 0.0,
+            "title": "Distinct Game Count",
+            "type": "integer"
+          },
+          "occurrence_count": {
+            "minimum": 0.0,
+            "title": "Occurrence Count",
+            "type": "integer"
+          },
+          "terminal": {
+            "$ref": "#/components/schemas/PositionInsightTerminalTotalsResponse"
+          }
+        },
+        "required": [
+          "distinct_game_count",
+          "occurrence_count",
+          "terminal"
+        ],
+        "title": "PositionInsightObservedMoveTotalsResponse",
+        "type": "object"
+      },
       "PositionInsightOpeningResponse": {
         "additionalProperties": false,
         "properties": {
@@ -1211,6 +1242,13 @@
             "title": "Fen",
             "type": "string"
           },
+          "observed_in_games": {
+            "title": "Observed In Games",
+            "type": "boolean"
+          },
+          "observed_move_totals": {
+            "$ref": "#/components/schemas/PositionInsightObservedMoveTotalsResponse"
+          },
           "observed_moves": {
             "items": {
               "$ref": "#/components/schemas/PositionInsightObservedMoveResponse"
@@ -1263,9 +1301,11 @@
           "fen",
           "trainer_color",
           "as_of",
+          "observed_in_games",
           "opening",
           "experience",
           "observed_moves",
+          "observed_move_totals",
           "analysis",
           "preference"
         ],
@@ -1334,6 +1374,27 @@
           "lines"
         ],
         "title": "PositionInsightResultResponse",
+        "type": "object"
+      },
+      "PositionInsightTerminalTotalsResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "distinct_game_count": {
+            "minimum": 0.0,
+            "title": "Distinct Game Count",
+            "type": "integer"
+          },
+          "occurrence_count": {
+            "minimum": 0.0,
+            "title": "Occurrence Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "distinct_game_count",
+          "occurrence_count"
+        ],
+        "title": "PositionInsightTerminalTotalsResponse",
         "type": "object"
       },
       "PreferredMovesErrorResponse": {

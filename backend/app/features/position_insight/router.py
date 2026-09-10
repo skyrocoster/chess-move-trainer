@@ -26,9 +26,11 @@ from .api_schemas import (
     PositionInsightExperienceResponse,
     PositionInsightLineResponse,
     PositionInsightObservedMoveResponse,
+    PositionInsightObservedMoveTotalsResponse,
     PositionInsightOpeningResponse,
     PositionInsightResponse,
     PositionInsightResultResponse,
+    PositionInsightTerminalTotalsResponse,
     UnconfiguredPreferenceResponse,
 )
 
@@ -88,10 +90,12 @@ def _response(insight: PositionInsight) -> PositionInsightResponse:
         fen=insight.fen,
         trainer_color=insight.trainer_color,
         as_of=insight.as_of,
+        observed_in_games=insight.observed_in_games,
         opening=opening_response,
         experience=PositionInsightExperienceResponse(
             distinct_game_count=insight.experience.distinct_game_count,
             occurrence_count=insight.experience.occurrence_count,
+            total_game_count=insight.experience.total_game_count,
         ),
         observed_moves=[
             PositionInsightObservedMoveResponse(
@@ -101,6 +105,14 @@ def _response(insight: PositionInsight) -> PositionInsightResponse:
             )
             for move in insight.observed_moves
         ],
+        observed_move_totals=PositionInsightObservedMoveTotalsResponse(
+            distinct_game_count=insight.observed_move_totals.distinct_game_count,
+            occurrence_count=insight.observed_move_totals.occurrence_count,
+            terminal=PositionInsightTerminalTotalsResponse(
+                distinct_game_count=insight.observed_move_totals.terminal.distinct_game_count,
+                occurrence_count=insight.observed_move_totals.terminal.occurrence_count,
+            ),
+        ),
         analysis=PositionInsightAnalysisResponse(
             state=insight.analysis.state,
             result=(

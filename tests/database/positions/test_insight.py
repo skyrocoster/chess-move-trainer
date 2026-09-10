@@ -143,6 +143,7 @@ def _database(tmp_path: Path) -> tuple[Path, int]:
         _game(connection, 2, "white")
         _game(connection, 3, "black")
         _game(connection, 4, "black")
+        _game(connection, 5, "white")
         _occurrence(connection, 1, 2, position_id, "a2a3")
         _occurrence(connection, 1, 4, position_id, "a2a3")
         _occurrence(connection, 2, 2, position_id, "b2b3")
@@ -179,6 +180,12 @@ def test_existing_position_composes_canonical_opening_counts_analysis_and_prefer
     ) == ("C20:King's Pawn Game", "C20", "King's Pawn Game", 2, "transposition")
     assert insight.experience.distinct_game_count == 2
     assert insight.experience.occurrence_count == 3
+    assert insight.experience.total_game_count == 3
+    assert insight.observed_in_games is True
+    assert insight.observed_move_totals.distinct_game_count == 2
+    assert insight.observed_move_totals.occurrence_count == 3
+    assert insight.observed_move_totals.terminal.distinct_game_count == 0
+    assert insight.observed_move_totals.terminal.occurrence_count == 0
     assert [
         (move.move_uci, move.distinct_game_count, move.occurrence_count)
         for move in insight.observed_moves
@@ -195,7 +202,34 @@ def test_existing_position_composes_canonical_opening_counts_analysis_and_prefer
     black = read_position_insight(database, TARGET_FEN, "black", "2026-01-15")
     assert black.experience.distinct_game_count == 2
     assert black.experience.occurrence_count == 2
+    assert black.experience.total_game_count == 2
+    assert black.observed_in_games is True
+    assert black.observed_move_totals.distinct_game_count == 1
+    assert black.observed_move_totals.occurrence_count == 1
+    assert black.observed_move_totals.terminal.distinct_game_count == 1
+    assert black.observed_move_totals.terminal.occurrence_count == 1
     assert [move.move_uci for move in black.observed_moves] == ["a2a3"]
+
+
+def test_observation_is_true_for_other_color_only_and_selected_counts_stay_zero(
+    tmp_path: Path,
+) -> None:
+    database, _target_position_id = _database(tmp_path)
+    position_id = _position_id(database, STARTING_FEN)
+    with sqlite3.connect(database) as connection:
+        _occurrence(connection, 3, 6, position_id, "e2e4")
+
+    insight = read_position_insight(database, STARTING_FEN, "white", "2026-09-09")
+
+    assert insight.observed_in_games is True
+    assert insight.experience.distinct_game_count == 0
+    assert insight.experience.occurrence_count == 0
+    assert insight.experience.total_game_count == 3
+    assert insight.observed_move_totals.distinct_game_count == 0
+    assert insight.observed_move_totals.occurrence_count == 0
+    assert insight.observed_move_totals.terminal.distinct_game_count == 0
+    assert insight.observed_move_totals.terminal.occurrence_count == 0
+    assert insight.observed_moves == ()
 
 
 @pytest.mark.parametrize(
@@ -247,9 +281,15 @@ def test_unseen_legal_position_is_sparse_and_has_no_opening_or_preference(
 
     assert insight.fen == UNSEEN_CANONICAL_FEN
     assert insight.opening is None
+    assert insight.observed_in_games is False
     assert insight.experience.distinct_game_count == 0
     assert insight.experience.occurrence_count == 0
+    assert insight.experience.total_game_count == 2
     assert insight.observed_moves == ()
+    assert insight.observed_move_totals.distinct_game_count == 0
+    assert insight.observed_move_totals.occurrence_count == 0
+    assert insight.observed_move_totals.terminal.distinct_game_count == 0
+    assert insight.observed_move_totals.terminal.occurrence_count == 0
     assert insight.analysis.state == "not_requested"
     assert insight.analysis.result is None
     assert insight.preference.kind == "unconfigured"
@@ -257,6 +297,27 @@ def test_unseen_legal_position_is_sparse_and_has_no_opening_or_preference(
     assert not list(tmp_path.glob("insight.db-*"))
     with sqlite3.connect(database) as connection:
         assert connection.execute("SELECT COUNT(*) FROM derived_position").fetchone()[0] == 1
+
+
+def test_internal_unobserved_position_is_sparse_without_writes(tmp_path: Path) -> None:
+    database, _target_position_id = _database(tmp_path)
+    position_id = _position_id(database, UNSEEN_FEN)
+    before = database.read_bytes()
+
+    insight = read_position_insight(database, UNSEEN_FEN, "black", "2026-09-09")
+
+    assert position_id > 0
+    assert insight.observed_in_games is False
+    assert insight.experience.distinct_game_count == 0
+    assert insight.experience.occurrence_count == 0
+    assert insight.experience.total_game_count == 2
+    assert insight.observed_moves == ()
+    assert insight.observed_move_totals.distinct_game_count == 0
+    assert insight.observed_move_totals.occurrence_count == 0
+    assert insight.observed_move_totals.terminal.distinct_game_count == 0
+    assert insight.observed_move_totals.terminal.occurrence_count == 0
+    assert database.read_bytes() == before
+    assert not list(tmp_path.glob("insight.db-*"))
 
 
 def test_analysis_queue_precedence_keeps_a_current_result_visible(tmp_path: Path) -> None:

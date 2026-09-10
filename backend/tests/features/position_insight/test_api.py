@@ -12,6 +12,8 @@ from backend.app.dependencies import REBUILT_DATABASE_PATH_ENV, get_rebuilt_data
 from backend.app.main import app
 
 from .conftest import (
+    OTHER_COLOR_CANONICAL_FEN,
+    OTHER_COLOR_FEN,
     STARTING_FEN,
     TARGET_CANONICAL_FEN,
     TARGET_FEN,
@@ -57,6 +59,7 @@ def test_success_returns_exact_public_position_insight_and_ignores_unknown_queri
         "fen": TARGET_CANONICAL_FEN,
         "trainer_color": "white",
         "as_of": "2026-01-15",
+        "observed_in_games": True,
         "opening": {
             "key": "C20:King's Pawn Game",
             "eco": "C20",
@@ -64,7 +67,16 @@ def test_success_returns_exact_public_position_insight_and_ignores_unknown_queri
             "ply": 2,
             "match": "transposition",
         },
-        "experience": {"distinct_game_count": 2, "occurrence_count": 3},
+        "experience": {
+            "distinct_game_count": 2,
+            "occurrence_count": 3,
+            "total_game_count": 3,
+        },
+        "observed_move_totals": {
+            "distinct_game_count": 2,
+            "occurrence_count": 3,
+            "terminal": {"distinct_game_count": 0, "occurrence_count": 0},
+        },
         "observed_moves": [
             {"move_uci": "a2a3", "distinct_game_count": 1, "occurrence_count": 2},
             {"move_uci": "b2b3", "distinct_game_count": 1, "occurrence_count": 1},
@@ -96,6 +108,56 @@ def test_success_returns_exact_public_position_insight_and_ignores_unknown_queri
     }
     assert "position_id" not in json.dumps(response.json())
     assert "route_id" not in json.dumps(response.json())
+
+
+def test_other_color_only_observation_and_terminal_totals_are_exact(api_context) -> None:
+    client, _database = api_context
+
+    other_color = client.get(
+        "/api/positions/insight",
+        params=_params(OTHER_COLOR_FEN, "white", "2026-01-15"),
+    )
+    assert other_color.status_code == 200
+    assert other_color.json() == {
+        "fen": OTHER_COLOR_CANONICAL_FEN,
+        "trainer_color": "white",
+        "as_of": "2026-01-15",
+        "observed_in_games": True,
+        "opening": None,
+        "experience": {
+            "distinct_game_count": 0,
+            "occurrence_count": 0,
+            "total_game_count": 3,
+        },
+        "observed_moves": [],
+        "observed_move_totals": {
+            "distinct_game_count": 0,
+            "occurrence_count": 0,
+            "terminal": {"distinct_game_count": 0, "occurrence_count": 0},
+        },
+        "analysis": {"state": "not_requested", "result": None},
+        "preference": {"kind": "unconfigured"},
+    }
+
+    terminal = client.get(
+        "/api/positions/insight",
+        params=_params(trainer_color="black"),
+    )
+    assert terminal.status_code == 200
+    assert terminal.json()["observed_in_games"] is True
+    assert terminal.json()["experience"] == {
+        "distinct_game_count": 2,
+        "occurrence_count": 2,
+        "total_game_count": 2,
+    }
+    assert terminal.json()["observed_move_totals"] == {
+        "distinct_game_count": 1,
+        "occurrence_count": 1,
+        "terminal": {"distinct_game_count": 1, "occurrence_count": 1},
+    }
+    assert terminal.json()["observed_moves"] == [
+        {"move_uci": "a2a3", "distinct_game_count": 1, "occurrence_count": 1}
+    ]
 
 
 @pytest.mark.parametrize(
@@ -162,16 +224,26 @@ def test_unseen_legal_position_is_sparse_success_and_read_only(api_context) -> N
         "fen": UNSEEN_CANONICAL_FEN,
         "trainer_color": "black",
         "as_of": "2026-09-09",
+        "observed_in_games": False,
         "opening": None,
-        "experience": {"distinct_game_count": 0, "occurrence_count": 0},
+        "experience": {
+            "distinct_game_count": 0,
+            "occurrence_count": 0,
+            "total_game_count": 2,
+        },
         "observed_moves": [],
+        "observed_move_totals": {
+            "distinct_game_count": 0,
+            "occurrence_count": 0,
+            "terminal": {"distinct_game_count": 0, "occurrence_count": 0},
+        },
         "analysis": {"state": "not_requested", "result": None},
         "preference": {"kind": "unconfigured"},
     }
     assert database.read_bytes() == before
     assert not list(database.parent.glob(database.name + "-*"))
     with sqlite3.connect(database) as connection:
-        assert connection.execute("SELECT COUNT(*) FROM derived_position").fetchone()[0] == 1
+        assert connection.execute("SELECT COUNT(*) FROM derived_position").fetchone()[0] == 2
 
 
 def test_analysis_queue_precedence_and_date_resolved_preference_are_public(api_context) -> None:

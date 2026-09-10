@@ -126,6 +126,46 @@ def test_export_contains_only_approved_clean_contract(tmp_path: Path) -> None:
     assert '"$ref": "#/components/schemas/AnalysisRequestErrorResponse"' in payload
     assert _schema_refs(spec["paths"]["/api/preferred-moves"]["delete"])
     assert _schema_refs(spec["paths"]["/api/preferred-moves"]["put"])
+    position_response = schemas["PositionInsightResponse"]
+    assert position_response["properties"]["observed_in_games"]["type"] == "boolean"
+    assert (
+        position_response["properties"]["observed_move_totals"]["$ref"]
+        == "#/components/schemas/PositionInsightObservedMoveTotalsResponse"
+    )
+    assert (
+        schemas["PositionInsightExperienceResponse"]["properties"]["total_game_count"][
+            "type"
+        ]
+        == "integer"
+    )
+    assert (
+        schemas["PositionInsightExperienceResponse"]["properties"]["total_game_count"][
+            "minimum"
+        ]
+        == 0
+    )
+    assert (
+        schemas["PositionInsightObservedMoveTotalsResponse"]["properties"]["terminal"][
+            "$ref"
+        ]
+        == "#/components/schemas/PositionInsightTerminalTotalsResponse"
+    )
+    for name in (
+        "distinct_game_count",
+        "occurrence_count",
+    ):
+        assert schemas["PositionInsightObservedMoveTotalsResponse"]["properties"][name][
+            "type"
+        ] == "integer"
+        assert schemas["PositionInsightObservedMoveTotalsResponse"]["properties"][name][
+            "minimum"
+        ] == 0
+        assert schemas["PositionInsightTerminalTotalsResponse"]["properties"][name][
+            "type"
+        ] == "integer"
+        assert schemas["PositionInsightTerminalTotalsResponse"]["properties"][name][
+            "minimum"
+        ] == 0
     served_paths = set(app.openapi()["paths"])
     assert set(spec["paths"]).isdisjoint(served_paths - set(CLEAN_OPERATIONS))
     assert not any(path.startswith("/api/evaluation") for path in spec["paths"])

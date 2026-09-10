@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Annotated, Any, Literal, TypeAlias
 
-from pydantic import BaseModel, ConfigDict, Field, StrictInt, StrictStr
+from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictInt, StrictStr
 
 
 class ContractModel(BaseModel):
@@ -38,6 +38,18 @@ class PositionInsightOpeningResponse(ContractModel):
 class PositionInsightExperienceResponse(ContractModel):
     distinct_game_count: StrictInt = Field(ge=0)
     occurrence_count: StrictInt = Field(ge=0)
+    total_game_count: StrictInt = Field(ge=0)
+
+
+class PositionInsightTerminalTotalsResponse(ContractModel):
+    distinct_game_count: StrictInt = Field(ge=0)
+    occurrence_count: StrictInt = Field(ge=0)
+
+
+class PositionInsightObservedMoveTotalsResponse(ContractModel):
+    distinct_game_count: StrictInt = Field(ge=0)
+    occurrence_count: StrictInt = Field(ge=0)
+    terminal: PositionInsightTerminalTotalsResponse
 
 
 class PositionInsightObservedMoveResponse(ContractModel):
@@ -95,9 +107,11 @@ class PositionInsightResponse(ContractModel):
     fen: StrictStr
     trainer_color: Literal["white", "black"]
     as_of: StrictStr
+    observed_in_games: StrictBool
     opening: PositionInsightOpeningResponse | None
     experience: PositionInsightExperienceResponse
     observed_moves: list[PositionInsightObservedMoveResponse]
+    observed_move_totals: PositionInsightObservedMoveTotalsResponse
     analysis: PositionInsightAnalysisResponse
     preference: PositionInsightPreferenceResponse
 
@@ -111,9 +125,11 @@ __all__ = [
     "PositionInsightExperienceResponse",
     "PositionInsightLineResponse",
     "PositionInsightObservedMoveResponse",
+    "PositionInsightObservedMoveTotalsResponse",
     "PositionInsightOpeningResponse",
     "PositionInsightPreferenceResponse",
     "PositionInsightResponse",
     "PositionInsightResultResponse",
+    "PositionInsightTerminalTotalsResponse",
     "UnconfiguredPreferenceResponse",
 ]

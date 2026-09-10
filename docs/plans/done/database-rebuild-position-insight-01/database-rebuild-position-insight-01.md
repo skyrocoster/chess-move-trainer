@@ -1,6 +1,6 @@
 # POSITION-INSIGHT-01 position-insight enrichment - Counts make reach and move denominators reproducible
 
-> **Status:** pending - Plan written; implementation is not authorized by this document
+> **Status:** done - accepted on 2026-09-10; `CONSUMER-03` is the next selectable master-plan slice
 
 - **Read trigger:** Before assessing, implementing, validating, repairing, accepting, or closing the
   `POSITION-INSIGHT-01` prerequisite.
@@ -101,16 +101,16 @@ Stages are sequential; no stage runs in parallel. Each stage has ordered actions
 breakpoint. A passing proof remains valid until a later change affects its command, inputs, exercised behavior,
 configuration, dependencies, or environment; later stages rerun only invalidated proof.
 
-1. **pending** - **Package enrichment and focused proof**
-   - [ ] Extend the package response dataclasses and public `positions` exports without changing existing fields or
+1. **accepted** - **Package enrichment and focused proof**
+   - [x] Extend the package response dataclasses and public `positions` exports without changing existing fields or
      meanings.
-   - [ ] Extend the current position-statistics read in `insight.py` so it reports the requested-color game total,
+   - [x] Extend the current position-statistics read in `insight.py` so it reports the requested-color game total,
      all-color corpus observation, outgoing distinct/occurrence totals, terminal distinct/occurrence totals, and the
      existing per-move values from the accepted schema-v1 tables.
-   - [ ] Ensure the sparse path performs the denominator/observation read while still returning a legal sparse success;
+   - [x] Ensure the sparse path performs the denominator/observation read while still returning a legal sparse success;
      preserve read-only connection mode, no row creation, no sidecars, stored-value validation, and deterministic move
      ordering.
-   - [ ] Add package proof for zero/nonzero counts, other-color-only observation, recurrence, terminal exclusion from
+   - [x] Add package proof for zero/nonzero counts, other-color-only observation, recurrence, terminal exclusion from
      outgoing denominators, total-game denominators including games that never reached the position, sparse behavior,
      and unchanged database bytes/sidecars. Include package-boundary export assertions.
    - **Focused proof:** command-level timeout **180 seconds**; Bash tool timeout **240000 ms**:
@@ -120,12 +120,12 @@ configuration, dependencies, or environment; later stages rerun only invalidated
    - **Breakpoint:** none; escalate if the approved meanings cannot be derived from schema v1 in one bounded read-only
      statistics query.
 
-2. **pending** - **HTTP contract and focused proof**
-   - [ ] Add strict nonnegative integer response models and the strict boolean observation field under
+2. **accepted** - **HTTP contract and focused proof**
+   - [x] Add strict nonnegative integer response models and the strict boolean observation field under
      `backend/app/features/position_insight/`.
-   - [ ] Map the package values without adding backend SQL, changing the route/operation ID, altering error/status
+   - [x] Map the package values without adding backend SQL, changing the route/operation ID, altering error/status
      translation, or removing legacy coexistence.
-   - [ ] Extend the HTTP fixtures and exact response assertions for zero/nonzero, other-color-only, recurrence,
+   - [x] Extend the HTTP fixtures and exact response assertions for zero/nonzero, other-color-only, recurrence,
      terminal, denominator, sparse, private-ID exclusion, unknown-query tolerance, and read-only behavior.
    - **Focused proof:** command-level timeout **180 seconds**; Bash tool timeout **240000 ms**:
      `.venv/Scripts/python.exe scripts/api/finite.py 180 .venv/Scripts/python.exe -m pytest backend/tests/features/position_insight -q`
@@ -134,13 +134,13 @@ configuration, dependencies, or environment; later stages rerun only invalidated
    - **Breakpoint:** none; escalate if HTTP translation requires changing package ownership, current errors, or any
      settled response meaning.
 
-3. **pending** - **Curated OpenAPI, HeyAPI generation, determinism, and no adoption proof**
-   - [ ] Confirm the existing `/api/positions/insight` allow-list entry remains unchanged and the curated exporter
+3. **accepted** - **Curated OpenAPI, HeyAPI generation, determinism, and no adoption proof**
+   - [x] Confirm the existing `/api/positions/insight` allow-list entry remains unchanged and the curated exporter
      includes the enriched response schemas while excluding legacy operations.
-   - [ ] Update only handwritten central type exports and generated-surface expectations required by the new generated
+   - [x] Update only handwritten central type exports and generated-surface expectations required by the new generated
      types; do not modify production frontend feature modules or generator configuration unless a direct tooling defect
      is discovered and escalated.
-   - [ ] Regenerate only `frontend/src/api/generated/`, preserving all accepted operations, then prove the generated
+   - [x] Regenerate only `frontend/src/api/generated/`, preserving all accepted operations, then prove the generated
      surface and the existing no-production-adoption guard.
    - **Focused proof:** run these in order:
      - Curated contract — command-level timeout **180 seconds**; Bash tool timeout **240000 ms**:
@@ -155,12 +155,12 @@ configuration, dependencies, or environment; later stages rerun only invalidated
      dependency, production adoption, or legacy contract entry is authorized.
    - **Breakpoint:** none; escalate if generation is nondeterministic or changes an accepted operation surface.
 
-4. **pending** - **Documentation closeout and master-plan acceptance transition**
-   - [ ] Confirm Stages 1-3 passed and record concise proof, decisions, and which CLEAN-05 proof was rerun or retained.
-   - [ ] Keep this Plan pending until implementation acceptance; at closeout, record the accepted
+4. **accepted** - **Documentation closeout and master-plan acceptance transition**
+   - [x] Confirm Stages 1-3 passed and record concise proof, decisions, and which CLEAN-05 proof was rerun or retained.
+   - [x] Keep this Plan pending until implementation acceptance; at closeout, record the accepted
      `POSITION-INSIGHT-01` result and move the master plan's next selectable slice to `CONSUMER-03` only after all
      acceptance conditions pass.
-   - [ ] Review this Plan, the enrichment synthesis, and the changed live master-plan passages for aligned semantics,
+   - [x] Review this Plan, the enrichment synthesis, and the changed live master-plan passages for aligned semantics,
      ownership, dependency order, exclusions, and preserved historical records.
    - **Focused proof:** manual document review only; no additional behavioral command.
    - **Stage boundary:** Do not edit the accepted CLEAN-05 Plan or any historical Plan, and do not start C03 work.
@@ -172,14 +172,26 @@ configuration, dependencies, or environment; later stages rerun only invalidated
   in the completed assessment and upstream synthesis.
 - [x] **Plan setup:** complete - this Plan and the live master-plan prerequisite amendment were reviewed; no product or
   test implementation is included.
-- [ ] **Stage 1:** pending - package enrichment and focused proof; breakpoint: none.
-- [ ] **Stage 2:** pending - HTTP contract and focused proof; breakpoint: none.
-- [ ] **Stage 3:** pending - curated contract, generation, deterministic output, and no adoption; breakpoint: none.
-- [ ] **Stage 4:** pending - closeout and acceptance transition; breakpoint: none.
+- [x] **Stage 1:** accepted - package dataclasses, public exports, the single read-only statistics query, sparse
+  denominator/observation behavior, and focused tests were completed in the approved four-file scope. Proof passed:
+  `20 passed` for the Stage 1 command with its 180-second command timeout and 240000 ms tool timeout.
+- [x] **Stage 2:** accepted - strict HTTP models, direct package-value mapping, and exact response coverage were
+  completed in the approved four-file backend scope without package edits or backend SQL. Proof passed: `17 passed`
+  for the Stage 2 command with its 180-second command timeout and 240000 ms tool timeout; Stage 1 proof remains
+  retained.
+- [x] **Stage 3:** accepted - curated contract assertions, central type exports, generated-surface expectations, and
+  generator-owned output were updated without changing the allow-list, operation IDs, tooling/configuration, or any
+  production feature module. Proof passed in order: curated contract `4 passed`; client generation succeeded;
+  generated surface/no adoption `6 passed`; deterministic check reported `18 files byte-identical`. Stages 1-2 proof
+  remains retained.
+- [x] **Stage 4:** accepted - manual review found the Plan, enrichment synthesis, and live master-plan transition
+  aligned on semantics, ownership, dependency order, exclusions, and preserved historical records. All acceptance
+  conditions passed, `POSITION-INSIGHT-01` was accepted, and `CONSUMER-03` became the next selectable slice without
+  starting C03 work.
 - **Retained-proof rule:** Accepted CLEAN-01 through CLEAN-04, C02, schema-v1, ownership, route coexistence, and
-  historical CLEAN-05 records remain retained. CLEAN-05's package/HTTP response-shape and generated-schema proof is
-  invalidated where it asserts the old insight response and must be rerun through Stages 1-3; canonicalization, opening,
-  analysis, preference, error, and no-write expectations remain regression obligations.
+  historical CLEAN-05 records remain retained. CLEAN-05's superseded package/HTTP response-shape and generated-schema
+  proof was replaced by the passing Stage 1-3 proof recorded above; canonicalization, opening, analysis, preference,
+  error, and no-write expectations remain retained regression evidence.
 
 ## Proof
 

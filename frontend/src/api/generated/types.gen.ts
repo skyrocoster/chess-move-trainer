@@ -580,6 +580,10 @@ export type PositionInsightExperienceResponse = {
      * Occurrence Count
      */
     occurrence_count: number;
+    /**
+     * Total Game Count
+     */
+    total_game_count: number;
 };
 
 /**
@@ -639,6 +643,21 @@ export type PositionInsightObservedMoveResponse = {
 };
 
 /**
+ * PositionInsightObservedMoveTotalsResponse
+ */
+export type PositionInsightObservedMoveTotalsResponse = {
+    /**
+     * Distinct Game Count
+     */
+    distinct_game_count: number;
+    /**
+     * Occurrence Count
+     */
+    occurrence_count: number;
+    terminal: PositionInsightTerminalTotalsResponse;
+};
+
+/**
  * PositionInsightOpeningResponse
  */
 export type PositionInsightOpeningResponse = {
@@ -678,6 +697,11 @@ export type PositionInsightResponse = {
      * Fen
      */
     fen: string;
+    /**
+     * Observed In Games
+     */
+    observed_in_games: boolean;
+    observed_move_totals: PositionInsightObservedMoveTotalsResponse;
     /**
      * Observed Moves
      */
@@ -733,6 +757,20 @@ export type PositionInsightResultResponse = {
      * Terminal Kind
      */
     terminal_kind: 'checkmate' | 'stalemate' | 'insufficient_material' | null;
+};
+
+/**
+ * PositionInsightTerminalTotalsResponse
+ */
+export type PositionInsightTerminalTotalsResponse = {
+    /**
+     * Distinct Game Count
+     */
+    distinct_game_count: number;
+    /**
+     * Occurrence Count
+     */
+    occurrence_count: number;
 };
 
 /**

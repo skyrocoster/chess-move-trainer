@@ -16,6 +16,8 @@ STARTING_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 TARGET_FEN = "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2"
 TARGET_CANONICAL_FEN = " ".join((*TARGET_FEN.split()[:4], "0", "1"))
 TARGET_WITH_COUNTERS = " ".join((*TARGET_FEN.split()[:4], "99", "120"))
+OTHER_COLOR_FEN = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1"
+OTHER_COLOR_CANONICAL_FEN = " ".join((*OTHER_COLOR_FEN.split()[:4], "0", "1"))
 UNSEEN_FEN = STARTING_FEN
 UNSEEN_CANONICAL_FEN = " ".join((*UNSEEN_FEN.split()[:4], "0", "1"))
 
@@ -126,16 +128,19 @@ def _install_preferences(connection: sqlite3.Connection, position_id: int) -> No
 def create_insight_database(path: Path) -> Path:
     create_schema(path)
     position_id = _position_id(path, TARGET_FEN)
+    other_color_position_id = _position_id(path, OTHER_COLOR_FEN)
     with sqlite3.connect(path) as connection:
         _game(connection, 1, "white")
         _game(connection, 2, "white")
         _game(connection, 3, "black")
         _game(connection, 4, "black")
+        _game(connection, 5, "white")
         _occurrence(connection, 1, 2, position_id, "a2a3")
         _occurrence(connection, 1, 4, position_id, "a2a3")
         _occurrence(connection, 2, 2, position_id, "b2b3")
         _occurrence(connection, 3, 2, position_id, "a2a3")
         _occurrence(connection, 4, 2, position_id, None)
+        _occurrence(connection, 3, 6, other_color_position_id, "e2e4")
         _install_opening(connection, position_id)
         _install_analysis(connection, position_id)
         _install_preferences(connection, position_id)
