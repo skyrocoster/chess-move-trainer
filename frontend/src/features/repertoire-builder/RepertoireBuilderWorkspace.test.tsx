@@ -40,7 +40,11 @@ describe("RepertoireBuilderWorkspace", () => {
     expect(screen.getByRole("button", { name: "Previous" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Next" })).toBeDisabled();
     await waitFor(() =>
-      expect(clients.positionContextClient).toHaveBeenCalledWith(STARTING_FEN, expect.any(AbortSignal)),
+      expect(clients.positionContextClient).toHaveBeenCalledWith(
+        STARTING_FEN,
+        "white",
+        expect.any(AbortSignal),
+      ),
     );
     expect(screen.queryByLabelText(/Ply/)).not.toBeInTheDocument();
     expect(screen.queryByTestId("staged-move")).not.toBeInTheDocument();
@@ -73,7 +77,11 @@ describe("RepertoireBuilderWorkspace", () => {
     expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", AFTER_E4_FEN);
     expect(historyEntry("White, move 1, e4")).toHaveAttribute("aria-current", "step");
     await waitFor(() =>
-      expect(clients.positionContextClient).toHaveBeenCalledWith(AFTER_E4_FEN, expect.any(AbortSignal)),
+      expect(clients.positionContextClient).toHaveBeenCalledWith(
+        AFTER_E4_FEN,
+        "white",
+        expect.any(AbortSignal),
+      ),
     );
     expect(screen.getByRole("button", { name: "Previous" })).toBeEnabled();
 
@@ -200,8 +208,36 @@ describe("RepertoireBuilderWorkspace", () => {
         expect.any(AbortSignal),
       ),
     );
-    expect(clients.positionContextClient).toHaveBeenCalledWith(AFTER_E4_FEN, expect.any(AbortSignal));
+    expect(clients.positionContextClient).toHaveBeenCalledWith(
+      AFTER_E4_FEN,
+      "white",
+      expect.any(AbortSignal),
+    );
     expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", AFTER_E4_FEN);
     expect(screen.getByTestId("session-origin")).toHaveTextContent("Current Ply 1.");
+  });
+
+  it("refetches context for the opposite trainer color when the board flips", async () => {
+    const clients = testClients();
+    const user = userEvent.setup();
+    renderWorkspace(clients);
+    await waitFor(() =>
+      expect(clients.positionContextClient).toHaveBeenCalledWith(
+        STARTING_FEN,
+        "white",
+        expect.any(AbortSignal),
+      ),
+    );
+
+    await user.click(screen.getByRole("button", { name: "Flip" }));
+    await waitFor(() =>
+      expect(clients.positionContextClient).toHaveBeenLastCalledWith(
+        STARTING_FEN,
+        "black",
+        expect.any(AbortSignal),
+      ),
+    );
+    expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", STARTING_FEN);
+    expect(screen.getByTestId("session-origin")).toHaveTextContent("Current Ply 0.");
   });
 });

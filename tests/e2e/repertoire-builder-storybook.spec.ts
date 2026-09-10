@@ -981,4 +981,39 @@ test.describe("Repertoire Builder Storybook surface", () => {
     await expectNoHorizontalOverflow(page);
     await checkA11y(page);
   });
+
+  test("proves position context follows trainer color when the board flips", async ({ page }) => {
+    await openStory(page, STORY_IDS.wide, 1280, 1000);
+
+    await expect(page.getByTestId("session-origin")).toContainText("Current Ply 0.");
+    await expect(
+      page.getByRole("group", {
+        name: "Chess board: standard starting position, White at the bottom",
+      }),
+    ).toBeVisible();
+    const session = page.getByTestId("repertoire-session");
+    await expect(session.getByText("White repertoire colour", { exact: true })).toBeVisible();
+    await expect(session.getByText("3 / 10 games", { exact: true })).toBeVisible();
+    await expect(session.getByText("30%", { exact: true })).toBeVisible();
+    await expect(session.getByText("Seen in 3 games as White")).toBeVisible();
+
+    await page.getByRole("button", { name: "Flip" }).click();
+    await expect(page.getByTestId("session-status")).toContainText(
+      "Flipped to Black at the bottom.",
+    );
+
+    await expect(
+      page.getByRole("group", {
+        name: "Chess board: standard starting position, Black at the bottom",
+      }),
+    ).toBeVisible();
+    await expect(page.getByTestId("session-origin")).toContainText("Current Ply 0.");
+    await expect(session.getByText("Black repertoire colour", { exact: true })).toBeVisible();
+    await expect(session.getByText("2 / 10 games", { exact: true })).toBeVisible();
+    await expect(session.getByText("20%", { exact: true })).toBeVisible();
+    await expect(session.getByText("Seen in 2 games as Black")).toBeVisible();
+    await expect(session.getByText("White repertoire colour", { exact: true })).toHaveCount(0);
+    await expectNoHorizontalOverflow(page);
+    await checkA11y(page);
+  });
 });

@@ -35,14 +35,6 @@ function colorLabel(color: ChessSide): "White" | "Black" {
   return color === "white" ? "White" : "Black";
 }
 
-function selectedCount(context: PositionContextResponse, color: ChessSide): number {
-  return color === "white" ? context.white_count : context.black_count;
-}
-
-function selectedTotal(context: PositionContextResponse, color: ChessSide): number {
-  return color === "white" ? context.white_total : context.black_total;
-}
-
 function boundedPercentage(reached: number, total: number): number {
   if (total <= 0) return 0;
   return Math.max(0, Math.min(100, (reached / total) * 100));
@@ -74,7 +66,7 @@ export function derivePositionReachFrequencyModel(
     };
   }
 
-  if (!context.overall_exists) {
+  if (!context.observedInGames) {
     return {
       selectedColor,
       colorLabel: label,
@@ -90,8 +82,8 @@ export function derivePositionReachFrequencyModel(
     };
   }
 
-  const reached = selectedCount(context, selectedColor);
-  const total = selectedTotal(context, selectedColor);
+  const reached = context.distinctGameCount;
+  const total = context.totalGameCount;
   const percentage = boundedPercentage(reached, total);
   const percent = percentageLabel(percentage);
 

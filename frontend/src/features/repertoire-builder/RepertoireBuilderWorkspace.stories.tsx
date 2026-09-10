@@ -1,11 +1,9 @@
-import { expect, userEvent, within } from "storybook/test";
+import { expect, userEvent, waitFor, within } from "storybook/test";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import "../../styles/cmt-tokens.css";
 import "../../styles/cmt-typescale.css";
-import { completeGameLookup } from "../game/gameStoryHelpers";
 import { storyCandidateAnalysisClient } from "../analysis/analysisStoryClients";
 import { GAME, GAME_UUID } from "../game/gameFixtures";
-import { PROMOTION_GAME } from "../game/gameStoryFixtures";
 import RepertoireBuilderWorkspace from "./RepertoireBuilderWorkspace";
 import {
   expectActiveSessionHistoryEntry,
@@ -18,12 +16,17 @@ import {
   sharedPositionSummary,
 } from "./repertoireBuilderStoryAssertions";
 import {
-  BLACK_SUBJECT_GAME,
   constrainedViewport,
   mediumViewport,
   workspace,
 } from "./repertoireBuilderStoryRender";
-import { expectNoHorizontalOverflow, loadGame, storyGameClient } from "./repertoireBuilderStoryHelpers";
+import {
+  STORY_BLACK_SUBJECT_GAME_DETAIL,
+  STORY_PROMOTION_GAME_DETAIL,
+  expectNoHorizontalOverflow,
+  loadGame,
+  storyGameClient,
+} from "./repertoireBuilderStoryHelpers";
 
 const meta = {
   title: "Application/Repertoire Builder/Workspace",
@@ -35,7 +38,7 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 const STARTING_FEN = GAME.positions[0].fen;
-const STAGED_E4_FEN = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1";
+const STAGED_E4_FEN = GAME.positions[1].fen;
 const stagedIdentityClient = storyCandidateAnalysisClient(["e2e4"]);
 const stagedObservedFens: string[] = [];
 const stagedIdentityObserve = stagedIdentityClient.observe;
@@ -172,26 +175,26 @@ export const StoredPrefixBlackSubject: Story = {
   name: "Stored prefix through selected Ply - Black subject",
   render: () =>
     workspace({
-      lookup: completeGameLookup(BLACK_SUBJECT_GAME),
+      gameClient: storyGameClient(STORY_BLACK_SUBJECT_GAME_DETAIL),
     }),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await loadGame(canvas, GAME_UUID, "2");
+    await loadGame(canvas, GAME_UUID);
+    await userEvent.click(await canvas.findByRole("button", { name: "Black, move 1, e5" }));
     await expect(
       canvas.getByRole("group", {
         name: `Chess board: game ${GAME_UUID}, ply 2, Black at the bottom`,
       }),
     ).toBeVisible();
-    await expect(canvas.getByTestId("session-origin")).toHaveTextContent(
-      `complete prefix through Ply 2. Current Ply 2`,
-    );
+    await expect(canvas.getByTestId("session-origin")).toHaveTextContent("Current Ply 2");
     await expectSessionHistory(canvasElement, [
       "Initial position",
       "White, move 1, e4",
       "Black, move 1, e5",
+      "White, move 2, Nf3",
     ]);
     await expectActiveSessionHistoryEntry(canvasElement, "Black, move 1, e5");
-    await expectPreferredMoveState(canvasElement, "empty");
+    await expectPreferredMoveState(canvasElement, "first-choice");
     await expectPositionReachFrequency(canvasElement, "available", "Black", "2 / 10 games", "20%");
     await expect(await sharedPositionSummary(canvasElement)).toHaveTextContent(
       "OrientationBlack at the bottom",
@@ -215,14 +218,13 @@ export const StagedMy: Story = {
     await expectSingleStagedStatus(canvasElement);
     await expectPositionSquares(canvasElement, "e2", 0);
     await expectPositionSquares(canvasElement, "e4", 1);
-    await expect(canvas.getByTestId("session-origin")).toHaveTextContent("Current Ply 0");
-    await expectSessionHistory(canvasElement, ["Initial position"]);
-    await expectActiveSessionHistoryEntry(canvasElement, "Initial position");
+    await expect(canvas.getByTestId("session-origin")).toHaveTextContent("Current Ply 1");
+    await expectSessionHistory(canvasElement, ["Initial position", "White, move 1, e4"]);
+    await expectActiveSessionHistoryEntry(canvasElement, "White, move 1, e4");
     await expect(meter).toHaveAttribute("aria-valuetext", "best-line evaluation +0.34.");
-    await expect(stagedObservedFens).toContain(STAGED_E4_FEN);
-    await expect(canvas.getByRole("button", { name: "1. e4" })).toBeVisible();
+    await waitFor(() => expect(stagedObservedFens).toContain(STAGED_E4_FEN));
     await expectPreferredMoveState(canvasElement, "first-choice");
-    await expect(canvas.getByTestId("staged-move")).toHaveTextContent(/^Staged\s*e4\s*e2e4/);
+    await expect(canvas.getByTestId("selected-move")).toHaveTextContent(/^Selected\s*e4\s*e2e4$/);
     await expectPositionReachFrequency(canvasElement, "available", "White", "3 / 10 games", "30%");
   },
 };
@@ -232,14 +234,15 @@ export const OpponentImmediate: Story = {
   render: () =>
     workspace({
       analysisClient: storyCandidateAnalysisClient(["g1f3"]),
-      lookup: completeGameLookup(BLACK_SUBJECT_GAME),
+      gameClient: storyGameClient(STORY_BLACK_SUBJECT_GAME_DETAIL),
     }),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await loadGame(canvas, GAME_UUID, "2");
+    await loadGame(canvas, GAME_UUID);
+    await userEvent.click(await canvas.findByRole("button", { name: "Black, move 1, e5" }));
     await userEvent.click(await canvas.findByRole("button", { name: "2. Nf3" }));
     await expect(canvas.getByTestId("session-status")).toHaveTextContent(
-      "Opponent move played locally: Nf3.",
+      "Move played locally: Nf3.",
     );
     await expectSessionHistory(canvasElement, [
       "Initial position",
@@ -259,11 +262,12 @@ export const ConstrainedStoredPrefixAndLocalLine: Story = {
   render: () =>
     workspace({
       analysisClient: storyCandidateAnalysisClient(["g1f3"]),
-      lookup: completeGameLookup(BLACK_SUBJECT_GAME),
+      gameClient: storyGameClient(STORY_BLACK_SUBJECT_GAME_DETAIL),
     }),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await loadGame(canvas, GAME_UUID, "2");
+    await loadGame(canvas, GAME_UUID);
+    await userEvent.click(await canvas.findByRole("button", { name: "Black, move 1, e5" }));
     await userEvent.click(await canvas.findByRole("button", { name: "2. Nf3" }));
     await expectSessionHistory(canvasElement, [
       "Initial position",
@@ -294,7 +298,7 @@ export const CandidateActivation: Story = {
     await expectSessionHistory(canvasElement, ["Initial position", "White, move 1, e4"]);
     await expectActiveSessionHistoryEntry(canvasElement, "White, move 1, e4");
     await expect(canvas.getByTestId("session-status")).toHaveTextContent(
-      "Opponent move played locally: e4.",
+      "Move played locally: e4.",
     );
     await expectPreferredMoveState(canvasElement, "empty");
     await expectPositionReachFrequency(canvasElement, "available", "Black", "2 / 10 games", "20%");
@@ -357,8 +361,7 @@ export const FlipCancellation: Story = {
     await expect(await sharedPositionSummary(canvasElement)).toHaveTextContent(
       "OrientationBlack at the bottom",
     );
-    await expectPositionSquares(canvasElement, "e2", 1);
-    await userEvent.click(await canvas.findByRole("button", { name: "1. e4" }));
+    await expectPositionSquares(canvasElement, "e2", 0);
     await expectPositionSquares(canvasElement, "e4", 1);
     await expectSessionHistory(canvasElement, ["Initial position", "White, move 1, e4"]);
     await expectActiveSessionHistoryEntry(canvasElement, "White, move 1, e4");
@@ -369,12 +372,12 @@ export const Promotion: Story = {
   render: () =>
     workspace({
       analysisClient: storyCandidateAnalysisClient(["e7e8q"]),
-      lookup: completeGameLookup(PROMOTION_GAME),
+      gameClient: storyGameClient(STORY_PROMOTION_GAME_DETAIL),
     }),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     const body = within(canvasElement.ownerDocument.body);
-    await loadGame(canvas, GAME_UUID, "0");
+    await loadGame(canvas, GAME_UUID);
     const description = canvas.getByRole("button", { name: "Position description" });
     await userEvent.click(description);
     await expect(description).toHaveAttribute("aria-expanded", "true");
@@ -397,8 +400,8 @@ export const Promotion: Story = {
         '[data-position-side="w"] [data-position-piece="n"]',
       ),
     ).toBeTruthy();
-    await expect(canvas.getByTestId("session-origin")).toHaveTextContent("Current Ply 0");
-    await expectSessionHistory(canvasElement, ["Initial position"]);
+    await expect(canvas.getByTestId("session-origin")).toHaveTextContent("Current Ply 1");
+    await expectSessionHistory(canvasElement, ["Initial position", "White, move 1, e8=N"]);
   },
 };
 export const KeyboardAndAccessibility: Story = {
@@ -419,7 +422,9 @@ export const KeyboardAndAccessibility: Story = {
     await userEvent.keyboard("{Enter}");
     await expectSessionBoundary(canvasElement);
     await expectSingleStagedStatus(canvasElement);
-    await expect(candidate).toHaveFocus();
+    await expect(
+      canvas.getByRole("button", { name: "White, move 1, e4" }),
+    ).toHaveFocus();
     await expectPositionSquares(canvasElement, "e2", 0);
     await expectPositionSquares(canvasElement, "e4", 1);
     await expectNoHorizontalOverflow(canvasElement);
@@ -446,7 +451,7 @@ export const ResponseDistributionIntegration: Story = {
   name: "Response distribution - integrated move flow",
   render: () =>
     workspace({
-      lookup: completeGameLookup(BLACK_SUBJECT_GAME),
+      gameClient: storyGameClient(STORY_BLACK_SUBJECT_GAME_DETAIL),
     }),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -454,8 +459,9 @@ export const ResponseDistributionIntegration: Story = {
     const analysisTab = within(engineLane).getByRole("tab", { name: "Analysis" });
     const responsesTab = within(engineLane).getByRole("tab", { name: "Move responses" });
     await expect(analysisTab).toHaveAttribute("aria-selected", "true");
+    await loadGame(canvas, GAME_UUID);
+    await userEvent.click(await canvas.findByRole("button", { name: "Black, move 1, e5" }));
     await userEvent.click(responsesTab);
-    await loadGame(canvas, GAME_UUID, "2");
 
     const distribution = canvas.getByTestId("move-response-distribution");
     const distributionQueries = within(distribution);

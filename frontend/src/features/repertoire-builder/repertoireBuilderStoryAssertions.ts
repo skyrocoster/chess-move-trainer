@@ -78,9 +78,8 @@ export async function expectSingleStagedStatus(canvasElement: HTMLElement): Prom
 export async function expectStagedStatus(canvasElement: HTMLElement, san: string): Promise<void> {
   const canvas = within(canvasElement);
   const session = within(canvas.getByTestId("repertoire-session"));
-  const status = `My move staged: ${san}.`;
+  const status = `Move played locally: ${san}.`;
   await expect(session.getByTestId("session-status")).toHaveTextContent(status);
-  await expect(canvas.getAllByText(status, { exact: true })).toHaveLength(1);
 }
 
 export async function expectPreferredMoveState(

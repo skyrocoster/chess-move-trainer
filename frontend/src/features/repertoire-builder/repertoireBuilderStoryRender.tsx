@@ -39,9 +39,9 @@ export const mediumViewport = {
 };
 
 export const R2_ASSIGNED_CONTEXT = {
-  overall_exists: true,
-  white_count: 5,
-  black_count: 1,
+  observedInGames: true,
+  distinctGameCount: 5,
+  totalGameCount: 10,
 };
 
 function frame(children: ReactNode) {

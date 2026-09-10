@@ -1,9 +1,9 @@
 # Database rebuild
 
 > **Status:** direction settled; CLEAN-01 through CLEAN-10, CONSUMER-01, VIEWER-REMOVE-01,
-> CONSUMER-02, and `POSITION-INSIGHT-01` accepted
-> **Next selectable slice:** `CONSUMER-03` — Repertoire position context uses the enriched generated clean insight;
-> see the accepted [POSITION-INSIGHT-01 Plan](../../plans/done/database-rebuild-position-insight-01/database-rebuild-position-insight-01.md).
+> CONSUMER-02, `POSITION-INSIGHT-01`, and `CONSUMER-03` accepted
+> **Next selectable slice:** `CONSUMER-04` — Repertoire move-response distribution uses clean observed-move insight;
+> see the accepted [CONSUMER-03 Plan](../../plans/done/database-rebuild-consumer-03/database-rebuild-consumer-03.md).
 > **Acceptance:** The accepted database foundation, SETUP-01, and SETUP-02 remain intact; every clean operation is created and generated individually; every retained production API workflow is migrated individually afterward; and legacy routes are retired only after their final consumers move.
 
 ## Destination
@@ -292,9 +292,9 @@ Health remains. Route retirement never implies old-database cleanup or deletion.
 
 ## Slice results
 
-- **Accepted:** `CLEAN-01` through `CLEAN-10`, `CONSUMER-01`, `VIEWER-REMOVE-01`, `CONSUMER-02`, and
-  `POSITION-INSIGHT-01`.
-- **Next selectable:** `CONSUMER-03`.
+- **Accepted:** `CLEAN-01` through `CLEAN-10`, `CONSUMER-01`, `VIEWER-REMOVE-01`, `CONSUMER-02`,
+  `POSITION-INSIGHT-01`, and `CONSUMER-03`.
+- **Next selectable:** `CONSUMER-04`.
 
 ## Risks and escalation boundaries
 

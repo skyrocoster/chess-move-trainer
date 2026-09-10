@@ -6,7 +6,7 @@ import {
   type PositionContextResponse,
   fetchPositionContext,
 } from "./positionContextApi";
-import type { Fen } from "../chess/chessPrimitives";
+import type { ChessSide, Fen } from "../chess/chessPrimitives";
 
 export type PositionContextState = {
   context: PositionContextResponse | null;
@@ -16,6 +16,7 @@ export type PositionContextState = {
 
 export function usePositionContextState(
   fen: Fen | null,
+  trainerColor: ChessSide,
   client: PositionContextClient = fetchPositionContext,
   refreshKey = 0,
 ): PositionContextState {
@@ -39,12 +40,13 @@ export function usePositionContextState(
     }
 
     const requestedFen = fen;
+    const requestedTrainerColor = trainerColor;
     setLoading(true);
 
     async function loadContext() {
       let result;
       try {
-        result = await client(requestedFen, controller.signal);
+        result = await client(requestedFen, requestedTrainerColor, controller.signal);
       } catch {
         if (active && !controller.signal.aborted) {
           setLoading(false);
@@ -73,7 +75,7 @@ export function usePositionContextState(
       active = false;
       controller.abort();
     };
-  }, [client, fen, refreshKey]);
+  }, [client, fen, trainerColor, refreshKey]);
 
   return { context, loading, error };
 }

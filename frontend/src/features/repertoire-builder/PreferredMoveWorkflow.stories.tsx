@@ -1,7 +1,6 @@
 import { expect, userEvent, within } from "storybook/test";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 
-import { completeGameLookup } from "../game/gameStoryHelpers";
 import { storyAnalysisClient, storyCandidateAnalysisClient } from "../analysis/analysisStoryClients";
 import { GAME_UUID } from "../game/gameFixtures";
 import RepertoireBuilderWorkspace from "./RepertoireBuilderWorkspace";
@@ -11,8 +10,12 @@ import {
   expectPreferredMoveState,
   expectSessionHistory,
 } from "./repertoireBuilderStoryAssertions";
-import { BLACK_SUBJECT_GAME, workspace } from "./repertoireBuilderStoryRender";
-import { loadGame } from "./repertoireBuilderStoryHelpers";
+import { workspace } from "./repertoireBuilderStoryRender";
+import {
+  STORY_BLACK_SUBJECT_GAME_DETAIL,
+  loadGame,
+  storyGameClient,
+} from "./repertoireBuilderStoryHelpers";
 
 const meta = {
   title: "Application/Repertoire Builder/Workspace",
@@ -50,7 +53,7 @@ export const UnsavableGate: Story = {
     workspace(
       { analysisClient: storyCandidateAnalysisClient(["e2e4"]) },
       { relationship: "empty" },
-      { overall_exists: false, white_count: 0, black_count: 0 },
+      { observedInGames: false },
     ),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -86,14 +89,13 @@ export const OpponentLocalOnly: Story = {
     workspace(
       {
         analysisClient: storyCandidateAnalysisClient(["g1f3"]),
-        lookup: completeGameLookup(BLACK_SUBJECT_GAME),
+        gameClient: storyGameClient(STORY_BLACK_SUBJECT_GAME_DETAIL),
       },
       { relationship: "saved", putFailure: "unexpected_failure" },
-      { overall_exists: true, white_count: 5, black_count: 2 },
     ),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await loadGame(canvas, GAME_UUID, "2");
+    await loadGame(canvas, GAME_UUID);
     const description = canvas.getByRole("button", { name: "Position description" });
     await userEvent.click(description);
     await expect(description).toHaveAttribute("aria-expanded", "true");
@@ -101,9 +103,11 @@ export const OpponentLocalOnly: Story = {
       canvas.getByTestId("position-description-row").querySelector("[data-position-summary]"),
     ).toHaveTextContent("OrientationBlack at the bottom");
     await expect(canvas.getByTestId("saved-move")).toBeVisible();
+    await userEvent.click(await canvas.findByRole("button", { name: "White, move 1, e4" }));
+    await userEvent.click(await canvas.findByRole("button", { name: "Black, move 1, e5" }));
     await userEvent.click(await canvas.findByRole("button", { name: "2. Nf3" }));
     await expect(canvas.getByTestId("session-status")).toHaveTextContent(
-      "Opponent move played locally: Nf3.",
+      "Move played locally: Nf3.",
     );
     await expectSessionHistory(canvasElement, [
       "Initial position",
@@ -118,21 +122,16 @@ export const OpponentLocalOnly: Story = {
 
 export const OpponentTurnGate: Story = {
   name: "Preferred move - opponent turn is a read-only gate",
-  render: () =>
-    workspace(
-      { lookup: completeGameLookup(BLACK_SUBJECT_GAME) },
-      { relationship: "saved" },
-      { overall_exists: true, white_count: 5, black_count: 2 },
-    ),
+  render: () => workspace({}, { relationship: "saved" }),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await loadGame(canvas, GAME_UUID, "2");
+    await userEvent.click(canvas.getByRole("button", { name: "Flip" }));
     await expect(
-      canvas.getByText("Wait for your turn to stage or save a preferred move."),
+      canvas.getByText("Wait for your turn to select or save a preferred move."),
     ).toBeVisible();
     await expectPreferredActions(canvasElement, []);
     await expect(
-      canvas.queryByRole("button", { name: /play and stage this move/ }),
+      canvas.queryByRole("button", { name: /play this move/ }),
     ).not.toBeInTheDocument();
   },
 };

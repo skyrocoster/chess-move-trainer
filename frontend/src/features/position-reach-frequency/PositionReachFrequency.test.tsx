@@ -14,11 +14,10 @@ const FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 function context(overrides: Partial<PositionContextResponse> = {}): PositionContextResponse {
   return {
     fen: FEN,
-    overall_exists: true,
-    white_count: 2,
-    black_count: 3,
-    white_total: 5,
-    black_total: 7,
+    trainerColor: "white",
+    observedInGames: true,
+    distinctGameCount: 2,
+    totalGameCount: 5,
     ...overrides,
   };
 }
@@ -43,7 +42,12 @@ describe("PositionReachFrequency", () => {
   });
 
   it("renders Black values when Black is explicitly selected", () => {
-    render(<PositionReachFrequency context={context()} selectedColor="black" />);
+    render(
+      <PositionReachFrequency
+        context={context({ trainerColor: "black", distinctGameCount: 3, totalGameCount: 7 })}
+        selectedColor="black"
+      />,
+    );
 
     expect(screen.getByText("Black repertoire colour", { exact: true })).toBeVisible();
     expect(screen.getByText("3 / 7 games", { exact: true })).toBeVisible();
@@ -53,8 +57,13 @@ describe("PositionReachFrequency", () => {
     ).toHaveAttribute("aria-valuetext", "3 of 7 games as Black; 42.9% reached.");
   });
 
-  it("renders an existing zero count as an available zero meter", () => {
-    render(<PositionReachFrequency context={context({ white_count: 0 })} selectedColor="white" />);
+  it("renders an existing zero distinct-game count as an available zero meter", () => {
+    render(
+      <PositionReachFrequency
+        context={context({ distinctGameCount: 0 })}
+        selectedColor="white"
+      />,
+    );
 
     expect(screen.getByTestId("position-reach-indicator")).toBeInTheDocument();
     expect(screen.getByText("0 / 5 games", { exact: true })).toBeVisible();
@@ -68,7 +77,7 @@ describe("PositionReachFrequency", () => {
   it("renders absent and unavailable states without a frequency meter", () => {
     const { rerender } = render(
       <PositionReachFrequency
-        context={context({ overall_exists: false, white_count: 0, black_count: 0 })}
+        context={context({ observedInGames: false, distinctGameCount: 0, totalGameCount: 0 })}
         selectedColor="white"
       />,
     );

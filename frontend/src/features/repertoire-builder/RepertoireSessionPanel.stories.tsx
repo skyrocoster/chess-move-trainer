@@ -10,11 +10,10 @@ import type { RepertoirePositionModel } from "./repertoireWorkflowModel";
 const SOURCE_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 const POSITION_CONTEXT: PositionContextResponse = {
   fen: SOURCE_FEN,
-  overall_exists: true,
-  white_count: 3,
-  black_count: 2,
-  white_total: 10,
-  black_total: 10,
+  trainerColor: "white",
+  observedInGames: true,
+  distinctGameCount: 3,
+  totalGameCount: 10,
 };
 
 function model(overrides: Partial<RepertoirePositionModel> = {}): RepertoirePositionModel {
@@ -27,7 +26,7 @@ function model(overrides: Partial<RepertoirePositionModel> = {}): RepertoirePosi
     saveability: "savable",
     savedPresence: "absent",
     saved: null,
-    staged: null,
+    selected: null,
     comparison: "not-applicable",
     relationship: "empty",
     ...overrides,
@@ -38,7 +37,7 @@ function panelArgs(
   overrides: Partial<RepertoireSessionPanelProps> = {},
 ): RepertoireSessionPanelProps {
   return {
-    sessionStatus: "My move staged: e4.",
+    sessionStatus: "Move played locally: e4.",
     model: model(),
     positionContext: POSITION_CONTEXT,
     date: null,
@@ -82,7 +81,7 @@ export const LocalLineSession: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await expect(canvas.getByTestId("repertoire-session")).toBeVisible();
-    await expect(canvas.getByTestId("session-status")).toHaveTextContent("My move staged: e4.");
+    await expect(canvas.getByTestId("session-status")).toHaveTextContent("Move played locally: e4.");
   },
 };
 
@@ -92,13 +91,41 @@ export const SessionFactsOnly: Story = {
 };
 
 export const FrequencyZero: Story = {
-  args: panelArgs({ positionContext: { ...POSITION_CONTEXT, white_count: 0 } }),
+  name: "Frequency - observed position with zero selected-color experience",
+  args: panelArgs({
+    positionContext: { ...POSITION_CONTEXT, distinctGameCount: 0 },
+    model: model({ personalCount: 0, contextMessage: "Never seen as White" }),
+  }),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByText("0 / 10 games", { exact: true })).toBeVisible();
+    await expect(canvas.getByText("0%", { exact: true })).toBeVisible();
+    await expect(canvas.getByText("Never seen as White")).toBeVisible();
+  },
 };
 
 export const FrequencyAbsent: Story = {
-  args: panelArgs({ positionContext: { ...POSITION_CONTEXT, overall_exists: false } }),
+  name: "Frequency - globally unseen position",
+  args: panelArgs({
+    positionContext: { ...POSITION_CONTEXT, observedInGames: false, distinctGameCount: 0, totalGameCount: 0 },
+    model: model({ personalCount: 0, contextMessage: "Never seen as White", saveability: "unsavable" }),
+  }),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(
+      canvas.getByText("This position is not present in the accepted game data for White."),
+    ).toBeVisible();
+    await expect(canvas.queryByRole("meter", { name: /Position reach frequency/ })).not.toBeInTheDocument();
+    await expect(canvas.queryByText(/0 \/ 10 games|0%/)).not.toBeInTheDocument();
+  },
 };
 
 export const FrequencyUnavailable: Story = {
+  name: "Frequency - no position reach data",
   args: panelArgs({ positionContext: null }),
+  play: async ({ canvasElement }) => {
+    await expect(
+      within(canvasElement).getByText("Position reach data is unavailable."),
+    ).toBeVisible();
+  },
 };

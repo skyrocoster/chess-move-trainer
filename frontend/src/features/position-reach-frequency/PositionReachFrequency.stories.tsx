@@ -29,14 +29,19 @@ type Story = StoryObj<typeof meta>;
 function context(overrides: Partial<PositionContextResponse> = {}): PositionContextResponse {
   return {
     fen: FEN,
-    overall_exists: true,
-    white_count: 2,
-    black_count: 3,
-    white_total: 5,
-    black_total: 7,
+    trainerColor: "white",
+    observedInGames: true,
+    distinctGameCount: 2,
+    totalGameCount: 5,
     ...overrides,
   };
 }
+
+const BLACK_CONTEXT: Partial<PositionContextResponse> = {
+  trainerColor: "black",
+  distinctGameCount: 3,
+  totalGameCount: 7,
+};
 
 function frame(children: ReactNode) {
   return (
@@ -92,7 +97,7 @@ export const PositiveWhite: Story = {
 
 export const PositiveBlack: Story = {
   name: "Positive - Black 3 of 7 games",
-  args: { context: context(), selectedColor: "black" },
+  args: { context: context(BLACK_CONTEXT), selectedColor: "black" },
   render: (args) => frame(<PositionReachFrequency {...args} />),
   play: async ({ canvasElement }) => {
     expectAvailable(canvasElement, "Black", "3 / 7 games", "42.9%");
@@ -101,7 +106,7 @@ export const PositiveBlack: Story = {
 
 export const AvailableZero: Story = {
   name: "Available zero - White 0 of 5 games",
-  args: { context: context({ white_count: 0 }), selectedColor: "white" },
+  args: { context: context({ distinctGameCount: 0 }), selectedColor: "white" },
   render: (args) => frame(<PositionReachFrequency {...args} />),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -116,7 +121,7 @@ export const AvailableZero: Story = {
 export const Absent: Story = {
   name: "Absent - position not in accepted game data",
   args: {
-    context: context({ overall_exists: false, white_count: 4, black_count: 3 }),
+    context: context({ observedInGames: false, distinctGameCount: 0, totalGameCount: 0 }),
     selectedColor: "black",
   },
   render: (args) => frame(<PositionReachFrequency {...args} />),
@@ -153,7 +158,7 @@ export const ConstrainedWidth: Story = {
 export const Accessibility: Story = {
   name: "Accessibility - labelled proportional meter",
   parameters: { a11y: { disable: false } },
-  args: { context: context(), selectedColor: "black" },
+  args: { context: context(BLACK_CONTEXT), selectedColor: "black" },
   render: (args) => frame(<PositionReachFrequency {...args} />),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);

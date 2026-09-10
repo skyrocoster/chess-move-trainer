@@ -11,6 +11,7 @@ const SOURCE_EXTENSIONS = new Set([".ts", ".tsx"]);
 const ALLOWED_RUNTIME_CLIENT_IMPORTS: Record<string, ReadonlySet<string>> = {
   "features/status/StatusPage.tsx": new Set(["getHealthOptions"]),
   "features/repertoire-builder/RepertoireBuilderWorkspace.tsx": new Set(["getGame"]),
+  "features/position-context/positionContextApi.ts": new Set(["getPositionInsight"]),
 };
 
 function collectProductionSourceFiles(dir: string): string[] {
@@ -40,7 +41,7 @@ function runtimeClientImportNames(content: string): string[] | null {
 }
 
 describe("generated client adoption guard", () => {
-  it("allows only the approved Status and Repertoire runtime imports", () => {
+  it("allows only the approved Status, Repertoire, and position-context runtime imports", () => {
     const offenders: string[] = [];
     for (const filePath of collectProductionSourceFiles(srcDir)) {
       const content = readFileSync(filePath, "utf8");

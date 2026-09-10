@@ -8,17 +8,16 @@ const FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 function context(overrides: Partial<PositionContextResponse> = {}): PositionContextResponse {
   return {
     fen: FEN,
-    overall_exists: true,
-    white_count: 2,
-    black_count: 3,
-    white_total: 5,
-    black_total: 7,
+    trainerColor: "white",
+    observedInGames: true,
+    distinctGameCount: 2,
+    totalGameCount: 5,
     ...overrides,
   };
 }
 
 describe("derivePositionReachFrequencyModel", () => {
-  it("selects White's reached count and denominator without another colour input", () => {
+  it("uses the trainer color's distinct game count and total without another colour input", () => {
     expect(derivePositionReachFrequencyModel(context(), "white")).toMatchObject({
       selectedColor: "white",
       state: "available",
@@ -31,8 +30,13 @@ describe("derivePositionReachFrequencyModel", () => {
     });
   });
 
-  it("selects Black's independent reached count and denominator", () => {
-    expect(derivePositionReachFrequencyModel(context(), "black")).toMatchObject({
+  it("uses an independently loaded Black insight for its distinct count and total", () => {
+    expect(
+      derivePositionReachFrequencyModel(
+        context({ trainerColor: "black", distinctGameCount: 3, totalGameCount: 7 }),
+        "black",
+      ),
+    ).toMatchObject({
       selectedColor: "black",
       state: "available",
       reached: 3,
@@ -43,8 +47,10 @@ describe("derivePositionReachFrequencyModel", () => {
     });
   });
 
-  it("keeps an existing zero-count position available at zero percent", () => {
-    expect(derivePositionReachFrequencyModel(context({ white_count: 0 }), "white")).toMatchObject({
+  it("keeps an existing zero distinct-game count available at zero percent", () => {
+    expect(
+      derivePositionReachFrequencyModel(context({ distinctGameCount: 0 }), "white"),
+    ).toMatchObject({
       state: "available",
       reached: 0,
       total: 5,
@@ -55,10 +61,10 @@ describe("derivePositionReachFrequencyModel", () => {
     });
   });
 
-  it("keeps an absent position distinct from an available zero", () => {
+  it("keeps a globally unseen position distinct from an available zero", () => {
     expect(
       derivePositionReachFrequencyModel(
-        context({ overall_exists: false, white_count: 0, black_count: 0 }),
+        context({ observedInGames: false, distinctGameCount: 0, totalGameCount: 0 }),
         "white",
       ),
     ).toMatchObject({
@@ -86,11 +92,11 @@ describe("derivePositionReachFrequencyModel", () => {
 
   it("bounds an unsafe percentage and avoids division by zero", () => {
     expect(
-      derivePositionReachFrequencyModel(context({ white_count: 9, white_total: 4 }), "white")
+      derivePositionReachFrequencyModel(context({ distinctGameCount: 9, totalGameCount: 4 }), "white")
         .percentage,
     ).toBe(100);
     expect(
-      derivePositionReachFrequencyModel(context({ black_count: 1, black_total: 0 }), "black")
+      derivePositionReachFrequencyModel(context({ distinctGameCount: 1, totalGameCount: 0 }), "white")
         .percentage,
     ).toBe(0);
   });

@@ -1,18 +1,16 @@
 import { validateFen } from "chess.js";
 
-import type { Fen } from "../chess/chessPrimitives";
-
-const API_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:5666";
+import { getPositionInsight } from "../../api/client";
+import type { ChessSide, Fen } from "../chess/chessPrimitives";
 
 type JsonRecord = Record<string, unknown>;
 
 export type PositionContextResponse = {
   fen: Fen;
-  overall_exists: boolean;
-  white_count: number;
-  black_count: number;
-  white_total: number;
-  black_total: number;
+  trainerColor: ChessSide;
+  observedInGames: boolean;
+  distinctGameCount: number;
+  totalGameCount: number;
 };
 
 export type PositionContextFailureCode =
@@ -27,15 +25,12 @@ export type PositionContextResult =
 
 export type PositionContextClient = (
   fen: Fen,
+  trainerColor: ChessSide,
   signal?: AbortSignal,
 ) => Promise<PositionContextResult>;
 
 function isRecord(value: unknown): value is JsonRecord {
   return typeof value === "object" && value !== null;
-}
-
-function hasExactKeys(value: JsonRecord, keys: string[]): boolean {
-  return Object.keys(value).sort().join(",") === [...keys].sort().join(",");
 }
 
 function isNonnegativeInteger(value: unknown): value is number {
@@ -57,88 +52,77 @@ function samePositionFen(value: unknown, requestedFen: Fen): value is Fen {
   return isCanonicalFen(value) && positionKeyFromFen(value) === positionKeyFromFen(requestedFen);
 }
 
-function isPositionContextResponse(
-  value: unknown,
-  requestedFen: Fen,
-): value is PositionContextResponse {
-  return (
-    isRecord(value) &&
-    hasExactKeys(value, [
-      "fen",
-      "overall_exists",
-      "white_count",
-      "black_count",
-      "white_total",
-      "black_total",
-    ]) &&
-    samePositionFen(value.fen, requestedFen) &&
-    typeof value.overall_exists === "boolean" &&
-    isNonnegativeInteger(value.white_count) &&
-    isNonnegativeInteger(value.black_count) &&
-    isNonnegativeInteger(value.white_total) &&
-    isNonnegativeInteger(value.black_total)
-  );
-}
-
-function isFailureCode(value: unknown): value is PositionContextFailureCode {
-  return (
-    value === "invalid_fen" ||
-    value === "position_context_unavailable" ||
-    value === "unexpected_failure"
-  );
-}
-
-function isErrorBody(
-  value: unknown,
-): value is { code: PositionContextFailureCode; message: string } {
-  return (
-    isRecord(value) &&
-    hasExactKeys(value, ["code", "message"]) &&
-    isFailureCode(value.code) &&
-    typeof value.message === "string"
-  );
-}
-
-async function readJson(response: Response): Promise<unknown> {
-  try {
-    return await response.json();
-  } catch {
-    return null;
-  }
-}
-
-function failureFromResponse(status: number, body: unknown): PositionContextFailure {
-  if (status === 422 && isErrorBody(body) && body.code === "invalid_fen") {
-    return { status: body.code };
-  }
-  if (status === 503 && isErrorBody(body) && body.code === "position_context_unavailable") {
-    return { status: body.code };
-  }
-  if (status === 500 && isErrorBody(body) && body.code === "unexpected_failure") {
-    return { status: body.code };
-  }
-  return { status: "unexpected_failure" };
+function requestAsOf(): string {
+  return new Date().toISOString().slice(0, 10);
 }
 
 export function validatePositionContextFen(value: unknown): PositionContextFailureCode | null {
   return isCanonicalFen(value) ? null : "invalid_fen";
 }
 
-export const fetchPositionContext: PositionContextClient = async (fen, signal) => {
+function narrowInsightResponse(
+  response: unknown,
+  requestedFen: Fen,
+  trainerColor: ChessSide,
+): PositionContextResult {
+  if (!isRecord(response) || !samePositionFen(response.fen, requestedFen)) {
+    return { status: "unexpected_failure" };
+  }
+  if (response.trainer_color !== trainerColor) {
+    return { status: "unexpected_failure" };
+  }
+  const experience = response.experience;
+  if (
+    !isRecord(experience) ||
+    !isNonnegativeInteger(experience.distinct_game_count) ||
+    !isNonnegativeInteger(experience.total_game_count) ||
+    typeof response.observed_in_games !== "boolean"
+  ) {
+    return { status: "unexpected_failure" };
+  }
+  return {
+    status: "success",
+    data: {
+      fen: response.fen,
+      trainerColor,
+      observedInGames: response.observed_in_games,
+      distinctGameCount: experience.distinct_game_count,
+      totalGameCount: experience.total_game_count,
+    },
+  };
+}
+
+function failureFromInsight(error: unknown, status: number | null): PositionContextFailure {
+  const code = isRecord(error) && typeof error.code === "string" ? error.code : null;
+  if (status === 422 && code === "invalid_fen") {
+    return { status: "invalid_fen" };
+  }
+  if (status === 503 && code === "position_insight_unavailable") {
+    return { status: "position_context_unavailable" };
+  }
+  if (status === 500 && code === "unexpected_failure") {
+    return { status: "unexpected_failure" };
+  }
+  return { status: "unexpected_failure" };
+}
+
+export const fetchPositionContext: PositionContextClient = async (fen, trainerColor, signal) => {
   const validationFailure = validatePositionContextFen(fen);
   if (validationFailure !== null) {
     return { status: validationFailure };
   }
 
-  const response = await fetch(`${API_URL}/api/position-context?fen=${encodeURIComponent(fen)}`, {
+  const result = await getPositionInsight({
+    query: {
+      as_of: requestAsOf(),
+      fen,
+      trainer_color: trainerColor,
+    },
     signal,
   });
-  const body = await readJson(response);
 
-  if (!response.ok) {
-    return failureFromResponse(response.status, body);
+  if (result.data === undefined || result.error !== undefined) {
+    return failureFromInsight(result.error, result.response?.status ?? null);
   }
-  return isPositionContextResponse(body, fen)
-    ? { status: "success", data: body }
-    : { status: "unexpected_failure" };
+  return narrowInsightResponse(result.data, fen, trainerColor);
 };

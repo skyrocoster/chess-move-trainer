@@ -57,12 +57,10 @@ export const GAME_DETAIL: GameDetailResponse = {
   trainer_rating: null,
 };
 export const CONTEXT = {
-  overall_exists: true,
-  white_count: 0,
-  black_count: 0,
-  white_total: 10,
-  black_total: 10,
-};
+  observedInGames: true,
+  distinctGameCount: 0,
+  totalGameCount: 10,
+} as const;
 
 export function moveResponseDistributionResponse(
   fen: string,
@@ -236,9 +234,9 @@ export function testClients(
       return mutationResponse(fen);
     }),
   };
-  const positionContextClient: PositionContextClient = vi.fn(async (fen) => ({
+  const positionContextClient: PositionContextClient = vi.fn(async (fen, trainerColor) => ({
     status: "success" as const,
-    data: { fen, ...CONTEXT },
+    data: { fen, trainerColor, ...CONTEXT },
   }));
   const moveResponseDistributionClient: MoveResponseDistributionClient = vi.fn(
     async (fen, color) => ({

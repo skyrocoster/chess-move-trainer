@@ -154,7 +154,8 @@ export function usePreferredMoveWorkflow({
     [preferredMoveClient],
   );
   const contextReader = useCallback(
-    (fen: string, signal?: AbortSignal) => positionContextClient(fen, signal),
+    (fen: string, trainerColor: ChessSide, signal?: AbortSignal) =>
+      positionContextClient(fen, trainerColor, signal),
     [positionContextClient],
   );
   const selectedTransition = session.selectedTransition;
@@ -168,6 +169,7 @@ export function usePreferredMoveWorkflow({
   const preferredState = usePreferredMoveState(preferredPositionFen, preferredReader, refreshToken);
   const contextState = usePositionContextState(
     session.currentPosition.fen,
+    bottomColor,
     contextReader,
     contextRefreshToken,
   );

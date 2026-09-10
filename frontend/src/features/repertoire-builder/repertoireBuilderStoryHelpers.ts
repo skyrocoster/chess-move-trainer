@@ -2,6 +2,7 @@ import { Chess } from "chess.js";
 import { expect, fn, userEvent, within } from "storybook/test";
 
 import type { GameDetailResponse } from "../../api/client";
+import { GAME_UUID } from "../game/gameFixtures";
 import type {
   PositionContextClient,
   PositionContextFailureCode,
@@ -65,6 +66,29 @@ export const STORY_GAME_DETAIL: GameDetailResponse = {
   trainer_rating: null,
 };
 
+export const STORY_BLACK_SUBJECT_GAME_DETAIL: GameDetailResponse = {
+  ...STORY_GAME_DETAIL,
+  trainer_color: "black",
+};
+
+export const STORY_PROMOTION_GAME_DETAIL: GameDetailResponse = {
+  ended_at_utc: null,
+  game_uuid: GAME_UUID,
+  occurrences: [{ ply: 0, fen: "k7/4P3/8/8/8/8/8/4K3 w - - 0 1", move_uci: null }],
+  opponent_chesscom_uuid: null,
+  opponent_rating: null,
+  original_pgn: "",
+  source_url: "https://www.chess.com/game/live/140399891142",
+  started_at_utc: null,
+  termination_reason: null,
+  time_class: "blitz",
+  time_control: "300+0",
+  trainer_chesscom_uuid: "trainer-id",
+  trainer_color: "white",
+  trainer_outcome: null,
+  trainer_rating: null,
+};
+
 export function storyGameClient(detail: GameDetailResponse = STORY_GAME_DETAIL): GameDetailClient {
   return fn(async () => ({ data: detail, error: undefined }));
 }
@@ -81,10 +105,7 @@ export type StoryPreferredMoveOptions = {
 };
 
 export type StoryPositionContextOptions = Partial<
-  Pick<
-    PositionContextResponse,
-    "overall_exists" | "white_count" | "black_count" | "white_total" | "black_total"
-  >
+  Pick<PositionContextResponse, "observedInGames" | "distinctGameCount" | "totalGameCount">
 > & {
   failure?: PositionContextFailureCode;
   pending?: boolean;
@@ -219,10 +240,13 @@ export function storyPreferredMoveClient(
   };
 }
 
+const DEFAULT_DISTINCT_GAME_COUNT_BY_COLOR = { white: 3, black: 2 } as const;
+const DEFAULT_TOTAL_GAME_COUNT = 10;
+
 export function storyPositionContextClient(
   options: StoryPositionContextOptions = {},
 ): PositionContextClient {
-  return fn(async (fen) => {
+  return fn(async (fen, trainerColor) => {
     if (options.pending) {
       return new Promise<never>(() => undefined);
     }
@@ -233,24 +257,21 @@ export function storyPositionContextClient(
       status: "success" as const,
       data: {
         fen,
-        overall_exists: options.overall_exists ?? true,
-        white_count: options.white_count ?? 3,
-        black_count: options.black_count ?? 2,
-        white_total: options.white_total ?? 10,
-        black_total: options.black_total ?? 10,
+        trainerColor,
+        observedInGames: options.observedInGames ?? true,
+        distinctGameCount:
+          options.distinctGameCount ?? DEFAULT_DISTINCT_GAME_COUNT_BY_COLOR[trainerColor],
+        totalGameCount: options.totalGameCount ?? DEFAULT_TOTAL_GAME_COUNT,
       },
     };
   });
 }
 
-export async function loadGame(canvas: ReturnType<typeof within>, gameUuid: string, ply?: string) {
+export async function loadGame(canvas: ReturnType<typeof within>, gameUuid: string) {
   await userEvent.type(canvas.getByLabelText("Game UUID"), gameUuid);
-  if (ply !== undefined) {
-    await userEvent.type(canvas.getByLabelText(/Ply/), ply);
-  }
   await userEvent.click(canvas.getByRole("button", { name: "Load game" }));
-  await expect(canvas.getByTestId("session-status")).toHaveTextContent(
-    "Select a legal move to continue the local line.",
+  await expect(canvas.getByTestId("session-origin")).toHaveTextContent(
+    "complete game loaded",
   );
 }
 

@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
 
 import type { PositionContextResponse } from "../position-context/positionContextApi";
-import { canonicalMoveUci, deriveRepertoirePositionModel } from "./repertoireWorkflowModel";
-import type { PositionPickerMoveRecord } from "./positionPickerSession";
+import { sanFromFenAndUci } from "../game/gameModel";
+import type { SelectedTransition } from "./positionPickerSessionBoundary";
+import { deriveRepertoirePositionModel } from "./repertoireWorkflowModel";
 
 const FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 const AFTER_E4_FEN = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1";
@@ -10,29 +11,24 @@ const AFTER_E4_FEN = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 
 function context(overrides: Partial<PositionContextResponse> = {}): PositionContextResponse {
   return {
     fen: FEN,
-    overall_exists: true,
-    white_count: 2,
-    black_count: 0,
-    white_total: 3,
-    black_total: 2,
+    trainerColor: "white",
+    observedInGames: true,
+    distinctGameCount: 2,
+    totalGameCount: 3,
     ...overrides,
   };
 }
 
-const WHITE_MOVE: PositionPickerMoveRecord = {
-  sourceSquare: "e2",
-  targetSquare: "e4",
-  color: "white",
-  san: "e4",
-  position: { ply: 1, fen: AFTER_E4_FEN, san: "e4" },
-};
+const E4_TRANSITION: SelectedTransition = { parentFEN: FEN, outgoingUCI: "e2e4" };
+const D4_TRANSITION: SelectedTransition = { parentFEN: FEN, outgoingUCI: "d2d4" };
 
-const DIFFERENT_MOVE: PositionPickerMoveRecord = {
-  ...WHITE_MOVE,
-  sourceSquare: "d2",
-  targetSquare: "d4",
-  san: "d4",
-};
+function selectedFact(transition: SelectedTransition) {
+  return {
+    transition,
+    san: sanFromFenAndUci(transition.parentFEN, transition.outgoingUCI),
+    uci: transition.outgoingUCI,
+  };
+}
 
 describe("repertoire position model", () => {
   const assignedPreferredMove = {
@@ -44,20 +40,20 @@ describe("repertoire position model", () => {
 
   it.each([
     ["empty", null, null, "not-applicable"],
-    ["first-choice", null, WHITE_MOVE, "not-applicable"],
+    ["first-choice", null, E4_TRANSITION, "not-applicable"],
     ["saved", assignedPreferredMove, null, "not-applicable"],
-    ["replacement", assignedPreferredMove, DIFFERENT_MOVE, "different"],
-    ["matching", assignedPreferredMove, WHITE_MOVE, "matching"],
+    ["replacement", assignedPreferredMove, D4_TRANSITION, "different"],
+    ["matching", assignedPreferredMove, E4_TRANSITION, "matching"],
   ] as const)(
-    "derives the %s relationship from confirmed saved and local staged facts",
-    (relationship, preferredMove, stagedMove, comparison) => {
+    "derives the %s relationship from confirmed saved and local selected facts",
+    (relationship, preferredMove, selectedTransition, comparison) => {
       const model = deriveRepertoirePositionModel({
         context: context(),
         preferredMove,
         sideToMove: "white",
         bottomColor: "white",
         sourceFen: FEN,
-        stagedMove,
+        selectedTransition,
       });
 
       expect(model).toMatchObject({
@@ -76,22 +72,18 @@ describe("repertoire position model", () => {
             }
           : null,
       );
-      expect(model.staged).toEqual(
-        stagedMove ? { move: stagedMove, uci: canonicalMoveUci(stagedMove) } : null,
-      );
+      expect(model.selected).toEqual(selectedTransition ? selectedFact(selectedTransition) : null);
     },
   );
 
   it("uses canonical UCI, including promotion, rather than SAN for identity", () => {
-    const promoted: PositionPickerMoveRecord = {
-      ...WHITE_MOVE,
-      sourceSquare: "e7",
-      targetSquare: "e8",
-      san: "e8=Q",
-      promotion: "q",
+    const PROMOTION_PARENT_FEN = "5k2/4P3/8/8/8/8/8/4K3 w - - 0 1";
+    const promotedTransition: SelectedTransition = {
+      parentFEN: PROMOTION_PARENT_FEN,
+      outgoingUCI: "e7e8q",
     };
 
-    expect(canonicalMoveUci(promoted)).toBe("e7e8q");
+    expect(selectedFact(promotedTransition).san).toBe("e8=Q+");
     expect(
       deriveRepertoirePositionModel({
         context: context(),
@@ -102,7 +94,7 @@ describe("repertoire position model", () => {
         sideToMove: "white",
         bottomColor: "white",
         sourceFen: FEN,
-        stagedMove: { ...promoted, san: "e8=N" },
+        selectedTransition: promotedTransition,
       }),
     ).toMatchObject({ relationship: "replacement", comparison: "different" });
   });
@@ -137,24 +129,21 @@ describe("repertoire position model", () => {
         sideToMove: "white",
         bottomColor: "white",
         sourceFen: FEN,
-        stagedMove: WHITE_MOVE,
+        selectedTransition: E4_TRANSITION,
       }),
     ).toMatchObject({
       savedPresence: "unknown",
       relationship: "unknown",
       comparison: "unknown",
       saved: null,
-      staged: {
-        move: WHITE_MOVE,
-        uci: "e2e4",
-      },
+      selected: selectedFact(E4_TRANSITION),
     });
   });
 
-  it("maps bottom color to its personal count and keeps zero savable", () => {
+  it("maps the requested trainer color to its distinct-game count and keeps zero savable", () => {
     expect(
       deriveRepertoirePositionModel({
-        context: context(),
+        context: context({ trainerColor: "black", distinctGameCount: 0, totalGameCount: 2 }),
         preferredMove: null,
         sideToMove: "white",
         bottomColor: "black",
@@ -167,10 +156,10 @@ describe("repertoire position model", () => {
     });
   });
 
-  it("marks an absent overall position unsavable even when counts are zero", () => {
+  it("marks a globally unobserved position unsavable even when loaded experience exists", () => {
     expect(
       deriveRepertoirePositionModel({
-        context: context({ overall_exists: false }),
+        context: context({ observedInGames: false }),
         preferredMove: null,
         sideToMove: "white",
         bottomColor: "white",
@@ -180,6 +169,37 @@ describe("repertoire position model", () => {
       personalCount: 2,
       contextMessage: "Never seen as White",
       saveability: "unsavable",
+    });
+  });
+
+  it("summarizes an observed position with zero selected-color experience as never seen", () => {
+    expect(
+      deriveRepertoirePositionModel({
+        context: context({ trainerColor: "black", distinctGameCount: 0, totalGameCount: 2 }),
+        preferredMove: null,
+        sideToMove: "black",
+        bottomColor: "black",
+        sourceFen: FEN,
+      }),
+    ).toMatchObject({
+      contextMessage: "Never seen as Black",
+      saveability: "savable",
+    });
+  });
+
+  it("summarizes seen experience with the trainer color's distinct-game count", () => {
+    expect(
+      deriveRepertoirePositionModel({
+        context: context({ trainerColor: "black", distinctGameCount: 5, totalGameCount: 7 }),
+        preferredMove: null,
+        sideToMove: "black",
+        bottomColor: "black",
+        sourceFen: FEN,
+      }),
+    ).toMatchObject({
+      personalCount: 5,
+      contextMessage: "Seen in 5 games as Black",
+      saveability: "savable",
     });
   });
 
