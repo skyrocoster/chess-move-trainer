@@ -39,12 +39,9 @@ function ReplyButton({
         </span>
         <span className={styles.replyDetails}>
           <span className={styles.replySan}>{reply.san}</span>
-          {reply.opening_name ? (
-            <span className={styles.openingName}>{reply.opening_name}</span>
-          ) : null}
         </span>
         <span className={styles.replyMetrics}>
-          <span>{reply.distinct_game_count} games</span>
+          <span>{reply.occurrence_count} occurrences</span>
           <span>{reply.percentageLabel}</span>
         </span>
       </button>
@@ -64,8 +61,8 @@ export function MoveResponseDistributionControls({
 }: MoveResponseDistributionControlsProps) {
   return (
     <div className={styles.controls}>
-      <h3 className={styles.controlsHeading}>Common replies</h3>
-      <ul className={styles.replyList} aria-label="Common replies">
+      <h3 className={styles.controlsHeading}>Common outgoing moves</h3>
+      <ul className={styles.replyList} aria-label="Common outgoing moves">
         {replies.map((reply) => (
           <ReplyButton
             key={reply.child_uci}
@@ -88,14 +85,14 @@ export function MoveResponseDistributionControls({
           >
             <span>Other</span>
             <span className={styles.replyMetrics} aria-hidden="true">
-              <span>{other.distinct_game_count} games</span>
+              <span>{other.occurrence_count} occurrences</span>
               <span>{other.percentageLabel}</span>
             </span>
           </button>
           <ul
             className={styles.replyList}
             id={tailId}
-            aria-label="Other replies"
+            aria-label="Other outgoing moves"
             hidden={!otherExpanded}
           >
             {tail.map((reply) => (

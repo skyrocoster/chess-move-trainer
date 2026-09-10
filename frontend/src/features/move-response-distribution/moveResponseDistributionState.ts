@@ -22,7 +22,7 @@ function requestKey(fen: Fen | null, color: ChessSide | null): string | null {
 }
 
 function isEmptyResponse(data: MoveResponseDistributionResponse): boolean {
-  return data.matching_game_count === 0 || data.replies.length === 0;
+  return data.matching_game_count === 0 || data.outgoing_occurrence_count === 0;
 }
 
 export function useMoveResponseDistributionState(

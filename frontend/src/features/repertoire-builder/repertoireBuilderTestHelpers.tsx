@@ -70,13 +70,14 @@ export function moveResponseDistributionResponse(
     fen,
     color,
     matching_game_count: 10,
+    outgoing_occurrence_count: 12,
     replies: [
-      { rank: 1, child_uci: "e2e4", san: "e4", distinct_game_count: 4, opening_name: null },
-      { rank: 2, child_uci: "d2d4", san: "d4", distinct_game_count: 3, opening_name: null },
-      { rank: 3, child_uci: "c2c4", san: "c4", distinct_game_count: 2, opening_name: null },
-      { rank: 4, child_uci: "g1f3", san: "Nf3", distinct_game_count: 1, opening_name: null },
-      { rank: 5, child_uci: "c2c3", san: "c3", distinct_game_count: 1, opening_name: null },
-      { rank: 6, child_uci: "b2b3", san: "b3", distinct_game_count: 1, opening_name: null },
+      { rank: 1, child_uci: "e2e4", san: "e4", occurrence_count: 4 },
+      { rank: 2, child_uci: "d2d4", san: "d4", occurrence_count: 3 },
+      { rank: 3, child_uci: "c2c4", san: "c4", occurrence_count: 2 },
+      { rank: 4, child_uci: "g1f3", san: "Nf3", occurrence_count: 1 },
+      { rank: 5, child_uci: "c2c3", san: "c3", occurrence_count: 1 },
+      { rank: 6, child_uci: "b2b3", san: "b3", occurrence_count: 1 },
     ],
   };
 }

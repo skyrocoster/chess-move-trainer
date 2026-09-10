@@ -218,8 +218,8 @@ function renderTooltip({ active, payload }: TooltipContentProps) {
   return (
     <div className={styles.tooltip} role="tooltip">
       <strong className={styles.tooltipLabel}>{item.label}</strong>
-      <span className={styles.tooltipMetric}>{item.value} games</span>
-      <span className={styles.tooltipMetric}>{item.percentageLabel}</span>
+      <span className={styles.tooltipMetric}>{item.value} occurrences</span>
+      <span className={styles.tooltipMetric}>{item.percentageLabel} of outgoing move occurrences</span>
     </div>
   );
 }
@@ -238,7 +238,7 @@ export function MoveResponseDistributionChart({
       kind: "reply" as const,
       key: reply.child_uci,
       label: reply.san,
-      value: reply.distinct_game_count,
+      value: reply.occurrence_count,
       percentageLabel: reply.percentageLabel,
       childUci: reply.child_uci,
     })),
@@ -248,7 +248,7 @@ export function MoveResponseDistributionChart({
             kind: "other" as const,
             key: "other" as const,
             label: "Other" as const,
-            value: other.distinct_game_count,
+            value: other.occurrence_count,
             percentageLabel: other.percentageLabel,
           },
         ]
@@ -314,13 +314,13 @@ export function MoveResponseDistributionChart({
       className={styles.chartFrame}
       data-testid="move-response-distribution-chart"
       role="img"
-      aria-label="Move response distribution chart"
+      aria-label="Move response distribution chart of outgoing move occurrences"
       aria-describedby={descriptionId}
       data-other-expanded={otherExpanded ? "true" : "false"}
     >
       <p className={styles.visuallyHidden} id={descriptionId}>
-        Pie chart of replies by distinct matching games. The text controls provide the complete
-        keyboard-operable reply list.
+        Pie chart of outgoing moves by recorded occurrences. The text controls provide the
+        complete keyboard-operable outgoing-move list.
       </p>
       <PieChart
         width={CHART_SIZE}

@@ -27,20 +27,15 @@ function availableData(
     fen: FEN,
     color: "white",
     matching_game_count: 4,
+    outgoing_occurrence_count: 13,
     replies: [
-      { rank: 1, child_uci: "e2e4", san: "e4", distinct_game_count: 4, opening_name: null },
-      {
-        rank: 2,
-        child_uci: "d2d4",
-        san: "d4",
-        distinct_game_count: 3,
-        opening_name: "Queen's Pawn Game",
-      },
-      { rank: 3, child_uci: "c2c4", san: "c4", distinct_game_count: 2, opening_name: null },
-      { rank: 4, child_uci: "g1f3", san: "Nf3", distinct_game_count: 1, opening_name: null },
-      { rank: 5, child_uci: "c2c3", san: "c3", distinct_game_count: 1, opening_name: null },
-      { rank: 6, child_uci: "b2b3", san: "b3", distinct_game_count: 1, opening_name: null },
-      { rank: 7, child_uci: "f2f4", san: "f4", distinct_game_count: 1, opening_name: null },
+      { rank: 1, child_uci: "e2e4", san: "e4", occurrence_count: 4 },
+      { rank: 2, child_uci: "d2d4", san: "d4", occurrence_count: 3 },
+      { rank: 3, child_uci: "c2c4", san: "c4", occurrence_count: 2 },
+      { rank: 4, child_uci: "g1f3", san: "Nf3", occurrence_count: 1 },
+      { rank: 5, child_uci: "c2c3", san: "c3", occurrence_count: 1 },
+      { rank: 6, child_uci: "b2b3", san: "b3", occurrence_count: 1 },
+      { rank: 7, child_uci: "f2f4", san: "f4", occurrence_count: 1 },
     ],
     ...overrides,
   };
@@ -90,7 +85,7 @@ describe("MoveResponseDistribution", () => {
     expect(embeddedRule).toContain("box-shadow: none;");
   });
 
-  it("renders the available 01C chart/list with the selected colour and overlap-safe copy", async () => {
+  it("renders the available chart/list with occurrence semantics and no opening or overlap copy", async () => {
     render(
       <MoveResponseDistribution
         fen={FEN}
@@ -109,15 +104,12 @@ describe("MoveResponseDistribution", () => {
     expect(screen.getByRole("heading", { name: "Move response distribution" })).toBeVisible();
     expect(screen.getByText("White repertoire colour", { exact: true })).toBeVisible();
     expect(screen.getByRole("img")).toBeVisible();
-    expect(screen.getByRole("button", { name: /e4, 4 distinct games, 100%/ })).toBeVisible();
-    expect(
-      screen.getByRole("button", { name: /d4, 3 distinct games, 75%.*Queen's Pawn Game/ }),
-    ).toBeVisible();
-    expect(
-      screen.getByText(
-        "Percentages are calculated per reply from matching games; one game may appear in more than one reply.",
-      ),
-    ).toBeVisible();
+    expect(screen.getByRole("button", { name: /e4, 4 occurrences, 30.8%/ })).toBeVisible();
+    expect(screen.getByRole("button", { name: /d4, 3 occurrences, 23.1%/ })).toBeVisible();
+    expect(screen.queryByText("Queen's Pawn Game")).not.toBeInTheDocument();
+    expect(screen.queryByText(/one game may appear in more than one reply/)).not.toBeInTheDocument();
+    expect(screen.getByText(/outgoing move occurrences observed in 4 matching White/)).toBeVisible();
+    expect(screen.getByText(/Pie chart of outgoing moves by recorded occurrences/)).toBeInTheDocument();
   });
 
   it("uses the same UCI selection callback for chart sectors and text controls", async () => {
@@ -132,7 +124,7 @@ describe("MoveResponseDistribution", () => {
     );
     await waitFor(() => expect(container.querySelectorAll(".recharts-sector").length).toBe(6));
 
-    await userEvent.click(screen.getByRole("button", { name: /e4, 4 distinct games/ }));
+    await userEvent.click(screen.getByRole("button", { name: /e4, 4 occurrences/ }));
     expect(onMoveSelect).toHaveBeenLastCalledWith("e2e4");
     onMoveSelect.mockClear();
 
@@ -159,8 +151,8 @@ describe("MoveResponseDistribution", () => {
     fireEvent.mouseEnter(getSectors()[0]!);
     await waitFor(() => expect(screen.getByRole("tooltip")).toBeVisible());
     expect(screen.getByRole("tooltip")).toHaveTextContent("e4");
-    expect(screen.getByRole("tooltip")).toHaveTextContent("4 games");
-    expect(screen.getByRole("tooltip")).toHaveTextContent("100%");
+    expect(screen.getByRole("tooltip")).toHaveTextContent("4 occurrences");
+    expect(screen.getByRole("tooltip")).toHaveTextContent("30.8%");
     expect(getSectors()[0]).toHaveAttribute("data-hovered", "true");
     expect(getSectors()[1]).toHaveAttribute("data-hovered", "false");
     expect(onMoveSelect).not.toHaveBeenCalled();
@@ -174,8 +166,8 @@ describe("MoveResponseDistribution", () => {
     fireEvent.mouseEnter(getSectors()[5]!);
     await waitFor(() => expect(screen.getByRole("tooltip")).toBeVisible());
     expect(screen.getByRole("tooltip")).toHaveTextContent("Other");
-    expect(screen.getByRole("tooltip")).toHaveTextContent("2 games");
-    expect(screen.getByRole("tooltip")).toHaveTextContent("50%");
+    expect(screen.getByRole("tooltip")).toHaveTextContent("2 occurrences");
+    expect(screen.getByRole("tooltip")).toHaveTextContent("15.4%");
     expect(onMoveSelect).not.toHaveBeenCalled();
     expect(other).toHaveAttribute("aria-expanded", "false");
   });
@@ -199,10 +191,10 @@ describe("MoveResponseDistribution", () => {
     await userEvent.click(other);
     expect(other).toHaveAttribute("aria-expanded", "true");
     expect(document.getElementById(tailId!)).not.toHaveAttribute("hidden");
-    expect(screen.getByRole("button", { name: /b3, 1 distinct games/ })).toBeVisible();
+    expect(screen.getByRole("button", { name: /b3, 1 occurrences/ })).toBeVisible();
 
     expect(onMoveSelect).not.toHaveBeenCalled();
-    await userEvent.click(screen.getByRole("button", { name: /b3, 1 distinct games/ }));
+    await userEvent.click(screen.getByRole("button", { name: /b3, 1 occurrences/ }));
     expect(onMoveSelect).toHaveBeenCalledWith("b2b3");
 
     const sectors = document.querySelectorAll(".recharts-sector");
@@ -231,7 +223,7 @@ describe("MoveResponseDistribution", () => {
       ),
     );
     expect(screen.queryByRole("button", { name: /Show other replies/ })).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /d4, 3 distinct games/ })).toHaveAttribute(
+    expect(screen.getByRole("button", { name: /d4, 3 occurrences/ })).toHaveAttribute(
       "aria-pressed",
       "true",
     );
@@ -242,7 +234,9 @@ describe("MoveResponseDistribution", () => {
       <MoveResponseDistribution
         fen={FEN}
         color="white"
-        client={clientFor(availableData({ matching_game_count: 0, replies: [] }))}
+        client={clientFor(
+          availableData({ matching_game_count: 0, outgoing_occurrence_count: 0, replies: [] }),
+        )}
         onMoveSelect={vi.fn()}
       />,
     );
@@ -258,6 +252,28 @@ describe("MoveResponseDistribution", () => {
     );
     expect(screen.queryByRole("img")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Other/ })).not.toBeInTheDocument();
+  });
+
+  it("renders matching games with no recorded next moves distinctly", async () => {
+    render(
+      <MoveResponseDistribution
+        fen={FEN}
+        color="white"
+        client={clientFor(
+          availableData({ matching_game_count: 4, outgoing_occurrence_count: 0, replies: [] }),
+        )}
+        onMoveSelect={vi.fn()}
+      />,
+    );
+
+    await waitFor(() =>
+      expect(screen.getByTestId("move-response-distribution")).toHaveAttribute(
+        "data-state",
+        "no-games",
+      ),
+    );
+    expect(screen.getByRole("status")).toHaveTextContent("No recorded next moves");
+    expect(screen.queryByRole("img")).not.toBeInTheDocument();
   });
 
   it("renders unavailable with retry and recovers the current request", async () => {
@@ -295,9 +311,9 @@ describe("MoveResponseDistribution", () => {
       />,
     );
     await waitFor(() =>
-      expect(screen.getByRole("button", { name: /e4, 4 distinct games/ })).toBeVisible(),
+      expect(screen.getByRole("button", { name: /e4, 4 occurrences/ })).toBeVisible(),
     );
-    const e4 = screen.getByRole("button", { name: /e4, 4 distinct games/ });
+    const e4 = screen.getByRole("button", { name: /e4, 4 occurrences/ });
     e4.focus();
     expect(e4).toHaveFocus();
     await userEvent.keyboard("{Enter}");
@@ -325,12 +341,12 @@ describe("MoveResponseDistribution", () => {
       anchor: text.getAttribute("text-anchor"),
     }));
     expect(labels.map((label) => label.text)).toEqual([
-      "e4 100%",
-      "d4 75%",
-      "c4 50%",
-      "Nf3 25%",
-      "c3 25%",
-      "Other 50%",
+      "e4 30.8%",
+      "d4 23.1%",
+      "c4 15.4%",
+      "b3 7.7%",
+      "c3 7.7%",
+      "Other 15.4%",
     ]);
 
     // Approximate rendered width used only to prove the anchored text stays
@@ -367,13 +383,14 @@ describe("MoveResponseDistribution", () => {
       color: "white",
       matching_game_count: 10000,
       replies: [
-        { rank: 1, child_uci: "e2e4", san: "e4", distinct_game_count: 9804, opening_name: null },
-        { rank: 2, child_uci: "d2d4", san: "d4", distinct_game_count: 180, opening_name: null },
-        { rank: 3, child_uci: "e2e3", san: "e3", distinct_game_count: 10, opening_name: null },
-        { rank: 4, child_uci: "b1c3", san: "Nc3", distinct_game_count: 4, opening_name: null },
-        { rank: 5, child_uci: "g1f3", san: "f3", distinct_game_count: 2, opening_name: null },
-        { rank: 6, child_uci: "g1g3", san: "g3", distinct_game_count: 1, opening_name: null },
+        { rank: 1, child_uci: "e2e4", san: "e4", occurrence_count: 9804 },
+        { rank: 2, child_uci: "d2d4", san: "d4", occurrence_count: 180 },
+        { rank: 3, child_uci: "e2e3", san: "e3", occurrence_count: 10 },
+        { rank: 4, child_uci: "b1c3", san: "Nc3", occurrence_count: 4 },
+        { rank: 5, child_uci: "g1f3", san: "f3", occurrence_count: 2 },
+        { rank: 6, child_uci: "g1g3", san: "g3", occurrence_count: 1 },
       ],
+      outgoing_occurrence_count: 10001,
     };
     const { container } = render(
       <MoveResponseDistribution

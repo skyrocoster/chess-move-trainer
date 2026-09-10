@@ -12,6 +12,9 @@ const ALLOWED_RUNTIME_CLIENT_IMPORTS: Record<string, ReadonlySet<string>> = {
   "features/status/StatusPage.tsx": new Set(["getHealthOptions"]),
   "features/repertoire-builder/RepertoireBuilderWorkspace.tsx": new Set(["getGame"]),
   "features/position-context/positionContextApi.ts": new Set(["getPositionInsight"]),
+  "features/move-response-distribution/moveResponseDistributionApi.ts": new Set([
+    "getPositionInsight",
+  ]),
 };
 
 function collectProductionSourceFiles(dir: string): string[] {

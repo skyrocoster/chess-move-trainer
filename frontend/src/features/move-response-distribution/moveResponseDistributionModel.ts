@@ -12,7 +12,7 @@ export type MoveResponseDistributionReplyView = MoveResponseDistributionReply & 
 
 export type MoveResponseDistributionOtherView = {
   kind: "other";
-  distinct_game_count: number;
+  occurrence_count: number;
   percentage: number;
   percentageLabel: string;
   accessibleLabel: string;
@@ -22,12 +22,12 @@ export type MoveResponseDistributionModel = {
   color: ChessSide;
   colorLabel: "White" | "Black";
   matchingGameCount: number;
+  outgoingOccurrenceCount: number;
   common: MoveResponseDistributionReplyView[];
   tail: MoveResponseDistributionReplyView[];
   other: MoveResponseDistributionOtherView | null;
-  state: "available" | "no-games";
+  state: "available" | "no-games" | "no-moves";
   message: string;
-  overlapNote: string;
 };
 
 function colorLabel(color: ChessSide): "White" | "Black" {
@@ -38,41 +38,59 @@ function percentageLabel(value: number): string {
   return `${Number.isInteger(value) ? value : value.toFixed(1)}%`;
 }
 
-function percentageOfMatchingGames(count: number, matchingGameCount: number): number {
-  return matchingGameCount > 0 ? (count / matchingGameCount) * 100 : 0;
+function percentageOfOutgoingOccurrences(count: number, outgoingOccurrenceCount: number): number {
+  return outgoingOccurrenceCount > 0 ? (count / outgoingOccurrenceCount) * 100 : 0;
 }
 
 function replyView(
   reply: MoveResponseDistributionReply,
-  matchingGameCount: number,
+  outgoingOccurrenceCount: number,
 ): MoveResponseDistributionReplyView {
-  const percentage = percentageOfMatchingGames(reply.distinct_game_count, matchingGameCount);
+  const percentage = percentageOfOutgoingOccurrences(
+    reply.occurrence_count,
+    outgoingOccurrenceCount,
+  );
   const formattedPercentage = percentageLabel(percentage);
-  const openingName = reply.opening_name ? `, ${reply.opening_name}` : "";
   return {
     ...reply,
     percentage,
     percentageLabel: formattedPercentage,
-    accessibleLabel: `${reply.san}, ${reply.distinct_game_count} distinct games, ${formattedPercentage} of matching games${openingName}`,
+    accessibleLabel: `${reply.san}, ${reply.occurrence_count} occurrences, ${formattedPercentage} of outgoing move occurrences`,
   };
 }
 
 export function deriveMoveResponseDistributionModel(
   response: MoveResponseDistributionResponse,
 ): MoveResponseDistributionModel {
-  const orderedReplies = [...response.replies].sort((left, right) => left.rank - right.rank);
-  const views = orderedReplies.map((reply) => replyView(reply, response.matching_game_count));
+  const orderedReplies = [...response.replies].sort(
+    (left, right) =>
+      right.occurrence_count - left.occurrence_count ||
+      (left.child_uci < right.child_uci ? -1 : left.child_uci > right.child_uci ? 1 : 0),
+  );
+  const views = orderedReplies.map((reply, index) =>
+    replyView({ ...reply, rank: index + 1 }, response.outgoing_occurrence_count),
+  );
   const common = views.slice(0, 5);
   const tail = views.slice(5);
-  const otherCount = tail.reduce((total, reply) => total + reply.distinct_game_count, 0);
-  const otherPercentage = percentageOfMatchingGames(otherCount, response.matching_game_count);
+  const otherCount = tail.reduce((total, reply) => total + reply.occurrence_count, 0);
+  const otherPercentage = percentageOfOutgoingOccurrences(
+    otherCount,
+    response.outgoing_occurrence_count,
+  );
   const formattedOtherPercentage = percentageLabel(otherPercentage);
   const label = colorLabel(response.color);
+  const state =
+    response.matching_game_count === 0
+      ? "no-games"
+      : response.outgoing_occurrence_count === 0
+        ? "no-moves"
+        : "available";
 
   return {
     color: response.color,
     colorLabel: label,
     matchingGameCount: response.matching_game_count,
+    outgoingOccurrenceCount: response.outgoing_occurrence_count,
     common,
     tail,
     other:
@@ -80,19 +98,17 @@ export function deriveMoveResponseDistributionModel(
         ? null
         : {
             kind: "other",
-            distinct_game_count: otherCount,
+            occurrence_count: otherCount,
             percentage: otherPercentage,
             percentageLabel: formattedOtherPercentage,
-            accessibleLabel: `Other replies, ${otherCount} distinct games across ${tail.length} replies, ${formattedOtherPercentage} of matching games`,
+            accessibleLabel: `Other replies, ${otherCount} occurrences across ${tail.length} replies, ${formattedOtherPercentage} of outgoing move occurrences`,
           },
-    state: response.matching_game_count === 0 || views.length === 0 ? "no-games" : "available",
+    state,
     message:
       response.matching_game_count === 0
         ? `No matching ${label} repertoire games were found for this position.`
-        : views.length === 0
-          ? `No recorded replies were found among ${response.matching_game_count} matching ${label} repertoire games.`
-          : `Replies observed in ${response.matching_game_count} matching ${label} repertoire games.`,
-    overlapNote:
-      "Percentages are calculated per reply from matching games; one game may appear in more than one reply.",
+        : response.outgoing_occurrence_count === 0
+          ? `No recorded next moves were found among ${response.matching_game_count} matching ${label} repertoire games.`
+          : `${response.outgoing_occurrence_count} outgoing move occurrences observed in ${response.matching_game_count} matching ${label} repertoire games.`,
   };
 }

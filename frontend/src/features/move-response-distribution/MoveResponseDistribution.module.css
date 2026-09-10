@@ -30,8 +30,7 @@
 .heading,
 .controlsHeading,
 .status,
-.message,
-.overlapNote {
+.message {
   margin: 0;
 }
 
@@ -44,8 +43,7 @@
 
 .color,
 .status,
-.message,
-.overlapNote {
+.message {
   color: var(--md-sys-color-on-surface-variant);
   font: var(--md-sys-typescale-body-medium);
   overflow-wrap: anywhere;
@@ -244,13 +242,6 @@
   white-space: nowrap;
 }
 
-.openingName {
-  min-inline-size: 0;
-  color: var(--md-sys-color-on-surface-variant);
-  font: var(--md-sys-typescale-body-small);
-  overflow-wrap: anywhere;
-}
-
 .replyMetrics {
   justify-content: flex-end;
   font: var(--md-sys-typescale-label-medium);
@@ -261,11 +252,6 @@
   display: flex;
   flex-wrap: wrap;
   gap: var(--cmt-spacing-8);
-}
-
-.overlapNote {
-  padding-block-start: var(--cmt-spacing-4);
-  font: var(--md-sys-typescale-body-small);
 }
 
 .visuallyHidden {
@@ -316,11 +302,9 @@
   .color,
   .status,
   .message,
-  .overlapNote,
   .controlsHeading,
   .replyRank,
-  .replyMetrics,
-  .openingName {
+  .replyMetrics {
     color: CanvasText;
   }
 

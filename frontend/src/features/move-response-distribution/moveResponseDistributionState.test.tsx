@@ -15,8 +15,9 @@ function data(color: "white" | "black" = "white"): MoveResponseDistributionRespo
     fen: FEN,
     color,
     matching_game_count: 1,
+    outgoing_occurrence_count: 1,
     replies: [
-      { rank: 1, child_uci: "e2e4", san: "e4", distinct_game_count: 1, opening_name: null },
+      { rank: 1, child_uci: "e2e4", san: "e4", occurrence_count: 1 },
     ],
   };
 }
@@ -49,7 +50,14 @@ describe("useMoveResponseDistributionState", () => {
   it("exposes loading, available, no-games, and unavailable states", async () => {
     const results: MoveResponseDistributionResult[] = [
       { status: "success", data: data() },
-      { status: "success", data: { ...data(), matching_game_count: 0, replies: [] } },
+      {
+        status: "success",
+        data: { ...data(), outgoing_occurrence_count: 0, replies: [] },
+      },
+      {
+        status: "success",
+        data: { ...data(), matching_game_count: 0, outgoing_occurrence_count: 0, replies: [] },
+      },
       { status: "move_response_distribution_unavailable" },
     ];
     const client = vi.fn<MoveResponseDistributionClient>(async () => results.shift()!);
@@ -59,6 +67,9 @@ describe("useMoveResponseDistributionState", () => {
     await waitFor(() => expect(screen.getByTestId("state")).toHaveTextContent("available"));
 
     rerender(<Probe fen={`${FEN} `.trim()} color="black" client={client} />);
+    await waitFor(() => expect(screen.getByTestId("state")).toHaveTextContent("no-games"));
+
+    rerender(<Probe fen={FEN.replace(" 0 1", "1 1")} color="white" client={client} />);
     await waitFor(() => expect(screen.getByTestId("state")).toHaveTextContent("no-games"));
 
     rerender(<Probe fen={FEN} color="white" client={client} />);
@@ -109,6 +120,24 @@ describe("useMoveResponseDistributionState", () => {
     await waitFor(() => expect(screen.getByTestId("state")).toHaveTextContent("available"));
     expect(client).toHaveBeenCalledTimes(2);
     expect(client).toHaveBeenLastCalledWith(FEN, "white", expect.any(AbortSignal));
+  });
+
+  it("uses the matching-game and outgoing-occurrence counts for empty states", async () => {
+    const client = vi
+      .fn<MoveResponseDistributionClient>()
+      .mockResolvedValueOnce({
+        status: "success",
+        data: { ...data(), matching_game_count: 0, outgoing_occurrence_count: 0, replies: [] },
+      })
+      .mockResolvedValueOnce({
+        status: "success",
+        data: { ...data(), outgoing_occurrence_count: 0, replies: [] },
+      });
+    const { rerender } = render(<Probe fen={FEN} color="white" client={client} />);
+
+    await waitFor(() => expect(screen.getByTestId("state")).toHaveTextContent("no-games"));
+    rerender(<Probe fen={FEN.replace(" 0 1", "1 1")} color="white" client={client} />);
+    await waitFor(() => expect(screen.getByTestId("state")).toHaveTextContent("no-games"));
   });
 
   it("stays idle without a position and does not request data", () => {

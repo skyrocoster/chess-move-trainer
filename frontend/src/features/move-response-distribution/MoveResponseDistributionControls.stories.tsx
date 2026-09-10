@@ -8,11 +8,10 @@ const replies = [
     rank: 1,
     child_uci: "e2e4",
     san: "e4",
-    distinct_game_count: 4,
-    opening_name: null,
+    occurrence_count: 4,
     percentage: 40,
     percentageLabel: "40%",
-    accessibleLabel: "e4, 4 distinct games, 40% of matching games",
+    accessibleLabel: "e4, 4 occurrences, 40% of outgoing move occurrences",
   },
 ];
 

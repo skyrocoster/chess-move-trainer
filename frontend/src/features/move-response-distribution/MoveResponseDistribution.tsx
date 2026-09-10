@@ -78,16 +78,16 @@ export function MoveResponseDistribution({
       </p>
 
       {state.status === "loading" ? (
-        <p className={styles.message}>Loading the complete set of recorded replies...</p>
+        <p className={styles.message}>Loading the complete set of recorded outgoing moves...</p>
       ) : state.status === "idle" ? (
-        <p className={styles.message}>A canonical position is required to load replies.</p>
+        <p className={styles.message}>A canonical position is required to load outgoing moves.</p>
       ) : state.status === "unavailable" ? (
         <div className={styles.actionRow}>
           <Button type="button" variant="secondary" onClick={state.retry}>
             Retry
           </Button>
         </div>
-      ) : model?.state === "no-games" ? (
+      ) : model && model.state !== "available" ? (
         <p className={styles.message}>{model.message}</p>
       ) : model ? (
         <>
@@ -110,7 +110,6 @@ export function MoveResponseDistribution({
               onOtherToggle={() => setOtherExpanded((expanded) => !expanded)}
             />
           </div>
-          <p className={styles.overlapNote}>{model.overlapNote}</p>
         </>
       ) : null}
     </section>

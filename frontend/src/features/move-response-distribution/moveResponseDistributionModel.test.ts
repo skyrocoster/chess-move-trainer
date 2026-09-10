@@ -12,27 +12,22 @@ function response(
     fen: FEN,
     color: "white",
     matching_game_count: 4,
+    outgoing_occurrence_count: 14,
     replies: [
-      { rank: 2, child_uci: "d2d4", san: "d4", distinct_game_count: 3, opening_name: null },
-      { rank: 1, child_uci: "e2e4", san: "e4", distinct_game_count: 4, opening_name: null },
-      {
-        rank: 3,
-        child_uci: "c2c4",
-        san: "c4",
-        distinct_game_count: 2,
-        opening_name: "English Opening",
-      },
-      { rank: 4, child_uci: "g1f3", san: "Nf3", distinct_game_count: 1, opening_name: null },
-      { rank: 5, child_uci: "c2c3", san: "c3", distinct_game_count: 1, opening_name: null },
-      { rank: 6, child_uci: "b2b3", san: "b3", distinct_game_count: 1, opening_name: null },
-      { rank: 7, child_uci: "f2f4", san: "f4", distinct_game_count: 1, opening_name: null },
+      { rank: 2, child_uci: "d2d4", san: "d4", occurrence_count: 3 },
+      { rank: 1, child_uci: "e2e4", san: "e4", occurrence_count: 5 },
+      { rank: 3, child_uci: "c2c4", san: "c4", occurrence_count: 2 },
+      { rank: 7, child_uci: "g1f3", san: "Nf3", occurrence_count: 1 },
+      { rank: 5, child_uci: "c2c3", san: "c3", occurrence_count: 1 },
+      { rank: 4, child_uci: "b2b3", san: "b3", occurrence_count: 1 },
+      { rank: 6, child_uci: "f2f4", san: "f4", occurrence_count: 1 },
     ],
     ...overrides,
   };
 }
 
 describe("deriveMoveResponseDistributionModel", () => {
-  it("orders by supplied stable rank, keeps five common replies, and groups the full tail", () => {
+  it("ranks by occurrence count, breaks ties by UCI, keeps five common moves, and groups the tail", () => {
     const model = deriveMoveResponseDistributionModel(response());
 
     expect(model.state).toBe("available");
@@ -40,63 +35,62 @@ describe("deriveMoveResponseDistributionModel", () => {
       "e2e4",
       "d2d4",
       "c2c4",
-      "g1f3",
+      "b2b3",
       "c2c3",
     ]);
-    expect(model.tail.map((reply) => reply.child_uci)).toEqual(["b2b3", "f2f4"]);
+    expect(model.common.map((reply) => reply.rank)).toEqual([1, 2, 3, 4, 5]);
+    expect(model.tail.map((reply) => reply.child_uci)).toEqual(["f2f4", "g1f3"]);
     expect(model.other).toMatchObject({
-      distinct_game_count: 2,
-      percentage: 50,
-      percentageLabel: "50%",
+      occurrence_count: 2,
+      percentage: (2 / 14) * 100,
+      percentageLabel: "14.3%",
     });
   });
 
-  it("computes percentages from the matching-game denominator without clamping overlap", () => {
+  it("computes percentages from the outgoing-occurrence denominator", () => {
     const model = deriveMoveResponseDistributionModel(response());
 
+    expect(model).toMatchObject({ matchingGameCount: 4, outgoingOccurrenceCount: 14 });
     expect(model.common[0]).toMatchObject({
       child_uci: "e2e4",
-      percentage: 100,
-      percentageLabel: "100%",
+      occurrence_count: 5,
+      percentage: (5 / 14) * 100,
+      percentageLabel: "35.7%",
+      accessibleLabel: "e4, 5 occurrences, 35.7% of outgoing move occurrences",
     });
-    expect(model.common[1]).toMatchObject({
-      child_uci: "d2d4",
-      percentage: 75,
-      percentageLabel: "75%",
-    });
-    expect(model.overlapNote).toContain("one game may appear in more than one reply");
+    expect(
+      [...model.common, ...(model.other ? [model.other] : [])].reduce(
+        (total, reply) => total + reply.percentage,
+        0,
+      ),
+    ).toBeCloseTo(100, 10);
   });
 
-  it("omits Other when all replies fit in the common list", () => {
+  it("omits Other when all moves fit in the common list", () => {
+    const replies = response().replies.slice(0, 5);
     const model = deriveMoveResponseDistributionModel(
-      response({ replies: response().replies.slice(0, 5) }),
+      response({ replies, outgoing_occurrence_count: 11 }),
     );
 
     expect(model.other).toBeNull();
     expect(model.tail).toEqual([]);
   });
 
-  it("preserves nullable names and creates no placeholder for an unclassified reply", () => {
-    const model = deriveMoveResponseDistributionModel(
-      response({ replies: response().replies.slice(0, 3) }),
-    );
-
-    expect(model.common[0]?.opening_name).toBeNull();
-    expect(model.common[2]).toMatchObject({ opening_name: "English Opening" });
-    expect(model.common[0]?.accessibleLabel).not.toContain("undefined");
-  });
-
   it.each([
-    [0, [], "No matching White repertoire games"],
-    [4, [], "No recorded replies"],
-  ])(
-    "returns no-games state for matching count %i and reply count %i",
-    (count, replies, message) => {
+    [0, 0, "no-games", "No matching White repertoire games"],
+    [4, 0, "no-moves", "No recorded next moves"],
+  ] as const)(
+    "distinguishes no matching games from matching games without next moves",
+    (matchingGameCount, outgoingOccurrenceCount, state, message) => {
       const model = deriveMoveResponseDistributionModel(
-        response({ matching_game_count: count, replies }),
+        response({
+          matching_game_count: matchingGameCount,
+          outgoing_occurrence_count: outgoingOccurrenceCount,
+          replies: [],
+        }),
       );
 
-      expect(model.state).toBe("no-games");
+      expect(model.state).toBe(state);
       expect(model.message).toContain(message);
       expect(model.other).toBeNull();
     },

@@ -126,8 +126,14 @@ async function verifyStandardWorkspace(
     within(distribution).getByText("White repertoire colour", { exact: true }),
   ).toBeVisible();
   await expect(
-    within(distribution).getByRole("button", { name: /e4, 4 distinct games/ }),
+    within(distribution).getByRole("button", { name: /e4, 4 occurrences, 33.3%/ }),
   ).toBeVisible();
+  await expect(
+    within(distribution).getByText(
+      "12 outgoing move occurrences observed in 10 matching White repertoire games.",
+    ),
+  ).toBeVisible();
+  await expect(within(distribution).queryByText("Queen's Pawn Game")).not.toBeInTheDocument();
   await expectNoHorizontalOverflow(canvasElement);
   await userEvent.click(analysisTab);
   await expect(analysisTab).toHaveAttribute("aria-selected", "true");
@@ -470,8 +476,14 @@ export const ResponseDistributionIntegration: Story = {
       distributionQueries.getByText("Black repertoire colour", { exact: true }),
     ).toBeVisible();
     await expect(
-      distributionQueries.getByRole("button", { name: /Nf3, 4 distinct games/ }),
+      distributionQueries.getByRole("button", { name: /Nf3, 4 occurrences, 33.3%/ }),
     ).toBeVisible();
+    await expect(
+      distributionQueries.getByText(
+        "12 outgoing move occurrences observed in 10 matching Black repertoire games.",
+      ),
+    ).toBeVisible();
+    await expect(distributionQueries.queryByText("Queen's Pawn Game")).not.toBeInTheDocument();
 
     const status = canvas.getByTestId("session-status");
     const beforeDisclosure = status.textContent;
@@ -479,7 +491,7 @@ export const ResponseDistributionIntegration: Story = {
     await userEvent.click(other);
     await expect(other).toHaveAttribute("aria-expanded", "true");
     await expect(
-      distributionQueries.getByRole("button", { name: /b3, 1 distinct games/ }),
+      distributionQueries.getByRole("button", { name: /Bc4, 1 occurrences, 8.3%/ }),
     ).toBeVisible();
     await expect(status).toHaveTextContent(beforeDisclosure ?? "");
     await userEvent.click(other);
