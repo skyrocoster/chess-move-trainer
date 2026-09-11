@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 
 import { getHealthOptions } from "../../api/client";
-import { StatusView, type StatusViewState } from "./StatusView";
+import { StatusView } from "./StatusView";
 
 export function StatusPage() {
   const healthQuery = useQuery({ ...getHealthOptions(), gcTime: 0 });

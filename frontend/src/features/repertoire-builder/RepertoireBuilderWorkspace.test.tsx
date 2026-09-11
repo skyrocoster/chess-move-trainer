@@ -15,7 +15,6 @@ import {
   testClients,
   STARTING_FEN,
   AFTER_E4_FEN,
-  AFTER_E5_FEN,
   AFTER_D4_FEN,
   AFTER_NF3_FEN,
 } from "./repertoireBuilderTestHelpers";

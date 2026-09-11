@@ -257,7 +257,6 @@ describe("PreferredMovePanel selected-transition composition", () => {
       />,
     );
 
-    const panel = screen.getByRole("region", { name: "Preferred move" });
     const savedBox = screen.getByTestId("saved-move");
     const relationship = savedBox.parentElement;
     if (!(relationship instanceof HTMLElement))

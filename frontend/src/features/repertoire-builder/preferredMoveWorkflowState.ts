@@ -132,7 +132,6 @@ function sessionMove(
 
 export function usePreferredMoveWorkflow({
   session,
-  sideToMove,
   bottomColor,
   preferredMoveClient = defaultPreferredMoveClient,
   positionContextClient = fetchPositionContext,
@@ -192,7 +191,7 @@ export function usePreferredMoveWorkflow({
       preferredState.loading,
       preferredState.preferredMove,
       bottomColor,
-      session.selectedTransition,
+      focusedOwnerTransition,
       preferredSideToMove,
     ],
   );
@@ -348,6 +347,7 @@ export function usePreferredMoveWorkflow({
       contextState.loading,
       mutation,
       pendingRefresh,
+      positionModel.ownTurn,
       positionModel.relationship,
       positionModel.savedPresence,
       positionModel.sourceFen,
@@ -357,8 +357,6 @@ export function usePreferredMoveWorkflow({
       preferredState.error,
       preferredState.loading,
       refreshToken,
-      session,
-      sideToMove,
     ],
   );
 

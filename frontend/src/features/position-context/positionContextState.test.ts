@@ -25,6 +25,7 @@ function context(fen: Fen, observedInGames = true): PositionContextResponse {
 }
 
 function success(fen: Fen, trainerColor: ChessSide = "white"): PositionContextResult {
+  void trainerColor;
   return { status: "success", data: context(fen) };
 }
 

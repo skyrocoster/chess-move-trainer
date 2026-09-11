@@ -6,7 +6,6 @@ import type { SelectedTransition } from "./positionPickerSessionBoundary";
 import { deriveRepertoirePositionModel } from "./repertoireWorkflowModel";
 
 const FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-const AFTER_E4_FEN = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1";
 
 function context(overrides: Partial<PositionContextResponse> = {}): PositionContextResponse {
   return {

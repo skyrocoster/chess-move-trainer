@@ -10,18 +10,14 @@ import { createPositionModel } from "../board-adapter/positionDescriptionModel";
 import {
   isPromotionTarget,
   type PromotionCommit,
-  type PromotionPiece,
   usePromotionController,
 } from "../board-adapter/PromotionPicker";
-import { defaultAnalysisClient, type AnalysisClient } from "../analysis/analysisApi";
+import { defaultAnalysisClient } from "../analysis/analysisApi";
 import { analysisPanelDisplay } from "../analysis/analysisFormatting";
 import { useAnalysisState } from "../analysis/analysisState";
 import { evaluationDisplay } from "../analysis/evalBarDisplay";
 import { GameLoader, type GameLoaderStatus, type GameLoaderValues } from "../game/GameLoader";
 import { mapGameDetailResponse } from "../game/gameModel";
-import type { PositionContextClient } from "../position-context/positionContextApi";
-import type { MoveResponseDistributionClient } from "../move-response-distribution/moveResponseDistributionApi";
-import type { PreferredMoveClient } from "./preferredMoveApi";
 import { usePreferredMoveWorkflow } from "./preferredMoveWorkflowState";
 import { RepertoireBoardLane } from "./RepertoireBoardLane";
 import { RepertoireResponsiveStage } from "./RepertoireResponsiveStage";
@@ -43,7 +39,6 @@ import {
   selectSessionPly,
   sessionHistory,
   type PositionPickerSessionBoundary,
-  type SessionMove,
   type SessionNavigation,
 } from "./positionPickerSessionBoundary";
 import type { ChessSide, Ply } from "../chess/chessPrimitives";
@@ -56,7 +51,7 @@ import {
 import { useMoveResponseSelection } from "./moveResponseSelection";
 
 import type { GameDetailClient, PositionPickerMove, RepertoireBuilderWorkspaceProps } from "./RepertoireBuilderWorkspaceTypes";
-import { failureCode, loadFailure, moveToSessionMove } from "./RepertoireBuilderWorkspaceTypes";
+import { loadFailure, moveToSessionMove } from "./RepertoireBuilderWorkspaceTypes";
 
 export default function RepertoireBuilderWorkspace({
   gameClient = getGame,
