@@ -7,8 +7,8 @@
     "node": ">=24 <25"
   },
   "scripts": {
-    "dev": "vite --host localhost --port 8444",
-    "storybook": "storybook dev -p 6006",
+    "dev": "vite --host localhost --port 8444 --strictPort",
+    "storybook": "storybook dev -p 6006 --exact-port",
     "build-storybook": "storybook build",
     "build": "tsc -b && vite build",
     "test": "vitest",

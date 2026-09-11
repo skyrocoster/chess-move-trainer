@@ -1,0 +1,122 @@
+name: chess-move-trainer
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    command:
+      - python
+      - -m
+      - uvicorn
+      - backend.app.main:app
+      - --host
+      - 0.0.0.0
+      - --port
+      - "5666"
+      - --reload
+      - --reload-dir
+      - /workspace/backend
+      - --reload-dir
+      - /workspace/src
+    init: true
+    working_dir: /workspace
+    environment:
+      PYTHONUNBUFFERED: "1"
+      WATCHFILES_FORCE_POLLING: "true"
+    volumes:
+      - type: bind
+        source: .
+        target: /workspace
+    ports:
+      - "127.0.0.1:5666:5666"
+    restart: "no"
+    stop_grace_period: 10s
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:5666/api/health', timeout=2).read()"
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    command:
+      - npm
+      - --workspace
+      - frontend
+      - run
+      - dev
+      - --
+      - --host
+      - 0.0.0.0
+    init: true
+    working_dir: /workspace
+    environment:
+      CHOKIDAR_USEPOLLING: "true"
+    volumes:
+      - type: bind
+        source: ./frontend
+        target: /workspace/frontend
+      - frontend-node-modules:/workspace/frontend/node_modules
+    ports:
+      - "127.0.0.1:8444:8444"
+    restart: "no"
+    stop_grace_period: 10s
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:8444').then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))"
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 20s
+
+  storybook:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    command:
+      - npm
+      - --workspace
+      - frontend
+      - run
+      - storybook
+      - --
+      - --host
+      - 0.0.0.0
+    init: true
+    working_dir: /workspace
+    environment:
+      CHOKIDAR_USEPOLLING: "true"
+    volumes:
+      - type: bind
+        source: ./frontend
+        target: /workspace/frontend
+      - storybook-node-modules:/workspace/frontend/node_modules
+    ports:
+      - "127.0.0.1:6006:6006"
+    restart: "no"
+    stop_grace_period: 10s
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:6006').then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))"
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 30s
+
+volumes:
+  frontend-node-modules:
+  storybook-node-modules:

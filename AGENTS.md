@@ -24,6 +24,9 @@ PowerShell commands must use backslash paths, `$(...)` for subexpressions, ASCII
 ## Application commands
 
 - `powershell -ExecutionPolicy Bypass -File .\setup.ps1` installs pinned Python, npm, and Playwright dependencies.
+- `powershell -ExecutionPolicy Bypass -File .\dev.ps1 start` starts the backend, frontend, and Storybook in
+  detached Docker containers. Replace `start` with `stop`, `restart`, `rebuild`, `status`, or `logs`; append one
+  of `backend`, `frontend`, or `storybook` to target a single service.
 - `.venv/Scripts/python.exe -m pytest backend/tests tests` runs the Python suites.
 - Python dependencies are pinned in `requirements.txt` and configured in `pyproject.toml`. The repository-root
   `package-lock.json` is authoritative for the npm workspaces.
@@ -32,6 +35,26 @@ Local Node may exceed the `>=24 <25` engines pin. Ignore that warning and the no
 `build-storybook` teardown libuv assertion.
 
 All checks are local; do not add application CI.
+
+## Persistent development services
+
+The Docker Compose stack is shared, long-lived development infrastructure. Backend source reload, Vite hot
+module replacement, and Storybook hot module replacement apply ordinary source edits without container restarts.
+Full user-facing commands and examples are in `docs/DEVELOPMENT_SERVICES.md`.
+
+- Manage these services only through `dev.ps1`. Do not launch Uvicorn, Vite, or Storybook directly on the host.
+- Before any lifecycle action or browser/E2E check, run the finite `dev.ps1 status` command. Reuse healthy services
+  as they are; Playwright is configured to reuse them.
+- Do not routinely start, stop, or restart services before or after a task, and never run `docker compose down`
+  unless the user explicitly requests it.
+- Do not stop services as task cleanup. If an approved check genuinely requires a stopped service to be started,
+  start only the required service and leave it running afterward.
+- If a service is unhealthy, inspect its finite `dev.ps1 logs <service>` output before acting. Restart only that
+  service when a restart is actually needed, and leave the stack running afterward.
+- Dependency, Dockerfile, or Compose changes may require `dev.ps1 rebuild <service>`. Normal Python, TypeScript,
+  CSS, and Storybook source edits do not.
+- The fixed host ports are backend `5666`, frontend `8444`, and Storybook `6006`. Do not launch competing host
+  processes on those ports.
 
 ## Testing and module-size rules
 
