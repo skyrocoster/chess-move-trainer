@@ -12,10 +12,7 @@ expert. You WILL find yourself being overly technical or not providing sufficien
   and runs on HTTP port `8444`.
 - `tests/e2e/` contains Playwright browser tests. Backend tests live under `backend/tests/`; component
   tests live beside frontend features.
-- `scripts/dev.py` is the Windows launcher and supports `backend`, `frontend`, and `all`.
-
-The launcher intentionally kills any process occupying ports 5666 and 8444 before starting the requested
-service. Do not use these ports for unrelated services while using the launcher.
+Do not use ports 5666 and 8444 for unrelated services.
 
 ## Windows shell
 
@@ -27,24 +24,14 @@ PowerShell commands must use backslash paths, `$(...)` for subexpressions, ASCII
 ## Application commands
 
 - `powershell -ExecutionPolicy Bypass -File .\setup.ps1` installs pinned Python, npm, and Playwright dependencies.
-- `powershell -ExecutionPolicy Bypass -File .\dev.ps1 backend|frontend|all` starts services.
-- `.venv/Scripts/python.exe scripts/check.py` runs the fast fail-first local suite: roughly two minutes,
-  stopping at the first failure with a short excerpt and a native rerun command. It is a maintenance command, not
-  Plan implementation proof.
-- `.venv/Scripts/python.exe scripts/check.py --full` runs the complete local maintenance suite (builds,
-  Storybook, and E2E).
-- `.venv/Scripts/python.exe scripts/check.py --fix` runs deterministic formatters, then the same checks;
-  `--fix` stays explicit and deterministic.
-- An AI may invoke `scripts/check.py --fix` without asking again only after a read-only check identifies
-  deterministic formatting or lint issues; it must inspect the resulting diff and must not use `--fix` for
-  semantic repair.
+- `.venv/Scripts/python.exe -m pytest backend/tests tests` runs the Python suites.
 - Python dependencies are pinned in `requirements.txt` and configured in `pyproject.toml`. The repository-root
   `package-lock.json` is authoritative for the npm workspaces.
 
 Local Node may exceed the `>=24 <25` engines pin. Ignore that warning and the non-fatal Storybook
 `build-storybook` teardown libuv assertion.
 
-All checks are local. The existing GitHub workflow is documentation-only; do not add application CI.
+All checks are local; do not add application CI.
 
 ## Testing and module-size rules
 
@@ -58,10 +45,9 @@ Never run an unbounded process.
 
 ## Start here
 
-1. Open the [documentation router](docs/README.md).
-2. Read the relevant active Plan under `docs/plans/active/` when work is Plan-backed.
-3. Read only the files named by the approved case or Plan stage before exploring source.
-4. Run only finite tests or browser scenarios that directly prove the approved behavior. Do not run lint,
+1. Read the relevant active Plan under `docs/plans/active/` when work is Plan-backed.
+2. Read only the files named by the approved case or Plan stage before exploring source.
+3. Run only finite tests or browser scenarios that directly prove the approved behavior. Do not run lint,
    formatting, broad type/build, source-size, aggregate, or other repository-hygiene checks during Plan
    implementation unless the Plan's outcome specifically changes that tool or constraint. Complete test/fix runs
    are separate maintenance work outside the implementation workflow.
@@ -88,10 +74,6 @@ role-based workflow.
   in parallel. Oversized stages may be split without human approval when the outcome is unchanged.
 - **Direct:** small, settled changes can execute without a Plan. The approved case-worker performs the
   change and focused proof.
-- **Quality:** optional validation requested separately from implementation is read-only. It independently audits
-  retained proof and runs only missing or invalidated checks. A coordinator-authorized repair uses the Quality fix
-  route, followed by fresh-session final validation of evidence invalidated by the repair. After one failed repair,
-  return to the coordinator. Unrelated failures are reported, not absorbed.
 - **Design exploration:** start with a basic self-contained HTML mock-up under `experiments/`, then, after the user
   selects a direction, rebuild and iterate on it in the existing production Storybook. Storybook candidates use real
   frontend tools but remain design work until the user approves integration. Do not require a Plan or `DESIGN.md`
@@ -129,7 +111,7 @@ validated when applicable, and carried forward.
 
 ## Workflow assets
 
-`.opencode/` contains the coordinator, cheap Scout, selectable Flash/Luna case-workers, one Quality Agent, one
+`.opencode/` contains the coordinator, cheap Scout, selectable Flash/Luna case-workers, one
 Exploration Agent, browser-proof guidance, and planning skills. Design exploration is coordinator-owned through
 `design-exploration`: the Exploration Agent produces disposable HTML evidence, and a case-worker uses
 `frontend-component-iteration` for the production-backed Storybook design loop before integration.

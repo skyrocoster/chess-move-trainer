@@ -36,18 +36,3 @@ def test_games_example_documents_setup_and_update_identity_placeholders() -> Non
 
 def test_no_database_destination_configuration_example_remains() -> None:
     assert not (EXAMPLES / "database-rebuild.example.yaml").exists()
-
-
-def test_example_readme_names_consumers_and_safe_placeholder_policy() -> None:
-    readme = (EXAMPLES / "README.md").read_text(encoding="utf-8").lower()
-
-    assert "safe placeholders" in readme
-    assert "setup" in readme
-    assert "update games" in readme
-    assert "update openings" in readme
-    assert "data/database/chess.db" in readme
-    assert "games acquire" not in readme
-    assert "games import" not in readme
-    assert "openings acquire" not in readme
-    assert "openings import" not in readme
-    assert "real identity must never be committed" in readme

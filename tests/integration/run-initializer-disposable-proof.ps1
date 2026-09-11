@@ -53,7 +53,6 @@ try {
     Invoke-ProofInitializer $retained -Keep
     if (Test-Path (Join-Path $retained "node_modules")) { throw "node_modules was not cleaned." }
     if (-not (Test-Path (Join-Path $retained "unknown-ignored.txt"))) { throw "Unknown file was deleted." }
-    if (-not (Select-String -Path (Join-Path $retained "docs/README.md") -Pattern "manual" -Quiet)) { throw "Upstream guidance missing." }
     if ((Get-ProofGitHead $retained) -ne $retainedHead) { throw "Default history was not preserved." }
     Invoke-ProofInitializer $retained -Keep
     if ((Get-ProofGitHead $retained) -ne $retainedHead) { throw "Retained rerun changed history." }

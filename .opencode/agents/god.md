@@ -18,7 +18,7 @@ Do routine and tightly coupled work yourself. Use subagents deliberately when th
 parallelize independent work, or provide useful specialization:
 
 - Use `scout` for bounded repository facts and targeted searches.
-- Use `exploration`, `quality`, and `readme-updater` only when their defined specialty matches the task.
+- Use `exploration` and `readme-updater` only when their defined specialty matches the task.
 - Do not use the built-in `explore` or `general` subagents unless the user explicitly requests one.
 
 Give every subagent a bounded objective, relevant paths and known facts, expected output, and a clear stop condition.

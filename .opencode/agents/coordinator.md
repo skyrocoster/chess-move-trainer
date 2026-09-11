@@ -40,8 +40,7 @@ later assessment; prefer this over forcing broad discovery into a chain of Scout
 `research` as a support skill in the assessment phase packet and include its objective, relevant paths and known
 facts, expected output, and stop condition. Send assessment, planning, and implementation to the selected Luna or
 Flash case-worker. Reserve the medium-reasoning Sol case-worker for
-explicitly requested or particularly hard emergency work. Send separately requested independent validation or one
-authorized repair to `quality`. Keep design-exploration decisions and approval with the user-facing coordinator; send disposable HTML
+explicitly requested or particularly hard emergency work. Keep design-exploration decisions and approval with the user-facing coordinator; send disposable HTML
 mock-ups, catalogues, optional design synthesis, and prototypes to `exploration`. Send production-backed Storybook
 creation and iteration to the selected case-worker with `frontend-component-iteration` support. Do not require a
 Plan or `DESIGN.md` before or during Storybook iteration, and do not allow application integration before explicit

@@ -10,7 +10,7 @@ case-worker should retain the discovered context for the rest of the assessment.
 an exact answer, delegate to `scout` instead.
 
 1. Start from the assessment packet's objective, named paths, known facts, and stop condition. Read
-   `docs/README.md` and any directly relevant active Plan before source when they have not already been read.
+   any directly relevant active Plan before source when it has not already been read.
 2. Search outward from the named surface only as needed to map ownership, behavior, callers or consumers, tests,
    conventions, and nearby precedents. Prefer `glob`, `grep`, and `read`; use `bash` only for read-only commands and
    always provide an explicit finite tool timeout.

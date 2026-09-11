@@ -28,7 +28,6 @@ from backend.app.features.analysis.benchmark_metrics import (
     semantic_equivalence,
 )
 from backend.app.features.analysis.errors import AnalysisValidationError
-from scripts.stockfish_analysis import benchmark_stockfish
 
 
 def _positions(count: int) -> list[chess.Board]:
@@ -250,10 +249,6 @@ def test_frozen_report_is_canonical_reproducible_and_cli_run_is_gated(tmp_path: 
 
     assert report_path.read_bytes() == first_bytes
     assert load_frozen_report(report_path) == report
-    assert (
-        benchmark_stockfish.main(["--run", "--db", str(database), "--report", str(report_path)])
-        == 1
-    )
     assert json.loads(report_path.read_text(encoding="ascii"))["status"] == "fixtures_frozen"
 
 

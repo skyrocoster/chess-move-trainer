@@ -105,18 +105,8 @@ and all required human or visual breakpoints pass. A stage governed by declared 
 unaccepted until its fidelity anchors have visual evidence or the named human breakpoint passes; record intentional
 canonical adaptations and reject unexplained drift. Do not use lint, formatting, broad type/build, source-size,
 aggregate, or other repository-hygiene checks as implementation proof unless the outcome specifically changes that
-tool or constraint. Temporary maintenance violations do not block Plan acceptance; do not append a Quality phase or
+tool or constraint. Temporary maintenance violations do not block Plan acceptance; do not append a
 complete repository-suite closeout.
-
-When the user separately requests independent validation, launch Quality with `PHASE: VALIDATE`, the observable
-outcome, exact approved paths, baseline and diff facts, exclusions, acceptance, the proof ledger, changes since
-each proof item, and only the exact missing or invalidated checks. This optional validation is not a Plan stage or
-an implementation closeout requirement.
-
-If validation fails, authorize at most one `PHASE: FIX` with the exact failed check, paths, intended semantics,
-and deterministic repair. Record the repair as invalidating only proof it could affect. Then run final validation
-in a fresh Quality session with unaffected proof retained and only invalidated checks requested. Stop after a
-failed repair or a second failed validation.
 
 After behavioral proof and any required human or visual breakpoint pass, update only the active Plan's progress,
 decisions, and concise proof. When every stage is accepted, set the Plan to done, remove any transient

@@ -8,7 +8,7 @@ description: "Use during PHASE: ASSESS to investigate one repository request and
 Investigate one bounded request and select the smallest safe route. Never edit, write a workflow record, or start
 downstream work.
 
-1. Read `docs/README.md`, the relevant active Plan or destination record when one exists, the owning source,
+1. Read the relevant active Plan or destination record when one exists, the owning source,
    focused tests, and only the nearest consumer or precedent needed to establish the change shape. When the request
    or existing record declares upstream evidence, read the relevant declared artifacts too; do not require or search
    for a design document when none is declared.

@@ -11,7 +11,6 @@ ROOT = Path(__file__).parents[3]
 FLOWCHART_PATHS = (
     ROOT / "docs/flowcharts/database-toolchain.md",
     ROOT / "docs/flowcharts/database-operator-journeys.md",
-    ROOT / "docs/flowcharts/README.md",
 )
 COMMANDS = (
     "refresh",

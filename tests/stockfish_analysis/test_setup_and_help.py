@@ -1,8 +1,6 @@
 from __future__ import annotations
 
 import hashlib
-import subprocess
-import sys
 import zipfile
 from pathlib import Path
 
@@ -112,30 +110,3 @@ def test_explicit_override_verifies_identity_and_checksum_without_install(tmp_pa
     assert result.executable == executable.resolve()
     assert result.archive_sha256 is None
     assert result.identity.binary_sha256 == hashlib.sha256(b"external fake").hexdigest()
-
-
-@pytest.mark.parametrize(
-    "script_name, expected",
-    [
-        ("setup_stockfish.py", "--executable"),
-        ("benchmark_stockfish.py", "--executable"),
-        ("analyze_positions.py", "--engine"),
-    ],
-)
-def test_cli_help_is_import_safe_and_non_mutating(
-    tmp_path: Path, script_name: str, expected: str
-) -> None:
-    script = Path(__file__).resolve().parents[2] / "scripts" / "stockfish_analysis" / script_name
-    before = set(tmp_path.iterdir())
-    result = subprocess.run(
-        [sys.executable, str(script), "--help"],
-        cwd=tmp_path,
-        capture_output=True,
-        text=True,
-        check=False,
-        timeout=10,
-    )
-
-    assert result.returncode == 0, result.stderr
-    assert expected in result.stdout
-    assert set(tmp_path.iterdir()) == before

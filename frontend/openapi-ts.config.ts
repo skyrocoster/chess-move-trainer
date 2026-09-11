@@ -3,11 +3,8 @@ import { defineConfig } from "@hey-api/openapi-ts";
 /**
  * SETUP-02 generator configuration for @hey-api/openapi-ts@0.99.0.
  *
- * Paths are resolved by the generator relative to the generator child's working
- * directory, which `scripts/api/generate_client.py` pins to this `frontend/`
- * directory. `input` defaults to the checked-in contract; the orchestrator
- * overrides it with a freshly exported temporary contract via the `-i` CLI
- * flag on every run.
+ * Paths are resolved by the generator relative to this `frontend/`
+ * directory. `input` defaults to the checked-in contract.
  *
  * The client-fetch plugin runs in its default bundled (self-contained) mode:
  * the runtime client is vendored into the output directory, so no separate

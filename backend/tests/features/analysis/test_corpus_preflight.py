@@ -1,12 +1,9 @@
 from __future__ import annotations
 
-import builtins
 import sqlite3
 from pathlib import Path
-from types import SimpleNamespace
 
 import chess
-import pytest
 
 from backend.app.features.analysis import (
     AnalysisProfile,
@@ -16,7 +13,6 @@ from backend.app.features.analysis import (
     run_read_only_preflight,
     select_all_positions,
 )
-from scripts.stockfish_analysis import analyze_positions
 
 SUBJECT = "0101b08a-ce8b-11ee-b2fd-e90263e5548c"
 GAME_A = "00000000-0000-0000-0000-00000000000a"
@@ -139,101 +135,3 @@ def _result(profile: AnalysisProfile, fen: str):
     from backend.tests.features.analysis.test_operator import _result as make_result
 
     return make_result(profile, fen)
-
-
-def _patch_cli(monkeypatch, database: Path, profile: AnalysisProfile) -> None:
-    monkeypatch.setattr(
-        analyze_positions,
-        "_profile",
-        lambda _args: (profile, SimpleNamespace(executable=database.parent / "unused.exe")),
-    )
-
-
-@pytest.mark.parametrize("response", ["no", "not the phrase"])
-def test_confirmation_refusal_and_invalid_input_are_non_mutating(
-    tmp_path: Path, monkeypatch, response: str
-) -> None:
-    database = tmp_path / "refusal.db"
-    _database(database)
-    before = database.read_bytes()
-    _patch_cli(monkeypatch, database, _profile())
-    monkeypatch.setattr(builtins, "input", lambda _prompt: response)
-    monkeypatch.setattr(
-        analyze_positions,
-        "run_all_positions",
-        lambda *_args, **_kwargs: pytest.fail("full corpus must not run in confirmation tests"),
-    )
-
-    assert (
-        analyze_positions.main(
-            ["--db", str(database), "--engine", "unused.exe", "--all", "--workers", "5"]
-        )
-        == 1
-    )
-    assert database.read_bytes() == before
-    assert not Path(f"{database.resolve()}.analysis.lock").exists()
-
-
-def test_confirmation_eof_and_preflight_only_are_non_mutating(tmp_path: Path, monkeypatch) -> None:
-    database = tmp_path / "eof.db"
-    _database(database)
-    before = database.read_bytes()
-    _patch_cli(monkeypatch, database, _profile())
-
-    def eof(_prompt: str) -> str:
-        raise EOFError
-
-    monkeypatch.setattr(builtins, "input", eof)
-    monkeypatch.setattr(
-        analyze_positions,
-        "run_all_positions",
-        lambda *_args, **_kwargs: pytest.fail("full corpus must not run after EOF"),
-    )
-    assert analyze_positions.main(["--db", str(database), "--engine", "unused.exe", "--all"]) == 1
-    assert database.read_bytes() == before
-
-    assert (
-        analyze_positions.main(
-            [
-                "--db",
-                str(database),
-                "--engine",
-                "unused.exe",
-                "--all",
-                "--preflight-only",
-                "--workers",
-                "5",
-            ]
-        )
-        == 0
-    )
-    assert database.read_bytes() == before
-    assert not Path(f"{database.resolve()}.analysis.lock").exists()
-
-
-def test_preflight_failure_is_non_mutating(tmp_path: Path, monkeypatch) -> None:
-    database = tmp_path / "bad.db"
-    sqlite3.connect(database).close()
-    before = database.read_bytes()
-    _patch_cli(monkeypatch, database, _profile())
-    monkeypatch.setattr(
-        analyze_positions,
-        "run_all_positions",
-        lambda *_args, **_kwargs: pytest.fail("full corpus must not run after preflight failure"),
-    )
-
-    assert (
-        analyze_positions.main(
-            [
-                "--db",
-                str(database),
-                "--engine",
-                "unused.exe",
-                "--all",
-                "--preflight-only",
-            ]
-        )
-        == 1
-    )
-    assert database.read_bytes() == before
-    assert not Path(f"{database.resolve()}.analysis.lock").exists()
