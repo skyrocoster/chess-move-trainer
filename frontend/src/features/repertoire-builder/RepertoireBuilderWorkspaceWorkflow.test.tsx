@@ -34,8 +34,13 @@ describe("RepertoireBuilderWorkspace workflow", () => {
     await user.click(screen.getByRole("button", { name: "Save e4" }));
     await waitFor(() => expect(clients.preferredMoveClient.put).toHaveBeenCalledOnce());
     expect(clients.preferredMoveClient.put).toHaveBeenCalledWith(
-      { fen: STARTING_FEN, move_uci: "e2e4", effective_at: "" },
+      { fen: STARTING_FEN, move_uci: "e2e4" },
       { signal: expect.any(AbortSignal) },
+    );
+    await waitFor(() =>
+      expect(clients.preferredMoveClient.get).toHaveBeenLastCalledWith(STARTING_FEN, {
+        signal: expect.any(AbortSignal),
+      }),
     );
     await waitFor(() => expect(screen.getByTestId("session-status")).toHaveTextContent("Preferred move saved."));
     expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", AFTER_E4_FEN);
@@ -52,7 +57,7 @@ describe("RepertoireBuilderWorkspace workflow", () => {
     expect(clients.preferredMoveClient.put).not.toHaveBeenCalled();
     await user.click(screen.getByRole("button", { name: "Save e4" }));
     await waitFor(() => expect(clients.preferredMoveClient.put).toHaveBeenCalledWith(
-      { fen: STARTING_FEN, move_uci: "e2e4", effective_at: "" },
+      { fen: STARTING_FEN, move_uci: "e2e4" },
       { signal: expect.any(AbortSignal) },
     ));
   });
@@ -82,7 +87,7 @@ describe("RepertoireBuilderWorkspace workflow", () => {
     expect(screen.getByTestId("selected-move")).toHaveTextContent("d4");
     await user.click(screen.getByRole("button", { name: "Save d4" }));
     await waitFor(() => expect(clients.preferredMoveClient.put).toHaveBeenCalledWith(
-      { fen: STARTING_FEN, move_uci: "d2d4", effective_at: "" },
+      { fen: STARTING_FEN, move_uci: "d2d4" },
       { signal: expect.any(AbortSignal) },
     ));
   });
@@ -102,9 +107,14 @@ describe("RepertoireBuilderWorkspace workflow", () => {
     const openDialog = await screen.findByRole("alertdialog", { name: "Remove preferred move?" });
     await user.click(within(openDialog).getByRole("button", { name: "Remove" }));
     await waitFor(() => expect(clients.preferredMoveClient.remove).toHaveBeenCalledWith(
-      { fen: STARTING_FEN, effective_at: "" },
+      { fen: STARTING_FEN },
       { signal: expect.any(AbortSignal) },
     ));
+    await waitFor(() =>
+      expect(clients.preferredMoveClient.get).toHaveBeenLastCalledWith(STARTING_FEN, {
+        signal: expect.any(AbortSignal),
+      }),
+    );
     await waitFor(() => expect(screen.getByTestId("saved-move")).toHaveTextContent("None yet"));
   });
 
@@ -121,5 +131,37 @@ describe("RepertoireBuilderWorkspace workflow", () => {
     );
     expect(screen.getByTestId("selected-move")).toHaveTextContent("e4");
     expect(screen.getByTestId("session-origin")).toHaveTextContent("Current Ply 1.");
+  });
+
+  it("saves a legal parent transition when corpus observation is absent", async () => {
+    const clients = testClients();
+    clients.positionContextClient.mockImplementation(async (fen, trainerColor) => ({
+      status: "success" as const,
+      data: {
+        fen,
+        trainerColor,
+        observedInGames: false,
+        distinctGameCount: 0,
+        totalGameCount: 0,
+      },
+    }));
+    const user = userEvent.setup();
+    renderWorkspace({
+      preferredMoveClient: clients.preferredMoveClient,
+      positionContextClient: clients.positionContextClient,
+    });
+
+    await user.click(screen.getByTestId("move-e2-e4"));
+    expect(screen.getByRole("button", { name: "Save e4" })).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "Save e4" }));
+
+    await waitFor(() =>
+      expect(clients.preferredMoveClient.put).toHaveBeenCalledWith(
+        { fen: STARTING_FEN, move_uci: "e2e4" },
+        { signal: expect.any(AbortSignal) },
+      ),
+    );
+    await waitFor(() => expect(screen.getByTestId("session-status")).toHaveTextContent("Preferred move saved."));
+    expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", AFTER_E4_FEN);
   });
 });

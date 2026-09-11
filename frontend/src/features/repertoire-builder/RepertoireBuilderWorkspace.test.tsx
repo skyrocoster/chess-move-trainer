@@ -3,6 +3,7 @@ import "./RepertoireBuilderWorkspace.testSetup";
 import { cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import type { AnalysisClient, AnalysisObservation, AnalysisOperationResult } from "../analysis/analysisApi";
 import { GAME_DETAIL, GAME_UUID, renderWorkspace, testClients, STARTING_FEN, AFTER_E4_FEN, AFTER_E5_FEN, AFTER_D4_FEN, AFTER_NF3_FEN } from "./repertoireBuilderTestHelpers";
 import type { GameDetailClient } from "./RepertoireBuilderWorkspace";
 
@@ -14,6 +15,42 @@ function historyEntry(name: string) {
 
 function successfulGameClient() {
   return vi.fn<GameDetailClient>().mockResolvedValue({ data: GAME_DETAIL, error: undefined });
+}
+
+function cleanAnalysisClient(): AnalysisClient {
+  let requested = false;
+  const result = {
+    lines: [
+      {
+        rank: 1,
+        score_kind: "cp" as const,
+        score_value: 34,
+        wdl_wins: 420,
+        wdl_draws: 300,
+        wdl_losses: 280,
+        pv_uci: ["e2e4"],
+        depth: 20,
+      },
+    ],
+    terminal_kind: null,
+  };
+  const observation = (fen: string): AnalysisObservation => ({
+    fen,
+    state: requested ? "ready" : "not_requested",
+    result: requested ? result : null,
+  });
+  const success = (fen: string): AnalysisOperationResult<AnalysisObservation> => ({
+    status: "success",
+    data: observation(fen),
+  });
+
+  return {
+    observe: vi.fn(async (fen: string) => success(fen)),
+    request: vi.fn(async (fen: string) => {
+      requested = true;
+      return success(fen);
+    }),
+  };
 }
 
 async function loadGame(
@@ -29,6 +66,22 @@ async function loadGame(
 }
 
 describe("RepertoireBuilderWorkspace", () => {
+  it("observes the selected FEN without requesting work until Analyze is deliberate", async () => {
+    const analysisClient = cleanAnalysisClient();
+    const user = userEvent.setup();
+    renderWorkspace({ analysisClient });
+
+    await waitFor(() => expect(analysisClient.observe).toHaveBeenCalledWith(STARTING_FEN, expect.any(AbortSignal)));
+    expect(analysisClient.request).not.toHaveBeenCalled();
+    await user.click(screen.getByRole("button", { name: "Analyze position" }));
+    await waitFor(() => expect(analysisClient.request).toHaveBeenCalledWith(STARTING_FEN, expect.any(AbortSignal)));
+
+    const candidate = await screen.findByRole("button", { name: "1. e4" });
+    await user.click(candidate);
+    expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", AFTER_E4_FEN);
+    await waitFor(() => expect(analysisClient.observe).toHaveBeenCalledWith(AFTER_E4_FEN, expect.any(AbortSignal)));
+  });
+
   it("starts fresh at one selected standard-start position", async () => {
     const clients = testClients();
     renderWorkspace(clients);

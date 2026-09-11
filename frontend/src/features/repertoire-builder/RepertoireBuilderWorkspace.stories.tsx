@@ -1,8 +1,13 @@
+import { useMemo, useState } from "react";
 import { expect, userEvent, waitFor, within } from "storybook/test";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import "../../styles/cmt-tokens.css";
 import "../../styles/cmt-typescale.css";
-import { storyCandidateAnalysisClient } from "../analysis/analysisStoryClients";
+import {
+  storyCandidateAnalysisClient,
+  storySelectedPositionAnalysisClient,
+  type StoryAnalysisLifecycleEvent,
+} from "../analysis/analysisStoryClients";
 import { GAME, GAME_UUID } from "../game/gameFixtures";
 import RepertoireBuilderWorkspace from "./RepertoireBuilderWorkspace";
 import {
@@ -46,6 +51,32 @@ stagedIdentityClient.observe = async (fen, signal) => {
   stagedObservedFens.push(fen);
   return stagedIdentityObserve(fen, signal);
 };
+
+function SelectedPositionAnalysisLifecycleStory() {
+  const [events, setEvents] = useState<StoryAnalysisLifecycleEvent[]>([]);
+  const analysisClient = useMemo(
+    () =>
+      storySelectedPositionAnalysisClient((event) =>
+        setEvents((current) => [...current, event]),
+      ),
+    [],
+  );
+  const summary = events
+    .map(
+      ({ operation, state, hasResult }) =>
+        `${operation}:${state}${hasResult ? "+result" : ""}`,
+    )
+    .join(" | ");
+
+  return (
+    <>
+      {workspace({ analysisClient })}
+      <output data-testid="analysis-lifecycle-proof" hidden>
+        observations: {events.filter(({ operation }) => operation === "observe").length}; requests: {events.filter(({ operation }) => operation === "request").length}; request quality: {events.some(({ quality }) => quality === "tool") ? "tool" : "none"}; states: {summary}
+      </output>
+    </>
+  );
+}
 
 async function verifyStandardWorkspace(
   canvasElement: HTMLElement,
@@ -217,7 +248,7 @@ export const StagedMy: Story = {
     const canvas = within(canvasElement);
     const meter = canvas.getByRole("meter", { name: "Evaluation" });
     await expect(meter).toHaveAttribute("data-state", "best-line");
-    await expect(meter).toHaveAttribute("aria-valuetext", "best-line evaluation +0.34.");
+    await expect(meter).toHaveAttribute("aria-valuetext", "Best-line evaluation +0.34.");
     await expect(stagedObservedFens).toContain(STARTING_FEN);
     await userEvent.click(await canvas.findByRole("button", { name: "1. e4" }));
     await expectSessionBoundary(canvasElement);
@@ -227,11 +258,51 @@ export const StagedMy: Story = {
     await expect(canvas.getByTestId("session-origin")).toHaveTextContent("Current Ply 1");
     await expectSessionHistory(canvasElement, ["Initial position", "White, move 1, e4"]);
     await expectActiveSessionHistoryEntry(canvasElement, "White, move 1, e4");
-    await expect(meter).toHaveAttribute("aria-valuetext", "best-line evaluation +0.34.");
+    await expect(meter).toHaveAttribute("aria-valuetext", "Best-line evaluation +0.34.");
     await waitFor(() => expect(stagedObservedFens).toContain(STAGED_E4_FEN));
     await expectPreferredMoveState(canvasElement, "first-choice");
     await expect(canvas.getByTestId("selected-move")).toHaveTextContent(/^Selected\s*e4\s*e2e4$/);
     await expectPositionReachFrequency(canvasElement, "available", "White", "3 / 10 games", "30%");
+  },
+};
+
+export const SelectedPositionAnalysisLifecycle: Story = {
+  name: "Selected-position analysis lifecycle - observe, request, poll, navigate",
+  render: () => <SelectedPositionAnalysisLifecycleStory />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const analysis = canvas.getByRole("region", { name: "Analysis" });
+    const analysisQueries = within(analysis);
+    const status = analysisQueries.getByRole("status");
+    const proof = canvas.getByTestId("analysis-lifecycle-proof");
+
+    await expect(status).toHaveTextContent("Analysis available on request");
+    await expect(analysisQueries.queryByRole("button", { name: "1. d4" })).not.toBeInTheDocument();
+    await expect(proof).toHaveTextContent("observations: 1; requests: 0");
+    await expect(proof).toHaveTextContent("request quality: none");
+
+    await userEvent.click(analysisQueries.getByRole("button", { name: "Analyze position" }));
+    await expect(status).toHaveTextContent(/Analysis (queued|running)/);
+    await expect(analysisQueries.getByRole("button", { name: "1. d4" })).toBeVisible();
+    await expect(proof).toHaveTextContent("requests: 1");
+    await expect(proof).toHaveTextContent("request quality: tool");
+
+    await waitFor(() => expect(status).toHaveTextContent("Analysis running"));
+    await expect(analysisQueries.getByRole("button", { name: "1. d4" })).toBeVisible();
+    await expect(proof).toHaveTextContent("observe:running+result");
+
+    await waitFor(() => expect(status).toHaveTextContent("Analysis complete"));
+    await expect(analysisQueries.getByRole("button", { name: "1. e4" })).toBeVisible();
+    await expect(analysisQueries.queryByRole("button", { name: "Update analysis" })).not.toBeInTheDocument();
+    await expect(analysisQueries.queryByRole("button", { name: "Retry analysis" })).not.toBeInTheDocument();
+
+    await userEvent.click(analysisQueries.getByRole("button", { name: "1. e4" }));
+    await expect(canvas.getByTestId("session-status")).toHaveTextContent(
+      "Move played locally: e4.",
+    );
+    await expectSessionHistory(canvasElement, ["Initial position", "White, move 1, e4"]);
+    await expectActiveSessionHistoryEntry(canvasElement, "White, move 1, e4");
+    await waitFor(() => expect(proof).toHaveTextContent("observe:not_requested"));
   },
 };
 

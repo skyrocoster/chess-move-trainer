@@ -107,7 +107,7 @@ describe("usePreferredMoveState", () => {
   it("exposes typed failures and clears them when the position resets", async () => {
     const client = vi
       .fn<PreferredMoveReader>()
-      .mockResolvedValueOnce({ status: "position_not_found" })
+      .mockResolvedValueOnce({ status: "invalid_window" })
       .mockResolvedValueOnce(success(FEN));
     const view = render(createElement(Probe, { fen: FEN, client }));
 
@@ -117,7 +117,7 @@ describe("usePreferredMoveState", () => {
           fen: null,
           effective_at: null,
           loading: false,
-          error: "position_not_found",
+          error: "invalid_window",
         }),
       ),
     );
@@ -208,7 +208,7 @@ describe("usePreferredMoveState", () => {
     const client = vi
       .fn<PreferredMoveReader>()
       .mockResolvedValueOnce(success(FEN))
-      .mockResolvedValueOnce({ status: "preferred_move_unavailable" });
+      .mockResolvedValueOnce({ status: "preferred_moves_unavailable" });
     const view = render(createElement(Probe, { fen: FEN, client }));
 
     await waitFor(() => expect(screen.getByTestId("state")).toHaveTextContent(FEN));
@@ -220,7 +220,7 @@ describe("usePreferredMoveState", () => {
           fen: FEN,
           effective_at: "2026-01-01T00:00:00.000000Z",
           loading: false,
-          error: "preferred_move_unavailable",
+          error: "preferred_moves_unavailable",
         }),
       ),
     );

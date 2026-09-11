@@ -1,101 +1,64 @@
 import { validateFen } from "chess.js";
 
+import { getAnalysis, requestAnalysis as generatedRequestAnalysis } from "../../api/client";
 import type { Fen } from "../chess/chessPrimitives";
 
-const API_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:5666";
 export const MAX_FEN_LENGTH = 128;
 
 type JsonRecord = Record<string, unknown>;
 
-export type EvaluationEligibility = "missing" | "eligible" | "stale";
-export type EvaluationQueueState = "queued" | "running" | "done" | "failed";
-export type EvaluationAction = "analyze" | "update" | "retry";
-export type EvaluationScoreKind = "cp" | "mate" | "mate_given";
+export type AnalysisStateValue = "not_requested" | "queued" | "running" | "ready";
+export type AnalysisScoreKind = "cp" | "mate";
+export type AnalysisTerminalKind = "checkmate" | "stalemate" | "insufficient_material";
 export type PositionKey = string;
-export type EvaluationErrorCode =
-  | "evaluation_unavailable"
+
+export type AnalysisFailureCode =
   | "invalid_fen"
-  | "request_too_large"
-  | "invalid_action"
-  | "invalid_transition"
-  | "evaluation_busy"
+  | "invalid_quality"
+  | "analysis_unavailable"
   | "unexpected_failure";
 
-export type EvaluationCandidate = {
+export type AnalysisLine = {
   rank: number;
-  score_kind: EvaluationScoreKind;
+  score_kind: AnalysisScoreKind;
   score_value: number;
   wdl_wins: number;
   wdl_draws: number;
   wdl_losses: number;
   pv_uci: string[];
   depth: number;
-  seldepth: number;
-  nodes: number;
-  engine_time_ms: number;
 };
 
-export type EvaluationResult = {
+export type AnalysisResult = {
+  lines: AnalysisLine[];
+  terminal_kind: AnalysisTerminalKind | null;
+};
+
+export type AnalysisObservation = {
   fen: Fen;
-  profile_id: string;
-  candidates: EvaluationCandidate[];
-  terminal_kind: string | null;
-  completed_at: string;
-  wall_time_ms: number;
+  state: AnalysisStateValue;
+  result: AnalysisResult | null;
 };
 
-export type EvaluationStatus = {
-  state: EvaluationQueueState;
-  position: number;
-  attempts: number;
-  enqueued_at: string;
-  started_at: string | null;
-  completed_at: string | null;
-  error_code: string | null;
-};
-
-export type EvaluationObservation = {
+export type AnalysisRequest = {
   fen: Fen;
-  eligibility: EvaluationEligibility;
-  result: EvaluationResult | null;
-  status: EvaluationStatus | null;
-  terminal: boolean;
+  quality: "tool";
 };
 
-export type EvaluationEnqueue = {
-  fen: Fen;
-  action: EvaluationAction;
-  outcome: string;
-  eligibility: EvaluationEligibility;
-  status: EvaluationStatus;
-};
-
-export type EvaluationPoll = {
-  fen: Fen;
-  state: EvaluationQueueState | null;
-  completed_at: string | null;
-  error_code: string | null;
-};
-
-export type AnalysisFailure = { status: EvaluationErrorCode };
-export type AnalysisResult<T> = { status: "success"; data: T } | AnalysisFailure;
+export type AnalysisFailure = { status: AnalysisFailureCode };
+export type AnalysisOperationResult<T> = { status: "success"; data: T } | AnalysisFailure;
 
 export type AnalysisClient = {
-  observe: (fen: Fen, signal?: AbortSignal) => Promise<AnalysisResult<EvaluationObservation>>;
-  enqueue: (
-    fen: Fen,
-    action: EvaluationAction,
-    signal?: AbortSignal,
-  ) => Promise<AnalysisResult<EvaluationEnqueue>>;
-  status: (fen: Fen, signal?: AbortSignal) => Promise<AnalysisResult<EvaluationPoll>>;
+  observe: (fen: Fen, signal?: AbortSignal) => Promise<AnalysisOperationResult<AnalysisObservation>>;
+  request: (fen: Fen, signal?: AbortSignal) => Promise<AnalysisOperationResult<AnalysisObservation>>;
 };
 
 function isRecord(value: unknown): value is JsonRecord {
   return typeof value === "object" && value !== null;
 }
 
-function hasExactKeys(value: JsonRecord, keys: string[]): boolean {
-  return Object.keys(value).sort().join(",") === [...keys].sort().join(",");
+function isFiniteNumber(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value);
 }
 
 function isInteger(value: unknown, minimum = 0): value is number {
@@ -122,281 +85,166 @@ function samePositionFen(value: unknown, fen: Fen): value is Fen {
   return isCanonicalFen(value) && positionKeyFromFen(value) === positionKeyFromFen(fen);
 }
 
-export function validateAnalysisFen(value: unknown): EvaluationErrorCode | null {
+export function validateAnalysisFen(value: unknown): AnalysisFailureCode | null {
   if (typeof value === "string" && value.length > MAX_FEN_LENGTH) {
-    return "request_too_large";
+    return "invalid_fen";
   }
   return isCanonicalFen(value) ? null : "invalid_fen";
 }
 
-function isEligibility(value: unknown): value is EvaluationEligibility {
-  return value === "missing" || value === "eligible" || value === "stale";
+function isState(value: unknown): value is AnalysisStateValue {
+  return value === "not_requested" || value === "queued" || value === "running" || value === "ready";
 }
 
-function isQueueState(value: unknown): value is EvaluationQueueState {
-  return value === "queued" || value === "running" || value === "done" || value === "failed";
+function isScoreKind(value: unknown): value is AnalysisScoreKind {
+  return value === "cp" || value === "mate";
 }
 
-function isAction(value: unknown): value is EvaluationAction {
-  return value === "analyze" || value === "update" || value === "retry";
+function isTerminalKind(value: unknown): value is AnalysisTerminalKind {
+  return value === "checkmate" || value === "stalemate" || value === "insufficient_material";
 }
 
-function isScoreKind(value: unknown): value is EvaluationScoreKind {
-  return value === "cp" || value === "mate" || value === "mate_given";
+function isUciMove(value: unknown): value is string {
+  return typeof value === "string" && /^[a-h][1-8][a-h][1-8][qrbn]?$/.test(value);
 }
 
-function isStringOrNull(value: unknown): value is string | null {
-  return value === null || typeof value === "string";
-}
-
-function isCandidate(value: unknown): value is EvaluationCandidate {
-  if (
-    !isRecord(value) ||
-    !hasExactKeys(value, [
-      "rank",
-      "score_kind",
-      "score_value",
-      "wdl_wins",
-      "wdl_draws",
-      "wdl_losses",
-      "pv_uci",
-      "depth",
-      "seldepth",
-      "nodes",
-      "engine_time_ms",
-    ])
-  ) {
+function isLine(value: unknown): value is AnalysisLine {
+  if (!isRecord(value)) {
     return false;
   }
-  if (
-    !isInteger(value.rank, 1) ||
-    value.rank > 5 ||
-    !isScoreKind(value.score_kind) ||
-    !isInteger(value.score_value, Number.MIN_SAFE_INTEGER) ||
-    !isInteger(value.wdl_wins) ||
-    !isInteger(value.wdl_draws) ||
-    !isInteger(value.wdl_losses) ||
-    value.wdl_wins + value.wdl_draws + value.wdl_losses !== 1000 ||
-    !Array.isArray(value.pv_uci) ||
-    value.pv_uci.length === 0 ||
-    !value.pv_uci.every(
-      (move) => typeof move === "string" && /^[a-h][1-8][a-h][1-8][qrbn]?$/.test(move),
-    ) ||
-    !isInteger(value.depth) ||
-    !isInteger(value.seldepth) ||
-    !isInteger(value.nodes, 1) ||
-    !isInteger(value.engine_time_ms)
-  ) {
-    return false;
+
+  return (
+    isInteger(value.rank, 1) &&
+    isScoreKind(value.score_kind) &&
+    isFiniteNumber(value.score_value) &&
+    isInteger(value.wdl_wins) &&
+    isInteger(value.wdl_draws) &&
+    isInteger(value.wdl_losses) &&
+    value.wdl_wins + value.wdl_draws + value.wdl_losses === 1000 &&
+    Array.isArray(value.pv_uci) &&
+    value.pv_uci.length > 0 &&
+    value.pv_uci.every(isUciMove) &&
+    isInteger(value.depth)
+  );
+}
+
+function mapLine(value: JsonRecord): AnalysisLine {
+  return {
+    rank: value.rank as number,
+    score_kind: value.score_kind as AnalysisScoreKind,
+    score_value: value.score_value as number,
+    wdl_wins: value.wdl_wins as number,
+    wdl_draws: value.wdl_draws as number,
+    wdl_losses: value.wdl_losses as number,
+    pv_uci: [...(value.pv_uci as string[])],
+    depth: value.depth as number,
+  };
+}
+
+function mapResult(value: unknown): AnalysisResult | null {
+  if (!isRecord(value) || !Array.isArray(value.lines) || !value.lines.every(isLine)) {
+    return null;
   }
-  return value.score_kind !== "mate_given" || value.score_value === 0;
-}
-
-function isResult(value: unknown, fen: Fen): value is EvaluationResult {
-  if (
-    !isRecord(value) ||
-    !hasExactKeys(value, [
-      "fen",
-      "profile_id",
-      "candidates",
-      "terminal_kind",
-      "completed_at",
-      "wall_time_ms",
-    ]) ||
-    !samePositionFen(value.fen, fen) ||
-    typeof value.profile_id !== "string" ||
-    value.profile_id.length === 0 ||
-    !Array.isArray(value.candidates) ||
-    value.candidates.length > 5 ||
-    !value.candidates.every(isCandidate) ||
-    !isStringOrNull(value.terminal_kind) ||
-    typeof value.completed_at !== "string" ||
-    !isInteger(value.wall_time_ms)
-  ) {
-    return false;
+  if (value.terminal_kind !== null && !isTerminalKind(value.terminal_kind)) {
+    return null;
   }
-  return value.candidates.every((candidate, index) => candidate.rank === index + 1);
+
+  return {
+    lines: value.lines.map((line) => mapLine(line as JsonRecord)),
+    terminal_kind: value.terminal_kind,
+  };
 }
 
-function isEvaluationStatus(value: unknown): value is EvaluationStatus {
-  return (
-    isRecord(value) &&
-    hasExactKeys(value, [
-      "state",
-      "position",
-      "attempts",
-      "enqueued_at",
-      "started_at",
-      "completed_at",
-      "error_code",
-    ]) &&
-    isQueueState(value.state) &&
-    isInteger(value.position) &&
-    isInteger(value.attempts) &&
-    typeof value.enqueued_at === "string" &&
-    isStringOrNull(value.started_at) &&
-    isStringOrNull(value.completed_at) &&
-    isStringOrNull(value.error_code)
-  );
+function mapObservation(value: unknown, requestedFen: Fen): AnalysisObservation | null {
+  if (!isRecord(value) || !samePositionFen(value.fen, requestedFen) || !isState(value.state)) {
+    return null;
+  }
+  if (value.result !== null && mapResult(value.result) === null) {
+    return null;
+  }
+
+  return {
+    fen: value.fen,
+    state: value.state,
+    result: value.result === null ? null : mapResult(value.result),
+  };
 }
 
-function isObservation(value: unknown, fen: Fen): value is EvaluationObservation {
+function isFailureCode(value: unknown): value is AnalysisFailureCode {
   return (
-    isRecord(value) &&
-    hasExactKeys(value, ["fen", "eligibility", "result", "status", "terminal"]) &&
-    samePositionFen(value.fen, fen) &&
-    isEligibility(value.eligibility) &&
-    (value.result === null || isResult(value.result, fen)) &&
-    (value.status === null || isEvaluationStatus(value.status)) &&
-    typeof value.terminal === "boolean"
-  );
-}
-
-function isEnqueue(value: unknown, fen: Fen): value is EvaluationEnqueue {
-  return (
-    isRecord(value) &&
-    hasExactKeys(value, ["fen", "action", "outcome", "eligibility", "status"]) &&
-    samePositionFen(value.fen, fen) &&
-    isAction(value.action) &&
-    typeof value.outcome === "string" &&
-    value.outcome.length > 0 &&
-    isEligibility(value.eligibility) &&
-    isEvaluationStatus(value.status)
-  );
-}
-
-function isPoll(value: unknown, fen: Fen): value is EvaluationPoll {
-  return (
-    isRecord(value) &&
-    hasExactKeys(value, ["fen", "state", "completed_at", "error_code"]) &&
-    samePositionFen(value.fen, fen) &&
-    (value.state === null || isQueueState(value.state)) &&
-    isStringOrNull(value.completed_at) &&
-    isStringOrNull(value.error_code)
-  );
-}
-
-function isErrorCode(value: unknown): value is EvaluationErrorCode {
-  return (
-    value === "evaluation_unavailable" ||
     value === "invalid_fen" ||
-    value === "request_too_large" ||
-    value === "invalid_action" ||
-    value === "invalid_transition" ||
-    value === "evaluation_busy" ||
+    value === "invalid_quality" ||
+    value === "analysis_unavailable" ||
     value === "unexpected_failure"
   );
 }
 
-function isErrorBody(value: unknown): value is { code: EvaluationErrorCode; message: string } {
-  return (
-    isRecord(value) &&
-    hasExactKeys(value, ["code", "message"]) &&
-    isErrorCode(value.code) &&
-    typeof value.message === "string"
-  );
-}
+function failureFromResponse(
+  error: unknown,
+  status: number | null,
+  operation: "observe" | "request",
+): AnalysisFailure {
+  const code = isRecord(error) && isFailureCode(error.code) ? error.code : null;
 
-async function readJson(response: Response): Promise<unknown> {
-  try {
-    return await response.json();
-  } catch {
-    return null;
+  if (status === 422 && (code === "invalid_fen" || (operation === "request" && code === "invalid_quality"))) {
+    return { status: code };
   }
-}
-
-async function requestJson(
-  input: RequestInfo | URL,
-  init: RequestInit | undefined,
-  signal: AbortSignal | undefined,
-): Promise<{ response: Response; body: unknown }> {
-  const response = await fetch(input, { ...init, signal });
-  return { response, body: await readJson(response) };
-}
-
-function failureFromResponse(status: number, body: unknown): AnalysisFailure {
-  if (status >= 400 && isErrorBody(body)) {
-    return { status: body.code };
+  if (status === 503 && code === "analysis_unavailable") {
+    return { status: code };
+  }
+  if (status === 500 && code === "unexpected_failure") {
+    return { status: code };
   }
   return { status: "unexpected_failure" };
 }
 
-function validFenOrFailure(fen: Fen): AnalysisFailure | null {
-  const status = validateAnalysisFen(fen);
-  return status === null ? null : { status };
+function invalidFenResult<T>(): AnalysisOperationResult<T> {
+  return { status: "invalid_fen" };
 }
 
-export const fetchEvaluation = async (
+export const fetchAnalysis = async (
   fen: Fen,
   signal?: AbortSignal,
-): Promise<AnalysisResult<EvaluationObservation>> => {
-  const failure = validFenOrFailure(fen);
-  if (failure) {
-    return failure;
+): Promise<AnalysisOperationResult<AnalysisObservation>> => {
+  const validationFailure = validateAnalysisFen(fen);
+  if (validationFailure !== null) {
+    return invalidFenResult();
   }
-  const { response, body } = await requestJson(
-    `${API_URL}/api/evaluation?fen=${encodeURIComponent(fen)}`,
-    undefined,
+
+  const response = await getAnalysis({
+    query: { fen },
     signal,
-  );
-  if (!response.ok) {
-    return failureFromResponse(response.status, body);
+  });
+  if (response.data === undefined || response.error !== undefined) {
+    return failureFromResponse(response.error, response.response?.status ?? null, "observe");
   }
-  return isObservation(body, fen)
-    ? { status: "success", data: body }
-    : { status: "unexpected_failure" };
+
+  const observation = mapObservation(response.data, fen);
+  return observation === null ? { status: "unexpected_failure" } : { status: "success", data: observation };
 };
 
-export const enqueueEvaluation = async (
+export const requestAnalysis = async (
   fen: Fen,
-  action: EvaluationAction,
   signal?: AbortSignal,
-): Promise<AnalysisResult<EvaluationEnqueue>> => {
-  const fenFailure = validFenOrFailure(fen);
-  if (fenFailure) {
-    return fenFailure;
+): Promise<AnalysisOperationResult<AnalysisObservation>> => {
+  const validationFailure = validateAnalysisFen(fen);
+  if (validationFailure !== null) {
+    return invalidFenResult();
   }
-  if (!isAction(action)) {
-    return { status: "invalid_action" };
-  }
-  const { response, body } = await requestJson(
-    `${API_URL}/api/evaluation`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ fen, action }),
-    },
-    signal,
-  );
-  if (!response.ok) {
-    return failureFromResponse(response.status, body);
-  }
-  return isEnqueue(body, fen)
-    ? { status: "success", data: body }
-    : { status: "unexpected_failure" };
-};
 
-export const fetchEvaluationStatus = async (
-  fen: Fen,
-  signal?: AbortSignal,
-): Promise<AnalysisResult<EvaluationPoll>> => {
-  const failure = validFenOrFailure(fen);
-  if (failure) {
-    return failure;
-  }
-  const { response, body } = await requestJson(
-    `${API_URL}/api/evaluation/status?fen=${encodeURIComponent(fen)}`,
-    undefined,
+  const response = await generatedRequestAnalysis({
+    body: { fen, quality: "tool" },
     signal,
-  );
-  if (!response.ok) {
-    return failureFromResponse(response.status, body);
+  });
+  if (response.data === undefined || response.error !== undefined) {
+    return failureFromResponse(response.error, response.response?.status ?? null, "request");
   }
-  return isPoll(body, fen) ? { status: "success", data: body } : { status: "unexpected_failure" };
+
+  const observation = mapObservation(response.data, fen);
+  return observation === null ? { status: "unexpected_failure" } : { status: "success", data: observation };
 };
 
 export const defaultAnalysisClient: AnalysisClient = {
-  observe: fetchEvaluation,
-  enqueue: enqueueEvaluation,
-  status: fetchEvaluationStatus,
+  observe: fetchAnalysis,
+  request: requestAnalysis,
 };

@@ -1,8 +1,17 @@
 import { Chess, validateFen, type Square } from "chess.js";
 
+import {
+  deletePreferredMoves,
+  getPreferredMoves,
+  putPreferredMoves,
+} from "../../api/client";
+import type {
+  PreferredMovesMutationResponse,
+  PreferredMovesRemovalResponse,
+  PreferredMovesResponse,
+  PreferredMovesSegmentResponse,
+} from "../../api/client";
 import type { Fen } from "../chess/chessPrimitives";
-
-const API_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:5666";
 
 type JsonRecord = Record<string, unknown>;
 
@@ -13,6 +22,7 @@ export type PreferredMoveValue = {
   san: string;
 };
 
+/** The view model retained by the existing Repertoire preferred-move UI. */
 export type PreferredMoveResponse = {
   fen: Fen;
   state: PreferredMoveState;
@@ -20,19 +30,22 @@ export type PreferredMoveResponse = {
   effective_at: string | null;
 };
 
-export type PreferredMoveMutationResponse = {
-  fen: Fen;
-  changed: boolean;
-  effective_at: string;
-};
+/** Clean mutation responses are returned for transport purposes only. */
+export type PreferredMoveMutationResponse =
+  | PreferredMovesMutationResponse
+  | PreferredMovesRemovalResponse;
 
 export type PreferredMoveFailureCode =
   | "invalid_fen"
-  | "invalid_move"
-  | "invalid_timestamp"
-  | "future_effective_time"
-  | "position_not_found"
-  | "preferred_move_unavailable"
+  | "invalid_from"
+  | "invalid_until"
+  | "invalid_window"
+  | "invalid_effective_from"
+  | "invalid_effective_until"
+  | "invalid_preference"
+  | "invalid_uci"
+  | "illegal_move"
+  | "preferred_moves_unavailable"
   | "unexpected_failure";
 
 export type PreferredMoveFailure = { status: PreferredMoveFailureCode };
@@ -46,16 +59,13 @@ export type PreferredMoveMutationResult =
 export type PreferredMoveRequest = {
   fen: Fen;
   move_uci: string;
-  effective_at?: string | null;
 };
 
 export type PreferredMoveDeleteRequest = {
   fen: Fen;
-  effective_at?: string | null;
 };
 
 export type PreferredMoveReadOptions = {
-  asOf?: string;
   signal?: AbortSignal;
 };
 
@@ -84,6 +94,11 @@ export type PreferredMoveClient = {
   remove: PreferredMoveRemover;
 };
 
+export type PreferredMoveDateWindow = {
+  today: string;
+  tomorrow: string;
+};
+
 function isRecord(value: unknown): value is JsonRecord {
   return typeof value === "object" && value !== null;
 }
@@ -107,8 +122,12 @@ function samePositionFen(value: unknown, requestedFen: Fen): value is Fen {
   return isCanonicalFen(value) && positionKeyFromFen(value) === positionKeyFromFen(requestedFen);
 }
 
-function isCanonicalLegalUci(fen: Fen, value: unknown): value is string {
-  if (typeof value !== "string" || !/^[a-h][1-8][a-h][1-8][qrbn]?$/.test(value)) {
+function isCanonicalUci(value: unknown): value is string {
+  return typeof value === "string" && /^[a-h][1-8][a-h][1-8][qrbn]?$/.test(value);
+}
+
+function isLegalUci(fen: Fen, value: unknown): value is string {
+  if (!isCanonicalUci(value)) {
     return false;
   }
 
@@ -125,59 +144,133 @@ function isCanonicalLegalUci(fen: Fen, value: unknown): value is string {
   }
 }
 
-function isPreferredMoveValue(value: unknown, fen: Fen): value is PreferredMoveValue {
+function sanFromUci(fen: Fen, uci: string): string | null {
+  try {
+    const chess = new Chess(fen);
+    const move = chess.move({
+      from: uci.slice(0, 2) as Square,
+      to: uci.slice(2, 4) as Square,
+      ...(uci.length === 5 ? { promotion: uci.slice(4) as "q" | "r" | "b" | "n" } : {}),
+    });
+    return move.san;
+  } catch {
+    return null;
+  }
+}
+
+function isCleanSegmentPreference(
+  value: unknown,
+  fen: Fen,
+): value is PreferredMovesSegmentResponse["preference"] {
+  if (!isRecord(value) || typeof value.kind !== "string") {
+    return false;
+  }
+  if (value.kind === "unconfigured") {
+    return hasExactKeys(value, ["kind"]);
+  }
+  if (value.kind === "no_preference") {
+    return hasExactKeys(value, ["kind"]);
+  }
+  return hasExactKeys(value, ["kind", "uci"]) && isLegalUci(fen, value.uci);
+}
+
+function isCompleteSegment(value: unknown, fen: Fen): value is PreferredMovesSegmentResponse {
   return (
     isRecord(value) &&
-    hasExactKeys(value, ["uci", "san"]) &&
-    isCanonicalLegalUci(fen, value.uci) &&
-    typeof value.san === "string" &&
-    value.san.length > 0
+    hasExactKeys(value, ["from", "until", "preference"]) &&
+    typeof value.from === "string" &&
+    typeof value.until === "string" &&
+    isCleanSegmentPreference(value.preference, fen)
   );
 }
 
-function isPreferredMoveResponse(
+function isPreferredMovesResponse(
   value: unknown,
   requestedFen: Fen,
-): value is PreferredMoveResponse {
+  window: PreferredMoveDateWindow,
+): value is PreferredMovesResponse {
   if (
     !isRecord(value) ||
-    !hasExactKeys(value, ["fen", "state", "move", "effective_at"]) ||
-    !samePositionFen(value.fen, requestedFen)
+    !hasExactKeys(value, ["fen", "from", "until", "segments"]) ||
+    !samePositionFen(value.fen, requestedFen) ||
+    value.from !== window.today ||
+    value.until !== window.tomorrow ||
+    !Array.isArray(value.segments)
   ) {
     return false;
   }
 
-  if (value.state === "unassigned") {
-    return value.move === null && value.effective_at === null;
-  }
-  return (
-    value.state === "assigned" &&
-    isPreferredMoveValue(value.move, requestedFen) &&
-    typeof value.effective_at === "string"
+  return value.segments.some(
+    (segment) =>
+      isCompleteSegment(segment, requestedFen) &&
+      segment.from === window.today &&
+      segment.until === window.tomorrow,
   );
 }
 
-function isPreferredMoveMutationResponse(
-  value: unknown,
-  requestedFen: Fen,
-): value is PreferredMoveMutationResponse {
+function isMutationPreference(value: unknown, fen: Fen): boolean {
+  if (!isRecord(value) || typeof value.kind !== "string") {
+    return false;
+  }
+  if (value.kind === "no_preference") {
+    return hasExactKeys(value, ["kind"]);
+  }
+  return hasExactKeys(value, ["kind", "uci"]) && isLegalUci(fen, value.uci);
+}
+
+function isMutationPeriod(value: unknown, fen: Fen): boolean {
   return (
     isRecord(value) &&
-    hasExactKeys(value, ["fen", "changed", "effective_at"]) &&
+    hasExactKeys(value, ["effective_from", "effective_until", "preference"]) &&
+    typeof value.effective_from === "string" &&
+    (typeof value.effective_until === "string" || value.effective_until === null) &&
+    isMutationPreference(value.preference, fen)
+  );
+}
+
+function isPreferredMovesMutationResponse(
+  value: unknown,
+  requestedFen: Fen,
+): value is PreferredMovesMutationResponse {
+  return (
+    isRecord(value) &&
+    hasExactKeys(value, ["effective_from", "effective_until", "fen", "periods", "preference"]) &&
+    typeof value.effective_from === "string" &&
+    (typeof value.effective_until === "string" || value.effective_until === null) &&
     samePositionFen(value.fen, requestedFen) &&
-    typeof value.changed === "boolean" &&
-    typeof value.effective_at === "string"
+    isMutationPreference(value.preference, requestedFen) &&
+    Array.isArray(value.periods) &&
+    value.periods.every((period) => isMutationPeriod(period, requestedFen))
+  );
+}
+
+function isPreferredMovesRemovalResponse(
+  value: unknown,
+  requestedFen: Fen,
+): value is PreferredMovesRemovalResponse {
+  return (
+    isRecord(value) &&
+    hasExactKeys(value, ["effective_from", "effective_until", "fen", "periods"]) &&
+    typeof value.effective_from === "string" &&
+    (typeof value.effective_until === "string" || value.effective_until === null) &&
+    samePositionFen(value.fen, requestedFen) &&
+    Array.isArray(value.periods) &&
+    value.periods.every((period) => isMutationPeriod(period, requestedFen))
   );
 }
 
 function isFailureCode(value: unknown): value is PreferredMoveFailureCode {
   return (
     value === "invalid_fen" ||
-    value === "invalid_move" ||
-    value === "invalid_timestamp" ||
-    value === "future_effective_time" ||
-    value === "position_not_found" ||
-    value === "preferred_move_unavailable" ||
+    value === "invalid_from" ||
+    value === "invalid_until" ||
+    value === "invalid_window" ||
+    value === "invalid_effective_from" ||
+    value === "invalid_effective_until" ||
+    value === "invalid_preference" ||
+    value === "invalid_uci" ||
+    value === "illegal_move" ||
+    value === "preferred_moves_unavailable" ||
     value === "unexpected_failure"
   );
 }
@@ -191,108 +284,160 @@ function isErrorBody(value: unknown): value is { code: PreferredMoveFailureCode;
   );
 }
 
-async function readJson(response: Response): Promise<unknown> {
-  try {
-    return await response.json();
-  } catch {
-    return null;
+function failureFromOperation(result: unknown): PreferredMoveFailure {
+  if (!isRecord(result)) {
+    return { status: "unexpected_failure" };
   }
-}
 
-function failureFromResponse(status: number, body: unknown): PreferredMoveFailure {
-  if (
-    status === 422 &&
-    isErrorBody(body) &&
-    (body.code === "invalid_fen" ||
-      body.code === "invalid_move" ||
-      body.code === "invalid_timestamp" ||
-      body.code === "future_effective_time")
-  ) {
-    return { status: body.code };
+  const response = isRecord(result.response) ? result.response : null;
+  const httpStatus = typeof response?.status === "number" ? response.status : null;
+  const error = result.error;
+
+  if (httpStatus === 422 && isErrorBody(error) && error.code !== "unexpected_failure") {
+    return { status: error.code };
   }
-  if (status === 404 && isErrorBody(body) && body.code === "position_not_found") {
-    return { status: body.code };
+  if (httpStatus === 503 && isErrorBody(error) && error.code === "preferred_moves_unavailable") {
+    return { status: error.code };
   }
-  if (status === 503 && isErrorBody(body) && body.code === "preferred_move_unavailable") {
-    return { status: body.code };
-  }
-  if (status === 500 && isErrorBody(body) && body.code === "unexpected_failure") {
-    return { status: body.code };
+  if (httpStatus === 500 && isErrorBody(error) && error.code === "unexpected_failure") {
+    return { status: error.code };
   }
   return { status: "unexpected_failure" };
 }
 
-function validateFenRequest(fen: Fen): PreferredMoveFailure | null {
+function validationFailure(fen: Fen): PreferredMoveFailure | null {
   return isCanonicalFen(fen) ? null : { status: "invalid_fen" };
 }
 
-export const fetchPreferredMove: PreferredMoveReader = async (fen, options) => {
-  const validationFailure = validateFenRequest(fen);
-  if (validationFailure !== null) {
-    return validationFailure;
+function moveValidationFailure(fen: Fen, uci: string): PreferredMoveFailure | null {
+  if (!isCanonicalUci(uci)) {
+    return { status: "invalid_uci" };
   }
+  return isLegalUci(fen, uci) ? null : { status: "illegal_move" };
+}
 
-  const asOf = options?.asOf === undefined ? "" : `&as_of=${encodeURIComponent(options.asOf)}`;
-  const response = await fetch(
-    `${API_URL}/api/preferred-move?fen=${encodeURIComponent(fen)}${asOf}`,
-    { signal: options?.signal },
+function formatUtcDate(date: Date): string {
+  return [date.getUTCFullYear(), date.getUTCMonth() + 1, date.getUTCDate()]
+    .map((part, index) => (index === 0 ? String(part).padStart(4, "0") : String(part).padStart(2, "0")))
+    .join("-");
+}
+
+export function getPreferredMoveDateWindow(now = new Date()): PreferredMoveDateWindow {
+  const today = formatUtcDate(now);
+  const tomorrow = formatUtcDate(
+    new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1)),
   );
-  const body = await readJson(response);
+  return { today, tomorrow };
+}
 
-  if (!response.ok) {
-    return failureFromResponse(response.status, body);
+function mappedPreferredMove(
+  body: PreferredMovesResponse,
+  requestedFen: Fen,
+  window: PreferredMoveDateWindow,
+): PreferredMoveResponse {
+  const segment = body.segments.find(
+    (candidate) =>
+      isCompleteSegment(candidate, requestedFen) &&
+      candidate.from === window.today &&
+      candidate.until === window.tomorrow,
+  );
+
+  if (!segment) {
+    throw new Error("The clean response did not contain the requested one-day segment");
   }
-  return isPreferredMoveResponse(body, fen)
-    ? { status: "success", data: body }
-    : { status: "unexpected_failure" };
-};
 
-export const putPreferredMove: PreferredMoveSetter = async (request, options) => {
-  const fenFailure = validateFenRequest(request.fen);
+  if (segment.preference.kind === "move") {
+    const san = sanFromUci(requestedFen, segment.preference.uci);
+    if (san === null) {
+      throw new Error("The clean response contained an illegal preferred move");
+    }
+    return {
+      fen: body.fen,
+      state: "assigned",
+      move: { uci: segment.preference.uci, san },
+      effective_at: segment.from,
+    };
+  }
+
+  return {
+    fen: body.fen,
+    state: "unassigned",
+    move: null,
+    effective_at: null,
+  };
+}
+
+export const fetchPreferredMove: PreferredMoveReader = async (fen, options) => {
+  const fenFailure = validationFailure(fen);
   if (fenFailure !== null) {
     return fenFailure;
   }
-  if (!isCanonicalLegalUci(request.fen, request.move_uci)) {
-    return { status: "invalid_move" };
-  }
 
-  const response = await fetch(`${API_URL}/api/preferred-move`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(request),
+  const window = getPreferredMoveDateWindow();
+  const result = await getPreferredMoves({
+    query: { fen, from: window.today, until: window.tomorrow },
     signal: options?.signal,
   });
-  const body = await readJson(response);
 
-  if (!response.ok) {
-    return failureFromResponse(response.status, body);
+  if (!isRecord(result) || !("data" in result) || result.data === undefined) {
+    return failureFromOperation(result);
   }
-  return isPreferredMoveMutationResponse(body, request.fen)
-    ? { status: "success", data: body }
+  if (!isPreferredMovesResponse(result.data, fen, window)) {
+    return { status: "unexpected_failure" };
+  }
+
+  try {
+    return { status: "success", data: mappedPreferredMove(result.data, fen, window) };
+  } catch {
+    return { status: "unexpected_failure" };
+  }
+};
+
+export const putPreferredMove: PreferredMoveSetter = async (request, options) => {
+  const fenFailure = validationFailure(request.fen);
+  if (fenFailure !== null) {
+    return fenFailure;
+  }
+  const moveFailure = moveValidationFailure(request.fen, request.move_uci);
+  if (moveFailure !== null) {
+    return moveFailure;
+  }
+
+  const window = getPreferredMoveDateWindow();
+  const result = await putPreferredMoves({
+    body: {
+      fen: request.fen,
+      effective_from: window.today,
+      preference: { kind: "move", uci: request.move_uci },
+    },
+    signal: options?.signal,
+  });
+
+  if (!isRecord(result) || !("data" in result) || result.data === undefined) {
+    return failureFromOperation(result);
+  }
+  return isPreferredMovesMutationResponse(result.data, request.fen)
+    ? { status: "success", data: result.data }
     : { status: "unexpected_failure" };
 };
 
 export const deletePreferredMove: PreferredMoveRemover = async (request, options) => {
-  const fenFailure = validateFenRequest(request.fen);
+  const fenFailure = validationFailure(request.fen);
   if (fenFailure !== null) {
     return fenFailure;
   }
 
-  const effectiveAt =
-    request.effective_at === undefined || request.effective_at === null
-      ? ""
-      : `&effective_at=${encodeURIComponent(request.effective_at)}`;
-  const response = await fetch(
-    `${API_URL}/api/preferred-move?fen=${encodeURIComponent(request.fen)}${effectiveAt}`,
-    { method: "DELETE", signal: options?.signal },
-  );
-  const body = await readJson(response);
+  const window = getPreferredMoveDateWindow();
+  const result = await deletePreferredMoves({
+    body: { fen: request.fen, effective_from: window.today },
+    signal: options?.signal,
+  });
 
-  if (!response.ok) {
-    return failureFromResponse(response.status, body);
+  if (!isRecord(result) || !("data" in result) || result.data === undefined) {
+    return failureFromOperation(result);
   }
-  return isPreferredMoveMutationResponse(body, request.fen)
-    ? { status: "success", data: body }
+  return isPreferredMovesRemovalResponse(result.data, request.fen)
+    ? { status: "success", data: result.data }
     : { status: "unexpected_failure" };
 };
 

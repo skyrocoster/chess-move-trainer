@@ -1,3 +1,4 @@
+import { useMemo, useState } from "react";
 import "../../styles/cmt-tokens.css";
 import "../../styles/cmt-typescale.css";
 import { expect, userEvent, waitFor, within } from "storybook/test";
@@ -6,6 +7,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { storyCandidateAnalysisClient } from "../analysis/analysisStoryClients";
 import { GAME_UUID } from "../game/gameFixtures";
 import RepertoireBuilderWorkspace from "./RepertoireBuilderWorkspace";
+import { PREFERRED_MOVE_SOURCE_FEN } from "./preferredMoveStoryFixtures";
 import {
   expectActiveSessionHistoryEntry,
   expectDateFreePreferredPanel,
@@ -22,8 +24,38 @@ import {
   expectNoHorizontalOverflow,
   loadGame,
   STORY_PROMOTION_GAME_DETAIL,
+  storyPreferredMoveDateWindow,
   storyGameClient,
 } from "./repertoireBuilderStoryHelpers";
+import {
+  type StoryPreferredMoveRequest,
+  storyPreferredMoveClient,
+} from "./repertoireBuilderStoryHelpers";
+
+function CleanPreferredTimelineStory() {
+  const [requests, setRequests] = useState<StoryPreferredMoveRequest[]>([]);
+  const preferredMoveClient = useMemo(
+    () =>
+      storyPreferredMoveClient({
+        relationship: "empty",
+        onRequest: (request) => setRequests((current) => [...current, request]),
+      }),
+    [],
+  );
+
+  return (
+    <>
+      {workspace(
+        { preferredMoveClient, analysisClient: storyCandidateAnalysisClient(["e2e4"]) },
+        {},
+        { observedInGames: false, distinctGameCount: 0, totalGameCount: 0 },
+      )}
+      <output data-testid="clean-preferred-request-log" hidden>
+        {JSON.stringify(requests)}
+      </output>
+    </>
+  );
+}
 
 const meta = {
   title: "Application/Repertoire Builder/Workspace",
@@ -48,6 +80,68 @@ export const SavedNoStage: Story = {
     );
     await expectPreferredActions(canvasElement, ["Remove"]);
     await expectDateFreePreferredPanel(canvasElement);
+  },
+};
+
+export const CleanPreferredTimelineNovelParent: Story = {
+  name: "Clean preferred timeline and novel parent",
+  render: () => <CleanPreferredTimelineStory />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const requestLog = canvas.getByTestId("clean-preferred-request-log");
+    const { today, tomorrow } = storyPreferredMoveDateWindow();
+    const expectedFen = PREFERRED_MOVE_SOURCE_FEN;
+
+    await expectPreferredMoveState(canvasElement, "empty");
+    await expect(canvas.getByText("Never seen as White")).toBeVisible();
+    await expect(
+      canvas.queryByText("This position isn't in your corpus, so it can't be saved yet."),
+    ).not.toBeInTheDocument();
+    await expectPreferredActions(canvasElement, []);
+    await expectDateFreePreferredPanel(canvasElement);
+    await expect(requestLog).toHaveTextContent(
+      JSON.stringify([{ method: "GET", fen: expectedFen, from: today, until: tomorrow }]),
+    );
+
+    await userEvent.click(await canvas.findByRole("button", { name: "1. e4" }));
+    await expectPreferredMoveState(canvasElement, "first-choice");
+    await expect(canvas.getByRole("button", { name: "Save e4" })).toBeEnabled();
+    await userEvent.click(canvas.getByRole("button", { name: "Save e4" }));
+    await waitFor(() =>
+      expect(canvas.getByTestId("session-status")).toHaveTextContent("Preferred move saved."),
+    );
+    await expectPreferredMoveState(canvasElement, "matching");
+    await expect(canvas.getByTestId("saved-move")).toHaveTextContent(/^Saved\s*e4\s*e2e4$/);
+    await expect(requestLog).toHaveTextContent(
+      JSON.stringify([
+        { method: "GET", fen: expectedFen, from: today, until: tomorrow },
+        { method: "PUT", fen: expectedFen, move_uci: "e2e4", effective_from: today },
+        { method: "GET", fen: expectedFen, from: today, until: tomorrow },
+      ]),
+    );
+
+    await userEvent.click(canvas.getByRole("button", { name: "Remove" }));
+    const dialog = await within(canvasElement.ownerDocument.body).findByRole("alertdialog", {
+      name: "Remove preferred move?",
+    });
+    await userEvent.click(within(dialog).getByRole("button", { name: "Remove" }));
+    await waitFor(() =>
+      expect(canvas.getByTestId("branch-status")).toHaveTextContent("Preferred move removed."),
+    );
+    await expectPreferredMoveState(canvasElement, "first-choice");
+    await expect(canvas.getByTestId("saved-move")).toHaveTextContent("None yet");
+    await expect(canvas.getByTestId("selected-move")).toHaveTextContent(/^Selected\s*e4\s*e2e4$/);
+    await expectPreferredActions(canvasElement, ["Save e4"]);
+    await expectDateFreePreferredPanel(canvasElement);
+    await expect(requestLog).toHaveTextContent(
+      JSON.stringify([
+        { method: "GET", fen: expectedFen, from: today, until: tomorrow },
+        { method: "PUT", fen: expectedFen, move_uci: "e2e4", effective_from: today },
+        { method: "GET", fen: expectedFen, from: today, until: tomorrow },
+        { method: "DELETE", fen: expectedFen, effective_from: today },
+        { method: "GET", fen: expectedFen, from: today, until: tomorrow },
+      ]),
+    );
   },
 };
 
@@ -368,7 +462,7 @@ export const ZeroPersonalCount: Story = {
 };
 
 export const AbsentUnsavable: Story = {
-  name: "Preferred move - absent overall and unsavable",
+  name: "Preferred move - absent overall remains savable",
   render: () =>
     workspace(
       { analysisClient: storyCandidateAnalysisClient(["e2e4"]) },
@@ -381,17 +475,16 @@ export const AbsentUnsavable: Story = {
     await expectPositionReachFrequency(canvasElement, "absent", "White");
     await expect(canvas.getByText("Never seen as White")).toBeVisible();
     await expect(
-      canvas.getByText("This position isn't in your corpus, so it can't be saved yet."),
-    ).toBeVisible();
-    await expect(canvas.queryByRole("button", { name: /^Save / })).not.toBeInTheDocument();
-    await expect(
-      canvas.queryByRole("button", { name: /effective date/i }),
+      canvas.queryByText("This position isn't in your corpus, so it can't be saved yet."),
     ).not.toBeInTheDocument();
+    await expect(canvas.queryByRole("button", { name: /^Save / })).not.toBeInTheDocument();
+    await userEvent.click(await canvas.findByRole("button", { name: "1. e4" }));
+    await expect(canvas.getByRole("button", { name: "Save e4" })).toBeEnabled();
   },
 };
 
 export const AssignedUnsavable: Story = {
-  name: "Preferred move - assigned move remains removable when not in corpus",
+  name: "Preferred move - assigned move remains removable when unseen",
   render: () =>
     workspace(
       {},
@@ -401,10 +494,10 @@ export const AssignedUnsavable: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await expectPreferredMoveState(canvasElement, "saved");
-    await expect(canvas.getByTestId("preferred-status")).toHaveTextContent("Not in Corpus");
+    await expect(canvas.getByTestId("preferred-status")).toHaveTextContent("Saved");
     await expect(
-      canvas.getByText("This position isn't in your corpus, so it can't be saved yet."),
-    ).toBeVisible();
+      canvas.queryByText("This position isn't in your corpus, so it can't be saved yet."),
+    ).not.toBeInTheDocument();
     await expect(canvas.getByTestId("saved-move")).toHaveTextContent("e4");
     await expect(canvas.getByRole("button", { name: "Remove" })).toBeEnabled();
     await expectPreferredActions(canvasElement, ["Remove"]);

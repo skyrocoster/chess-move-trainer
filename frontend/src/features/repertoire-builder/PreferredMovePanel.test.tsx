@@ -165,7 +165,7 @@ describe("PreferredMovePanel selected-transition composition", () => {
       <PreferredMovePanel
         {...panelArgs({
           model: model({ savedPresence: "unknown", relationship: "unknown", saveability: "unknown" }),
-          preferredError: "preferred_move_unavailable",
+          preferredError: "preferred_moves_unavailable",
           onRetry,
         })}
       />,
@@ -184,8 +184,8 @@ describe("PreferredMovePanel selected-transition composition", () => {
         {...panelArgs({ model: model({ saveability: "unsavable", selected: SELECTED_D4, relationship: "first-choice" }) })}
       />,
     );
-    expect(screen.getByText("This position isn't in your corpus, so it can't be saved yet.")).toBeVisible();
-    expect(screen.queryByRole("button", { name: "Save d4" })).not.toBeInTheDocument();
+    expect(screen.queryByText("This position isn't in your corpus, so it can't be saved yet.")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Save d4" })).toBeVisible();
   });
 
   it("keeps the selected fact visible and disables persistence during a mutation", () => {

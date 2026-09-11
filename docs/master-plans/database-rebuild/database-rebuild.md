@@ -1,9 +1,9 @@
 # Database rebuild
 
 > **Status:** direction settled; CLEAN-01 through CLEAN-10, CONSUMER-01, VIEWER-REMOVE-01,
-> CONSUMER-02, `POSITION-INSIGHT-01`, `CONSUMER-03`, and `CONSUMER-04` accepted
-> **Next selectable slice:** `CONSUMER-05` — Repertoire selected/current-position analysis uses the clean lifecycle;
-> see the accepted [CONSUMER-04 Plan](../../plans/done/database-rebuild-consumer-04/database-rebuild-consumer-04.md).
+> CONSUMER-02, `POSITION-INSIGHT-01`, and `CONSUMER-03` through `CONSUMER-06` accepted
+> **Next selectable slice:** `RETIRE-01` — remove the old game-position route after its retained consumer migrated;
+> see the accepted [CONSUMER-06 Plan](../../plans/done/database-rebuild-consumer-06/database-rebuild-consumer-06.md).
 > **Acceptance:** The accepted database foundation, SETUP-01, and SETUP-02 remain intact; every clean operation is created and generated individually; every retained production API workflow is migrated individually afterward; and legacy routes are retired only after their final consumers move.
 
 ## Destination
@@ -293,8 +293,8 @@ Health remains. Route retirement never implies old-database cleanup or deletion.
 ## Slice results
 
 - **Accepted:** `CLEAN-01` through `CLEAN-10`, `CONSUMER-01`, `VIEWER-REMOVE-01`, `CONSUMER-02`,
-  `POSITION-INSIGHT-01`, `CONSUMER-03`, and `CONSUMER-04`.
-- **Next selectable:** `CONSUMER-05`.
+  `POSITION-INSIGHT-01`, and `CONSUMER-03` through `CONSUMER-06`.
+- **Next selectable:** `RETIRE-01`.
 
 ## Risks and escalation boundaries
 

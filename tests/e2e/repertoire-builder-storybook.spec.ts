@@ -10,6 +10,8 @@ const STORY_IDS = {
   constrained: "application-repertoire-builder-workspace--constrained",
   importedGameSession: "application-repertoire-builder-workspace--imported-game-session",
   stagedMy: "application-repertoire-builder-workspace--staged-my",
+  selectedPositionAnalysisLifecycle:
+    "application-repertoire-builder-workspace--selected-position-analysis-lifecycle",
   storedPrefix: "application-repertoire-builder-workspace--stored-prefix-black-subject",
   opponent: "application-repertoire-builder-workspace--opponent-immediate",
   navigation: "application-repertoire-builder-workspace--navigation-and-replacement",
@@ -29,6 +31,8 @@ const STORY_IDS = {
   pendingRemove: "application-repertoire-builder-workspace--pending-remove",
   saveFailure: "application-repertoire-builder-workspace--save-failure-retention",
   removeFailure: "application-repertoire-builder-workspace--remove-failure-retention",
+  cleanPreferredTimeline:
+    "application-repertoire-builder-workspace--clean-preferred-timeline-novel-parent",
   accessibility: "application-repertoire-builder-workspace--accessibility-and-responsive",
   readErrors: "application-repertoire-builder-workspace--read-errors",
   unsavable: "application-repertoire-builder-workspace--unsavable-gate",
@@ -176,27 +180,26 @@ async function expectPreferredRelationship(
 }
 
 async function expectPreferredActions(page: Page, actions: readonly string[]) {
-  const actual = (await preferredPanel(page).getByRole("button").allTextContents()).filter((label) =>
-    ["Save", "Change effective date", "Remove"].includes(label.trim()),
-  );
-  expect(actual.map((label) => label.trim())).toEqual(actions);
+  const actual = (await preferredPanel(page).getByRole("button").allTextContents())
+    .map((label) => label.trim())
+    .filter((label) => label === "Remove" || label.startsWith("Save "))
+    .map((label) => (label.startsWith("Save ") ? "Save" : label));
+  expect(actual).toEqual(actions);
 }
 
-async function expectDeferredDate(page: Page, requests?: string[]) {
-  const date = preferredPanel(page).getByRole("button", { name: "Change effective date" });
-  const requestCount = requests?.length;
-  await expect(date).toBeDisabled();
-  await expect(date).toHaveAccessibleDescription("Date changes are temporarily unavailable");
-  await date.evaluate((element) => (element as HTMLButtonElement).click());
-  await expect(page.getByTestId("calendar-date-popup")).toHaveCount(0);
-  if (requestCount !== undefined) expect(requests).toHaveLength(requestCount);
+async function expectDateFreePreferredPanel(page: Page) {
+  const panel = preferredPanel(page);
+  await expect(panel.getByTestId("effective-date")).toHaveCount(0);
+  await expect(panel.getByTestId("calendar-date-popup")).toHaveCount(0);
+  await expect(panel.getByRole("button", { name: /effective date|calendar|future|schedule/i })).toHaveCount(0);
+  await expect(panel).not.toContainText(/effective date|calendar|future schedule/i);
 }
 
 async function expectBothRelationshipBoxes(page: Page) {
   await expect(preferredPanel(page).getByTestId("saved-move")).toBeVisible();
-  await expect(preferredPanel(page).getByTestId("staged-move")).toBeVisible();
+  await expect(preferredPanel(page).getByTestId("selected-move")).toBeVisible();
   await expect(preferredPanel(page).getByText("Current saved choice", { exact: true })).toBeVisible();
-  await expect(preferredPanel(page).getByText("Staged move", { exact: true })).toBeVisible();
+  await expect(preferredPanel(page).getByText("Selected move", { exact: true })).toBeVisible();
 }
 
 async function expectSessionHistory(page: Page, entries: readonly string[]) {
@@ -314,23 +317,23 @@ async function expectDistributionChartAndControlsClean(page: Page) {
 async function expectPreferredPanelFidelity(page: Page, expectStacked: boolean) {
   const panel = preferredPanel(page);
   const saved = panel.getByTestId("saved-move");
-  const staged = panel.getByTestId("staged-move");
+  const selected = panel.getByTestId("selected-move");
   const connector = saved.locator("xpath=following-sibling::*[1]");
   const connectorNext = connector.locator("xpath=following-sibling::*[1]");
   const consequence = panel.getByTestId("preferred-consequence");
 
   await expect(panel.getByText("Current saved choice", { exact: true })).toHaveCount(1);
-  await expect(panel.getByText("Staged move", { exact: true })).toHaveCount(1);
+  await expect(panel.getByText("Selected move", { exact: true })).toHaveCount(1);
   await expect(saved).toBeVisible();
-  await expect(staged).toBeVisible();
+  await expect(selected).toBeVisible();
   await expect(
     panel.getByRole("button", {
-      name: "Current saved choice: e4; play and stage this move.",
+      name: "Current saved choice: e4; play this move.",
     }),
   ).toBeVisible();
 
   await expect(connector).toHaveAttribute("aria-hidden", "true");
-  await expect(connectorNext).toHaveAttribute("data-testid", "staged-move");
+  await expect(connectorNext).toHaveAttribute("data-testid", "selected-move");
   await expect(connector.locator("svg")).toHaveAttribute("aria-hidden", "true");
   await expect(connector.locator("svg")).toHaveAttribute("focusable", "false");
   await expect(consequence.locator("svg")).toHaveAttribute("aria-hidden", "true");
@@ -343,29 +346,29 @@ async function expectPreferredPanelFidelity(page: Page, expectStacked: boolean) 
   expect(cueStyle.borderRadius).toBe("50%");
   expect(cueStyle.width).toBe(cueStyle.height);
 
-  const [savedBox, connectorBox, stagedBox] = await Promise.all([
+  const [savedBox, connectorBox, selectedBox] = await Promise.all([
     saved.boundingBox(),
     connector.boundingBox(),
-    staged.boundingBox(),
+    selected.boundingBox(),
   ]);
-  if (!savedBox || !connectorBox || !stagedBox) {
+  if (!savedBox || !connectorBox || !selectedBox) {
     throw new Error("Preferred move relationship boxes are missing layout bounds.");
   }
   if (expectStacked) {
     expect(savedBox.y + savedBox.height).toBeLessThanOrEqual(connectorBox.y + 1);
-    expect(connectorBox.y + connectorBox.height).toBeLessThanOrEqual(stagedBox.y + 1);
+    expect(connectorBox.y + connectorBox.height).toBeLessThanOrEqual(selectedBox.y + 1);
     await expect(connector.locator("svg")).toHaveCSS(
       "transform",
       "matrix(0, 1, -1, 0, 0, 0)",
     );
   } else {
     expect(savedBox.x + savedBox.width).toBeLessThanOrEqual(connectorBox.x + 1);
-    expect(connectorBox.x + connectorBox.width).toBeLessThanOrEqual(stagedBox.x + 1);
+    expect(connectorBox.x + connectorBox.width).toBeLessThanOrEqual(selectedBox.x + 1);
   }
 
   const panelBounds = await panel.boundingBox();
   if (!panelBounds) throw new Error("Preferred move panel bounds are missing.");
-  const actionButtons = ["Save", "Change effective date", "Remove"].map((name) =>
+  const actionButtons = ["Save", "Remove"].map((name) =>
     panel.getByRole("button", { name, exact: true }),
   );
   const actionBounds = await Promise.all(actionButtons.map((button) => button.boundingBox()));
@@ -441,10 +444,10 @@ test.describe("Repertoire Builder Storybook surface", () => {
     ]);
     await expectPreferredRelationship(page, "empty");
     await expectBothRelationshipBoxes(page);
-    await expect(preferredPanel(page).getByText("No saved choice yet.")).toBeVisible();
-    await expect(preferredPanel(page).getByText("No move staged.")).toBeVisible();
+    await expect(preferredPanel(page).getByText("None yet")).toBeVisible();
+    await expect(preferredPanel(page).getByText("No move selected.")).toBeVisible();
     await expect(
-      preferredPanel(page).getByText("Stage a legal move to propose the first saved choice."),
+      preferredPanel(page).getByText("Play a legal move to select the first saved choice."),
     ).toBeVisible();
     await expectPreferredActions(page, []);
     await expectNoHorizontalOverflow(page);
@@ -573,11 +576,8 @@ test.describe("Repertoire Builder Storybook surface", () => {
     await expectPreferredRelationship(page, "replacement");
     await expectPreferredPanelFidelity(page, true);
     await expect(preferredPanel(page).getByText("Save d4 to replace e4.")).toBeVisible();
-    await expect(
-      preferredPanel(page).getByText("Date changes are temporarily unavailable", { exact: true }),
-    ).toBeVisible();
-    await expectPreferredActions(page, ["Save", "Change effective date", "Remove"]);
-    await expectDeferredDate(page, requests);
+    await expectPreferredActions(page, ["Save", "Remove"]);
+    await expectDateFreePreferredPanel(page);
     await expectNoHorizontalOverflow(page);
     await checkA11y(page);
 
@@ -585,15 +585,64 @@ test.describe("Repertoire Builder Storybook surface", () => {
     await expectPreferredRelationship(page, "replacement");
     await expectPreferredPanelFidelity(page, true);
     await expect(preferredPanel(page).getByText("Save d4 to replace e4.")).toBeVisible();
-    await expect(
-      preferredPanel(page).getByText("Date changes are temporarily unavailable", { exact: true }),
-    ).toBeVisible();
-    await expectPreferredActions(page, ["Save", "Change effective date", "Remove"]);
-    await expectDeferredDate(page, requests);
+    await expectPreferredActions(page, ["Save", "Remove"]);
+    await expectDateFreePreferredPanel(page);
     await expectNoHorizontalOverflow(page);
     await checkA11y(page);
 
     expect(requests).toEqual([]);
+  });
+
+  test("clean preferred timeline and novel parent uses current-day parent transition operations", async ({ page }) => {
+    const legacyRequests = preferredRequestUrls(page);
+    await openStory(page, STORY_IDS.cleanPreferredTimeline);
+
+    const panel = preferredPanel(page);
+    const requestLog = page.getByTestId("clean-preferred-request-log");
+    await expect
+      .poll(async () => JSON.parse((await requestLog.textContent()) ?? "[]").length, {
+        timeout: 30_000,
+      })
+      .toBe(5);
+    const requests = JSON.parse((await requestLog.textContent()) ?? "[]") as Array<Record<string, string>>;
+    expect(requests).toHaveLength(5);
+    expect(requests.map((request) => request.method)).toEqual([
+      "GET",
+      "PUT",
+      "GET",
+      "DELETE",
+      "GET",
+    ]);
+
+    const parentFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+    const firstGet = requests[0]!;
+    const save = requests[1]!;
+    const refreshedGet = requests[2]!;
+    const remove = requests[3]!;
+    const finalGet = requests[4]!;
+    expect(firstGet).toMatchObject({ method: "GET", fen: parentFen });
+    expect(refreshedGet).toEqual(firstGet);
+    expect(finalGet).toEqual(firstGet);
+    expect(firstGet.from).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(firstGet.until).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(save).toEqual({
+      method: "PUT",
+      fen: parentFen,
+      move_uci: "e2e4",
+      effective_from: firstGet.from,
+    });
+    expect(remove).toEqual({ method: "DELETE", fen: parentFen, effective_from: firstGet.from });
+    for (const request of requests) expect(request).not.toHaveProperty("effective_until");
+
+    await expectPreferredRelationship(page, "first-choice");
+    await expect(panel.getByTestId("saved-move")).toContainText("None yet");
+    await expect(panel.getByTestId("selected-move")).toContainText(/e4.*e2e4/);
+    await expect(panel.getByRole("button", { name: "Save e4", exact: true })).toBeVisible();
+    await expectPreferredActions(page, ["Save"]);
+    await expectDateFreePreferredPanel(page);
+    expect(legacyRequests).toEqual([]);
+    await expectNoHorizontalOverflow(page);
+    await checkA11y(page);
   });
 
   test("proves response distribution integration, states, accessibility, and responsive evidence", async ({ page }, testInfo) => {
@@ -749,35 +798,36 @@ test.describe("Repertoire Builder Storybook surface", () => {
     }
   });
 
-  test("proves all five saved/staged relationship readings and disabled date behavior", async ({ page }) => {
+  test("proves all five saved/selected relationship readings without calendar controls", async ({ page }) => {
     const requests = preferredRequestUrls(page);
 
     await openStory(page, STORY_IDS.firstChoice);
     await expectPreferredRelationship(page, "first-choice");
     await expectBothRelationshipBoxes(page);
     await expect(preferredPanel(page).getByText("Save e4 as the current saved choice.")).toBeVisible();
-    await expectPreferredActions(page, ["Save", "Change effective date"]);
-    await expectDeferredDate(page);
+    await expectPreferredActions(page, ["Save"]);
+    await expectDateFreePreferredPanel(page);
 
     await openStory(page, STORY_IDS.savedNoStage);
     await expectPreferredRelationship(page, "saved");
     await expectBothRelationshipBoxes(page);
     await expect(preferredPanel(page).getByTestId("saved-move")).toContainText("e4");
-    await expect(preferredPanel(page).getByText("No move staged.")).toBeVisible();
-    await expectPreferredActions(page, ["Change effective date", "Remove"]);
-    await expectDeferredDate(page);
+    await expect(preferredPanel(page).getByText("No move selected.")).toBeVisible();
+    await expectPreferredActions(page, ["Remove"]);
+    await expectDateFreePreferredPanel(page);
 
     await openStory(page, STORY_IDS.replacement, 412, 915);
     await expectPreferredRelationship(page, "replacement");
     await expect(preferredPanel(page).getByText("Save d4 to replace e4.")).toBeVisible();
-    await expectPreferredActions(page, ["Save", "Change effective date", "Remove"]);
-    await expectDeferredDate(page);
+    await expectPreferredActions(page, ["Save", "Remove"]);
+    await expectDateFreePreferredPanel(page);
     await expectNoHorizontalOverflow(page);
 
     await openStory(page, STORY_IDS.matching);
     await expectPreferredRelationship(page, "matching");
     await expect(preferredPanel(page).getByText("e4 is already the current saved choice.")).toBeVisible();
-    await expectPreferredActions(page, ["Change effective date", "Remove"]);
+    await expectPreferredActions(page, ["Remove"]);
+    await expectDateFreePreferredPanel(page);
     await expect(
       preferredPanel(page)
         .getByTestId("preferred-actions")
@@ -793,12 +843,12 @@ test.describe("Repertoire Builder Storybook surface", () => {
     await openStory(page, STORY_IDS.savedBoxKeyboard);
     await expectPreferredRelationship(page, "matching");
     const savedBox = preferredPanel(page).getByRole("button", {
-      name: "Current saved choice: e4; play and stage this move.",
+      name: "Current saved choice: e4; play this move.",
     });
     await expect(savedBox).toBeFocused();
     await expect(savedBox).toHaveAttribute("type", "button");
-    await expect(preferredPanel(page).getByTestId("staged-move")).toContainText(/e4.*e2e4/);
-    await expectPreferredActions(page, ["Change effective date", "Remove"]);
+    await expect(preferredPanel(page).getByTestId("selected-move")).toContainText(/e4.*e2e4/);
+    await expectPreferredActions(page, ["Remove"]);
     await expectSessionHistory(page, ["Initial position"]);
     await expectActiveSessionHistoryEntry(page, "Initial position");
     await expectPositionSquares(page, "e2", 0);
@@ -812,7 +862,7 @@ test.describe("Repertoire Builder Storybook surface", () => {
     await openStory(page, STORY_IDS.saveReplacement);
     await expectPreferredRelationship(page, "saved");
     await expect(preferredPanel(page).getByTestId("saved-move")).toContainText(/d4.*d2d4/);
-    await expect(preferredPanel(page).getByTestId("staged-move")).toContainText("No move staged.");
+    await expect(preferredPanel(page).getByTestId("selected-move")).toContainText("No move selected.");
     await expectPositionSquares(page, "d2", 0);
     await expectPositionSquares(page, "d4", 1);
     await expectSessionHistory(page, ["Initial position", "White, move 1, d4"]);
@@ -821,14 +871,14 @@ test.describe("Repertoire Builder Storybook surface", () => {
         .getByTestId("preferred-actions")
         .getByRole("button", { name: "Save", exact: true }),
     ).toHaveCount(0);
-    await expectPreferredActions(page, []);
+    await expectPreferredActions(page, ["Remove"]);
 
     await openStory(page, STORY_IDS.firstChoice);
     await expectPreferredRelationship(page, "first-choice");
     await expect(preferredPanel(page).getByTestId("saved-move")).toContainText("No saved choice yet.");
-    await expect(preferredPanel(page).getByTestId("staged-move")).toContainText(/e4.*e2e4/);
+    await expect(preferredPanel(page).getByTestId("selected-move")).toContainText(/e4.*e2e4/);
     await expectSessionHistory(page, ["Initial position"]);
-    await expectDeferredDate(page);
+    await expectDateFreePreferredPanel(page);
   });
 
   test("proves Remove confirmation, cancellation focus, and retained staging", async ({ page }) => {
@@ -838,9 +888,9 @@ test.describe("Repertoire Builder Storybook surface", () => {
     });
     await expectPreferredRelationship(page, "first-choice");
     await expect(preferredPanel(page).getByTestId("saved-move")).toContainText("No saved choice yet.");
-    await expect(preferredPanel(page).getByTestId("staged-move")).toContainText(/d4.*d2d4/);
-    await expectPreferredActions(page, ["Save", "Change effective date"]);
-    await expectDeferredDate(page);
+    await expect(preferredPanel(page).getByTestId("selected-move")).toContainText(/d4.*d2d4/);
+    await expectPreferredActions(page, ["Save"]);
+    await expectDateFreePreferredPanel(page);
     await expectSessionHistory(page, ["Initial position"]);
     await checkA11y(page);
   });
@@ -849,8 +899,8 @@ test.describe("Repertoire Builder Storybook surface", () => {
     await openStory(page, STORY_IDS.pendingSave);
     await expect(preferredPanel(page).getByText("Saving preferred move...")).toBeVisible();
     await expect(preferredPanel(page).getByTestId("saved-move")).toContainText("e4");
-    await expect(preferredPanel(page).getByTestId("staged-move")).toContainText(/d4.*d2d4/);
-    await expectPreferredActions(page, ["Save", "Change effective date", "Remove"]);
+    await expect(preferredPanel(page).getByTestId("selected-move")).toContainText(/d4.*d2d4/);
+    await expectPreferredActions(page, ["Save", "Remove"]);
     await expect(
       preferredPanel(page)
         .getByTestId("preferred-actions")
@@ -860,13 +910,13 @@ test.describe("Repertoire Builder Storybook surface", () => {
     await openStory(page, STORY_IDS.pendingRemove);
     await expect(preferredPanel(page).getByText("Removing preferred move...")).toBeVisible();
     await expect(preferredPanel(page).getByTestId("saved-move")).toContainText("e4");
-    await expectPreferredActions(page, ["Change effective date", "Remove"]);
+    await expectPreferredActions(page, ["Remove"]);
     await expect(preferredPanel(page).getByRole("button", { name: "Remove" })).toBeDisabled();
 
     await openStory(page, STORY_IDS.saveFailure);
     await expect(page.getByRole("alert")).toHaveText("The preferred move could not be updated. Try again.");
     await expect(preferredPanel(page).getByTestId("saved-move")).toContainText("e4");
-    await expect(preferredPanel(page).getByTestId("staged-move")).toContainText(/d4.*d2d4/);
+    await expect(preferredPanel(page).getByTestId("selected-move")).toContainText(/d4.*d2d4/);
 
     await openStory(page, STORY_IDS.removeFailure);
     await expect(page.getByRole("alert")).toHaveText("The preferred move could not be updated. Try again.");
@@ -878,7 +928,7 @@ test.describe("Repertoire Builder Storybook surface", () => {
   test("proves gates, typed read feedback, loading, and opponent local history", async ({ page }) => {
     await openStory(page, STORY_IDS.unsavable);
     await expectPreferredRelationship(page, "empty");
-    await expect(preferredPanel(page).getByText("This position cannot be saved because it is not in the corpus.")).toBeVisible();
+    await expect(preferredPanel(page).getByText("Never seen as White")).toBeVisible();
     await expectPreferredActions(page, []);
 
     await openStory(page, STORY_IDS.loading);
@@ -893,9 +943,9 @@ test.describe("Repertoire Builder Storybook surface", () => {
 
     await openStory(page, STORY_IDS.opponentGate);
     await expectPreferredRelationship(page, "empty");
-    await expect(preferredPanel(page).getByText("Wait for your turn to stage or save a preferred move.")).toBeVisible();
+    await expect(preferredPanel(page).getByText("Wait for your turn to select or save a preferred move.")).toBeVisible();
     await expectPreferredActions(page, []);
-    await expect(preferredPanel(page).getByRole("button", { name: /play and stage this move/ })).toHaveCount(0);
+    await expect(preferredPanel(page).getByRole("button", { name: /play this move/ })).toHaveCount(0);
 
     await openStory(page, STORY_IDS.opponentLocal);
     await expect(page.getByTestId("repertoire-board-lane").getByTestId("board-move-history").getByRole("button")).toHaveCount(4, {
@@ -918,7 +968,7 @@ test.describe("Repertoire Builder Storybook surface", () => {
       timeout: 15_000,
     });
     await expectPreferredRelationship(page, "first-choice");
-    await expect(preferredPanel(page).getByTestId("staged-move")).toContainText(/e8=N.*e7e8n/);
+    await expect(preferredPanel(page).getByTestId("selected-move")).toContainText(/e8=N.*e7e8n/);
     await expectSessionHistory(page, ["Initial position"]);
     await expectPositionSquares(page, "e7", 0);
     await expectPositionSquares(page, "e8", 1);
@@ -1013,11 +1063,39 @@ test.describe("Repertoire Builder Storybook surface", () => {
 
     await openStory(page, STORY_IDS.accessibility, 412, 915);
     const savedBox = preferredPanel(page).getByRole("button", {
-      name: "Current saved choice: e4; play and stage this move.",
+      name: "Current saved choice: e4; play this move.",
     });
     await savedBox.focus();
     await expect(savedBox).toBeFocused();
     await expectNoHorizontalOverflow(page);
+    await checkA11y(page);
+  });
+
+  test("proves selected-position analysis lifecycle, clean request intent, retention, and candidate navigation", async ({ page }) => {
+    await openStory(page, STORY_IDS.selectedPositionAnalysisLifecycle, 1280, 1000);
+
+    const analysis = page
+      .getByTestId("repertoire-engine-lane")
+      .getByRole("region", { name: "Analysis" });
+    const proof = page.getByTestId("analysis-lifecycle-proof");
+
+    await expect(proof).toHaveText(/observations: \d+; requests: 1/);
+    await expect(proof).toContainText("requests: 1");
+    await expect(proof).toContainText("request quality: tool");
+    await expect(proof).toContainText("observe:not_requested");
+    await expect(proof).toContainText("request:queued+result");
+    await expect(proof).toContainText("observe:running+result");
+    await expect(proof).toContainText("observe:ready+result");
+
+    await expect(analysis.getByRole("button", { name: "Update analysis" })).toHaveCount(0);
+    await expect(analysis.getByRole("button", { name: "Retry analysis" })).toHaveCount(0);
+    await expect(page.getByTestId("session-status")).toContainText(
+      "Move played locally: e4.",
+    );
+    await expect(page.getByTestId("session-origin")).toContainText("Current Ply 1.");
+    await expectSessionHistory(page, ["Initial position", "White, move 1, e4"]);
+    await expectActiveSessionHistoryEntry(page, "White, move 1, e4");
+    await expect(page.getByTestId("selected-move")).toHaveText(/Selected\s*e4\s*e2e4/);
     await checkA11y(page);
   });
 

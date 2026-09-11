@@ -2,7 +2,7 @@ import type { PreferredMoveValue } from "./preferredMoveApi";
 import type {
   RepertoirePositionModel,
   RepertoireSavedMoveFact,
-  RepertoireStagedMoveFact,
+  RepertoireSelectedMoveFact,
 } from "./repertoireWorkflowModel";
 import type { PositionPickerMoveRecord } from "./positionPickerSession";
 
@@ -43,9 +43,13 @@ function savedFact(move: PreferredMoveValue): RepertoireSavedMoveFact {
   };
 }
 
-function stagedFact(move: PositionPickerMoveRecord): RepertoireStagedMoveFact {
+function selectedFact(move: PositionPickerMoveRecord): RepertoireSelectedMoveFact {
   return {
-    move,
+    transition: {
+      parentFEN: PREFERRED_MOVE_SOURCE_FEN,
+      outgoingUCI: `${move.sourceSquare}${move.targetSquare}${move.promotion ?? ""}`,
+    },
+    san: move.san,
     uci: `${move.sourceSquare}${move.targetSquare}${move.promotion ?? ""}`,
   };
 }
@@ -61,7 +65,7 @@ export type PreferredMoveStoryFixture = {
   relationship: PreferredMoveRelationship;
   savedPresence: "absent" | "present";
   saved: RepertoireSavedMoveFact | null;
-  staged: RepertoireStagedMoveFact | null;
+  selected: RepertoireSelectedMoveFact | null;
   comparison: "not-applicable" | "different" | "matching";
 };
 
@@ -73,35 +77,35 @@ export const preferredMoveRelationshipFixtures: Record<
     relationship: "empty",
     savedPresence: "absent",
     saved: null,
-    staged: null,
+    selected: null,
     comparison: "not-applicable",
   },
   "first-choice": {
     relationship: "first-choice",
     savedPresence: "absent",
     saved: null,
-    staged: stagedFact(E4_STAGED_MOVE),
+    selected: selectedFact(E4_STAGED_MOVE),
     comparison: "not-applicable",
   },
   saved: {
     relationship: "saved",
     savedPresence: "present",
     saved: savedFact(E4_MOVE),
-    staged: null,
+    selected: null,
     comparison: "not-applicable",
   },
   replacement: {
     relationship: "replacement",
     savedPresence: "present",
     saved: savedFact(E4_MOVE),
-    staged: stagedFact(D4_STAGED_MOVE),
+    selected: selectedFact(D4_STAGED_MOVE),
     comparison: "different",
   },
   matching: {
     relationship: "matching",
     savedPresence: "present",
     saved: savedFact(E4_MOVE),
-    staged: stagedFact(E4_STAGED_MOVE),
+    selected: selectedFact(E4_STAGED_MOVE),
     comparison: "matching",
   },
 };
@@ -119,6 +123,7 @@ export function preferredMoveStoryModel(
     contextMessage: "Seen in 3 games as White",
     saveability: "savable",
     ...fixture,
+    selected: fixture.selected,
     ...overrides,
   };
 }

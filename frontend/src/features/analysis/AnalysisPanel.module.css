@@ -37,8 +37,7 @@
 .scoreLabel,
 .lineRank,
 .lineWdl,
-.state,
-.updateHelp {
+.state {
   margin: 0;
   font: var(--md-sys-typescale-label-medium);
   letter-spacing: 0.025rem;
@@ -67,8 +66,7 @@
 }
 
 .meta,
-.sectionNote,
-.updateHelp {
+.sectionNote {
   color: var(--md-sys-color-on-surface-variant);
 }
 
@@ -79,10 +77,8 @@
 }
 
 .message,
-.alertMessage,
 .observationError,
-.actionError,
-.staleMessage,
+.requestError,
 .emptyResult {
   margin: 0;
   overflow-wrap: anywhere;
@@ -93,36 +89,14 @@
   color: var(--md-sys-color-on-surface-variant);
 }
 
-.alertMessage,
 .observationError,
-.actionError {
+.requestError {
   padding: var(--cmt-spacing-12);
   border: 1px solid var(--cmt-error-accent);
   border-inline-start-width: var(--cmt-spacing-4);
   border-radius: var(--cmt-radius-default);
   background: var(--md-sys-color-error-container);
   color: var(--md-sys-color-on-error-container);
-}
-
-.staleMessage {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--cmt-spacing-8);
-  padding: var(--cmt-spacing-12);
-  border: 1px solid var(--cmt-warning-accent);
-  border-inline-start-width: var(--cmt-spacing-4);
-  border-radius: var(--cmt-radius-default);
-  background: var(--cmt-warning-container);
-  color: var(--cmt-warning-on-container);
-}
-
-.messageIcon {
-  inline-size: 1.25rem;
-  flex: 0 0 1.25rem;
-  color: currentColor;
-  font-weight: 700;
-  line-height: 1.25rem;
-  text-align: center;
 }
 
 .result {
@@ -408,23 +382,11 @@
   padding-block-start: var(--cmt-spacing-4);
 }
 
-.updateHelp {
-  max-inline-size: 24rem;
-  overflow-wrap: anywhere;
-}
-
 .actions {
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
   gap: var(--cmt-spacing-8);
-}
-
-.buttonIcon {
-  inline-size: 1.25rem;
-  font-size: 1.25rem;
-  line-height: 1rem;
-  text-align: center;
 }
 
 @container analysis-panel (max-width: 32rem) {
@@ -454,10 +416,6 @@
   .actionRow {
     align-items: stretch;
     flex-direction: column;
-  }
-
-  .updateHelp {
-    max-inline-size: none;
   }
 
   .actions {
@@ -533,13 +491,12 @@
   .state,
   .meta,
   .sectionNote,
-  .message,
+   .message,
   .wdlCaption,
   .wdlLegend,
   .lineRank,
   .scoreLabel,
   .lineWdl,
-  .updateHelp,
   .emptyResult {
     color: CanvasText;
   }
@@ -550,10 +507,8 @@
     color: Highlight;
   }
 
-  .staleMessage,
-  .alertMessage,
   .observationError,
-  .actionError {
+  .requestError {
     border-color: CanvasText;
     background: Canvas;
     color: CanvasText;

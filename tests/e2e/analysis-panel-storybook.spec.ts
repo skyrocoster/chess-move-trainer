@@ -5,17 +5,16 @@ const STORYBOOK_URL = "http://127.0.0.1:6006";
 const STORYBOOK_ROOT = "#storybook-root";
 const STORY_IDS = {
   loading: "application-analysis-analysis-panel--loading",
-  missing: "application-analysis-analysis-panel--missing",
+  notRequested: "application-analysis-analysis-panel--not-requested",
   queued: "application-analysis-analysis-panel--queued",
   running: "application-analysis-analysis-panel--running",
-  complete: "application-analysis-analysis-panel--complete",
-  constrainedComplete:
-    "application-analysis-analysis-panel--constrained-complete",
-  stale: "application-analysis-analysis-panel--stale",
-  failed: "application-analysis-analysis-panel--failed",
+  ready: "application-analysis-analysis-panel--ready",
+  activeWithResult: "application-analysis-analysis-panel--active-with-result",
+  constrainedReady:
+    "application-analysis-analysis-panel--constrained-ready",
   observationError: "application-analysis-analysis-panel--observation-error",
-  actionPending: "application-analysis-analysis-panel--action-pending",
-  actionError: "application-analysis-analysis-panel--action-error",
+  requestPending: "application-analysis-analysis-panel--request-pending",
+  requestError: "application-analysis-analysis-panel--request-error",
   terminalEmpty: "application-analysis-analysis-panel--terminal-empty",
 } as const;
 
@@ -123,7 +122,7 @@ test.describe("Analysis Panel Storybook surface", () => {
         role: "status" as const,
       },
       {
-        id: STORY_IDS.missing,
+        id: STORY_IDS.notRequested,
         status: "Analysis available on request",
         role: "status" as const,
         note: "Analyze this displayed position deliberately",
@@ -141,21 +140,21 @@ test.describe("Analysis Panel Storybook surface", () => {
         note: "Analysis is in progress",
       },
       {
-        id: STORY_IDS.complete,
+        id: STORY_IDS.ready,
         status: "Analysis complete",
         role: "status" as const,
       },
       {
-        id: STORY_IDS.stale,
-        status: "Stale analysis",
+        id: STORY_IDS.activeWithResult,
+        status: "Analysis running",
         role: "status" as const,
-        note: "earlier position",
+        note: "in progress",
       },
       {
-        id: STORY_IDS.failed,
-        status: "Analysis failed",
+        id: STORY_IDS.requestError,
+        status: "Analysis available on request",
         role: "status" as const,
-        alert: "No complete result was published",
+        alert: "analysis action could not be submitted",
       },
       {
         id: STORY_IDS.observationError,
@@ -164,15 +163,9 @@ test.describe("Analysis Panel Storybook surface", () => {
         alert: "Evaluation data is unavailable",
       },
       {
-        id: STORY_IDS.actionPending,
+        id: STORY_IDS.requestPending,
         status: "Analysis available on request",
         role: "status" as const,
-      },
-      {
-        id: STORY_IDS.actionError,
-        status: "Analysis available on request",
-        role: "status" as const,
-        alert: "analysis action could not be submitted",
       },
       {
         id: STORY_IDS.terminalEmpty,
@@ -194,7 +187,7 @@ test.describe("Analysis Panel Storybook surface", () => {
       await checkA11y(page);
     }
 
-    await openStory(page, STORY_IDS.complete);
+    await openStory(page, STORY_IDS.ready);
     await expect(
       page.getByRole("heading", { level: 3, name: "Best line" }),
     ).toBeVisible();
@@ -224,7 +217,7 @@ test.describe("Analysis Panel Storybook surface", () => {
   test("keeps actions deliberate, callback-safe, and visibly focused", async ({
     page,
   }) => {
-    await openStory(page, STORY_IDS.missing);
+    await openStory(page, STORY_IDS.notRequested);
     const analyze = page.getByRole("button", { name: "Analyze position" });
     await analyze.focus();
     await expect(analyze).toBeFocused();
@@ -234,19 +227,9 @@ test.describe("Analysis Panel Storybook surface", () => {
       "Analysis available on request",
     );
 
-    await openStory(page, STORY_IDS.stale);
-    const update = page.getByRole("button", { name: "Update analysis" });
-    await update.focus();
-    await expect(update).toBeFocused();
-    await update.click();
-    await expect(page.getByRole("status")).toHaveText("Stale analysis");
-
-    await openStory(page, STORY_IDS.failed);
-    const retry = page.getByRole("button", { name: "Retry analysis" });
-    await retry.focus();
-    await expect(retry).toBeFocused();
-    await retry.click();
-    await expect(page.getByRole("status")).toHaveText("Analysis failed");
+    await openStory(page, STORY_IDS.ready);
+    await expect(page.getByRole("button", { name: "Update analysis" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Retry analysis" })).toHaveCount(0);
 
     await openStory(page, STORY_IDS.observationError);
     const retryObservation = page.getByRole("button", {
@@ -257,16 +240,25 @@ test.describe("Analysis Panel Storybook surface", () => {
     await retryObservation.click();
     await expect(page.getByRole("status")).toHaveText("Evaluation unavailable");
 
-    await openStory(page, STORY_IDS.actionPending);
+    await openStory(page, STORY_IDS.requestPending);
     await expect(
       page.getByRole("button", { name: "Analyze position" }),
     ).toBeDisabled();
+
+    await openStory(page, STORY_IDS.requestError);
+    const deliberateRequest = page.getByRole("button", { name: "Analyze position" });
+    await deliberateRequest.focus();
+    await expect(deliberateRequest).toBeFocused();
+    await deliberateRequest.click();
+    await expect(page.getByRole("alert")).toContainText(
+      "analysis action could not be submitted",
+    );
   });
 
   test("keeps the approved panel geometry bounded at 320, 480, and 640px", async ({
     page,
   }) => {
-    await openStory(page, STORY_IDS.constrainedComplete);
+    await openStory(page, STORY_IDS.constrainedReady);
     const frame = page.getByTestId("analysis-panel-constrained-frame");
     const panel = page.locator('[class*="panel"]').first();
 
@@ -281,13 +273,8 @@ test.describe("Analysis Panel Storybook surface", () => {
       await expect(panel).toBeVisible();
     }
 
-    const actions = page.locator('[class*="actions"]').first();
-    const actionButton = page.getByRole("button", { name: "Update analysis" });
-    const actionsWidth = await actions.evaluate(
-      (element) => element.clientWidth,
-    );
-    const buttonWidth = (await actionButton.boundingBox())?.width ?? 0;
-    expect(Math.abs(buttonWidth - actionsWidth)).toBeLessThanOrEqual(1);
+    await expect(page.getByRole("button", { name: "Update analysis" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Retry analysis" })).toHaveCount(0);
     await expectBestLineGeometry(page);
   });
 
@@ -295,7 +282,7 @@ test.describe("Analysis Panel Storybook surface", () => {
     page,
   }) => {
     await page.emulateMedia({ reducedMotion: "reduce" });
-    await openStory(page, STORY_IDS.constrainedComplete);
+    await openStory(page, STORY_IDS.constrainedReady);
     expect(
       await page.evaluate(
         () => window.matchMedia("(prefers-reduced-motion: reduce)").matches,
@@ -324,7 +311,7 @@ test.describe("Analysis Panel Storybook surface", () => {
     await expectNoHorizontalOverflow(page);
 
     await page.emulateMedia({ forcedColors: "active" });
-    await openStory(page, STORY_IDS.constrainedComplete);
+    await openStory(page, STORY_IDS.constrainedReady);
     expect(
       await page.evaluate(
         () => window.matchMedia("(forced-colors: active)").matches,

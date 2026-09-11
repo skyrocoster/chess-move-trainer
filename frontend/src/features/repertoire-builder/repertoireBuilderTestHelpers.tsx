@@ -5,9 +5,8 @@ import { vi } from "vitest";
 
 import type {
   AnalysisClient,
-  EvaluationCandidate,
-  EvaluationObservation,
-  EvaluationStatus,
+  AnalysisObservation,
+  AnalysisOperationResult,
 } from "../analysis/analysisApi";
 import type { GameDetailResponse } from "../../api/client";
 import type { PositionContextClient } from "../position-context/positionContextApi";
@@ -82,102 +81,19 @@ export function moveResponseDistributionResponse(
   };
 }
 export function noAnalysisClient(): AnalysisClient {
-  return {
-    observe: vi.fn(async (fen: string) => ({
-      status: "success" as const,
-      data: { fen, eligibility: "missing" as const, result: null, status: null, terminal: false },
-    })),
-    enqueue: vi.fn() as AnalysisClient["enqueue"],
-    status: vi.fn() as AnalysisClient["status"],
-  };
-}
-
-export const DONE_STATUS: EvaluationStatus = {
-  state: "done",
-  position: 0,
-  attempts: 1,
-  enqueued_at: "2026-08-22T00:00:00+00:00",
-  started_at: "2026-08-22T00:00:00+00:00",
-  completed_at: "2026-08-22T00:00:01+00:00",
-  error_code: null,
-};
-
-export function displayCandidate(fen: string, overrides: Partial<EvaluationCandidate> = {}) {
-  return {
-    rank: 1,
-    score_kind: "cp" as const,
-    score_value: 34,
-    wdl_wins: 420,
-    wdl_draws: 300,
-    wdl_losses: 280,
-    pv_uci: ["e2e4"],
-    depth: 20,
-    seldepth: 24,
-    nodes: 200_000,
-    engine_time_ms: 100,
-    ...overrides,
+  const observation = (fen: string): AnalysisObservation => ({
     fen,
-  };
-}
+    state: "not_requested",
+    result: null,
+  });
+  const success = (data: AnalysisObservation): AnalysisOperationResult<AnalysisObservation> => ({
+    status: "success",
+    data,
+  });
 
-export type DisplayState =
-  | "neutral"
-  | "completed-cp"
-  | "mate"
-  | "pending"
-  | "stale-retained"
-  | "failed-retained"
-  | "failed-empty"
-  | "unavailable"
-  | "dual";
-
-export function displayAnalysisClient(state: DisplayState): AnalysisClient {
   return {
-    observe: vi.fn(async (fen: string) => {
-      if (state === "unavailable") {
-        return { status: "evaluation_unavailable" as const };
-      }
-      const candidate =
-        state === "completed-cp" ||
-        state === "stale-retained" ||
-        state === "failed-retained" ||
-        state === "dual"
-          ? displayCandidate(
-              fen,
-              state === "dual" ? { score_value: fen === STARTING_FEN ? 34 : -34 } : {},
-            )
-          : state === "mate"
-            ? displayCandidate(fen, { score_kind: "mate", score_value: -3 })
-            : null;
-      const queueState =
-        state === "pending"
-          ? "queued"
-          : state === "failed-retained" || state === "failed-empty"
-            ? "failed"
-            : "done";
-      return {
-        status: "success" as const,
-        data: {
-          fen,
-          eligibility:
-            state === "stale-retained" ? ("stale" as const) : candidate ? "eligible" : "missing",
-          result: candidate
-            ? {
-                fen,
-                profile_id: "test-profile",
-                candidates: [candidate],
-                terminal_kind: null,
-                completed_at: "2026-08-22T00:00:01+00:00",
-                wall_time_ms: 100,
-              }
-            : null,
-          status: state === "neutral" ? null : { ...DONE_STATUS, state: queueState },
-          terminal: false,
-        } satisfies EvaluationObservation,
-      };
-    }),
-    enqueue: vi.fn() as AnalysisClient["enqueue"],
-    status: vi.fn() as AnalysisClient["status"],
+    observe: vi.fn(async (fen: string) => success(observation(fen))),
+    request: vi.fn(async (fen: string) => success(observation(fen))),
   };
 }
 
@@ -193,10 +109,43 @@ export function preferredMoveResponse(
   };
 }
 
-export function mutationResponse(fen: string): PreferredMoveMutationResult {
+export function mutationResponse(
+  fen: string,
+  preference: "move" | "no_preference" = "move",
+  uci = "e2e4",
+): PreferredMoveMutationResult {
+  if (preference === "no_preference") {
+    return {
+      status: "success",
+      data: {
+        fen,
+        effective_from: "2026-01-02",
+        effective_until: null,
+        periods: [
+          {
+            effective_from: "2026-01-02",
+            effective_until: null,
+            preference: { kind: "no_preference" },
+          },
+        ],
+      },
+    };
+  }
   return {
     status: "success",
-    data: { fen, changed: true, effective_at: "2026-01-01T00:00:00.000000Z" },
+    data: {
+      fen,
+      effective_from: "2026-01-02",
+      effective_until: null,
+      preference: { kind: "move", uci },
+      periods: [
+        {
+          effective_from: "2026-01-02",
+          effective_until: null,
+          preference: { kind: "move", uci },
+        },
+      ],
+    },
   };
 }
 
@@ -216,9 +165,9 @@ export function testClients(
         effective_at: state === "assigned" ? effectiveAt : null,
       },
     })),
-    put: vi.fn(async ({ fen, move_uci, effective_at }) => {
+    put: vi.fn(async ({ fen, move_uci }) => {
       state = "assigned";
-      effectiveAt = effective_at || "2026-01-01T00:00:00.000000Z";
+      effectiveAt = "2026-01-02";
       const chess = new Chess(fen);
       const move = chess.move({
         from: move_uci.slice(0, 2) as Square,
@@ -226,13 +175,13 @@ export function testClients(
         ...(move_uci.length === 5 ? { promotion: move_uci.slice(4) as "q" | "r" | "b" | "n" } : {}),
       });
       savedMove = { uci: move_uci, san: move.san };
-      return mutationResponse(fen);
+      return mutationResponse(fen, "move", move_uci);
     }),
     remove: vi.fn(async ({ fen }) => {
       state = "unassigned";
       effectiveAt = null;
       savedMove = null;
-      return mutationResponse(fen);
+      return mutationResponse(fen, "no_preference");
     }),
   };
   const positionContextClient: PositionContextClient = vi.fn(async (fen, trainerColor) => ({

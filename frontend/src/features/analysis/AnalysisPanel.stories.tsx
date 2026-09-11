@@ -78,8 +78,6 @@ const DISPLAY_LINES: AnalysisPanelLine[] = [
 
 const DEFAULT_ACTIONS: AnalysisPanelDisplay["actions"] = {
   analyze: false,
-  update: false,
-  retry: false,
   observationRetry: false,
   pending: false,
 };
@@ -93,7 +91,7 @@ function displayFor(overrides: DisplayOverrides = {}): AnalysisPanelDisplay {
   return {
     stateLabel: "Loading evaluation…",
     error: null,
-    actionError: null,
+    requestError: null,
     message: null,
     result: null,
     ...displayOverrides,
@@ -114,7 +112,10 @@ function missingDisplay(overrides: DisplayOverrides = {}): AnalysisPanelDisplay 
   });
 }
 
-function queuedDisplay(state: "queued" | "running"): AnalysisPanelDisplay {
+function queuedDisplay(
+  state: "queued" | "running",
+  overrides: DisplayOverrides = {},
+): AnalysisPanelDisplay {
   return displayFor({
     stateLabel: state === "queued" ? "Analysis queued" : "Analysis running",
     message: {
@@ -122,19 +123,18 @@ function queuedDisplay(state: "queued" | "running"): AnalysisPanelDisplay {
         state === "queued" ? "This position is waiting for analysis." : "Analysis is in progress.",
       alert: false,
     },
+    ...overrides,
   });
 }
 
 function completeDisplay(
-  stale = false,
   lines: AnalysisPanelLine[] = DISPLAY_LINES,
   overrides: DisplayOverrides = {},
 ): AnalysisPanelDisplay {
   const { actions, ...displayOverrides } = overrides;
   return displayFor({
-    stateLabel: stale ? "Stale analysis" : "Analysis complete",
+    stateLabel: "Analysis complete",
     result: {
-      stale,
       lines,
       metadata: {
         displayedPly: 12,
@@ -143,20 +143,17 @@ function completeDisplay(
       },
     },
     ...displayOverrides,
-    actions: { update: true, ...actions },
+    actions,
   });
 }
 
-function failedDisplay(overrides: DisplayOverrides = {}): AnalysisPanelDisplay {
+function requestErrorDisplay(overrides: DisplayOverrides = {}): AnalysisPanelDisplay {
   const { actions, ...displayOverrides } = overrides;
   return displayFor({
-    stateLabel: "Analysis failed",
-    message: {
-      text: "No complete result was published. Retry deliberately when ready.",
-      alert: true,
-    },
+    stateLabel: "Analysis available on request",
+    requestError: "The analysis action could not be submitted.",
     ...displayOverrides,
-    actions: { retry: true, ...actions },
+    actions: { analyze: true, ...actions },
   });
 }
 
@@ -174,8 +171,6 @@ function panelArgs(display: AnalysisPanelDisplay): ComponentProps<typeof Analysi
   return {
     display,
     onAnalyze: fn(),
-    onUpdate: fn(),
-    onRetry: fn(),
     onRetryObservation: fn(),
     onCandidateMove: fn(),
   };
@@ -217,8 +212,8 @@ export const Loading: Story = {
   render: (args) => panel(args),
 };
 
-export const Missing: Story = {
-  name: "Missing - Analyze required",
+export const NotRequested: Story = {
+  name: "Not requested - Analyze required",
   args: panelArgs(missingDisplay()),
   render: (args) => panel(args),
   play: async ({ args, canvasElement }) => {
@@ -240,14 +235,31 @@ export const Running: Story = {
   render: (args) => panel(args),
 };
 
-export const Complete: Story = {
-  name: "Complete - five ranked lines and formatted values",
+export const Ready: Story = {
+  name: "Ready - five ranked lines and formatted values",
   args: panelArgs(completeDisplay()),
   render: (args) => panel(args),
 };
 
+export const ActiveWithResult: Story = {
+  name: "Running - current result retained while work is active",
+  args: panelArgs(
+    queuedDisplay("running", {
+      result: {
+        lines: DISPLAY_LINES,
+        metadata: {
+          displayedPly: 12,
+          depth: 28,
+          candidateCount: DISPLAY_LINES.length,
+        },
+      },
+    }),
+  ),
+  render: (args) => panel(args),
+};
+
 export const CandidateActivation: Story = {
-  name: "Complete - controlled candidate activation",
+  name: "Ready - controlled candidate activation",
   args: panelArgs(completeDisplay()),
   render: (args) => panel(args),
   play: async ({ args, canvasElement }) => {
@@ -274,31 +286,20 @@ export const CandidateActivation: Story = {
   },
 };
 
-export const ConstrainedComplete: Story = {
-  name: "Complete - constrained review frame",
+export const ConstrainedReady: Story = {
+  name: "Ready - constrained review frame",
   args: panelArgs(completeDisplay()),
   render: (args) => constrainedPanel(args),
 };
 
-export const Stale: Story = {
-  name: "Stale - Update required",
-  args: panelArgs(completeDisplay(true)),
+export const RequestError: Story = {
+  name: "Request error - Analyze remains deliberate",
+  args: panelArgs(requestErrorDisplay()),
   render: (args) => panel(args),
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement);
-    await userEvent.click(await canvas.findByRole("button", { name: "Update analysis" }));
-    await expect(args.onUpdate).toHaveBeenCalledTimes(1);
-  },
-};
-
-export const Failed: Story = {
-  name: "Failed - Retry required",
-  args: panelArgs(failedDisplay()),
-  render: (args) => panel(args),
-  play: async ({ args, canvasElement }) => {
-    const canvas = within(canvasElement);
-    await userEvent.click(await canvas.findByRole("button", { name: "Retry analysis" }));
-    await expect(args.onRetry).toHaveBeenCalledTimes(1);
+    await userEvent.click(await canvas.findByRole("button", { name: "Analyze position" }));
+    await expect(args.onAnalyze).toHaveBeenCalledTimes(1);
   },
 };
 
@@ -313,26 +314,15 @@ export const ObservationError: Story = {
   },
 };
 
-export const ActionPending: Story = {
-  name: "Action pending - deliberate action disabled",
+export const RequestPending: Story = {
+  name: "Request pending - deliberate action disabled",
   args: panelArgs(missingDisplay({ actions: { pending: true } })),
   render: (args) => panel(args),
 };
 
-export const ActionError: Story = {
-  name: "Action error - retry remains deliberate",
-  args: panelArgs(missingDisplay({ actionError: "The analysis action could not be submitted." })),
-  render: (args) => panel(args),
-  play: async ({ args, canvasElement }) => {
-    const canvas = within(canvasElement);
-    await userEvent.click(await canvas.findByRole("button", { name: "Analyze position" }));
-    await expect(args.onAnalyze).toHaveBeenCalledTimes(1);
-  },
-};
-
 export const TerminalEmpty: Story = {
-  name: "Complete - terminal empty result",
-  args: panelArgs(completeDisplay(false, [])),
+  name: "Ready - terminal empty result",
+  args: panelArgs(completeDisplay([])),
   render: (args) => panel(args),
 };
 

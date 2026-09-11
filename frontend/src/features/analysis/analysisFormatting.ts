@@ -5,7 +5,7 @@ import type {
   AnalysisPanelWdl,
   AnalysisPanelWdlValue,
 } from "../analysis/AnalysisPanel";
-import type { EvaluationCandidate, EvaluationResult } from "./analysisApi";
+import type { AnalysisLine, AnalysisObservation, AnalysisResult } from "./analysisApi";
 import type { AnalysisState } from "./analysisState";
 import type { Fen } from "../chess/chessPrimitives";
 
@@ -34,10 +34,10 @@ function wdlValue(permille: number): AnalysisPanelWdlValue {
   return { percentage, label: formatPercentage(percentage) };
 }
 
-function formatWdl(candidate: EvaluationCandidate): AnalysisPanelWdl {
-  const wins = wdlValue(candidate.wdl_wins);
-  const draws = wdlValue(candidate.wdl_draws);
-  const losses = wdlValue(candidate.wdl_losses);
+function formatWdl(line: AnalysisLine): AnalysisPanelWdl {
+  const wins = wdlValue(line.wdl_wins);
+  const draws = wdlValue(line.wdl_draws);
+  const losses = wdlValue(line.wdl_losses);
 
   return {
     wins,
@@ -74,103 +74,87 @@ function formatPv(fen: Fen, pv: string[]): string {
   return sanMoves.join(" ");
 }
 
-function displayPv(result: EvaluationResult, candidate: EvaluationCandidate): string {
+function displayPv(observationFen: Fen, line: AnalysisLine): string {
   try {
-    return formatPv(result.fen, candidate.pv_uci);
+    return formatPv(observationFen, line.pv_uci);
   } catch {
     return "Line unavailable";
   }
 }
 
-export function formatScore(candidate: EvaluationCandidate): string {
-  if (candidate.score_kind === "cp") {
-    const score = candidate.score_value / 100;
+export function formatScore(line: AnalysisLine): string {
+  if (line.score_kind === "cp") {
+    const score = line.score_value / 100;
     return `${score >= 0 ? "+" : ""}${score.toFixed(2)}`;
   }
-  if (candidate.score_kind === "mate_given") {
-    return "+M";
-  }
-  return `${candidate.score_value >= 0 ? "+M" : "-M"}${Math.abs(candidate.score_value)}`;
+  return `${line.score_value >= 0 ? "+M" : "-M"}${Math.abs(line.score_value)}`;
+}
+
+function resultDisplay(
+  observation: AnalysisObservation,
+  result: AnalysisResult,
+  displayedPly: number | undefined,
+): NonNullable<AnalysisPanelDisplay["result"]> {
+  return {
+    metadata: {
+      displayedPly: displayedPly ?? null,
+      depth: result.lines[0]?.depth ?? null,
+      candidateCount: result.lines.length,
+    },
+    lines: result.lines.slice(0, 5).map((line) => ({
+      rank: line.rank,
+      move: line.pv_uci[0],
+      score: formatScore(line),
+      pv: displayPv(observation.fen, line),
+      wdl: formatWdl(line),
+    })),
+  };
 }
 
 export function analysisPanelDisplay(
   analysisState: AnalysisState,
   options: AnalysisPanelDisplayOptions = {},
 ): AnalysisPanelDisplay {
-  const { observation, loading, error, actionError, actionPending } = analysisState;
-  const status = observation?.status?.state;
+  const { observation, loading, error, requestError, requestPending } = analysisState;
+  const state = observation?.state;
   const result = observation?.result;
-  const stale = observation?.eligibility === "stale" || status === "queued" || status === "running";
-  const showAnalyze = !loading && observation?.eligibility === "missing" && !status;
-  const showUpdate =
-    !loading &&
-    Boolean(result) &&
-    status !== "queued" &&
-    status !== "running" &&
-    status !== "failed";
-  const showRetry = !loading && status === "failed";
+  const active = state === "queued" || state === "running";
+  const showAnalyze = !loading && state === "not_requested";
   const showObservationRetry = !loading && Boolean(error);
 
-  let stateLabel = "Loading evaluation…";
+  let stateLabel = "Loading analysis…";
   if (!loading && error) {
-    stateLabel = "Evaluation unavailable";
-  } else if (status === "queued") {
+    stateLabel = "Analysis unavailable";
+  } else if (state === "queued") {
     stateLabel = "Analysis queued";
-  } else if (status === "running") {
+  } else if (state === "running") {
     stateLabel = "Analysis running";
-  } else if (status === "failed") {
-    stateLabel = "Analysis failed";
   } else if (result) {
-    stateLabel = stale ? "Stale analysis" : "Analysis complete";
+    stateLabel = "Analysis complete";
   } else if (showAnalyze) {
     stateLabel = "Analysis available on request";
   }
 
-  const message =
-    status === "queued"
-      ? { text: "This position is waiting for analysis.", alert: false }
-      : status === "running"
-        ? { text: "Analysis is in progress.", alert: false }
-        : status === "failed"
-          ? {
-              text: "No complete result was published. Retry deliberately when ready.",
-              alert: true,
-            }
-          : showAnalyze
-            ? {
-                text: "Analyze this displayed position deliberately to request a result.",
-                alert: false,
-              }
-            : null;
+  const message = active
+    ? {
+        text: state === "queued" ? "This position is waiting for analysis." : "Analysis is in progress.",
+      }
+    : showAnalyze
+      ? {
+          text: "Analyze this displayed position deliberately to request a result.",
+        }
+      : null;
 
   return {
     stateLabel,
     error,
-    actionError,
+    requestError,
     message,
-    result: result
-      ? {
-          stale,
-          metadata: {
-            displayedPly: options.displayedPly ?? null,
-            depth: result.candidates[0]?.depth ?? null,
-            candidateCount: result.candidates.length,
-          },
-          lines: result.candidates.slice(0, 5).map((candidate) => ({
-            rank: candidate.rank,
-            move: candidate.pv_uci[0]!,
-            score: formatScore(candidate),
-            pv: displayPv(result, candidate),
-            wdl: formatWdl(candidate),
-          })),
-        }
-      : null,
+    result: observation && result ? resultDisplay(observation, result, options.displayedPly) : null,
     actions: {
       analyze: showAnalyze,
-      update: showUpdate,
-      retry: showRetry,
       observationRetry: showObservationRetry,
-      pending: actionPending,
+      pending: requestPending,
     },
   };
 }

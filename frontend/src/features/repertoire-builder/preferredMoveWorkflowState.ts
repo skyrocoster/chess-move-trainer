@@ -148,7 +148,7 @@ export function usePreferredMoveWorkflow({
   const mutationId = useRef(0);
   const mutationController = useRef<AbortController | null>(null);
   const preferredReader = useCallback(
-    (fen: string, options?: { asOf?: string; signal?: AbortSignal }) => {
+    (fen: string, options?: { signal?: AbortSignal }) => {
       return preferredMoveClient.get(fen, options);
     },
     [preferredMoveClient],
@@ -277,7 +277,6 @@ export function usePreferredMoveWorkflow({
       const mutationSavedMove = positionModel.saved?.move ?? null;
       const canSave =
         ownTurn &&
-        positionModel.saveability === "savable" &&
         positionModel.savedPresence !== "unknown" &&
         positionModel.relationship !== "matching" &&
         positionModel.selected !== null &&
@@ -313,14 +312,13 @@ export function usePreferredMoveWorkflow({
         try {
           return kind === "remove"
             ? await preferredMoveClient.remove(
-                { fen: mutationFen, effective_at: "" },
+                { fen: mutationFen },
                 { signal: controller.signal },
               )
             : await preferredMoveClient.put(
                 {
                   fen: mutationFen,
                   move_uci: move!.uci,
-                  effective_at: "",
                 },
                 { signal: controller.signal },
               );
@@ -356,7 +354,6 @@ export function usePreferredMoveWorkflow({
       pendingRefresh,
       positionModel.relationship,
       positionModel.savedPresence,
-      positionModel.saveability,
       positionModel.sourceFen,
       positionModel.saved,
       positionModel.selected,

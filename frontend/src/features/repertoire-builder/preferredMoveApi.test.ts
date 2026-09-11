@@ -1,199 +1,250 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { deletePreferredMove, fetchPreferredMove, putPreferredMove } from "./preferredMoveApi";
+import { deletePreferredMoves, getPreferredMoves, putPreferredMoves } from "../../api/client";
+import {
+  deletePreferredMove,
+  fetchPreferredMove,
+  getPreferredMoveDateWindow,
+  putPreferredMove,
+} from "./preferredMoveApi";
+
+vi.mock("../../api/client", () => ({
+  deletePreferredMoves: vi.fn(),
+  getPreferredMoves: vi.fn(),
+  putPreferredMoves: vi.fn(),
+}));
 
 const FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-const COUNTER_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 17 42";
-const AFTER_E4_FEN = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1";
+const NOVEL_FEN = "k7/8/8/8/8/8/4P3/4K3 w - - 0 1";
+const TODAY = "2026-01-02";
+const TOMORROW = "2026-01-03";
 
-function jsonResponse(body: unknown, status = 200): Response {
-  return {
-    ok: status >= 200 && status < 300,
-    status,
-    json: async () => body,
-  } as Response;
-}
-
-function assigned(fen = FEN) {
+function cleanResponse(
+  preference: { kind: "move"; uci: string } | { kind: "no_preference" } | { kind: "unconfigured" },
+  fen = FEN,
+) {
   return {
     fen,
-    state: "assigned",
-    move: { uci: "e2e4", san: "e4" },
-    effective_at: "2026-01-01T00:00:00.000000Z",
+    from: TODAY,
+    until: TOMORROW,
+    segments: [{ from: TODAY, until: TOMORROW, preference }],
   };
 }
 
-function unassigned(fen = FEN) {
-  return { fen, state: "unassigned", move: null, effective_at: null };
+function putResponse(fen = FEN, uci = "e2e4") {
+  return {
+    fen,
+    effective_from: TODAY,
+    effective_until: null,
+    preference: { kind: "move", uci },
+    periods: [
+      {
+        effective_from: TODAY,
+        effective_until: null,
+        preference: { kind: "move", uci },
+      },
+    ],
+  };
 }
 
-function mutation(fen = FEN) {
-  return { fen, changed: true, effective_at: "2026-01-01T00:00:00.000000Z" };
+function deleteResponse(fen = FEN) {
+  return {
+    fen,
+    effective_from: TODAY,
+    effective_until: null,
+    periods: [
+      {
+        effective_from: TODAY,
+        effective_until: null,
+        preference: { kind: "no_preference" },
+      },
+    ],
+  };
 }
 
-afterEach(() => vi.unstubAllGlobals());
+beforeEach(() => {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date("2026-01-02T23:59:59.999Z"));
+});
 
-describe("fetchPreferredMove", () => {
-  it("requests the full FEN and preserves an optional as-of instant", async () => {
-    const controller = new AbortController();
-    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(assigned()));
-    vi.stubGlobal("fetch", fetchMock);
+afterEach(() => {
+  vi.useRealTimers();
+  vi.clearAllMocks();
+});
 
-    await expect(
-      fetchPreferredMove(FEN, {
-        asOf: "2026-01-02T00:00:00Z",
-        signal: controller.signal,
-      }),
-    ).resolves.toEqual({ status: "success", data: assigned() });
-    expect(fetchMock).toHaveBeenCalledWith(
-      `http://localhost:5666/api/preferred-move?fen=${encodeURIComponent(FEN)}&as_of=2026-01-02T00%3A00%3A00Z`,
-      { signal: controller.signal },
-    );
-  });
-
-  it("accepts a canonical response with different counters for the same four-field position", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(assigned(COUNTER_FEN))));
-
-    await expect(fetchPreferredMove(FEN)).resolves.toEqual({
-      status: "success",
-      data: assigned(COUNTER_FEN),
+describe("getPreferredMoveDateWindow", () => {
+  it("derives a deterministic UTC today/tomorrow window", () => {
+    expect(getPreferredMoveDateWindow(new Date("2026-12-31T23:59:59.999Z"))).toEqual({
+      today: "2026-12-31",
+      tomorrow: "2027-01-01",
     });
   });
+});
 
-  it("accepts the explicit unassigned response", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(unassigned())));
+describe("fetchPreferredMove", () => {
+  it("uses the generated clean GET with the finite UTC window and preserves abort", async () => {
+    const controller = new AbortController();
+    vi.mocked(getPreferredMoves).mockResolvedValue({
+      data: cleanResponse({ kind: "move", uci: "e2e4" }),
+    } as never);
 
-    await expect(fetchPreferredMove(FEN)).resolves.toEqual({
+    await expect(fetchPreferredMove(FEN, { signal: controller.signal })).resolves.toEqual({
       status: "success",
-      data: unassigned(),
+      data: {
+        fen: FEN,
+        state: "assigned",
+        move: { uci: "e2e4", san: "e4" },
+        effective_at: TODAY,
+      },
+    });
+    expect(getPreferredMoves).toHaveBeenCalledWith({
+      query: { fen: FEN, from: TODAY, until: TOMORROW },
+      signal: controller.signal,
     });
   });
 
   it.each([
-    { ...assigned(), extra: true },
-    { ...assigned(), state: "unassigned" },
-    { ...assigned(), effective_at: null },
-    { ...assigned(), effective_at: 123 },
-    { fen: FEN, state: "assigned", move: { uci: "e2e4", san: "e4" } },
-    { ...unassigned(), effective_at: "2026-01-01T00:00:00.000000Z" },
-    { ...assigned(), move: { uci: "e2e5", san: "e5" } },
-    { ...assigned(), move: { uci: "e2e4", san: "" } },
-    { fen: "not a FEN", state: "assigned", move: { uci: "e2e4", san: "e4" } },
-  ])("rejects malformed or extra response data", async (body) => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(body)));
+    [{ kind: "no_preference" as const }, "unassigned"],
+    [{ kind: "unconfigured" as const }, "unassigned"],
+  ])("maps clean %s to the current no-saved view", async (preference, state) => {
+    vi.mocked(getPreferredMoves).mockResolvedValue({ data: cleanResponse(preference) } as never);
+
+    await expect(fetchPreferredMove(FEN)).resolves.toEqual({
+      status: "success",
+      data: { fen: FEN, state, move: null, effective_at: null },
+    });
+  });
+
+  it("selects the first complete one-day segment without doing schedule arithmetic", async () => {
+    vi.mocked(getPreferredMoves).mockResolvedValue({
+      data: {
+        fen: FEN,
+        from: TODAY,
+        until: TOMORROW,
+        segments: [
+          { from: TODAY, until: TOMORROW, preference: { kind: "move", uci: "e2e5" } },
+          { from: TODAY, until: TOMORROW, preference: { kind: "move", uci: "e2e4" } },
+        ],
+      },
+    } as never);
+
+    await expect(fetchPreferredMove(FEN)).resolves.toEqual({
+      status: "success",
+      data: {
+        fen: FEN,
+        state: "assigned",
+        move: { uci: "e2e4", san: "e4" },
+        effective_at: TODAY,
+      },
+    });
+  });
+
+  it("rejects a clean response that cannot identify the requested one-day segment", async () => {
+    vi.mocked(getPreferredMoves).mockResolvedValue({
+      data: {
+        fen: FEN,
+        from: TODAY,
+        until: TOMORROW,
+        segments: [{ from: TODAY, until: "2026-01-04", preference: { kind: "unconfigured" } }],
+      },
+    } as never);
 
     await expect(fetchPreferredMove(FEN)).resolves.toEqual({ status: "unexpected_failure" });
   });
 
   it.each([
     [422, "invalid_fen"],
-    [422, "invalid_move"],
-    [422, "invalid_timestamp"],
-    [422, "future_effective_time"],
-    [404, "position_not_found"],
-    [503, "preferred_move_unavailable"],
+    [422, "invalid_from"],
+    [422, "invalid_until"],
+    [422, "invalid_window"],
+    [422, "invalid_effective_from"],
+    [422, "invalid_effective_until"],
+    [422, "invalid_preference"],
+    [422, "invalid_uci"],
+    [422, "illegal_move"],
+    [503, "preferred_moves_unavailable"],
     [500, "unexpected_failure"],
-  ] as const)("maps the accepted typed HTTP failure %s/%s", async (status, code) => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValue(jsonResponse({ code, message: "safe detail" }, status)),
-    );
+  ] as const)("maps only the typed clean HTTP failure %s/%s", async (status, code) => {
+    vi.mocked(getPreferredMoves).mockResolvedValue({
+      error: { code, message: "safe detail" },
+      response: { status },
+    } as never);
 
     await expect(fetchPreferredMove(FEN)).resolves.toEqual({ status: code });
   });
 
-  it("does not trust an accepted error code on the wrong HTTP status", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi
-        .fn()
-        .mockResolvedValue(jsonResponse({ code: "position_not_found", message: "detail" }, 500)),
-    );
+  it("does not preserve legacy position or timestamp meanings", async () => {
+    vi.mocked(getPreferredMoves).mockResolvedValue({
+      error: { code: "position_not_found", message: "legacy" },
+      response: { status: 404 },
+    } as never);
 
     await expect(fetchPreferredMove(FEN)).resolves.toEqual({ status: "unexpected_failure" });
   });
 
-  it("rejects an invalid full FEN before making a request", async () => {
-    const fetchMock = vi.fn();
-    vi.stubGlobal("fetch", fetchMock);
-
-    await expect(fetchPreferredMove("" as never)).resolves.toEqual({ status: "invalid_fen" });
-    expect(fetchMock).not.toHaveBeenCalled();
+  it("rejects an invalid FEN before making a generated request", async () => {
+    await expect(fetchPreferredMove("not a FEN" as never)).resolves.toEqual({
+      status: "invalid_fen",
+    });
+    expect(getPreferredMoves).not.toHaveBeenCalled();
   });
 });
 
 describe("putPreferredMove", () => {
-  it("sends the fixed-owner request shape with legal canonical UCI", async () => {
+  it("sends the clean open-ended PUT body with UTC today", async () => {
     const controller = new AbortController();
-    const request = { fen: FEN, move_uci: "e2e4", effective_at: null };
-    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(mutation()));
-    vi.stubGlobal("fetch", fetchMock);
+    vi.mocked(putPreferredMoves).mockResolvedValue({ data: putResponse() } as never);
 
-    await expect(putPreferredMove(request, { signal: controller.signal })).resolves.toEqual({
-      status: "success",
-      data: mutation(),
-    });
-    expect(fetchMock).toHaveBeenCalledWith("http://localhost:5666/api/preferred-move", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(request),
+    await expect(
+      putPreferredMove({ fen: FEN, move_uci: "e2e4" }, { signal: controller.signal }),
+    ).resolves.toEqual({ status: "success", data: putResponse() });
+    expect(putPreferredMoves).toHaveBeenCalledWith({
+      body: {
+        fen: FEN,
+        effective_from: TODAY,
+        preference: { kind: "move", uci: "e2e4" },
+      },
       signal: controller.signal,
     });
   });
 
-  it("rejects illegal UCI before making a mutation request", async () => {
-    const fetchMock = vi.fn();
-    vi.stubGlobal("fetch", fetchMock);
+  it("accepts a legal novel parent FEN without corpus membership", async () => {
+    vi.mocked(putPreferredMoves).mockResolvedValue({ data: putResponse(NOVEL_FEN, "e2e4") } as never);
 
-    await expect(putPreferredMove({ fen: FEN, move_uci: "e2e5" })).resolves.toEqual({
-      status: "invalid_move",
+    await expect(putPreferredMove({ fen: NOVEL_FEN, move_uci: "e2e4" })).resolves.toEqual({
+      status: "success",
+      data: putResponse(NOVEL_FEN, "e2e4"),
     });
-    expect(fetchMock).not.toHaveBeenCalled();
+    expect(putPreferredMoves).toHaveBeenCalledWith({
+      body: {
+        fen: NOVEL_FEN,
+        effective_from: TODAY,
+        preference: { kind: "move", uci: "e2e4" },
+      },
+      signal: undefined,
+    });
   });
 
-  it("rejects an unexpected mutation response", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({ ...mutation(), extra: true })));
-
-    await expect(putPreferredMove({ fen: FEN, move_uci: "e2e4" })).resolves.toEqual({
-      status: "unexpected_failure",
-    });
+  it.each([
+    ["e2e", "invalid_uci"],
+    ["e2e5", "illegal_move"],
+  ] as const)("rejects %s as %s before mutation", async (move_uci, status) => {
+    await expect(putPreferredMove({ fen: FEN, move_uci })).resolves.toEqual({ status });
+    expect(putPreferredMoves).not.toHaveBeenCalled();
   });
 });
 
 describe("deletePreferredMove", () => {
-  it("sends the accepted DELETE query and preserves a blank effective date", async () => {
-    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(mutation()));
-    vi.stubGlobal("fetch", fetchMock);
+  it("sends the clean open-ended DELETE body with no effective_until", async () => {
+    vi.mocked(deletePreferredMoves).mockResolvedValue({ data: deleteResponse() } as never);
 
-    await expect(deletePreferredMove({ fen: FEN, effective_at: "" })).resolves.toEqual({
+    await expect(deletePreferredMove({ fen: FEN })).resolves.toEqual({
       status: "success",
-      data: mutation(),
+      data: deleteResponse(),
     });
-    expect(fetchMock).toHaveBeenCalledWith(
-      `http://localhost:5666/api/preferred-move?fen=${encodeURIComponent(FEN)}&effective_at=`,
-      { method: "DELETE", signal: undefined },
-    );
-  });
-
-  it("accepts a legal promotion UCI request without adding an owner field", async () => {
-    const promotionFen = "k7/4P3/8/8/8/8/8/4K3 w - - 0 1";
-    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(mutation(promotionFen)));
-    vi.stubGlobal("fetch", fetchMock);
-
-    await expect(
-      putPreferredMove({ fen: promotionFen, move_uci: "e7e8q", effective_at: "" }),
-    ).resolves.toEqual({ status: "success", data: mutation(promotionFen) });
-    expect(fetchMock.mock.calls[0]?.[1]).toMatchObject({
-      body: JSON.stringify({ fen: promotionFen, move_uci: "e7e8q", effective_at: "" }),
-    });
-  });
-
-  it("uses the accepted counter-sensitive full FEN on mutation responses", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(mutation(AFTER_E4_FEN))));
-
-    await expect(putPreferredMove({ fen: AFTER_E4_FEN, move_uci: "e7e5" })).resolves.toEqual({
-      status: "success",
-      data: mutation(AFTER_E4_FEN),
+    expect(deletePreferredMoves).toHaveBeenCalledWith({
+      body: { fen: FEN, effective_from: TODAY },
+      signal: undefined,
     });
   });
 });

@@ -2,69 +2,71 @@ import { fn } from "storybook/test";
 
 import type {
   AnalysisClient,
-  EvaluationCandidate,
-  EvaluationResult,
-  EvaluationStatus,
+  AnalysisLine,
+  AnalysisObservation,
+  AnalysisOperationResult,
+  AnalysisResult,
+  AnalysisStateValue,
 } from "./analysisApi";
-import { GAME } from "../game/gameFixtures";
+import type { Fen } from "../chess/chessPrimitives";
 
-export function storyAnalysisClient(): AnalysisClient {
-  return {
-    observe: fn(async (fen) => ({
-      status: "success" as const,
-      data: { fen, eligibility: "missing" as const, result: null, status: null, terminal: false },
-    })),
-    enqueue: fn(async () => {
-      throw new Error("Stage 1 workspace stories do not exercise analysis actions");
-    }),
-    status: fn(async () => ({
-      status: "success" as const,
-      data: {
-        fen: GAME.positions[0].fen,
-        state: null,
-        completed_at: null,
-        error_code: null,
-      },
-    })),
-  };
-}
+type AnalysisSuccess = AnalysisOperationResult<AnalysisObservation>;
 
-function candidateFor(move: string, rank: number): EvaluationCandidate {
+function cleanLine(move: string, rank: number, scoreValue: number): AnalysisLine {
   return {
     rank,
     score_kind: "cp",
-    score_value: 34 - (rank - 1) * 10,
+    score_value: scoreValue,
     wdl_wins: 420,
     wdl_draws: 300,
     wdl_losses: 280,
     pv_uci: [move],
     depth: 20,
-    seldepth: 24,
-    nodes: 200_000,
-    engine_time_ms: 100,
   };
 }
 
-function candidateResult(fen: string, moves: readonly string[]): EvaluationResult {
+function cleanResult(
+  moves: readonly string[],
+  scoreOffset = 0,
+): AnalysisResult {
   return {
-    fen,
-    profile_id: "story-candidate-profile",
-    candidates: moves.map((move, index) => candidateFor(move, index + 1)),
+    lines: moves.map((move, index) =>
+      cleanLine(move, index + 1, 34 - index * 10 + scoreOffset),
+    ),
     terminal_kind: null,
-    completed_at: "2026-08-22T00:00:01+00:00",
-    wall_time_ms: 100,
   };
 }
 
-function candidateStatus(): EvaluationStatus {
+function cleanObservation(
+  fen: Fen,
+  state: AnalysisStateValue,
+  result: AnalysisResult | null,
+): AnalysisSuccess {
   return {
-    state: "done",
-    position: 0,
-    attempts: 1,
-    enqueued_at: "2026-08-22T00:00:00+00:00",
-    started_at: "2026-08-22T00:00:00+00:00",
-    completed_at: "2026-08-22T00:00:01+00:00",
-    error_code: null,
+    status: "success",
+    data: { fen, state, result },
+  };
+}
+
+export type StoryAnalysisLifecycleEvent = {
+  operation: "observe" | "request";
+  fen: Fen;
+  state: AnalysisStateValue;
+  hasResult: boolean;
+  quality?: "tool";
+};
+
+function emitLifecycleEvent(
+  onEvent: ((event: StoryAnalysisLifecycleEvent) => void) | undefined,
+  event: StoryAnalysisLifecycleEvent,
+) {
+  onEvent?.(event);
+}
+
+export function storyAnalysisClient(): AnalysisClient {
+  return {
+    observe: fn(async (fen) => cleanObservation(fen, "not_requested", null)),
+    request: fn(async (fen) => cleanObservation(fen, "queued", null)),
   };
 }
 
@@ -72,27 +74,65 @@ export function storyCandidateAnalysisClient(
   moves: readonly string[] = ["e2e4", "d2d4", "c2c4", "g1f3", "b1c3"],
 ): AnalysisClient {
   return {
-    observe: fn(async (fen) => ({
-      status: "success" as const,
-      data: {
-        fen,
-        eligibility: "eligible" as const,
-        result: candidateResult(fen, moves),
-        status: candidateStatus(),
-        terminal: false,
-      },
-    })),
-    enqueue: fn(async () => {
-      throw new Error("Candidate stories do not exercise analysis actions");
-    }),
-    status: fn(async (fen) => ({
-      status: "success" as const,
-      data: {
-        fen,
-        state: "done" as const,
-        completed_at: "2026-08-22T00:00:01+00:00",
-        error_code: null,
-      },
-    })),
+    observe: fn(async (fen) =>
+      cleanObservation(fen, "ready", cleanResult(moves)),
+    ),
+    request: fn(async (fen) =>
+      cleanObservation(fen, "ready", cleanResult(moves)),
+    ),
   };
+}
+
+export function storySelectedPositionAnalysisClient(
+  onEvent?: (event: StoryAnalysisLifecycleEvent) => void,
+): AnalysisClient {
+  const initialMoves = ["d2d4"] as const;
+  const readyMoves = ["e2e4"] as const;
+  let primaryFen: Fen | null = null;
+  let requestStarted = false;
+  let pollCount = 0;
+
+  const observe = fn(async (fen: Fen): Promise<AnalysisSuccess> => {
+    primaryFen ??= fen;
+
+    let state: AnalysisStateValue = "not_requested";
+    let result: AnalysisResult | null = null;
+    if (fen === primaryFen) {
+      if (!requestStarted) {
+        result = null;
+      } else if (pollCount === 0) {
+        pollCount += 1;
+        state = "running";
+        result = cleanResult(initialMoves);
+      } else {
+        state = "ready";
+        result = cleanResult(readyMoves, 8);
+      }
+    }
+
+    emitLifecycleEvent(onEvent, {
+      operation: "observe",
+      fen,
+      state,
+      hasResult: result !== null,
+    });
+    return cleanObservation(fen, state, result);
+  });
+
+  const request = fn(async (fen: Fen): Promise<AnalysisSuccess> => {
+    primaryFen ??= fen;
+    requestStarted = true;
+    pollCount = 0;
+    const result = cleanResult(initialMoves);
+    emitLifecycleEvent(onEvent, {
+      operation: "request",
+      fen,
+      state: "queued",
+      hasResult: true,
+      quality: "tool",
+    });
+    return cleanObservation(fen, "queued", result);
+  });
+
+  return { observe, request };
 }

@@ -15,13 +15,16 @@ of the later continuation on replacement, position-preserving Flip that cancels 
 staged bottom-side ("my") moves, immediate opponent moves, and one visible staged/status sentence shown
 through the single live session-status message.
 
+Analysis uses the generated clean `getAnalysis`/`requestAnalysis` operations (see
+`features/analysis/analysisApi.ts`): observation follows the selected position, and engine requests
+are deliberate Tool-quality requests rather than automatic side effects.
+
 The preferred-move workflow reads the confirmed saved choice, stages the current owner move, saves a
 first choice or replacement, lets the saved box play-and-stage its move, and removes the saved choice
 (with confirmation) for the fixed owner and source position. The staged move remains local until Save;
-the page session itself stays in memory: no move tree or separate chess Undo/Reset UI.
-`Change effective date` is a visibly disabled scaffold with the accessible reason `Date changes are
-temporarily unavailable`. It opens no calendar, sends no request, and has no PATCH or backend behavior
-until date persistence is reauthorized.
+the page session itself stays in memory: no move tree, calendar UI, or separate chess Undo/Reset UI.
+`Change effective date` remains a visibly disabled action (accessible reason `Date changes are
+temporarily unavailable`) that opens no calendar and sends no request.
 
 ## Component
 
@@ -30,21 +33,26 @@ until date persistence is reauthorized.
 | `RepertoireBuilderWorkspace` | Page/state/workflow orchestration — loader, board, callbacks, board notice                                                                                                 |
 | `RepertoireSessionPanel`     | Right-side session composition — shared controlled Move History for the combined stored prefix and local SAN line, single live session status, nested `PreferredMovePanel` |
 | `positionPickerSession`      | In-memory session model — standard/stored origins, history, move staging                                                                                                   |
-| `PreferredMovePanel`         | Nested preferred-move UI — current saved choice, staged move/proposal, context/saveability, deferred date action, Save, and Remove                                         |
-| `preferredMoveApi`           | Typed `/api/preferred-move` client — GET/PUT/DELETE, failure codes                                                                                                         |
+| `PreferredMovePanel`         | Nested preferred-move UI — current saved choice, staged move/proposal, position context, deferred date action, Save, and Remove                                            |
+| `preferredMoveApi`           | Generated clean client over `getPreferredMoves`/`putPreferredMoves`/`deletePreferredMoves` — GET/PUT/DELETE, failure codes                                                  |
 | `preferredMoveState`         | `usePreferredMoveState` read hook — preferred move, loading, error                                                                                                         |
 | `preferredMoveWorkflowState` | `usePreferredMoveWorkflow` hook — saved/staged facts, mutations, deferred date capability, play-and-stage, reset                                                           |
-| `repertoireWorkflowModel`    | Pure position model — saveability, saved/staged facts, and canonical-UCI relationship                                                                                      |
+| `repertoireWorkflowModel`    | Pure position model — legality, saveability, saved/staged facts, and canonical-UCI relationship                                                                           |
 
 ## API contract
 
-Preferred-move data belongs to the fixed owner and persists server-side via `/api/preferred-move`
-(see `backend/app/features/preferred_move/README.md`); the page session stays in memory.
-`preferredMoveApi.ts` provides typed `GET` (read), `PUT` (Save first choice/replacement), and `DELETE`
-(Remove) clients with typed failure codes. Save uses the server current time; date editing is currently
-request-free and does not add a PATCH or substitute mutation.
-Saveability derives from position context: positions absent from the catalog are unsavable, while
-positions with zero personal games remain savable.
+Preferred-move data belongs to the fixed owner and persists server-side through the generated clean
+plural operations (see `backend/app/features/preferred_move/README.md`); the page session stays in
+memory. `preferredMoveApi.ts` wraps `getPreferredMoves` (read), `putPreferredMoves` (Save first
+choice/replacement), and `deletePreferredMoves` (Remove) with typed failure codes. The saved
+preference is the selected outgoing move for its parent position FEN. Reads use a UTC
+`[today, tomorrow)` date window; Save and Remove use today as `effective_from` with no end date and
+then refresh through a clean GET. Date editing stays request-free with no PATCH or substitute
+mutation.
+
+Saveability derives from legality: legal positions are savable, including novel parent FENs absent
+from imported games. Position context (game corpus presence, etc.) is informational and is not a
+saveability gate.
 
 ## Route
 

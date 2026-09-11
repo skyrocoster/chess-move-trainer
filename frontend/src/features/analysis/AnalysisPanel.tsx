@@ -28,7 +28,6 @@ export type AnalysisPanelResultMetadata = {
 };
 
 export type AnalysisPanelResult = {
-  stale: boolean;
   lines: AnalysisPanelLine[];
   metadata: AnalysisPanelResultMetadata;
 };
@@ -36,13 +35,11 @@ export type AnalysisPanelResult = {
 export type AnalysisPanelDisplay = {
   stateLabel: string;
   error: string | null;
-  actionError: string | null;
-  message: { text: string; alert: boolean } | null;
+  requestError: string | null;
+  message: { text: string } | null;
   result: AnalysisPanelResult | null;
   actions: {
     analyze: boolean;
-    update: boolean;
-    retry: boolean;
     observationRetry: boolean;
     pending: boolean;
   };
@@ -56,8 +53,6 @@ export type AnalysisPanelProps = {
   /** Remove the standalone card surface when a parent composition owns it. */
   embedded?: boolean;
   onAnalyze: AnalysisPanelIntent;
-  onUpdate: AnalysisPanelIntent;
-  onRetry: AnalysisPanelIntent;
   onRetryObservation: () => void;
   onCandidateMove?: AnalysisPanelCandidateIntent;
 };
@@ -186,14 +181,6 @@ function ResultPresentation({
 
   return (
     <div className={styles.result}>
-      {result.stale ? (
-        <p className={styles.staleMessage} role="note">
-          <span className={styles.messageIcon} aria-hidden="true">
-            !
-          </span>
-          <span>This result is from an earlier position. Update deliberately to refresh it.</span>
-        </p>
-      ) : null}
       {bestLine ? (
         <>
           <section className={styles.bestLine} aria-labelledby="best-line-heading">
@@ -267,12 +254,10 @@ export function AnalysisPanel({
   display,
   embedded = false,
   onAnalyze,
-  onUpdate,
-  onRetry,
   onRetryObservation,
   onCandidateMove,
 }: AnalysisPanelProps) {
-  const { stateLabel, error, actionError, message, result, actions } = display;
+  const { stateLabel, error, requestError, message, result, actions } = display;
 
   return (
     <section
@@ -296,49 +281,24 @@ export function AnalysisPanel({
           {error}
         </p>
       ) : null}
-      {actionError ? (
-        <p className={styles.actionError} role="alert">
-          {actionError}
+      {requestError ? (
+        <p className={styles.requestError} role="alert">
+          {requestError}
         </p>
       ) : null}
       {message ? (
-        <p
-          className={message.alert ? styles.alertMessage : styles.message}
-          role={message.alert ? "alert" : "note"}
-        >
+        <p className={styles.message} role="note">
           {message.text}
         </p>
       ) : null}
       {result ? <ResultPresentation result={result} onCandidateMove={onCandidateMove} /> : null}
 
-      <div className={styles.actionRow}>
-        {actions.update ? (
-          <p className={styles.updateHelp} id="analysis-update-help">
-            Refreshes analysis for this displayed position only.
-          </p>
-        ) : null}
+      {actions.analyze || actions.observationRetry ? (
+        <div className={styles.actionRow}>
         <div className={styles.actions}>
           {actions.analyze ? (
             <Button onClick={() => void onAnalyze()} disabled={actions.pending}>
               Analyze position
-            </Button>
-          ) : null}
-          {actions.update ? (
-            <Button
-              variant="secondary"
-              onClick={() => void onUpdate()}
-              disabled={actions.pending}
-              aria-describedby="analysis-update-help"
-            >
-              <span className={styles.buttonIcon} aria-hidden="true">
-                ↻
-              </span>
-              <span>Update analysis</span>
-            </Button>
-          ) : null}
-          {actions.retry ? (
-            <Button onClick={() => void onRetry()} disabled={actions.pending}>
-              Retry analysis
             </Button>
           ) : null}
           {actions.observationRetry ? (
@@ -347,7 +307,8 @@ export function AnalysisPanel({
             </Button>
           ) : null}
         </div>
-      </div>
+        </div>
+      ) : null}
     </section>
   );
 }

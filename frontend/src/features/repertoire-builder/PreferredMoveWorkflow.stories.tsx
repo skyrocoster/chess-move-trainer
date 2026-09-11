@@ -31,7 +31,7 @@ export const ReadErrors: Story = {
   render: () =>
     workspace(
       { analysisClient: storyAnalysisClient() },
-      { readFailure: "preferred_move_unavailable" },
+        { readFailure: "preferred_moves_unavailable" },
       { failure: "position_context_unavailable" },
     ),
   play: async ({ canvasElement }) => {
@@ -48,7 +48,7 @@ export const ReadErrors: Story = {
 };
 
 export const UnsavableGate: Story = {
-  name: "Preferred move - unsavable position remains in the same shell",
+  name: "Preferred move - novel position remains savable in the same shell",
   render: () =>
     workspace(
       { analysisClient: storyCandidateAnalysisClient(["e2e4"]) },
@@ -59,14 +59,15 @@ export const UnsavableGate: Story = {
     const canvas = within(canvasElement);
     await expectPreferredMoveState(canvasElement, "empty");
     await expect(
-      canvas.getByText("This position isn't in your corpus, so it can't be saved yet."),
+      canvas.getByText("Never seen as White"),
     ).toBeVisible();
     await expectPreferredActions(canvasElement, []);
-    await expect(canvas.queryByRole("button", { name: "Save" })).not.toBeInTheDocument();
     await expect(
-      canvas.queryByRole("button", { name: "Change effective date" }),
+      canvas.queryByText("This position isn't in your corpus, so it can't be saved yet."),
     ).not.toBeInTheDocument();
     await expect(canvas.queryByRole("button", { name: "Remove" })).not.toBeInTheDocument();
+    await userEvent.click(await canvas.findByRole("button", { name: "1. e4" }));
+    await expect(canvas.getByRole("button", { name: "Save e4" })).toBeEnabled();
   },
 };
 

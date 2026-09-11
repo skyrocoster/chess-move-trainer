@@ -1,4 +1,4 @@
-import type { EvaluationCandidate } from "./analysisApi";
+import type { AnalysisLine } from "./analysisApi";
 import { formatScore } from "./analysisFormatting";
 import type { AnalysisState } from "./analysisState";
 import type { EvalBarDisplayState } from "./EvalBar";
@@ -12,56 +12,43 @@ export type EvalBarDisplay = {
 
 const CP_METER_RANGE = 1000;
 
-function meterValue(candidate: EvaluationCandidate | null): number {
-  if (!candidate) {
+function meterValue(line: AnalysisLine | null): number {
+  if (!line) {
     return 50;
   }
-  if (candidate.score_kind === "mate_given") {
-    return 100;
+  if (line.score_kind === "mate") {
+    return line.score_value >= 0 ? 100 : 0;
   }
-  if (candidate.score_kind === "mate") {
-    return candidate.score_value >= 0 ? 100 : 0;
-  }
-  return Math.max(0, Math.min(100, 50 + (candidate.score_value / CP_METER_RANGE) * 50));
+  return Math.max(0, Math.min(100, 50 + (line.score_value / CP_METER_RANGE) * 50));
 }
 
-function shortValue(candidate: EvaluationCandidate | null): string {
-  return candidate ? formatScore(candidate) : "0.00";
+function shortValue(line: AnalysisLine | null): string {
+  return line ? formatScore(line) : "0.00";
 }
 
 export function evaluationDisplay(analysisState: AnalysisState): EvalBarDisplay {
   const observation = analysisState.observation;
-  const queueState = observation?.status?.state;
-  const candidate = observation?.result?.candidates[0] ?? null;
+  const active = observation?.state === "queued" || observation?.state === "running";
+  const line = observation?.result?.lines[0] ?? null;
 
-  if (queueState === "queued" || queueState === "running") {
+  if (active) {
     return {
       state: "pending",
-      value: meterValue(candidate),
-      shortValue: shortValue(candidate),
+      value: meterValue(line),
+      shortValue: shortValue(line),
       accessibleValue:
-        queueState === "queued"
+        observation?.state === "queued"
           ? "Analysis queued; evaluation pending."
           : "Analysis running; evaluation pending.",
     };
   }
 
-  if (candidate) {
-    const stale = observation?.eligibility === "stale" || queueState === "failed";
+  if (line) {
     return {
       state: "best-line",
-      value: meterValue(candidate),
-      shortValue: shortValue(candidate),
-      accessibleValue: `${stale ? "Stale " : ""}best-line evaluation ${formatScore(candidate)}.`,
-    };
-  }
-
-  if (queueState === "failed") {
-    return {
-      state: "neutral",
-      value: meterValue(null),
-      shortValue: shortValue(null),
-      accessibleValue: "Analysis failed; evaluation neutral.",
+      value: meterValue(line),
+      shortValue: shortValue(line),
+      accessibleValue: `Best-line evaluation ${formatScore(line)}.`,
     };
   }
 

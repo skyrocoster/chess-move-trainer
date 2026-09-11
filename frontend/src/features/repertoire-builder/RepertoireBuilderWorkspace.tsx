@@ -507,9 +507,7 @@ export default function RepertoireBuilderWorkspace({
               <RepertoireAnalysisTabs
                 analysis={{
                   display: analysisDisplay,
-                  onAnalyze: () => analysisState.handleAction("analyze"),
-                  onUpdate: () => analysisState.handleAction("update"),
-                  onRetry: () => analysisState.handleAction("retry"),
+                  onAnalyze: analysisState.requestAnalysis,
                   onRetryObservation: analysisState.retryObservation,
                   onCandidateMove: handleCandidateMove,
                 }}

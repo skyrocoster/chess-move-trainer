@@ -10,10 +10,16 @@ const srcDir = path.resolve(dirname, "..");
 const SOURCE_EXTENSIONS = new Set([".ts", ".tsx"]);
 const ALLOWED_RUNTIME_CLIENT_IMPORTS: Record<string, ReadonlySet<string>> = {
   "features/status/StatusPage.tsx": new Set(["getHealthOptions"]),
+  "features/analysis/analysisApi.ts": new Set(["getAnalysis", "requestAnalysis"]),
   "features/repertoire-builder/RepertoireBuilderWorkspace.tsx": new Set(["getGame"]),
   "features/position-context/positionContextApi.ts": new Set(["getPositionInsight"]),
   "features/move-response-distribution/moveResponseDistributionApi.ts": new Set([
     "getPositionInsight",
+  ]),
+  "features/repertoire-builder/preferredMoveApi.ts": new Set([
+    "deletePreferredMoves",
+    "getPreferredMoves",
+    "putPreferredMoves",
   ]),
 };
 

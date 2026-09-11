@@ -1,4 +1,4 @@
-import { readFileSync, readdirSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
@@ -140,30 +140,4 @@ describe("SETUP-02 generated SDK surface", () => {
     ]);
   });
 
-  it("does not adopt the preferred-moves client in production source", () => {
-    const sourceRoot = path.resolve(dirname, "..");
-    const productionFiles: string[] = [];
-
-    const collect = (directory: string) => {
-      for (const entry of readdirSync(directory, { withFileTypes: true })) {
-        const entryPath = path.join(directory, entry.name);
-        if (entry.isDirectory()) {
-          if (entry.name !== "api") collect(entryPath);
-        } else if (/\.(ts|tsx)$/.test(entry.name) && !entry.name.endsWith(".test.ts")) {
-          productionFiles.push(entryPath);
-        }
-      }
-    };
-
-    collect(sourceRoot);
-    const adoption = productionFiles.filter((filePath) => {
-      const source = readFileSync(filePath, "utf8");
-      return (
-        source.includes("getPreferredMoves") ||
-        source.includes("putPreferredMoves") ||
-        source.includes("deletePreferredMoves")
-      );
-    });
-    expect(adoption).toEqual([]);
-  });
 });

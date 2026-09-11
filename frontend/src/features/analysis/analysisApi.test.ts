@@ -1,17 +1,26 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { getAnalysis, requestAnalysis as generatedRequestAnalysis } from "../../api/client";
 import {
-  enqueueEvaluation,
-  fetchEvaluation,
-  fetchEvaluationStatus,
+  fetchAnalysis,
   positionKeyFromFen,
+  requestAnalysis,
   validateAnalysisFen,
 } from "./analysisApi";
+
+vi.mock("../../api/client", () => ({
+  getAnalysis: vi.fn(),
+  requestAnalysis: vi.fn(),
+}));
+
+const getAnalysisMock = vi.mocked(getAnalysis);
+const generatedRequestAnalysisMock = vi.mocked(generatedRequestAnalysis);
 
 const FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 const COUNTER_VARIANT_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 17 42";
 const DISTINCT_POSITION_FEN = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1";
-const CANDIDATE = {
+
+const LINE = {
   rank: 1,
   score_kind: "cp",
   score_value: 34,
@@ -20,48 +29,46 @@ const CANDIDATE = {
   wdl_losses: 280,
   pv_uci: ["e2e4", "e7e5", "g1f3"],
   depth: 20,
-  seldepth: 24,
-  nodes: 200000,
-  engine_time_ms: 100,
-};
-const RESULT = {
-  fen: FEN,
-  profile_id: "mp09-balanced-nodes-v2-200000",
-  candidates: [CANDIDATE],
-  terminal_kind: null,
-  completed_at: "2026-08-21T00:00:00+00:00",
-  wall_time_ms: 100,
-};
-const STATUS = {
-  state: "done",
-  position: 0,
-  attempts: 1,
-  enqueued_at: "2026-08-21T00:00:00+00:00",
-  started_at: "2026-08-21T00:00:00+00:00",
-  completed_at: "2026-08-21T00:00:00+00:00",
-  error_code: null,
 };
 
-function jsonResponse(body: unknown, status = 200): Response {
+const RESULT = {
+  configuration_version: 1,
+  engine_name: "stockfish",
+  engine_version: "test",
+  lines: [LINE],
+  quality: "tool",
+  settings: { depth: 20 },
+  terminal_kind: null,
+};
+
+function apiResult(data: unknown, status = 200) {
   return {
-    ok: status >= 200 && status < 300,
-    status,
-    json: async () => body,
-  } as Response;
+    data,
+    error: undefined,
+    response: { status },
+  } as Awaited<ReturnType<typeof getAnalysis>>;
+}
+
+function apiError(code: string, status: number) {
+  return {
+    data: undefined,
+    error: { code, message: "typed failure" },
+    response: { status },
+  } as Awaited<ReturnType<typeof getAnalysis>>;
 }
 
 function observation(overrides: Record<string, unknown> = {}) {
   return {
     fen: FEN,
-    eligibility: "eligible",
+    state: "ready",
     result: RESULT,
-    status: null,
-    terminal: false,
     ...overrides,
   };
 }
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.clearAllMocks();
+});
 
 describe("analysisApi", () => {
   it("derives PositionKey from identity fields only", () => {
@@ -73,104 +80,87 @@ describe("analysisApi", () => {
     expect(validateAnalysisFen(FEN)).toBeNull();
     expect(validateAnalysisFen(` ${FEN}`)).toBe("invalid_fen");
     expect(validateAnalysisFen(FEN.replace(" - 0 1", "  - 0 1"))).toBe("invalid_fen");
-    expect(validateAnalysisFen("x".repeat(129))).toBe("request_too_large");
+    expect(validateAnalysisFen("x".repeat(129))).toBe("invalid_fen");
   });
 
-  it("loads an exact eligible observation without computation", async () => {
-    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(observation()));
-    vi.stubGlobal("fetch", fetchMock);
+  it("observes through the generated clean GET and maps only clean result fields", async () => {
+    getAnalysisMock.mockResolvedValue(
+      apiResult({
+        ...observation(),
+        extra: "tolerated",
+        result: { ...RESULT, extra: "tolerated" },
+      }),
+    );
 
-    await expect(fetchEvaluation(FEN)).resolves.toEqual({
+    await expect(fetchAnalysis(FEN)).resolves.toEqual({
       status: "success",
-      data: observation(),
+      data: {
+        fen: FEN,
+        state: "ready",
+        result: { lines: [LINE], terminal_kind: null },
+      },
     });
-    expect(fetchMock).toHaveBeenCalledWith(
-      `http://localhost:5666/api/evaluation?fen=${encodeURIComponent(FEN)}`,
-      { signal: undefined },
-    );
-  });
-
-  it("rejects malformed or extra response keys", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValue(jsonResponse({ ...observation(), extra: true })),
-    );
-
-    await expect(fetchEvaluation(FEN)).resolves.toEqual({ status: "unexpected_failure" });
-  });
-
-  it("accepts counter-only six-field response variants for one identity", async () => {
-    const body = observation({
-      fen: COUNTER_VARIANT_FEN,
-      result: { ...RESULT, fen: COUNTER_VARIANT_FEN },
-    });
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(body)));
-
-    await expect(fetchEvaluation(FEN)).resolves.toEqual({ status: "success", data: body });
-  });
-
-  it.each([
-    [503, "evaluation_unavailable"],
-    [422, "invalid_fen"],
-    [409, "invalid_transition"],
-    [500, "unexpected_failure"],
-  ] as const)("maps typed HTTP failure %s/%s", async (status, code) => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValue(jsonResponse({ code, message: "typed failure" }, status)),
-    );
-
-    await expect(fetchEvaluation(FEN)).resolves.toEqual({ status: code });
-  });
-
-  it("deliberately enqueues an action with the exact POST contract", async () => {
-    const body = {
-      fen: FEN,
-      action: "analyze",
-      outcome: "queued",
-      eligibility: "missing",
-      status: { ...STATUS, state: "queued", completed_at: null },
-    };
-    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(body, 202));
-    vi.stubGlobal("fetch", fetchMock);
-
-    await expect(enqueueEvaluation(FEN, "analyze")).resolves.toEqual({
-      status: "success",
-      data: body,
-    });
-    expect(fetchMock).toHaveBeenCalledWith("http://localhost:5666/api/evaluation", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ fen: FEN, action: "analyze" }),
+    expect(getAnalysisMock).toHaveBeenCalledWith({
+      query: { fen: FEN },
       signal: undefined,
     });
   });
 
-  it("rejects invalid actions and never sends invalid FEN requests", async () => {
-    const fetchMock = vi.fn();
-    vi.stubGlobal("fetch", fetchMock);
+  it("accepts a counter-only observation identity variant without a result FEN", async () => {
+    getAnalysisMock.mockResolvedValue(
+      apiResult({
+        ...observation({ fen: COUNTER_VARIANT_FEN }),
+        result: RESULT,
+      }),
+    );
 
-    await expect(enqueueEvaluation(FEN, "compute" as never)).resolves.toEqual({
-      status: "invalid_action",
+    await expect(fetchAnalysis(FEN)).resolves.toEqual({
+      status: "success",
+      data: {
+        fen: COUNTER_VARIANT_FEN,
+        state: "ready",
+        result: { lines: [LINE], terminal_kind: null },
+      },
     });
-    await expect(fetchEvaluation(`${FEN} `)).resolves.toEqual({ status: "invalid_fen" });
-    expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it("observes queue completion through the separate status endpoint", async () => {
-    const body = {
-      fen: FEN,
-      state: "done",
-      completed_at: STATUS.completed_at,
-      error_code: null,
-    };
-    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(body));
-    vi.stubGlobal("fetch", fetchMock);
+  it("rejects malformed or different-position observations", async () => {
+    getAnalysisMock.mockResolvedValue(apiResult({ ...observation(), fen: DISTINCT_POSITION_FEN }));
 
-    await expect(fetchEvaluationStatus(FEN)).resolves.toEqual({ status: "success", data: body });
-    expect(fetchMock).toHaveBeenCalledWith(
-      `http://localhost:5666/api/evaluation/status?fen=${encodeURIComponent(FEN)}`,
-      { signal: undefined },
-    );
+    await expect(fetchAnalysis(FEN)).resolves.toEqual({ status: "unexpected_failure" });
+  });
+
+  it.each([
+    [503, "analysis_unavailable"],
+    [422, "invalid_fen"],
+    [500, "unexpected_failure"],
+  ] as const)("maps typed clean HTTP failure %s/%s", async (status, code) => {
+    getAnalysisMock.mockResolvedValue(apiError(code, status));
+
+    await expect(fetchAnalysis(FEN)).resolves.toEqual({ status: code });
+  });
+
+  it("deliberately requests Tool analysis through the generated clean POST", async () => {
+    generatedRequestAnalysisMock.mockResolvedValue(apiResult(observation({ state: "queued" }), 202));
+
+    await expect(requestAnalysis(FEN)).resolves.toEqual({
+      status: "success",
+      data: {
+        fen: FEN,
+        state: "queued",
+        result: { lines: [LINE], terminal_kind: null },
+      },
+    });
+    expect(generatedRequestAnalysisMock).toHaveBeenCalledWith({
+      body: { fen: FEN, quality: "tool" },
+      signal: undefined,
+    });
+  });
+
+  it("does not call generated operations for an invalid FEN", async () => {
+    await expect(requestAnalysis(`${FEN} `)).resolves.toEqual({ status: "invalid_fen" });
+    await expect(fetchAnalysis(`${FEN} `)).resolves.toEqual({ status: "invalid_fen" });
+    expect(getAnalysisMock).not.toHaveBeenCalled();
+    expect(generatedRequestAnalysisMock).not.toHaveBeenCalled();
   });
 });

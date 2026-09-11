@@ -48,15 +48,15 @@ async function expectBoxes(canvasElement: HTMLElement, relationship: PreferredMo
   const saved = fixture.saved
     ? canvas.getByRole("button", { name: /Current saved choice: e4/ })
     : canvas.getByRole("region", { name: "Current saved choice" });
-  const staged = canvas.getByRole("region", { name: "Staged move" });
+  const selected = canvas.getByRole("region", { name: "Selected move" });
   await expect(saved).toBeVisible();
-  await expect(staged).toBeVisible();
+  await expect(selected).toBeVisible();
   if (fixture.saved) await expect(saved).toHaveTextContent(fixture.saved.move.san);
   else await expect(saved).toHaveTextContent("None yet");
-  if (fixture.staged) await expect(staged).toHaveTextContent(fixture.staged.move.san);
+  if (fixture.selected) await expect(selected).toHaveTextContent(fixture.selected.san);
   else if (relationship === "saved") {
-    await expect(staged).toHaveTextContent("Stage a move to propose replacing e4");
-  } else await expect(staged).toHaveTextContent("No move staged");
+    await expect(selected).toHaveTextContent("Select a move to propose replacing e4");
+  } else await expect(selected).toHaveTextContent("No move selected");
 }
 
 async function expectPanelDimensions(canvasElement: HTMLElement) {
@@ -79,7 +79,7 @@ async function expectPanelDimensions(canvasElement: HTMLElement) {
     }
   }
   await expect(within(panel).getByTestId("saved-move").getBoundingClientRect().height).toBe(88);
-  await expect(within(panel).getByTestId("staged-move").getBoundingClientRect().height).toBe(88);
+  await expect(within(panel).getByTestId("selected-move").getBoundingClientRect().height).toBe(88);
 }
 
 async function expectNoPanelOverflow(canvasElement: HTMLElement) {
@@ -137,7 +137,7 @@ async function expectDateFreePanel(canvasElement: HTMLElement) {
 }
 
 export const EmptyEmpty: Story = {
-  name: "Relationship - empty saved and staged boxes",
+  name: "Relationship - empty saved and selected boxes",
   args: panelArgs("empty"),
   play: async ({ canvasElement }) => {
     await expectBoxes(canvasElement, "empty");
@@ -146,7 +146,7 @@ export const EmptyEmpty: Story = {
     const canvas = within(canvasElement);
     await expect(canvas.getByRole("status")).toHaveTextContent("Ready to stage");
     await expect(
-      canvas.getByText("Stage a legal move to propose the first saved choice."),
+      canvas.getByText("Play a legal move to select the first saved choice."),
     ).toBeVisible();
     await expectFooterActions(canvasElement, []);
     await expectDateFreePanel(canvasElement);
@@ -163,7 +163,7 @@ export const FirstChoice: Story = {
     const canvas = within(canvasElement);
     await expect(canvas.getByRole("status")).toHaveTextContent("Ready to save");
     await expect(canvas.getByText("Saved", { exact: true })).toBeVisible();
-    await expect(canvas.getByText("Staged", { exact: true })).toBeVisible();
+    await expect(canvas.getByText("Selected", { exact: true })).toBeVisible();
     await expectFooterActions(canvasElement, ["Save e4"]);
     await expect(canvas.getByRole("button", { name: "Save e4" })).toBeEnabled();
     await expectDateFreePanel(canvasElement);
@@ -173,7 +173,7 @@ export const FirstChoice: Story = {
 };
 
 export const SavedNoStage: Story = {
-  name: "Relationship - saved choice with no staged move",
+  name: "Relationship - saved choice with no selected move",
   args: panelArgs("saved"),
   play: async ({ canvasElement }) => {
     await expectBoxes(canvasElement, "saved");
@@ -188,7 +188,7 @@ export const SavedNoStage: Story = {
 };
 
 export const Replacement: Story = {
-  name: "Relationship - differing staged replacement",
+  name: "Relationship - differing selected replacement",
   args: panelArgs("replacement"),
   play: async ({ canvasElement }) => {
     await expectBoxes(canvasElement, "replacement");
@@ -204,7 +204,7 @@ export const Replacement: Story = {
 };
 
 export const Matching: Story = {
-  name: "Relationship - staged move matches saved choice",
+  name: "Relationship - selected move matches saved choice",
   args: panelArgs("matching"),
   play: async ({ canvasElement }) => {
     await expectBoxes(canvasElement, "matching");
@@ -223,20 +223,22 @@ export const UnsavableGate: Story = {
   name: "Gate - unsavable position",
   args: {
     ...panelArgs("first-choice"),
-    model: preferredMoveStoryModel("first-choice", { saveability: "unsavable" }),
+    model: preferredMoveStoryModel("first-choice", {
+      contextMessage: "Never seen as White",
+      personalCount: 0,
+      saveability: "unsavable",
+    }),
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await expect(canvas.getByTestId("preferred-status")).toHaveTextContent("Not in Corpus");
+    await expect(canvas.getByTestId("preferred-status")).toHaveTextContent("Ready to save");
     await expect(
       canvas.getByRole("heading", { name: "Preferred move" }),
     ).toBeVisible();
-    await expect(
-      canvas.getByText("This position isn't in your corpus, so it can't be saved yet."),
-    ).toBeVisible();
-    await expectFooterActions(canvasElement, []);
+    await expect(canvas.getByText("Never seen as White")).toBeVisible();
+    await expectFooterActions(canvasElement, ["Save e4"]);
     await expectNoPanelOverflow(canvasElement);
-    await expect(canvas.queryByRole("button", { name: /^Save / })).not.toBeInTheDocument();
+    await expect(canvas.getByRole("button", { name: "Save e4" })).toBeEnabled();
     await expectDateFreePanel(canvasElement);
   },
 };
@@ -247,7 +249,7 @@ export const OpponentTurnGate: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await expect(
-      canvas.getByText("Wait for your turn to stage or save a preferred move."),
+      canvas.getByText("Wait for your turn to select or save a preferred move."),
     ).toBeVisible();
     await expect(canvas.getByRole("region", { name: "Current saved choice" })).toBeVisible();
     await expect(
@@ -328,7 +330,7 @@ export const MutationPending: Story = {
     await expect(canvas.getByRole("button", { name: "Save d4" })).toBeDisabled();
     await expect(canvas.getByRole("button", { name: "Remove" })).toBeDisabled();
     await expectDateFreePanel(canvasElement);
-    await expect(canvas.getByRole("button", { name: /play and stage this move/ })).toBeVisible();
+    await expect(canvas.getByTestId("selected-move")).toHaveTextContent("d4");
     await expect(canvas.getByText("d4")).toBeVisible();
   },
 };
@@ -336,16 +338,16 @@ export const MutationPending: Story = {
 const LONG_CONTEXT =
   "Seen in 6,183 games as White · long corpus metadata retained for responsive overflow review";
 
-function promotionStagedModel(relationship: "first-choice" | "replacement") {
+function promotionSelectedModel(relationship: "first-choice" | "replacement") {
   const base = preferredMoveStoryModel(relationship);
-  if (!base.staged) throw new Error("The promotion overflow fixture needs a staged move.");
+  if (!base.selected) throw new Error("The promotion overflow fixture needs a selected move.");
   return {
     ...base,
     contextMessage: LONG_CONTEXT,
-    staged: {
-      ...base.staged,
+    selected: {
+      ...base.selected,
       uci: "e7e8q",
-      move: { ...base.staged.move, san: "e8=Q+" },
+      san: "e8=Q+",
     },
   };
 }
@@ -381,7 +383,7 @@ function overflowViewport(width: 640 | 480 | 412) {
 async function expectPromotionOverflowCase(canvasElement: HTMLElement) {
   const canvas = within(canvasElement);
   await expect(canvas.getByTestId("preferred-context")).toHaveTextContent(LONG_CONTEXT);
-  await expect(canvas.getByTestId("staged-move")).toHaveTextContent(/^Staged\s*e8=Q\+\s*e7e8q$/);
+  await expect(canvas.getByTestId("selected-move")).toHaveTextContent(/^Selected\s*e8=Q\+\s*e7e8q$/);
   await expect(canvas.getByRole("button", { name: "Save e8=Q+" })).toBeEnabled();
   await expectFooterActions(canvasElement, ["Save e8=Q+", "Remove"]);
   await expectNoPanelOverflow(canvasElement);
@@ -392,7 +394,7 @@ export const OverflowLongCopyDesktop: Story = {
   name: "Overflow - long metadata and promotion copy at desktop",
   args: {
     ...panelArgs("replacement"),
-    model: promotionStagedModel("replacement"),
+    model: promotionSelectedModel("replacement"),
   },
   play: async ({ canvasElement }) => {
     await expectPromotionOverflowCase(canvasElement);
@@ -407,7 +409,7 @@ export const OverflowLongCopy640: Story = {
   parameters: overflowViewport(640),
   args: {
     ...panelArgs("replacement"),
-    model: promotionStagedModel("replacement"),
+    model: promotionSelectedModel("replacement"),
   },
   play: async ({ canvasElement }) => {
     await expectPromotionOverflowCase(canvasElement);
@@ -422,7 +424,7 @@ export const OverflowLongCopy480: Story = {
   parameters: overflowViewport(480),
   args: {
     ...panelArgs("replacement"),
-    model: promotionStagedModel("replacement"),
+    model: promotionSelectedModel("replacement"),
   },
   play: async ({ canvasElement }) => {
     await expectPromotionOverflowCase(canvasElement);
@@ -437,7 +439,7 @@ export const OverflowLongCopy412: Story = {
   parameters: overflowViewport(412),
   args: {
     ...panelArgs("replacement"),
-    model: promotionStagedModel("replacement"),
+    model: promotionSelectedModel("replacement"),
   },
   play: async ({ canvasElement }) => {
     await expectPromotionOverflowCase(canvasElement);
@@ -457,7 +459,7 @@ export const OverflowReplacementGuidance: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await expect(
-      canvas.getByText("Stage a move to propose replacing e8=Q+", { exact: true }),
+      canvas.getByText("Select a move to propose replacing e8=Q+", { exact: true }),
     ).toBeVisible();
     await expect(canvas.getByRole("button", { name: "Remove" })).toBeEnabled();
     await expectNoPanelOverflow(canvasElement);

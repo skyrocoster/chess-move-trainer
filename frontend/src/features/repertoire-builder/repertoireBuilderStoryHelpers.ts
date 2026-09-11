@@ -19,6 +19,7 @@ import type {
   PreferredMoveResponse,
   PreferredMoveValue,
 } from "./preferredMoveApi";
+import { getPreferredMoveDateWindow } from "./preferredMoveApi";
 import {
   preferredMoveRelationshipFixtures,
   type PreferredMoveRelationship,
@@ -96,13 +97,36 @@ export function storyGameClient(detail: GameDetailResponse = STORY_GAME_DETAIL):
 export type StoryPreferredMoveOptions = {
   relationship?: PreferredMoveRelationship;
   savedMove?: PreferredMoveValue;
-  effectiveAt?: string;
   readFailure?: PreferredMoveFailureCode;
   putFailure?: PreferredMoveFailureCode;
   removeFailure?: PreferredMoveFailureCode;
   pendingMutation?: "save" | "remove";
   pendingRead?: boolean;
+  onRequest?: (request: StoryPreferredMoveRequest) => void;
 };
+
+export type StoryPreferredMoveRequest =
+  | {
+      method: "GET";
+      fen: Fen;
+      from: string;
+      until: string;
+    }
+  | {
+      method: "PUT";
+      fen: Fen;
+      move_uci: string;
+      effective_from: string;
+    }
+  | {
+      method: "DELETE";
+      fen: Fen;
+      effective_from: string;
+    };
+
+export function storyPreferredMoveDateWindow() {
+  return getPreferredMoveDateWindow();
+}
 
 export type StoryPositionContextOptions = Partial<
   Pick<PositionContextResponse, "observedInGames" | "distinctGameCount" | "totalGameCount">
@@ -168,7 +192,7 @@ export function storyMoveResponseDistributionClient(): MoveResponseDistributionC
 function mutationResponse(fen: Fen, effectiveAt: string) {
   return {
     status: "success" as const,
-    data: { fen, changed: true, effective_at: effectiveAt || "2026-08-29T00:00:00.000Z" },
+    data: { fen, changed: true, effective_at: effectiveAt },
   };
 }
 
@@ -190,12 +214,13 @@ export function storyPreferredMoveClient(
   let state: PreferredMoveResponse["state"] =
     fixture.savedPresence === "present" ? "assigned" : "unassigned";
   let move = options.savedMove ?? fixture.saved?.move ?? DEFAULT_MOVE;
-  let effectiveAt =
-    options.effectiveAt ?? (state === "assigned" ? "2026-01-01T00:00:00.000000Z" : null);
+  let effectiveAt = state === "assigned" ? "2026-01-01T00:00:00.000000Z" : null;
   let assignedFen: Fen | null = null;
 
   return {
     get: fn(async (fen) => {
+      const { today, tomorrow } = storyPreferredMoveDateWindow();
+      options.onRequest?.({ method: "GET", fen, from: today, until: tomorrow });
       if (options.pendingRead) {
         return new Promise<never>(() => undefined);
       }
@@ -216,7 +241,9 @@ export function storyPreferredMoveClient(
         },
       };
     }),
-    put: fn(async ({ fen, move_uci, effective_at }) => {
+    put: fn(async ({ fen, move_uci }) => {
+      const { today } = storyPreferredMoveDateWindow();
+      options.onRequest?.({ method: "PUT", fen, move_uci, effective_from: today });
       if (options.pendingMutation === "save") {
         return new Promise<never>(() => undefined);
       }
@@ -226,10 +253,13 @@ export function storyPreferredMoveClient(
       move = moveFromRequest(fen, move_uci);
       state = "assigned";
       assignedFen = fen;
-      effectiveAt = effective_at || "2026-08-29T00:00:00.000Z";
-      return mutationResponse(fen, effective_at ?? "");
+      const { today: effectiveToday } = storyPreferredMoveDateWindow();
+      effectiveAt = `${effectiveToday}T00:00:00.000000Z`;
+      return mutationResponse(fen, effectiveAt);
     }),
-    remove: fn(async ({ fen, effective_at }) => {
+    remove: fn(async ({ fen }) => {
+      const { today } = storyPreferredMoveDateWindow();
+      options.onRequest?.({ method: "DELETE", fen, effective_from: today });
       if (options.pendingMutation === "remove") {
         return new Promise<never>(() => undefined);
       }
@@ -238,7 +268,7 @@ export function storyPreferredMoveClient(
       }
       state = "unassigned";
       effectiveAt = null;
-      return mutationResponse(fen, effective_at ?? "");
+      return mutationResponse(fen, `${today}T00:00:00.000000Z`);
     }),
   };
 }

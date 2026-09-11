@@ -41,15 +41,17 @@ function failureMessage(code: PreferredMoveFailureCode): string {
   switch (code) {
     case "invalid_fen":
       return "This position could not be saved.";
-    case "invalid_move":
-      return "That move is not legal for this position.";
-    case "invalid_timestamp":
-      return "The selected date could not be used.";
-    case "future_effective_time":
-      return "The selected date cannot be in the future.";
-    case "position_not_found":
-      return "This position is not available to save.";
-    case "preferred_move_unavailable":
+    case "invalid_from":
+    case "invalid_until":
+    case "invalid_window":
+    case "invalid_effective_from":
+    case "invalid_effective_until":
+      return "The current preferred-move window could not be used.";
+    case "invalid_preference":
+    case "invalid_uci":
+    case "illegal_move":
+      return "That move could not be saved for this position.";
+    case "preferred_moves_unavailable":
       return "Preferred move data is unavailable. Try again.";
     case "unexpected_failure":
       return "The preferred move could not be updated. Try again.";
@@ -93,7 +95,6 @@ function statusLabel({
   if (preferredError && model.savedPresence === "unknown") return "Saved choice unavailable";
   if (contextError && model.saveability === "unknown") return "Position context unavailable";
   if (!model.ownTurn) return "Opponent turn";
-  if (model.saveability === "unsavable") return "Not in Corpus";
 
   switch (model.relationship) {
     case "empty":
@@ -116,7 +117,7 @@ function selectedEmptyDescription(
   contextLoading: boolean,
   contextError: PositionContextFailureCode | null,
 ): string | undefined {
-  if (!model.ownTurn || contextLoading || contextError || model.saveability !== "savable") {
+  if (!model.ownTurn || contextLoading || contextError) {
     return undefined;
   }
   if (model.relationship === "empty")
@@ -317,7 +318,6 @@ export function PreferredMovePanel({
   const contextReady = !contextLoading && !hasContextError;
   const canSave =
     model.ownTurn &&
-    model.saveability === "savable" &&
     contextReady &&
     preferredReady &&
     model.selected !== null &&
@@ -328,13 +328,12 @@ export function PreferredMovePanel({
     model.selected !== null &&
     (model.relationship === "first-choice" || model.relationship === "replacement");
   const showSave =
-    (mutation === "save" || (saveRelationship && model.saveability === "savable")) &&
+    (mutation === "save" || saveRelationship) &&
     contextReady &&
     !hasContextError &&
     !hasPreferredError;
   const showMatches =
     model.ownTurn &&
-    model.saveability === "savable" &&
     contextReady &&
     !hasContextError &&
     !hasPreferredError &&
@@ -343,7 +342,7 @@ export function PreferredMovePanel({
   const showRemove = model.ownTurn && savedRelation && !hasPreferredError;
   const persistenceDisabled = mutation !== null || preferredLoading || contextLoading;
   const selectedTone =
-    !model.ownTurn || model.saveability === "unsavable"
+    !model.ownTurn
       ? "blocked"
       : model.relationship === "matching"
         ? "matching"
@@ -374,7 +373,6 @@ export function PreferredMovePanel({
   const savedSubLabel = savedMove?.uci ?? undefined;
   const canonicalNormal =
     model.ownTurn &&
-    model.saveability === "savable" &&
     preferredReady &&
     contextReady &&
     !hasPreferredError &&
@@ -383,7 +381,7 @@ export function PreferredMovePanel({
     !mutation &&
     model.relationship !== "unknown";
   const panelTone =
-    !model.ownTurn || model.saveability === "unsavable"
+    !model.ownTurn
       ? styles.toneBlocked
       : model.relationship === "matching"
         ? styles.toneMatching
@@ -423,11 +421,6 @@ export function PreferredMovePanel({
         </span>
       </header>
 
-      {model.saveability === "unsavable" ? (
-        <p className={styles.gate}>
-          This position isn't in your corpus, so it can't be saved yet.
-        </p>
-      ) : null}
       {!model.ownTurn ? (
         <p className={styles.gate}>Wait for your turn to select or save a preferred move.</p>
       ) : null}
