@@ -293,7 +293,7 @@ def test_locked_database_is_typed_503_and_does_not_write(api_context) -> None:
     assert database.read_bytes() == before
 
 
-def test_new_route_coexists_with_all_singular_preferred_move_routes() -> None:
+def test_new_route_is_registered_without_singular_preferred_move_routes() -> None:
     routes = {
         (route.path, method)
         for route in app.routes
@@ -302,9 +302,9 @@ def test_new_route_coexists_with_all_singular_preferred_move_routes() -> None:
     }
 
     assert ("/api/preferred-moves", "GET") in routes
-    assert ("/api/preferred-move", "GET") in routes
-    assert ("/api/preferred-move", "PUT") in routes
-    assert ("/api/preferred-move", "DELETE") in routes
+    assert ("/api/preferred-move", "GET") not in routes
+    assert ("/api/preferred-move", "PUT") not in routes
+    assert ("/api/preferred-move", "DELETE") not in routes
 
 
 def test_new_route_has_the_settled_operation_id() -> None:

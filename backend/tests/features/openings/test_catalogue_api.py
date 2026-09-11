@@ -346,7 +346,7 @@ def test_clean_opening_detail_returns_typed_404_for_absent_key(
     }
 
 
-def test_clean_openings_and_legacy_line_library_use_separate_dependencies(
+def test_clean_openings_ignore_the_legacy_database_environment(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     rebuilt = _create_rebuilt_database(tmp_path / "rebuilt.db")
@@ -356,10 +356,8 @@ def test_clean_openings_and_legacy_line_library_use_separate_dependencies(
     monkeypatch.setenv("CHESS_DATABASE_PATH", str(legacy))
 
     clean_response = CLIENT.get("/api/openings")
-    legacy_response = CLIENT.get("/api/openings/line-library")
 
     assert clean_response.status_code == 200
-    assert legacy_response.status_code == 200
     assert _keys(clean_response) == [
         "A00:Alpha",
         "B10:Beta:Study",
@@ -450,16 +448,13 @@ def test_openings_routes_and_games_routes_remain_registered_and_models_are_stric
     }
 
     assert ("/api/openings", "getOpenings") in routes
-    assert any(path == "/api/openings/line-library" for path, _operation_id in routes)
     assert ("/api/openings/{opening_key}", "getOpeningByKey") in routes
     opening_routes = [
         route.path
         for route in app.routes
         if isinstance(route, APIRoute) and route.path.startswith("/api/openings")
     ]
-    assert opening_routes.index("/api/openings/line-library") < opening_routes.index(
-        "/api/openings/{opening_key}"
-    )
+    assert "/api/openings/line-library" not in opening_routes
     assert ("/api/games", "getGames") in routes
     assert ("/api/games/{game_uuid}", "getGame") in routes
     with pytest.raises(ValidationError):

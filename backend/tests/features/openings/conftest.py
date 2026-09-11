@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-from backend.app.features.positions.repository import SUBJECT_PLAYER_UUID
+SUBJECT_PLAYER_UUID = "0101b08a-ce8b-11ee-b2fd-e90263e5548c"
 
 MANIFEST = "accepted-manifest"
 OTHER_SUBJECT_UUID = "02020202-ce8b-11ee-b2fd-e90263e5548c"

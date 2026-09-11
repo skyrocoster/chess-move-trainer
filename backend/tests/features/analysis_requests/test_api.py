@@ -237,7 +237,7 @@ def test_unexpected_failures_use_safe_500(monkeypatch, api_context) -> None:
     assert "database secret" not in response.text
 
 
-def test_request_route_has_settled_operation_and_coexists_with_observation_and_legacy() -> None:
+def test_request_route_has_settled_operation_and_coexists_with_observation() -> None:
     routes = {
         (route.path, tuple(sorted(route.methods))): route
         for route in app.routes
@@ -247,4 +247,4 @@ def test_request_route_has_settled_operation_and_coexists_with_observation_and_l
     request_route = routes[("/api/analysis-requests", ("POST",))]
     assert request_route.operation_id == "requestAnalysis"
     assert ("/api/analysis", ("GET",)) in routes
-    assert ("/api/evaluation", ("POST",)) in routes
+    assert ("/api/evaluation", ("POST",)) not in routes

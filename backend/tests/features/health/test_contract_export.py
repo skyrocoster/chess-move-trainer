@@ -264,13 +264,13 @@ def test_docs_and_served_openapi_remain_available() -> None:
     assert "/api/games/{game_uuid}" in served_spec["paths"]
     assert "/api/openings" in served_spec["paths"]
     assert "/api/openings/{opening_key}" in served_spec["paths"]
-    assert "/api/openings/line-library" in served_spec["paths"]
+    assert "/api/openings/line-library" not in served_spec["paths"]
     assert "/api/positions/insight" in served_spec["paths"]
     assert "/api/analysis" in served_spec["paths"]
     assert "/api/analysis-requests" in served_spec["paths"]
     assert "/api/preferred-moves" in served_spec["paths"]
     assert set(served_spec["paths"]["/api/preferred-moves"]) == {"delete", "get", "put"}
-    assert any(path.startswith("/api/evaluation") for path in served_spec["paths"])
+    assert not any(path.startswith("/api/evaluation") for path in served_spec["paths"])
     assert served_spec["paths"]["/api/health"]["get"]["operationId"] == "getHealth"
     assert served_spec["paths"]["/api/games"]["get"]["operationId"] == "getGames"
     assert (

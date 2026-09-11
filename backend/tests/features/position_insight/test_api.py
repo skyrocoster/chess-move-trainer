@@ -357,16 +357,16 @@ def test_unexpected_failures_are_safe_and_do_not_leak_internal_messages(api_cont
     assert "database secret" not in response.text
 
 
-def test_new_clean_route_coexists_with_accepted_clean_and_legacy_routes() -> None:
+def test_new_clean_route_coexists_with_accepted_clean_routes() -> None:
     routes = {route.path for route in app.routes if isinstance(route, APIRoute)}
 
     assert "/api/positions/insight" in routes
     assert "/api/games" in routes
     assert "/api/games/{game_uuid}" in routes
-    assert "/api/games/{game_uuid}/positions" in routes
+    assert "/api/games/{game_uuid}/positions" not in routes
     assert "/api/openings" in routes
     assert "/api/openings/{opening_key}" in routes
-    assert "/api/position-context" in routes
+    assert "/api/position-context" not in routes
 
 
 def test_position_insight_route_has_the_settled_operation_id() -> None:

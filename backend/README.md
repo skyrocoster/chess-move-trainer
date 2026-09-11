@@ -20,12 +20,8 @@ Some features add a `schema.py` (singular) for SQLite DDL initialization.
 | Directory | Purpose |
 |-----------|---------|
 | `app/features/health/` | `GET /api/health` endpoint |
-| `app/features/positions/` | FEN position CRUD |
-| `app/features/evaluation/` | Stockfish evaluation job queue and results |
 | `app/features/analysis/` | Stockfish analysis pipeline, benchmarking, and persistence |
-| `app/features/preferred_move/` | Fixed-owner preferred-move API (`GET`/`PUT`/`DELETE /api/preferred-move`) |
-| `app/features/position_context/` | Neutral recurrence context for a position (`GET /api/position-context`) |
-| `app/features/openings/` | Read-only opening Line Library API (`GET /api/openings/line-library`) |
+| `app/features/openings/` | Clean opening catalogue API (`GET /api/openings`, `GET /api/openings/{opening_key}`) |
 
 ## Running
 

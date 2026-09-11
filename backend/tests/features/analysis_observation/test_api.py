@@ -263,7 +263,7 @@ def test_unexpected_failures_are_typed_and_do_not_leak_messages(api_context, mon
     assert "database secret" not in response.text
 
 
-def test_analysis_route_coexists_with_legacy_evaluation_and_has_settled_operation_id() -> None:
+def test_analysis_route_has_settled_operation_id() -> None:
     routes = {
         route.path: route
         for route in app.routes
@@ -271,6 +271,6 @@ def test_analysis_route_coexists_with_legacy_evaluation_and_has_settled_operatio
     }
 
     assert "/api/analysis" in routes
-    assert "/api/evaluation" in routes
+    assert "/api/evaluation" not in routes
     assert routes["/api/analysis"].methods == {"GET"}
     assert routes["/api/analysis"].operation_id == "getAnalysis"

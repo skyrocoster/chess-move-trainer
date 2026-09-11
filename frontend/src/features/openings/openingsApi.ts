@@ -1,7 +1,3 @@
-import {
-  openingLineLibraryFailureFromHttp,
-  parseOpeningLineLibraryResponse,
-} from "./openingsApiParser";
 export {
   OpeningLineLibraryContractError,
   openingLineLibraryFailureFromHttp,
@@ -102,18 +98,6 @@ export type OpeningLineLibraryResult =
   | { status: "success"; data: OpeningLineLibraryResponse }
   | OpeningLineLibraryFailure;
 
-export type OpeningLineLibraryQuery = {
-  search?: string;
-  eco_from?: string;
-  eco_to?: string;
-  appears_in_my_games?: boolean;
-  sort?: string;
-};
-
-export type OpeningLineLibraryFetchOptions = OpeningLineLibraryQuery & {
-  signal?: AbortSignal;
-};
-
 function filterKind(type: OpeningLineLibraryFilterType): LineLibraryFilterKind {
   if (type === "search") return "search";
   if (type === "toggle") return "boolean";
@@ -157,34 +141,3 @@ export function openingLineLibraryResponseToData(
     selection_limit: response.selection_limit,
   };
 }
-
-async function readJson(response: Response): Promise<unknown> {
-  try {
-    return await response.json();
-  } catch {
-    return null;
-  }
-}
-
-export const fetchOpeningLineLibrary = async (
-  options: OpeningLineLibraryFetchOptions = {},
-): Promise<OpeningLineLibraryResult> => {
-  const apiUrl = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:5666";
-  const { signal, ...query } = options;
-  const params = new URLSearchParams();
-  Object.entries(query).forEach(([key, value]) => {
-    if (value !== undefined) params.set(key, String(value));
-  });
-  const queryString = params.toString();
-  const response = await fetch(
-    `${apiUrl}/api/openings/line-library${queryString ? `?${queryString}` : ""}`,
-    { signal },
-  );
-  const body = await readJson(response);
-  if (!response.ok) return openingLineLibraryFailureFromHttp(response.status, body);
-  try {
-    return { status: "success", data: parseOpeningLineLibraryResponse(body) };
-  } catch {
-    return { status: "unexpected_failure", message: "Opening Line Library response was malformed" };
-  }
-};

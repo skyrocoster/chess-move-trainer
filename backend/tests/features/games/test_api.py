@@ -314,7 +314,7 @@ def test_unexpected_failures_are_safe_and_legacy_route_remains_registered(
     routes = {route.path for route in app.routes if isinstance(route, APIRoute)}
     assert "/api/games" in routes
     assert "/api/games/{game_uuid}" in routes
-    assert "/api/games/{game_uuid}/positions" in routes
+    assert "/api/games/{game_uuid}/positions" not in routes
 
 
 def test_default_dependency_is_the_clean_rebuilt_database_and_real_call_is_bounded(

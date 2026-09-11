@@ -1,1 +1,0 @@
-"""Stored position retrieval feature."""
