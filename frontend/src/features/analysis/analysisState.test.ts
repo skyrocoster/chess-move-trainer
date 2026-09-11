@@ -12,10 +12,8 @@ import { useAnalysisState } from "./analysisState";
 import type { Fen } from "../chess/chessPrimitives";
 
 const FEN: Fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-const COUNTER_VARIANT_FEN: Fen =
-  "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 17 42";
-const DISTINCT_POSITION_FEN: Fen =
-  "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1";
+const COUNTER_VARIANT_FEN: Fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 17 42";
+const DISTINCT_POSITION_FEN: Fen = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1";
 
 const RESULT: AnalysisResult = {
   lines: [
@@ -45,7 +43,11 @@ function success(data: AnalysisObservation): AnalysisOperationResult<AnalysisObs
   return { status: "success", data };
 }
 
-function Probe({ fen, client, pollIntervalMs = 0 }: {
+function Probe({
+  fen,
+  client,
+  pollIntervalMs = 0,
+}: {
   fen: Fen;
   client: AnalysisClient;
   pollIntervalMs?: number;
@@ -157,7 +159,9 @@ describe("useAnalysisState", () => {
 
     await waitFor(() => expect(request).toHaveBeenCalledTimes(1));
     expect(request).toHaveBeenCalledWith(FEN, expect.any(AbortSignal));
-    await waitFor(() => expect(readProbe().requestError).toBe("The analysis service is unavailable."));
+    await waitFor(() =>
+      expect(readProbe().requestError).toBe("The analysis service is unavailable."),
+    );
     expect(readProbe().state).toBe("not_requested");
   });
 
@@ -174,7 +178,9 @@ describe("useAnalysisState", () => {
     const request = vi.fn<AnalysisClient["request"]>();
     const view = render(createElement(Probe, { fen: FEN, client: { observe, request } }));
 
-    view.rerender(createElement(Probe, { fen: DISTINCT_POSITION_FEN, client: { observe, request } }));
+    view.rerender(
+      createElement(Probe, { fen: DISTINCT_POSITION_FEN, client: { observe, request } }),
+    );
     await waitFor(() => expect(readProbe().fen).toBe(DISTINCT_POSITION_FEN));
     await act(async () => {
       resolveFirst?.(success(observation(FEN, "ready", RESULT)));

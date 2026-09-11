@@ -57,9 +57,7 @@ describe("PageContentBoundary", () => {
     );
 
     expect(screen.getByRole("alert")).toHaveAttribute("role", "alert");
-    expect(
-      screen.getByText("Backend unavailable: Health request failed with HTTP 503"),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Backend unavailable.")).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Page unavailable" })).not.toBeInTheDocument();
   });
 });

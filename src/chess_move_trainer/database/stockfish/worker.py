@@ -20,7 +20,6 @@ from .engine import StockfishAnalysis, StockfishEngine
 from .mutex import DatabaseMutex, MutexBusyError
 from .queue import QueueClaim, QueueService
 
-
 DEFAULT_RECOVERY_POLL_SECONDS = 1.0
 
 

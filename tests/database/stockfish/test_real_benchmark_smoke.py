@@ -6,7 +6,6 @@ import subprocess
 import sys
 from pathlib import Path
 
-
 ROOT = Path(__file__).parents[3]
 EXECUTABLE = ROOT / "data" / "stockfish" / "stockfish-windows-x86-64-avx2.exe"
 APPROVED_POSITIONS = ROOT / "data" / "stockfish" / "test_positions.json"

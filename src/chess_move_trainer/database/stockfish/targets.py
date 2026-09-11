@@ -15,7 +15,6 @@ from ..positions.repository import position_transaction
 from ..schema import SchemaIncompatibleError, _assert_compatible_schema
 from .configuration import CONFIGURATION_VERSION, STOCKFISH_VERSION
 
-
 TARGET_MIN_PLY = 0
 TARGET_MAX_PLY = 19
 DEFAULT_TARGET_PAGE_SIZE = 100
@@ -279,11 +278,13 @@ class BulkTargetSelector:
                             move = chess.Move.from_uci(route_move.move_uci)
                         except ValueError as error:
                             raise TargetSelectionError(
-                                f"opening route {route_id} has malformed UCI at ply {route_move.ply}"
+                                f"opening route {route_id} has malformed UCI"
+                                f" at ply {route_move.ply}"
                             ) from error
                         if move not in board.legal_moves:
                             raise TargetSelectionError(
-                                f"opening route {route_id} has an illegal move at ply {route_move.ply}"
+                                f"opening route {route_id} has an illegal move"
+                                f" at ply {route_move.ply}"
                             )
                         board.push(move)
                         if route_move.ply <= TARGET_MAX_PLY:

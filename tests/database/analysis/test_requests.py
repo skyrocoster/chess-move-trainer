@@ -24,7 +24,6 @@ from chess_move_trainer.database.analysis import (
 from chess_move_trainer.database.positions import PositionRepository
 from chess_move_trainer.database.stockfish import QueueService
 
-
 STARTING_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 STARTING_WITH_COUNTERS = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 37 19"
 NOVEL_FEN = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 17 8"

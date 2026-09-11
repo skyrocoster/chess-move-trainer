@@ -17,7 +17,6 @@ from .connection import (
     _validate_lock_timeout,
 )
 
-
 SCHEMA_VERSION = 1
 _SCHEMA_RESOURCE_NAME = "schema_v1.sql"
 

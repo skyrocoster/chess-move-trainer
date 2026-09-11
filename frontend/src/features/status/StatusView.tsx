@@ -1,10 +1,7 @@
 import { InlineFeedback } from "../design-system/feedback/InlineFeedback";
 import styles from "./StatusView.module.css";
 
-export type StatusViewState =
-  | { kind: "loading" }
-  | { kind: "success" }
-  | { kind: "error" };
+export type StatusViewState = { kind: "loading" } | { kind: "success" } | { kind: "error" };
 
 interface StatusViewProps {
   state: StatusViewState;

@@ -1,5 +1,6 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
+import { retryAxeWhenBusy } from "./axe-busy-retry";
 
 const STORYBOOK_URL = "http://127.0.0.1:6006";
 const STORY_IDS = {
@@ -26,8 +27,6 @@ async function openStory(page: Page, storyId: string) {
   await expect(
     page.locator('[class*="adapter"], [class*="unavailable"]').first(),
   ).toBeVisible();
-  // Allow Storybook's own a11y addon to finish its axe pass before we run ours.
-  await page.waitForTimeout(500);
 }
 
 async function expectDescriptionAssociation(page: Page, graphic: Locator) {
@@ -152,20 +151,22 @@ async function expectStaticGraphic(page: Page, label: string) {
 }
 
 async function checkA11y(page: Page) {
-  const results = await new AxeBuilder({ page })
-    .disableRules([
-      // Storybook iframe pages have no application-level landmarks/headings;
-      // these rules are page-structure concerns, not component-owned failures.
-      "landmark-one-main",
-      "page-has-heading-one",
-      "region",
-    ])
-    .analyze();
+  const results = await retryAxeWhenBusy(page, () =>
+    new AxeBuilder({ page })
+      .disableRules([
+        // Storybook iframe pages have no application-level landmarks/headings;
+        // these rules are page-structure concerns, not component-owned failures.
+        "landmark-one-main",
+        "page-has-heading-one",
+        "region",
+      ])
+      .analyze(),
+  );
   expect(results.violations).toEqual([]);
 }
 
 test.describe("Board Adapter Storybook surface", () => {
-  test("exercises starting, rich, and black stories, static behavior, axe, and forced colors", async ({
+  test("shows the starting, rich, and black stories with static behavior, axe, and forced colors", async ({
     page,
   }) => {
     await page.emulateMedia({
@@ -259,7 +260,7 @@ test.describe("Board Adapter Storybook surface", () => {
     await checkA11y(page);
   });
 
-  test("exercises hidden, constrained, and invalid stories, sizing, axe, and forced colors", async ({
+  test("shows the hidden, constrained, and invalid stories with sizing, axe, and forced colors", async ({
     page,
   }) => {
     await page.emulateMedia({
@@ -348,7 +349,7 @@ test.describe("Board Adapter Storybook surface", () => {
     await checkA11y(page);
   });
 
-  test("exercises the expanded position description story, axe, forced colors, and reduced motion", async ({
+  test("shows the expanded position description story with axe, forced colors, and reduced motion", async ({
     page,
   }) => {
     await page.emulateMedia({

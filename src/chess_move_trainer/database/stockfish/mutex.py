@@ -7,8 +7,7 @@ import hashlib
 import math
 import os
 from pathlib import Path
-from typing import Final, Any
-
+from typing import Any, Final
 
 WAIT_OBJECT_0: Final[int] = 0x00000000
 WAIT_ABANDONED: Final[int] = 0x00000080

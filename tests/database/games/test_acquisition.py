@@ -16,7 +16,6 @@ from chess_move_trainer.database.games.acquisition import (
 )
 from chess_move_trainer.database.games.configuration import AcquireConfiguration
 
-
 FIXTURES = Path(__file__).parent / "fixtures"
 
 
@@ -96,7 +95,6 @@ def test_fixed_endpoint_timing_archive_selection_and_transient_archive_use(tmp_p
 
 
 def test_existing_history_is_skipped_and_missing_history_is_created_once(tmp_path: Path) -> None:
-    july_url = f"{CHESSCOM_API_ORIGIN}/pub/player/synthetic-trainer/games/2026/07"
     august_url = f"{CHESSCOM_API_ORIGIN}/pub/player/synthetic-trainer/games/2026/08"
     july_path = tmp_path / "games" / "2026" / "07.json"
     july_path.parent.mkdir(parents=True)
@@ -267,7 +265,8 @@ def test_unsafe_response_preserves_current_and_other_defects_are_published(
     )
 
     assert acceptable.completed
-    assert json.loads(current_path.read_text(encoding="utf-8"))["games"][-1] == defective["games"][0]
+    current_games = json.loads(current_path.read_text(encoding="utf-8"))["games"]
+    assert current_games[-1] == defective["games"][0]
 
 
 def test_month_failure_continues_and_returns_incomplete_result(tmp_path: Path) -> None:

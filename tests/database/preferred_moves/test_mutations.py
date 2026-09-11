@@ -8,17 +8,16 @@ import pytest
 
 from chess_move_trainer.database import create_schema
 from chess_move_trainer.database.preferred_moves import (
+    Preference,
     PreferredMoveLockError,
     PreferredMoveMutationRequest,
     PreferredMoveRemovalRequest,
     PreferredMoveRepository,
     PreferredMoveStorageError,
     PreferredMoveValidationError,
-    Preference,
     delete_preferred_move,
     put_preferred_move,
 )
-
 
 STARTING_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 STARTING_WITH_COUNTERS = (
@@ -103,7 +102,11 @@ def test_no_preference_is_a_configured_null_period(tmp_path: Path) -> None:
 
     result = put_preferred_move(
         database,
-        _request(effective_from="2026-01-01", effective_until="2026-02-01", preference=NO_PREFERENCE),
+        _request(
+            effective_from="2026-01-01",
+            effective_until="2026-02-01",
+            preference=NO_PREFERENCE,
+        ),
     )
 
     assert result.periods[0].preference == NO_PREFERENCE
@@ -184,7 +187,10 @@ def test_delete_removes_move_and_no_preference_coverage_with_split_fragments(
         ("2026-05-01", "2026-06-01", None),
         ("2026-06-01", None, "d2d4"),
     ]
-    assert PreferredMoveRepository(database).resolve(STARTING_FEN[:-4], "2026-04-15").state.value == "unconfigured"
+    assert (
+        PreferredMoveRepository(database).resolve(STARTING_FEN[:-4], "2026-04-15").state.value
+        == "unconfigured"
+    )
 
 
 def test_delete_shortens_fully_removes_and_repeats_as_a_no_op(tmp_path: Path) -> None:

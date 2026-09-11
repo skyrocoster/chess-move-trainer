@@ -132,7 +132,6 @@ describe("LineLibrary", () => {
   });
 
   it("recomputes selection when the visible result removes leaves", async () => {
-    const user = userEvent.setup();
     const onSelectionChange = vi.fn();
     const { rerender } = renderLibrary({
       selectedIds: ["group-a", "line-1", "line-2"],
@@ -161,7 +160,6 @@ describe("LineLibrary", () => {
       ),
     );
     expect(screen.queryByRole("treeitem", { name: "line-2" })).toBeNull();
-    void user;
   });
 
   it("keeps the last successful tree while loading or failed and disables selection", async () => {

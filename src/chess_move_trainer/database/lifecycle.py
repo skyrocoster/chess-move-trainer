@@ -24,7 +24,6 @@ from .openings.acquisition import (
     acquire_openings,
 )
 from .openings.persistence import (
-    CataloguePublication,
     OpeningCatalogueRepository,
     import_opening_catalogue,
 )
@@ -33,7 +32,7 @@ from .schema import create_schema
 DEFAULT_DATABASE_PATH: Final[Path] = Path("data/database/chess.db")
 DEFAULT_RAW_ROOT: Final[Path] = Path("data/chess-com/raw")
 DEFAULT_OPENING_SOURCE_DIR: Final[Path] = Path("data/chess-com/openings")
-DEFAULT_GAMES_CONFIGURATION: Final[Path] = Path("data/chess-com/db-09-games.yaml")
+DEFAULT_GAMES_CONFIGURATION: Final[Path] = Path("data/chess-com/direct-games.yaml")
 LifecycleExitCode = Literal[0, 1, 2, 130]
 
 

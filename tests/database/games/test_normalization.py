@@ -8,7 +8,6 @@ import pytest
 
 from chess_move_trainer.database.games.normalization import normalize_game
 
-
 FIXTURES = Path(__file__).parent / "fixtures"
 TRAINER_UUID = UUID("11111111-1111-4111-8111-111111111111")
 

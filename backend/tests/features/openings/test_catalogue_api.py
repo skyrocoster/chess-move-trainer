@@ -11,14 +11,13 @@ from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
 from backend.app.dependencies import REBUILT_DATABASE_PATH_ENV
-from backend.app.main import app
 from backend.app.features.openings.catalogue_api_schemas import (
     OpeningCatalogueResponse,
 )
+from backend.app.main import app
 from chess_move_trainer.database import create_schema
 
 from .conftest import create_openings_database
-
 
 CLIENT = TestClient(app)
 
@@ -132,7 +131,7 @@ def _keys(response) -> list[str]:
     return [item["key"] for item in response.json()["items"]]
 
 
-def test_clean_openings_returns_exact_flat_response_and_public_fields(
+def test_list_openings_returns_public_summary(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     database = _create_rebuilt_database(tmp_path / "rebuilt.db")
@@ -200,7 +199,7 @@ def test_clean_openings_returns_exact_flat_response_and_public_fields(
         ({"search": "not-present"}, []),
     ],
 )
-def test_clean_openings_maps_filters_sorts_and_pages(
+def test_list_openings_filters_sorts_and_pages(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     query: dict[str, object],
@@ -225,7 +224,7 @@ def test_clean_openings_maps_filters_sorts_and_pages(
         {"sort": "unknown"},
     ],
 )
-def test_known_invalid_opening_filters_use_typed_422_error(
+def test_list_openings_rejects_bad_filters_with_clear_error(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     query: dict[str, str],
@@ -241,7 +240,7 @@ def test_known_invalid_opening_filters_use_typed_422_error(
     }
 
 
-def test_clean_openings_uses_default_chess_db_and_stays_read_only(
+def test_browsing_openings_from_default_location_does_not_modify_database(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     default_database = tmp_path / "data" / "database" / "chess.db"
@@ -290,7 +289,7 @@ def test_clean_openings_uses_default_chess_db_and_stays_read_only(
         ),
     ],
 )
-def test_clean_opening_detail_returns_exact_flat_response_for_encoded_keys(
+def test_get_one_opening_returns_public_detail_for_tricky_names(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     opening_key: str,
@@ -316,7 +315,7 @@ def test_clean_opening_detail_returns_exact_flat_response_for_encoded_keys(
 
 
 @pytest.mark.parametrize("opening_key", ["not-a-key", "A0:Alpha", "A00:"])
-def test_clean_opening_detail_rejects_malformed_keys(
+def test_get_one_opening_rejects_malformed_keys_with_clear_error(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     opening_key: str,
@@ -332,7 +331,7 @@ def test_clean_opening_detail_rejects_malformed_keys(
     }
 
 
-def test_clean_opening_detail_returns_typed_404_for_absent_key(
+def test_get_one_opening_gives_clear_error_for_missing_key(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     _use_database(monkeypatch, _create_rebuilt_database(tmp_path / "rebuilt.db"))
@@ -346,7 +345,7 @@ def test_clean_opening_detail_returns_typed_404_for_absent_key(
     }
 
 
-def test_clean_openings_ignore_the_legacy_database_environment(
+def test_list_openings_ignores_legacy_database_location(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     rebuilt = _create_rebuilt_database(tmp_path / "rebuilt.db")
@@ -366,7 +365,7 @@ def test_clean_openings_ignore_the_legacy_database_environment(
     ]
 
 
-def test_clean_openings_missing_or_incompatible_data_is_typed_503(
+def test_missing_or_broken_openings_database_gives_unavailable_without_creating_file(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     missing = tmp_path / "missing.db"
@@ -409,7 +408,7 @@ def test_clean_openings_missing_or_incompatible_data_is_typed_503(
     }
 
 
-def test_clean_openings_unexpected_failures_are_safe(
+def test_openings_unexpected_failures_stay_safe_without_leaking_details(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     import importlib
@@ -440,7 +439,7 @@ def test_clean_openings_unexpected_failures_are_safe(
     }
 
 
-def test_openings_routes_and_games_routes_remain_registered_and_models_are_strict() -> None:
+def test_openings_and_games_routes_stay_registered() -> None:
     routes = {
         (route.path, route.operation_id)
         for route in app.routes
@@ -457,6 +456,9 @@ def test_openings_routes_and_games_routes_remain_registered_and_models_are_stric
     assert "/api/openings/line-library" not in opening_routes
     assert ("/api/games", "getGames") in routes
     assert ("/api/games/{game_uuid}", "getGame") in routes
+
+
+def test_catalogue_response_rejects_extra_fields() -> None:
     with pytest.raises(ValidationError):
         OpeningCatalogueResponse(
             items=[],

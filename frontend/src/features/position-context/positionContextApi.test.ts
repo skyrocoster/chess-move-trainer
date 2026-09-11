@@ -136,8 +136,12 @@ describe("fetchPositionContext", () => {
 
   it.each([
     insight(FEN, { observed_in_games: 1 }),
-    insight(FEN, { experience: { distinct_game_count: -1, occurrence_count: 0, total_game_count: 3 } }),
-    insight(FEN, { experience: { distinct_game_count: 2, occurrence_count: 0, total_game_count: 1.5 } }),
+    insight(FEN, {
+      experience: { distinct_game_count: -1, occurrence_count: 0, total_game_count: 3 },
+    }),
+    insight(FEN, {
+      experience: { distinct_game_count: 2, occurrence_count: 0, total_game_count: 1.5 },
+    }),
     insight(FEN, { experience: null }),
     insight(FEN, { trainer_color: "black" }),
     insight(FEN, { fen: "not a FEN" }),

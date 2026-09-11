@@ -21,6 +21,9 @@ export default defineConfig({
           environment: "jsdom",
           setupFiles: ["./src/test-setup.ts"],
           include: ["src/**/*.test.ts", "src/**/*.test.tsx"],
+          // The real-server health check runs through the focused API config
+          // (frontend/vitest.api.config.ts), not the fast unit project.
+          exclude: ["src/api/healthClient.test.ts"],
           // Cap the unit project at six workers. Vitest 4 requires projects with
           // different maxWorkers to use distinct sequence.groupOrder values, so the
           // unit project gets its own group; the Storybook project is untouched.

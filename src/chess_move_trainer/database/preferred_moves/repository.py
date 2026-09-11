@@ -18,8 +18,8 @@ from ..connection import (
 from ..positions import CanonicalPosition, PositionValidationError, canonicalize_fen
 from ..positions.repository import (
     PositionStorageError,
-    _PositionUnitOfWork,
     _find_existing_position_id,
+    _PositionUnitOfWork,
 )
 from ..schema import SchemaIncompatibleError, _assert_compatible_schema
 from .ranges import (

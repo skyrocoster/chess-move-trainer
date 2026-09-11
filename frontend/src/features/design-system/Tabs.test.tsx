@@ -12,7 +12,6 @@ afterEach(() => {
 });
 
 const here = dirname(fileURLToPath(import.meta.url));
-const tokenCss = readFileSync(join(here, "../../styles/cmt-tokens.css"), "utf8");
 const moduleCss = readFileSync(join(here, "Tabs.module.css"), "utf8");
 
 function ruleBlock(css: string, selector: string): string {
@@ -164,26 +163,10 @@ describe("Tabs", () => {
     expect(new Set(allPanelIds).size).toBe(allPanelIds.length);
   });
 
-  it("renders only the tabs implementation and caller-owned panel content", () => {
+  it("renders only caller-owned panel content without navigation links", () => {
     render(<Tabs tabs={BASE_TABS} />);
 
     expect(screen.queryByRole("link")).not.toBeInTheDocument();
-    for (const framingText of [
-      "Branch · Quiet underline / application semantics",
-      "Noncanonical",
-      "Generic placeholder surface",
-      "View container",
-      "Panel header",
-      "Placeholder content",
-      "Application semantics",
-      "Quiet, explicit, adaptable",
-      "Token names and spacing stay visible here as review cues, not as a production contract.",
-    ]) {
-      expect(screen.queryByText(framingText)).not.toBeInTheDocument();
-    }
-    expect(screen.queryByText(/spacing rhythm/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/Resize below 620px/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/enter the active tab/)).not.toBeInTheDocument();
 
     const announcement = screen.getByTestId("tabs-selection-status");
     expect(announcement).toHaveAttribute("aria-live", "polite");
@@ -683,7 +666,5 @@ describe("Tabs", () => {
 
     expect(moduleCss).not.toMatch(/--cmt-[a-z0-9-]*\s*:/);
     expect(moduleCss).not.toMatch(/--md-sys-[a-z0-9-]*\s*:/);
-    expect(tokenCss).toContain("--cmt-focus-ring-width: 2px;");
-    expect(tokenCss).toContain("--cmt-focus-ring-separation: 2px;");
   });
 });

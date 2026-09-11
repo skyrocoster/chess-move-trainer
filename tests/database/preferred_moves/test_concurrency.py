@@ -17,7 +17,6 @@ from chess_move_trainer.database.preferred_moves.repository import (
     PreferredMoveRepository,
 )
 
-
 STARTING_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -"
 STARTING_PUBLIC_FEN = f"{STARTING_FEN} 0 1"
 MOVE_E4 = Preference.preferred_move("e2e4")
@@ -141,11 +140,19 @@ def _run_serialized_delete_and_put(
             errors.append(error)
 
     if first_operation == "delete":
-        first_target = lambda: delete_mutation(first_checkpoint)
-        second_target = lambda: put_mutation(second)
+
+        def first_target() -> None:
+            delete_mutation(first_checkpoint)
+
+        def second_target() -> None:
+            put_mutation(second)
     else:
-        first_target = lambda: put_mutation(first)
-        second_target = lambda: delete_mutation(second_checkpoint)
+
+        def first_target() -> None:
+            put_mutation(first)
+
+        def second_target() -> None:
+            delete_mutation(second_checkpoint)
 
     first_thread = threading.Thread(target=first_target, daemon=True)
     second_thread = threading.Thread(target=second_target, daemon=True)

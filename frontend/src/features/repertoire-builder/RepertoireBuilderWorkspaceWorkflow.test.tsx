@@ -3,7 +3,15 @@ import "./RepertoireBuilderWorkspace.testSetup";
 import { cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { GAME_DETAIL, GAME_UUID, renderWorkspace, testClients, STARTING_FEN, AFTER_E4_FEN, AFTER_D4_FEN } from "./repertoireBuilderTestHelpers";
+import {
+  GAME_DETAIL,
+  GAME_UUID,
+  renderWorkspace,
+  testClients,
+  STARTING_FEN,
+  AFTER_E4_FEN,
+  AFTER_D4_FEN,
+} from "./repertoireBuilderTestHelpers";
 import type { GameDetailClient } from "./RepertoireBuilderWorkspace";
 
 afterEach(() => cleanup());
@@ -12,12 +20,17 @@ function successfulGameClient(detail = GAME_DETAIL) {
   return vi.fn<GameDetailClient>().mockResolvedValue({ data: detail, error: undefined });
 }
 
-async function load(detail = GAME_DETAIL, options: { preferredMoveClient?: ReturnType<typeof testClients>["preferredMoveClient"] } = {}) {
+async function load(
+  detail = GAME_DETAIL,
+  options: { preferredMoveClient?: ReturnType<typeof testClients>["preferredMoveClient"] } = {},
+) {
   const user = userEvent.setup();
   renderWorkspace({ gameClient: successfulGameClient(detail), ...options });
   fireEvent.change(screen.getByLabelText("Game UUID"), { target: { value: GAME_UUID } });
   await user.click(screen.getByRole("button", { name: "Load game" }));
-  await waitFor(() => expect(screen.getByTestId("session-origin")).toHaveTextContent("complete game loaded"));
+  await waitFor(() =>
+    expect(screen.getByTestId("session-origin")).toHaveTextContent("complete game loaded"),
+  );
   return user;
 }
 
@@ -42,7 +55,9 @@ describe("RepertoireBuilderWorkspace workflow", () => {
         signal: expect.any(AbortSignal),
       }),
     );
-    await waitFor(() => expect(screen.getByTestId("session-status")).toHaveTextContent("Preferred move saved."));
+    await waitFor(() =>
+      expect(screen.getByTestId("session-status")).toHaveTextContent("Preferred move saved."),
+    );
     expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", AFTER_E4_FEN);
   });
 
@@ -56,15 +71,20 @@ describe("RepertoireBuilderWorkspace workflow", () => {
     expect(screen.getByTestId("session-origin")).toHaveTextContent("Current Ply 1.");
     expect(clients.preferredMoveClient.put).not.toHaveBeenCalled();
     await user.click(screen.getByRole("button", { name: "Save e4" }));
-    await waitFor(() => expect(clients.preferredMoveClient.put).toHaveBeenCalledWith(
-      { fen: STARTING_FEN, move_uci: "e2e4" },
-      { signal: expect.any(AbortSignal) },
-    ));
+    await waitFor(() =>
+      expect(clients.preferredMoveClient.put).toHaveBeenCalledWith(
+        { fen: STARTING_FEN, move_uci: "e2e4" },
+        { signal: expect.any(AbortSignal) },
+      ),
+    );
   });
 
   it("excludes an opponent transition from Preferred Move candidates", async () => {
     const clients = testClients();
-    const user = await load({ ...GAME_DETAIL, trainer_color: "black" }, { preferredMoveClient: clients.preferredMoveClient });
+    const user = await load(
+      { ...GAME_DETAIL, trainer_color: "black" },
+      { preferredMoveClient: clients.preferredMoveClient },
+    );
 
     await user.click(screen.getByTestId("move-e2-e4"));
     expect(screen.getByTestId("session-origin")).toHaveTextContent("Current Ply 1.");
@@ -86,10 +106,12 @@ describe("RepertoireBuilderWorkspace workflow", () => {
     expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", AFTER_D4_FEN);
     expect(screen.getByTestId("selected-move")).toHaveTextContent("d4");
     await user.click(screen.getByRole("button", { name: "Save d4" }));
-    await waitFor(() => expect(clients.preferredMoveClient.put).toHaveBeenCalledWith(
-      { fen: STARTING_FEN, move_uci: "d2d4" },
-      { signal: expect.any(AbortSignal) },
-    ));
+    await waitFor(() =>
+      expect(clients.preferredMoveClient.put).toHaveBeenCalledWith(
+        { fen: STARTING_FEN, move_uci: "d2d4" },
+        { signal: expect.any(AbortSignal) },
+      ),
+    );
   });
 
   it("keeps Remove explicit and preserves saved state until the mutation succeeds", async () => {
@@ -106,10 +128,12 @@ describe("RepertoireBuilderWorkspace workflow", () => {
     await user.click(screen.getByRole("button", { name: "Remove" }));
     const openDialog = await screen.findByRole("alertdialog", { name: "Remove preferred move?" });
     await user.click(within(openDialog).getByRole("button", { name: "Remove" }));
-    await waitFor(() => expect(clients.preferredMoveClient.remove).toHaveBeenCalledWith(
-      { fen: STARTING_FEN },
-      { signal: expect.any(AbortSignal) },
-    ));
+    await waitFor(() =>
+      expect(clients.preferredMoveClient.remove).toHaveBeenCalledWith(
+        { fen: STARTING_FEN },
+        { signal: expect.any(AbortSignal) },
+      ),
+    );
     await waitFor(() =>
       expect(clients.preferredMoveClient.get).toHaveBeenLastCalledWith(STARTING_FEN, {
         signal: expect.any(AbortSignal),
@@ -120,14 +144,18 @@ describe("RepertoireBuilderWorkspace workflow", () => {
 
   it("retains the selected transition when an explicit save fails", async () => {
     const clients = testClients();
-    clients.preferredMoveClient.put = vi.fn(async () => ({ status: "unexpected_failure" as const }));
+    clients.preferredMoveClient.put = vi.fn(async () => ({
+      status: "unexpected_failure" as const,
+    }));
     const user = userEvent.setup();
     renderWorkspace({ preferredMoveClient: clients.preferredMoveClient });
     await user.click(screen.getByTestId("move-e2-e4"));
     await user.click(screen.getByRole("button", { name: "Save e4" }));
 
     await waitFor(() =>
-      expect(screen.getByRole("alert")).toHaveTextContent("The preferred move could not be updated."),
+      expect(screen.getByRole("alert")).toHaveTextContent(
+        "The preferred move could not be updated.",
+      ),
     );
     expect(screen.getByTestId("selected-move")).toHaveTextContent("e4");
     expect(screen.getByTestId("session-origin")).toHaveTextContent("Current Ply 1.");
@@ -161,7 +189,9 @@ describe("RepertoireBuilderWorkspace workflow", () => {
         { signal: expect.any(AbortSignal) },
       ),
     );
-    await waitFor(() => expect(screen.getByTestId("session-status")).toHaveTextContent("Preferred move saved."));
+    await waitFor(() =>
+      expect(screen.getByTestId("session-status")).toHaveTextContent("Preferred move saved."),
+    );
     expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", AFTER_E4_FEN);
   });
 });

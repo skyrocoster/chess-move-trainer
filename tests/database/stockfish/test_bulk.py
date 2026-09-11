@@ -2,28 +2,25 @@ from __future__ import annotations
 
 import sqlite3
 from pathlib import Path
-from typing import Any
 
 import chess
-import pytest
 
 from chess_move_trainer.database import create_schema
 from chess_move_trainer.database.analysis import (
     AnalysisLine,
     AnalysisQuality,
-    AnalysisScoreKind,
     AnalysisRepository,
     AnalysisResultInput,
+    AnalysisScoreKind,
     PublicationOutcome,
 )
 from chess_move_trainer.database.positions import PositionRepository
 from chess_move_trainer.database.stockfish import (
+    TOOL_PROFILE,
     BulkRunner,
     StockfishAnalysis,
     StockfishError,
-    TOOL_PROFILE,
 )
-
 
 START_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 E4_FEN = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1"

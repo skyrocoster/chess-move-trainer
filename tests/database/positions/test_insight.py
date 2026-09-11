@@ -8,20 +8,19 @@ from pathlib import Path
 import pytest
 
 from chess_move_trainer.database import create_schema
-from chess_move_trainer.database.preferred_moves import (
-    PreferredMoveRemovalRequest,
-    delete_preferred_move,
-)
 from chess_move_trainer.database.positions import (
-    PositionInsightRequest,
     PositionInsightRepository,
+    PositionInsightRequest,
     PositionInsightSchemaError,
     PositionInsightStorageError,
     PositionInsightValidationError,
     PositionRepository,
     read_position_insight,
 )
-
+from chess_move_trainer.database.preferred_moves import (
+    PreferredMoveRemovalRequest,
+    delete_preferred_move,
+)
 
 STARTING_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 TARGET_FEN = "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2"

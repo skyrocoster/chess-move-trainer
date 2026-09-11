@@ -1,5 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
+import { retryAxeWhenBusy } from "./axe-busy-retry";
 
 const STORYBOOK_URL = "http://127.0.0.1:6006";
 const STORYBOOK_ROOT = "#storybook-root";
@@ -30,20 +31,20 @@ async function openStory(
   await expect(
     page.getByRole("heading", { level: 2, name: "Analysis" }),
   ).toBeVisible();
-  // Let the Storybook a11y addon finish its own check before focused proof.
-  await page.waitForTimeout(500);
 }
 
 async function checkA11y(page: Page) {
-  const results = await new AxeBuilder({ page })
-    .include(STORYBOOK_ROOT)
-    .disableRules([
-      // Storybook's iframe is not the application document and has no h1.
-      "landmark-one-main",
-      "page-has-heading-one",
-      "region",
-    ])
-    .analyze();
+  const results = await retryAxeWhenBusy(page, () =>
+    new AxeBuilder({ page })
+      .include(STORYBOOK_ROOT)
+      .disableRules([
+        // Storybook's iframe is not the application document and has no h1.
+        "landmark-one-main",
+        "page-has-heading-one",
+        "region",
+      ])
+      .analyze(),
+  );
   expect(results.violations).toEqual([]);
 }
 
@@ -112,7 +113,7 @@ async function expectBestLineGeometry(page: Page) {
 test.describe("Analysis Panel Storybook surface", () => {
   test.describe.configure({ timeout: 60_000 });
 
-  test("covers every controlled state, semantic region, and focused axe proof", async ({
+  test("shows every controlled state with its semantic region and axe proof", async ({
     page,
   }) => {
     const states = [
@@ -176,15 +177,17 @@ test.describe("Analysis Panel Storybook surface", () => {
     ];
 
     for (const state of states) {
-      await openStory(page, state.id);
-      await expect(page.getByRole(state.role)).toHaveText(state.status);
-      if (state.note) {
-        await expect(page.getByRole("note")).toContainText(state.note);
-      }
-      if (state.alert) {
-        await expect(page.getByRole("alert")).toContainText(state.alert);
-      }
-      await checkA11y(page);
+      await test.step(`state ${state.id}`, async () => {
+        await openStory(page, state.id);
+        await expect(page.getByRole(state.role)).toHaveText(state.status);
+        if (state.note) {
+          await expect(page.getByRole("note")).toContainText(state.note);
+        }
+        if (state.alert) {
+          await expect(page.getByRole("alert")).toContainText(state.alert);
+        }
+        await checkA11y(page);
+      });
     }
 
     await openStory(page, STORY_IDS.ready);
@@ -255,7 +258,7 @@ test.describe("Analysis Panel Storybook surface", () => {
     );
   });
 
-  test("keeps the approved panel geometry bounded at 320, 480, and 640px", async ({
+  test("keeps the panel geometry bounded at 320, 480, and 640px", async ({
     page,
   }) => {
     await openStory(page, STORY_IDS.constrainedReady);
@@ -278,7 +281,7 @@ test.describe("Analysis Panel Storybook surface", () => {
     await expectBestLineGeometry(page);
   });
 
-  test("proves reduced-motion and forced-colors-safe presentation", async ({
+  test("keeps a reduced-motion and forced-colors-safe presentation", async ({
     page,
   }) => {
     await page.emulateMedia({ reducedMotion: "reduce" });

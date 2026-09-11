@@ -139,15 +139,15 @@ function moveResponseData(fen: Fen, color: "white" | "black"): MoveResponseDistr
   const afterStoredE5 = fen === "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2";
   const blackToMove = fen.split(" ")[1] === "b";
   const replies: readonly [string, string, number][] = afterStoredE5
-      ? [
-          ["g1f3", "Nf3", 4],
-          ["d2d4", "d4", 3],
-          ["c2c4", "c4", 2],
-          ["b1c3", "Nc3", 1],
-          ["b2b3", "b3", 1],
-          ["f1c4", "Bc4", 1],
-        ]
-      : blackToMove
+    ? [
+        ["g1f3", "Nf3", 4],
+        ["d2d4", "d4", 3],
+        ["c2c4", "c4", 2],
+        ["b1c3", "Nc3", 1],
+        ["b2b3", "b3", 1],
+        ["f1c4", "Bc4", 1],
+      ]
+    : blackToMove
       ? [
           ["e7e5", "e5", 4],
           ["c7c5", "c5", 3],
@@ -303,9 +303,7 @@ export function storyPositionContextClient(
 export async function loadGame(canvas: ReturnType<typeof within>, gameUuid: string) {
   await userEvent.type(canvas.getByLabelText("Game UUID"), gameUuid);
   await userEvent.click(canvas.getByRole("button", { name: "Load game" }));
-  await expect(canvas.getByTestId("session-origin")).toHaveTextContent(
-    "complete game loaded",
-  );
+  await expect(canvas.getByTestId("session-origin")).toHaveTextContent("complete game loaded");
 }
 
 export async function expectNoHorizontalOverflow(canvasElement: HTMLElement) {

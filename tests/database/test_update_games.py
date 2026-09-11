@@ -9,11 +9,9 @@ from pathlib import Path
 from typing import Any
 from uuid import UUID
 
-from chess_move_trainer.database import create_schema
-from chess_move_trainer.database import lifecycle
+from chess_move_trainer.database import create_schema, lifecycle
 from chess_move_trainer.database.games.acquisition import CHESSCOM_API_ORIGIN
 from chess_move_trainer.database.games.persistence import GameRepository, import_raw_games
-
 
 ROOT = Path(__file__).parents[2]
 FIXTURES = ROOT / "tests" / "database" / "games" / "fixtures"

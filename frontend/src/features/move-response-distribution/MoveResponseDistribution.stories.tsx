@@ -90,7 +90,9 @@ export const AvailableWithTail: Story = {
     await expect(canvas.getByText("White repertoire colour", { exact: true })).toBeVisible();
     await expect(canvas.getByRole("button", { name: /Show other replies/ })).toBeVisible();
     await expect(
-      canvas.getByText("13 outgoing move occurrences observed in 4 matching White repertoire games."),
+      canvas.getByText(
+        "13 outgoing move occurrences observed in 4 matching White repertoire games.",
+      ),
     ).toBeVisible();
     await expect(
       canvas.queryByText(/distinct games|one game may appear in more than one reply/),
@@ -102,7 +104,9 @@ export const AvailableWithTail: Story = {
     await userEvent.hover(getSectors()[0]!);
     await expect(canvas.getByRole("tooltip")).toHaveTextContent("e4");
     await expect(canvas.getByRole("tooltip")).toHaveTextContent("4 occurrences");
-    await expect(canvas.getByRole("tooltip")).toHaveTextContent("30.8% of outgoing move occurrences");
+    await expect(canvas.getByRole("tooltip")).toHaveTextContent(
+      "30.8% of outgoing move occurrences",
+    );
     await expect(getSectors()[0]).toHaveAttribute("data-hovered", "true");
     await expect(getSectors()[1]).toHaveAttribute("data-hovered", "false");
     expect(args.onMoveSelect).not.toHaveBeenCalled();
@@ -114,7 +118,9 @@ export const AvailableWithTail: Story = {
     await userEvent.hover(getSectors()[5]!);
     await expect(canvas.getByRole("tooltip")).toHaveTextContent("Other");
     await expect(canvas.getByRole("tooltip")).toHaveTextContent("2 occurrences");
-    await expect(canvas.getByRole("tooltip")).toHaveTextContent("15.4% of outgoing move occurrences");
+    await expect(canvas.getByRole("tooltip")).toHaveTextContent(
+      "15.4% of outgoing move occurrences",
+    );
     expect(args.onMoveSelect).not.toHaveBeenCalled();
     await expect(canvas.getByRole("button", { name: /Show other replies/ })).toHaveAttribute(
       "aria-expanded",
@@ -211,18 +217,18 @@ export const DenseTinySectorCluster: Story = {
   name: "Dense tiny-sector cluster - user-reported regression layout",
   args: {
     client: resolvedClient({
-        fen: FEN,
-        color: "white",
-        matching_game_count: 10000,
-        outgoing_occurrence_count: 10001,
-        replies: [
-          { rank: 1, child_uci: "e2e4", san: "e4", occurrence_count: 9804 },
-          { rank: 2, child_uci: "d2d4", san: "d4", occurrence_count: 180 },
-          { rank: 3, child_uci: "e2e3", san: "e3", occurrence_count: 10 },
-          { rank: 4, child_uci: "b1c3", san: "Nc3", occurrence_count: 4 },
-          { rank: 5, child_uci: "g1f3", san: "f3", occurrence_count: 2 },
-          { rank: 6, child_uci: "g1g3", san: "g3", occurrence_count: 1 },
-        ],
+      fen: FEN,
+      color: "white",
+      matching_game_count: 10000,
+      outgoing_occurrence_count: 10001,
+      replies: [
+        { rank: 1, child_uci: "e2e4", san: "e4", occurrence_count: 9804 },
+        { rank: 2, child_uci: "d2d4", san: "d4", occurrence_count: 180 },
+        { rank: 3, child_uci: "e2e3", san: "e3", occurrence_count: 10 },
+        { rank: 4, child_uci: "b1c3", san: "Nc3", occurrence_count: 4 },
+        { rank: 5, child_uci: "g1f3", san: "f3", occurrence_count: 2 },
+        { rank: 6, child_uci: "g1g3", san: "g3", occurrence_count: 1 },
+      ],
     }),
   },
   render: (args) => frame(<MoveResponseDistribution {...args} />),

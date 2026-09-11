@@ -209,7 +209,9 @@ describe("putPreferredMove", () => {
   });
 
   it("accepts a legal novel parent FEN without corpus membership", async () => {
-    vi.mocked(putPreferredMoves).mockResolvedValue({ data: putResponse(NOVEL_FEN, "e2e4") } as never);
+    vi.mocked(putPreferredMoves).mockResolvedValue({
+      data: putResponse(NOVEL_FEN, "e2e4"),
+    } as never);
 
     await expect(putPreferredMove({ fen: NOVEL_FEN, move_uci: "e2e4" })).resolves.toEqual({
       status: "success",

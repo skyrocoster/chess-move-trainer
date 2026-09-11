@@ -19,7 +19,6 @@ from ..positions.repository import (
     _find_existing_position_id,
 )
 from ..schema import SchemaIncompatibleError, _assert_compatible_schema
-from ..stockfish.queue import QueueStorageError, _read_observed_queue_state
 from .models import (
     AnalysisError,
     AnalysisLine,
@@ -177,6 +176,10 @@ class AnalysisObservationRepository:
                 "request must be an AnalysisObservationRequest value"
             )
 
+        # Local import: stockfish.queue needs analysis at load time, so importing
+        # it here keeps both import orders working.
+        from ..stockfish.queue import QueueStorageError, _read_observed_queue_state
+
         try:
             with _open_connection(
                 self._database_path, "read-only", self._lock_timeout
@@ -221,7 +224,10 @@ def read_analysis_observation(
 ) -> AnalysisObservation:
     """Read one FEN observation from an explicit rebuilt database path."""
 
-    request = fen if isinstance(fen, AnalysisObservationRequest) else AnalysisObservationRequest(fen)
+    if isinstance(fen, AnalysisObservationRequest):
+        request = fen
+    else:
+        request = AnalysisObservationRequest(fen)
     return AnalysisObservationRepository(
         database_path, lock_timeout=lock_timeout
     ).read(request)

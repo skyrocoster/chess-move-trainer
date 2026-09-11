@@ -8,7 +8,6 @@ from datetime import date, datetime
 from enum import Enum
 from typing import Iterable
 
-
 _DATE_LITERAL = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}\Z")
 
 

@@ -112,179 +112,7 @@ function statusLabel({
   }
 }
 
-function selectedEmptyDescription(
-  model: RepertoirePositionModel,
-  contextLoading: boolean,
-  contextError: PositionContextFailureCode | null,
-): string | undefined {
-  if (!model.ownTurn || contextLoading || contextError) {
-    return undefined;
-  }
-  if (model.relationship === "empty")
-    return "Play a legal move to select the first saved choice.";
-  if (model.relationship === "saved" && model.saved) {
-    return `Play a legal move to propose replacing ${model.saved.move.san}.`;
-  }
-  return undefined;
-}
-
-type RuntimeChoiceBoxProps = {
-  label: "Saved" | "Selected";
-  semanticLabel: string;
-  tone: "warning" | "success" | "neutral" | "blocked";
-  move?: { san: string; uci?: string | null } | null;
-  subLabel?: string;
-  emptyTitle: string;
-  emptyDescription?: string;
-  onActivate?: () => void;
-  activationLabel?: string;
-  disabled?: boolean;
-  "data-testid"?: string;
-};
-
-function choiceBoxToneClass(tone: RuntimeChoiceBoxProps["tone"]): string {
-  switch (tone) {
-    case "warning":
-      return styles.choiceBoxWarning;
-    case "success":
-      return styles.choiceBoxSuccess;
-    case "blocked":
-      return styles.choiceBoxBlocked;
-    case "neutral":
-      return styles.choiceBoxNeutral;
-  }
-}
-
-function RuntimeChoiceBox({
-  label,
-  semanticLabel,
-  tone,
-  move,
-  subLabel,
-  emptyTitle,
-  emptyDescription,
-  onActivate,
-  activationLabel,
-  disabled = false,
-  "data-testid": dataTestId,
-}: RuntimeChoiceBoxProps) {
-  const content = (
-    <>
-      <p className={styles.boxLabel}>{label}</p>
-      {move ? (
-        <>
-          <p className={styles.boxValue}>{move.san}</p>
-          {subLabel ? <p className={styles.boxSub}>{subLabel}</p> : null}
-        </>
-      ) : (
-        <div className={styles.boxEmpty}>
-          <strong>{emptyTitle}</strong>
-          {emptyDescription ? <span>{emptyDescription}</span> : null}
-        </div>
-      )}
-    </>
-  );
-
-  if (onActivate) {
-    return (
-      <button
-        type="button"
-        className={`${styles.choiceBox} ${choiceBoxToneClass(tone)}`}
-        aria-label={activationLabel}
-        onClick={onActivate}
-        disabled={disabled}
-        data-testid={dataTestId}
-      >
-        {content}
-      </button>
-    );
-  }
-
-  return (
-    <section
-      className={`${styles.choiceBox} ${choiceBoxToneClass(tone)}`}
-      aria-label={semanticLabel}
-      data-testid={dataTestId}
-    >
-      {content}
-    </section>
-  );
-}
-
-function RuntimeConnector() {
-  return (
-    <div className={styles.connector} aria-hidden="true">
-      <ArrowRight className={styles.connectorIcon} focusable="false" />
-    </div>
-  );
-}
-
-function PanelError({ message, onRetry }: { message: string; onRetry?: () => void }) {
-  return (
-    <div className={styles.feedbackRow}>
-      <PanelFeedback severity="error" role="alert" message={message} />
-      {onRetry ? (
-        <Button size="sm" variant="secondary" onClick={onRetry}>
-          Retry
-        </Button>
-      ) : null}
-    </div>
-  );
-}
-
-function RemoveConfirmation({
-  onRemove,
-  disabled = false,
-  className,
-}: {
-  onRemove: () => void;
-  disabled?: boolean;
-  className?: string;
-}) {
-  const [open, setOpen] = useState(false);
-
-  return (
-    <>
-      <RemovePreferredMoveButton
-        className={className}
-        disabled={disabled}
-        onClick={() => setOpen(true)}
-      />
-      <AlertDialog.Root open={open} onOpenChange={setOpen}>
-        <AlertDialog.Portal>
-          <AlertDialog.Backdrop className={styles.dialogBackdrop} />
-          <AlertDialog.Viewport className={styles.dialogViewport}>
-            <AlertDialog.Popup
-              className={styles.dialogPopup}
-              initialFocus
-              finalFocus
-              aria-labelledby="remove-preferred-move-title"
-            >
-              <AlertDialog.Title className={styles.dialogTitle} id="remove-preferred-move-title">
-                Remove preferred move?
-              </AlertDialog.Title>
-              <AlertDialog.Description className={styles.dialogDescription}>
-                This removes the saved move for the current position.
-              </AlertDialog.Description>
-              <div className={styles.dialogActions}>
-                <Button variant="secondary" onClick={() => setOpen(false)}>
-                  Cancel
-                </Button>
-                <RemovePreferredMoveButton
-                  onClick={() => {
-                    setOpen(false);
-                    onRemove();
-                  }}
-                />
-              </div>
-            </AlertDialog.Popup>
-          </AlertDialog.Viewport>
-        </AlertDialog.Portal>
-      </AlertDialog.Root>
-    </>
-  );
-}
-
+import { PanelError, RemoveConfirmation, RuntimeChoiceBox, RuntimeConnector, selectedEmptyDescription } from "./PreferredMovePanelSections";
 export function PreferredMovePanel({
   model,
   date,
@@ -341,14 +169,13 @@ export function PreferredMovePanel({
   const savedRelation = model.savedPresence === "present";
   const showRemove = model.ownTurn && savedRelation && !hasPreferredError;
   const persistenceDisabled = mutation !== null || preferredLoading || contextLoading;
-  const selectedTone =
-    !model.ownTurn
-      ? "blocked"
-      : model.relationship === "matching"
-        ? "matching"
-        : selectedMove
-          ? "proposal"
-          : "empty";
+  const selectedTone = !model.ownTurn
+    ? "blocked"
+    : model.relationship === "matching"
+      ? "matching"
+      : selectedMove
+        ? "proposal"
+        : "empty";
   const savedEmptyTitle = preferredKnown
     ? savedMove
       ? undefined
@@ -380,16 +207,15 @@ export function PreferredMovePanel({
     !workflowError &&
     !mutation &&
     model.relationship !== "unknown";
-  const panelTone =
-    !model.ownTurn
-      ? styles.toneBlocked
-      : model.relationship === "matching"
-        ? styles.toneMatching
-        : model.relationship === "saved"
-          ? styles.toneSaved
-          : model.relationship === "unknown"
-            ? styles.toneChecking
-            : styles.toneReady;
+  const panelTone = !model.ownTurn
+    ? styles.toneBlocked
+    : model.relationship === "matching"
+      ? styles.toneMatching
+      : model.relationship === "saved"
+        ? styles.toneSaved
+        : model.relationship === "unknown"
+          ? styles.toneChecking
+          : styles.toneReady;
 
   return (
     <div className={styles.container}>
@@ -398,116 +224,116 @@ export function PreferredMovePanel({
         data-state={model.relationship}
         aria-labelledby="preferred-move-heading"
       >
-      <header className={styles.header}>
-        <div>
-          <h2 className={styles.heading} id="preferred-move-heading">
-            Preferred move
-          </h2>
-          {contextLabel ? (
-            <p className={styles.meta} data-testid="preferred-context">
-              {contextLabel}
-            </p>
-          ) : null}
+        <header className={styles.header}>
+          <div>
+            <h2 className={styles.heading} id="preferred-move-heading">
+              Preferred move
+            </h2>
+            {contextLabel ? (
+              <p className={styles.meta} data-testid="preferred-context">
+                {contextLabel}
+              </p>
+            ) : null}
+          </div>
+          <span className={styles.status} role="status" data-testid="preferred-status">
+            {statusLabel({
+              model,
+              mutation,
+              preferredLoading,
+              preferredError,
+              contextLoading,
+              contextError,
+            })}
+          </span>
+        </header>
+
+        {!model.ownTurn ? (
+          <p className={styles.gate}>Wait for your turn to select or save a preferred move.</p>
+        ) : null}
+
+        {preferredError ? (
+          <PanelError message={failureMessage(preferredError)} onRetry={onRetry} />
+        ) : null}
+        {contextError ? (
+          <PanelError message={contextFailureMessage(contextError)} onRetry={onRetry} />
+        ) : null}
+        {workflowError ? (
+          <PanelError message={failureMessage(workflowError)} onRetry={onRetry} />
+        ) : null}
+        {mutation ? (
+          <InlineFeedback
+            severity="information"
+            role="status"
+            aria-live="polite"
+            message={mutationLabel(mutation)}
+          />
+        ) : null}
+
+        <div className={styles.relationship}>
+          <RuntimeChoiceBox
+            label="Saved"
+            semanticLabel="Current saved choice"
+            tone={savedMove ? "success" : "neutral"}
+            move={savedMove}
+            subLabel={savedSubLabel}
+            emptyTitle={savedEmptyTitle}
+            onActivate={savedMove && model.ownTurn ? onPlaySavedMove : undefined}
+            activationLabel={
+              savedMove ? `Current saved choice: ${savedMove.san}; play this move.` : undefined
+            }
+            disabled={mutation !== null || preferredLoading}
+            data-testid="saved-move"
+          />
+          <RuntimeConnector />
+          <RuntimeChoiceBox
+            label="Selected"
+            semanticLabel="Selected move"
+            tone={
+              selectedTone === "proposal"
+                ? "warning"
+                : selectedTone === "matching"
+                  ? "success"
+                  : selectedTone === "blocked"
+                    ? "blocked"
+                    : "neutral"
+            }
+            move={selectedMove ? { san: selectedMove.san, uci: selectedMove.uci } : null}
+            subLabel={selectedMove ? selectedMove.uci : undefined}
+            emptyTitle={selectedEmptyTitle}
+            emptyDescription={
+              selectedEmptyTitle === "No move selected" ? emptyDescription : undefined
+            }
+            data-testid="selected-move"
+          />
         </div>
-        <span className={styles.status} role="status" data-testid="preferred-status">
-          {statusLabel({
-            model,
-            mutation,
-            preferredLoading,
-            preferredError,
-            contextLoading,
-            contextError,
-          })}
-        </span>
-      </header>
 
-      {!model.ownTurn ? (
-        <p className={styles.gate}>Wait for your turn to select or save a preferred move.</p>
-      ) : null}
-
-      {preferredError ? (
-        <PanelError message={failureMessage(preferredError)} onRetry={onRetry} />
-      ) : null}
-      {contextError ? (
-        <PanelError message={contextFailureMessage(contextError)} onRetry={onRetry} />
-      ) : null}
-      {workflowError ? (
-        <PanelError message={failureMessage(workflowError)} onRetry={onRetry} />
-      ) : null}
-      {mutation ? (
-        <InlineFeedback
-          severity="information"
-          role="status"
-          aria-live="polite"
-          message={mutationLabel(mutation)}
-        />
-      ) : null}
-
-      <div className={styles.relationship}>
-        <RuntimeChoiceBox
-          label="Saved"
-          semanticLabel="Current saved choice"
-          tone={savedMove ? "success" : "neutral"}
-          move={savedMove}
-          subLabel={savedSubLabel}
-          emptyTitle={savedEmptyTitle}
-          onActivate={savedMove && model.ownTurn ? onPlaySavedMove : undefined}
-          activationLabel={
-            savedMove
-               ? `Current saved choice: ${savedMove.san}; play this move.`
-              : undefined
-          }
-          disabled={mutation !== null || preferredLoading}
-          data-testid="saved-move"
-        />
-        <RuntimeConnector />
-        <RuntimeChoiceBox
-          label="Selected"
-          semanticLabel="Selected move"
-          tone={
-            selectedTone === "proposal"
-              ? "warning"
-              : selectedTone === "matching"
-                ? "success"
-                : selectedTone === "blocked"
-                  ? "blocked"
-                  : "neutral"
-          }
-          move={selectedMove ? { san: selectedMove.san, uci: selectedMove.uci } : null}
-          subLabel={selectedMove ? selectedMove.uci : undefined}
-          emptyTitle={selectedEmptyTitle}
-          emptyDescription={selectedEmptyTitle === "No move selected" ? emptyDescription : undefined}
-          data-testid="selected-move"
-        />
-      </div>
-
-      {showMatches || showSave || showRemove ? (
-        <footer className={styles.footer} data-testid="preferred-actions">
-          <PreferredMoveActionLayout className={styles.actionLayout}>
-            {showMatches ? (
-              <Button variant="primary" className={styles.primaryAction} disabled>
-                Matches saved
-              </Button>
-            ) : null}
-            {showSave ? (
-              <SavePreferredMoveButton
-                className={styles.primaryAction}
-                label={selectedMove ? `Save ${selectedMove.san}` : undefined}
-                pending={mutation === "save"}
-                disabled={!canSave || persistenceDisabled}
-                onClick={onSave}
-              />
-            ) : null}
-            {showRemove ? (
-              <RemoveConfirmation
-                className={styles.removeAction}
-                onRemove={onRemove}
-                disabled={persistenceDisabled}
-              />
-            ) : null}
-          </PreferredMoveActionLayout>
-        </footer>
-      ) : null}
+        {showMatches || showSave || showRemove ? (
+          <footer className={styles.footer} data-testid="preferred-actions">
+            <PreferredMoveActionLayout className={styles.actionLayout}>
+              {showMatches ? (
+                <Button variant="primary" className={styles.primaryAction} disabled>
+                  Matches saved
+                </Button>
+              ) : null}
+              {showSave ? (
+                <SavePreferredMoveButton
+                  className={styles.primaryAction}
+                  label={selectedMove ? `Save ${selectedMove.san}` : undefined}
+                  pending={mutation === "save"}
+                  disabled={!canSave || persistenceDisabled}
+                  onClick={onSave}
+                />
+              ) : null}
+              {showRemove ? (
+                <RemoveConfirmation
+                  className={styles.removeAction}
+                  onRemove={onRemove}
+                  disabled={persistenceDisabled}
+                />
+              ) : null}
+            </PreferredMoveActionLayout>
+          </footer>
+        ) : null}
       </section>
     </div>
   );

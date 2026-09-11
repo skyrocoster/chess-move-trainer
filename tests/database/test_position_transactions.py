@@ -8,7 +8,6 @@ import pytest
 from chess_move_trainer.database import create_schema
 from chess_move_trainer.database.positions import PositionRepository, position_transaction
 
-
 STARTING_PLACEMENT = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR"
 STARTING_FEN = f"{STARTING_PLACEMENT} w KQkq - 0 1"
 BLACK_TO_MOVE_FEN = f"{STARTING_PLACEMENT} b KQkq - 0 1"

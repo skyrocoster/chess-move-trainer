@@ -12,7 +12,6 @@ from chess_move_trainer.database.analysis import AnalysisQuality
 from chess_move_trainer.database.positions import PositionRepository
 from chess_move_trainer.database.stockfish import DatabaseMutex, QueueService
 
-
 ROOT = Path(__file__).parents[3]
 EXECUTABLE = ROOT / "data" / "stockfish" / "stockfish-windows-x86-64-avx2.exe"
 APPROVED_POSITIONS = ROOT / "data" / "stockfish" / "test_positions.json"

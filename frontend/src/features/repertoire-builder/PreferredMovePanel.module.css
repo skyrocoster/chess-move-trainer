@@ -352,7 +352,6 @@ button.choiceBox {
   .actionLayout > * {
     flex: 1 1 10rem;
   }
-
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -385,7 +384,7 @@ button.choiceBox {
   .boxValue,
   .boxSub,
   .boxEmpty,
-   .dialogTitle,
+  .dialogTitle,
   .dialogDescription,
   .connector {
     color: CanvasText;

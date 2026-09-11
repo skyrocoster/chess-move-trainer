@@ -19,7 +19,6 @@ from chess_move_trainer.database.openings.recognition import (
 from chess_move_trainer.database.openings.source import load_opening_sources
 from chess_move_trainer.database.schema import SchemaIncompatibleError
 
-
 SOURCE_NAMES = ("a.tsv", "b.tsv", "c.tsv", "d.tsv", "e.tsv")
 HEADER = "eco\tname\tpgn\n"
 

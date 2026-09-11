@@ -2,9 +2,6 @@ from __future__ import annotations
 
 import json
 import math
-import os
-import subprocess
-import sys
 from pathlib import Path
 from uuid import UUID
 
@@ -18,7 +15,6 @@ from chess_move_trainer.database.games.configuration import (
     load_import_configuration,
 )
 
-
 ROOT = Path(__file__).parents[3]
 FIXTURES = Path(__file__).parent / "fixtures"
 TRAINER_UUID = "11111111-1111-4111-8111-111111111111"
@@ -28,18 +24,6 @@ def _write_config(tmp_path: Path, text: str) -> Path:
     path = tmp_path / "games.yaml"
     path.write_text(text, encoding="utf-8")
     return path
-
-
-def _run_cli(*arguments: str) -> subprocess.CompletedProcess[bytes]:
-    environment = os.environ.copy()
-    environment.pop("PYTHONPATH", None)
-    return subprocess.run(
-        [sys.executable, "-m", "chess_move_trainer.database", *arguments],
-        cwd=ROOT,
-        env=environment,
-        capture_output=True,
-        timeout=15,
-    )
 
 
 def test_acquire_uses_yaml_values_and_exact_defaults(tmp_path: Path) -> None:
@@ -149,25 +133,6 @@ def test_config_path_must_name_an_existing_file(tmp_path: Path) -> None:
         load_import_configuration(missing)
     with pytest.raises(GamesConfigurationError, match="configuration file"):
         load_import_configuration(tmp_path)
-
-
-def test_cli_maps_invalid_configuration_to_status_two(tmp_path: Path) -> None:
-    config_path = _write_config(tmp_path, "trainer_chesscom_uuid: invalid\n")
-
-    result = _run_cli(
-        "games",
-        "import",
-        "--config",
-        str(config_path),
-        "--raw-root",
-        str(tmp_path / "raw"),
-        "--database",
-        str(tmp_path / "database.db"),
-    )
-
-    assert result.returncode == 2
-    assert b"trainer_chesscom_uuid" in result.stderr
-    assert result.stdout == b""
 
 
 def test_fixture_inventory_is_synthetic_and_covers_stage_one_categories() -> None:

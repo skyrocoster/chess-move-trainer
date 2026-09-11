@@ -210,10 +210,7 @@ export function useAnalysisState(
     }
 
     const latestFen = currentFen.current;
-    if (
-      latestFen === null ||
-      positionKeyFromFen(latestFen) !== positionKeyFromFen(positionFen)
-    ) {
+    if (latestFen === null || positionKeyFromFen(latestFen) !== positionKeyFromFen(positionFen)) {
       return;
     }
 

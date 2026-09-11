@@ -81,7 +81,9 @@ def test_settings_accept_an_empty_or_arbitrary_json_object_without_required_keys
     }
 
 
-@pytest.mark.parametrize("quality", [AnalysisQuality.BROWSER, AnalysisQuality.TOOL, "browser", "tool"])
+@pytest.mark.parametrize(
+    "quality", [AnalysisQuality.BROWSER, AnalysisQuality.TOOL, "browser", "tool"]
+)
 def test_quality_domain_accepts_only_the_two_settled_levels(quality: object) -> None:
     assert _result(quality=quality).quality in (AnalysisQuality.BROWSER, AnalysisQuality.TOOL)
 

@@ -98,7 +98,11 @@ function ChoiceBox({
   testId: string;
 }) {
   return (
-    <section className={`${styles.choiceBox} ${toneClass(data.tone) ?? ""}`} aria-label={label} data-testid={testId}>
+    <section
+      className={`${styles.choiceBox} ${toneClass(data.tone) ?? ""}`}
+      aria-label={label}
+      data-testid={testId}
+    >
       <p className={styles.boxLabel}>{label}</p>
       {data.value ? (
         <>
@@ -142,7 +146,11 @@ export function PreferredMovePanelExploration({
 
         <div className={styles.relationship} data-testid="preferred-exploration-relationship">
           <ChoiceBox label="Saved" data={data.saved} testId="preferred-exploration-saved" />
-          <div className={styles.connector} data-testid="preferred-exploration-connector" aria-hidden="true">
+          <div
+            className={styles.connector}
+            data-testid="preferred-exploration-connector"
+            aria-hidden="true"
+          >
             <ArrowRight className={styles.connectorIcon} focusable="false" />
           </div>
           <ChoiceBox label="Staged" data={data.staged} testId="preferred-exploration-staged" />

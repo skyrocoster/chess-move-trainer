@@ -4,7 +4,6 @@ import importlib
 
 from chess_move_trainer.database.preferred_moves import (
     DateResolution,
-    NormalizedPeriod,
     Preference,
     PreferenceState,
     PreferredMoveError,
@@ -21,20 +20,19 @@ from chess_move_trainer.database.preferred_moves import (
     PreferredMoveTimelineRepository,
     PreferredMoveTimelineRequest,
     PreferredMoveTimelineResult,
-    PreferredMoveTimelineSegment,
     PreferredMoveValidationError,
     RangeValidationError,
     ResolutionState,
+    delete_preferred_move,
+    get_preferred_moves,
     normalize_periods,
     parse_date_literal,
     period_from_literals,
-    resolve_date,
-    get_preferred_moves,
-    delete_preferred_move,
+    put_preferred_move,
     read_preferred_moves,
+    resolve_date,
     set_preference,
     unset_preference,
-    put_preferred_move,
 )
 
 

@@ -16,9 +16,7 @@ function data(color: "white" | "black" = "white"): MoveResponseDistributionRespo
     color,
     matching_game_count: 1,
     outgoing_occurrence_count: 1,
-    replies: [
-      { rank: 1, child_uci: "e2e4", san: "e4", occurrence_count: 1 },
-    ],
+    replies: [{ rank: 1, child_uci: "e2e4", san: "e4", occurrence_count: 1 }],
   };
 }
 

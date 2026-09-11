@@ -1,10 +1,6 @@
 import { Chess, validateFen, type Square } from "chess.js";
 
-import {
-  deletePreferredMoves,
-  getPreferredMoves,
-  putPreferredMoves,
-} from "../../api/client";
+import { deletePreferredMoves, getPreferredMoves, putPreferredMoves } from "../../api/client";
 import type {
   PreferredMovesMutationResponse,
   PreferredMovesRemovalResponse,
@@ -318,7 +314,9 @@ function moveValidationFailure(fen: Fen, uci: string): PreferredMoveFailure | nu
 
 function formatUtcDate(date: Date): string {
   return [date.getUTCFullYear(), date.getUTCMonth() + 1, date.getUTCDate()]
-    .map((part, index) => (index === 0 ? String(part).padStart(4, "0") : String(part).padStart(2, "0")))
+    .map((part, index) =>
+      index === 0 ? String(part).padStart(4, "0") : String(part).padStart(2, "0"),
+    )
     .join("-");
 }
 

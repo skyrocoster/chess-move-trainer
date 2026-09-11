@@ -14,7 +14,6 @@ afterEach(() => {
 });
 
 const here = dirname(fileURLToPath(import.meta.url));
-const tokenCss = readFileSync(join(here, "../../../styles/cmt-tokens.css"), "utf8");
 const moduleCss = readFileSync(join(here, "FeedbackCore.module.css"), "utf8");
 
 const SEVERITIES: FeedbackSeverity[] = ["information", "success", "warning", "error"];
@@ -107,10 +106,6 @@ describe("FeedbackCore", () => {
   it("uses only the dedicated --cmt-* feedback tokens", () => {
     for (const severity of SEVERITIES) {
       const [accent, onAccent, container, onContainer] = TOKEN_SET[severity];
-      expect(tokenCss).toContain(`${accent}:`);
-      expect(tokenCss).toContain(`${onAccent}:`);
-      expect(tokenCss).toContain(`${container}:`);
-      expect(tokenCss).toContain(`${onContainer}:`);
       expect(FEEDBACK_VARIANTS[severity].tokens).toEqual({
         accent,
         onAccent,

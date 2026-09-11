@@ -17,14 +17,11 @@ from chess_move_trainer.database.analysis import (
 )
 from chess_move_trainer.database.positions import PositionRepository
 from chess_move_trainer.database.stockfish import (
-    BROWSER_PROFILE,
     MutexBusyError,
     QueueService,
-    TOOL_PROFILE,
     WorkerRunner,
     profile_for,
 )
-
 
 START_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 E4_FEN = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1"
@@ -217,7 +214,9 @@ def test_browser_completion_releases_promotion_then_tool_completes(tmp_path: Pat
         nonlocal promoted
         if not promoted:
             assert quality is AnalysisQuality.BROWSER
-            queue.enqueue(position_id, AnalysisQuality.TOOL, requested_at=origin + timedelta(seconds=1))
+            queue.enqueue(
+                position_id, AnalysisQuality.TOOL, requested_at=origin + timedelta(seconds=1)
+            )
             promoted = True
 
     mutex = _FakeMutex()
@@ -239,7 +238,9 @@ def test_isolated_engine_failure_replaces_process_and_is_not_retried(tmp_path: P
     queue = QueueService(database)
     origin = datetime(2026, 1, 1, tzinfo=UTC)
     for offset, fen in enumerate((START_FEN, E4_FEN, D4_FEN)):
-        queue.enqueue(ids[fen], AnalysisQuality.TOOL, requested_at=origin + timedelta(seconds=offset))
+        queue.enqueue(
+            ids[fen], AnalysisQuality.TOOL, requested_at=origin + timedelta(seconds=offset)
+        )
     mutex = _FakeMutex()
     engines: list[_FakeEngine] = []
 

@@ -5,7 +5,6 @@ import pytest
 
 from chess_move_trainer.database.positions import PositionValidationError, canonicalize_fen
 
-
 LEGAL_EN_PASSANT_FEN = (
     "rnbqkbnr/ppp1pppp/8/3pP3/8/8/PPPP1PPP/RNBQKBNR w KQkq d6 0 3"
 )

@@ -26,7 +26,6 @@ from chess_move_trainer.database.openings.acquisition import (
 )
 from chess_move_trainer.database.openings.source import load_opening_sources
 
-
 SHA = "0123456789abcdef0123456789abcdef01234567"
 FIXTURE_DIR = Path(__file__).parent / "fixtures"
 

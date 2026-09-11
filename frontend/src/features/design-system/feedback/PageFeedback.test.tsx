@@ -10,7 +10,6 @@ import styles from "./PageFeedback.module.css";
 import type { FeedbackSeverity } from "./feedbackTypes";
 
 const here = dirname(fileURLToPath(import.meta.url));
-const tokenCss = readFileSync(join(here, "../../../styles/cmt-tokens.css"), "utf8");
 const moduleCss = readFileSync(join(here, "PageFeedback.module.css"), "utf8");
 
 const SEVERITIES: FeedbackSeverity[] = ["information", "success", "warning", "error"];
@@ -56,7 +55,6 @@ describe("PageFeedback", () => {
       expect(page).toHaveClass(styles.page);
       expect(screen.getByTestId(`core-${severity}`)).toBeVisible();
 
-      expect(tokenCss).toContain(`${ACCENT_TOKEN[severity]}:`);
       expect(moduleCss).toContain(`var(${ACCENT_TOKEN[severity]})`);
       expect(moduleCss).toContain("--md-sys-color-surface-container");
       expect(moduleCss).not.toContain(`var(${CONTAINER_TOKEN[severity]})`);

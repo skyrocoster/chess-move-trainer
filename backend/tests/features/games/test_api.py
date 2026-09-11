@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import sqlite3
 from pathlib import Path
 from uuid import UUID
@@ -17,7 +18,6 @@ from backend.app.main import app
 from chess_move_trainer.database import create_schema
 from chess_move_trainer.database.games.normalization import normalize_game
 from chess_move_trainer.database.games.persistence import GameRepository
-
 
 ROOT = Path(__file__).parents[4]
 TRAINER_UUID = "11111111-1111-4111-8111-111111111111"
@@ -61,7 +61,7 @@ def _use_database(monkeypatch: pytest.MonkeyPatch, database: Path) -> None:
     monkeypatch.setenv(REBUILT_DATABASE_PATH_ENV, str(database))
 
 
-def test_clean_route_uses_rebuilt_path_unknown_fields_and_public_summary(
+def test_list_games_returns_public_summary_and_ignores_unknown_filters(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     client: TestClient,
@@ -113,7 +113,7 @@ def test_clean_route_uses_rebuilt_path_unknown_fields_and_public_summary(
     )
 
 
-def test_game_detail_returns_metadata_pgn_ordered_fens_and_public_fields(
+def test_get_one_game_returns_pgn_and_moves_in_order(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     client: TestClient,
@@ -171,7 +171,7 @@ def test_game_detail_returns_metadata_pgn_ordered_fens_and_public_fields(
     )
 
 
-def test_game_detail_invalid_uuid_and_missing_game_use_typed_errors(
+def test_get_one_game_gives_clear_error_for_bad_or_missing_id(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     client: TestClient,
@@ -195,7 +195,7 @@ def test_game_detail_invalid_uuid_and_missing_game_use_typed_errors(
         "page_size=101",
     ),
 )
-def test_invalid_known_values_and_combinations_use_typed_error(
+def test_list_games_rejects_bad_filters_with_clear_error(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     client: TestClient,
@@ -209,7 +209,7 @@ def test_invalid_known_values_and_combinations_use_typed_error(
     assert response.json() == {"code": "invalid_filter", "message": "Invalid game filter"}
 
 
-def test_clean_read_is_read_only_and_no_sidecars_remain(
+def test_browsing_list_does_not_modify_database(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     client: TestClient,
@@ -225,7 +225,7 @@ def test_clean_read_is_read_only_and_no_sidecars_remain(
     assert not list(tmp_path.glob("games.db-*"))
 
 
-def test_game_detail_is_read_only_and_no_sidecars_remain(
+def test_opening_one_game_does_not_modify_database(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     client: TestClient,
@@ -241,7 +241,7 @@ def test_game_detail_is_read_only_and_no_sidecars_remain(
     assert not list(tmp_path.glob("games.db-*"))
 
 
-def test_missing_or_incompatible_clean_data_is_503_without_target_creation(
+def test_missing_or_broken_database_gives_unavailable_without_creating_file(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     client: TestClient,
@@ -280,7 +280,7 @@ def test_missing_or_incompatible_clean_data_is_503_without_target_creation(
     assert incompatible_detail.json()["code"] == "games_unavailable"
 
 
-def test_unexpected_failures_are_safe_and_legacy_route_remains_registered(
+def test_unexpected_failures_stay_safe_without_leaking_details(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     client: TestClient,
@@ -311,21 +311,30 @@ def test_unexpected_failures_are_safe_and_legacy_route_remains_registered(
         "code": "unexpected_failure",
         "message": "Unable to load game",
     }
+
+
+def test_removed_positions_route_stays_gone() -> None:
     routes = {route.path for route in app.routes if isinstance(route, APIRoute)}
     assert "/api/games" in routes
     assert "/api/games/{game_uuid}" in routes
     assert "/api/games/{game_uuid}/positions" not in routes
 
 
-def test_default_dependency_is_the_clean_rebuilt_database_and_real_call_is_bounded(
-    monkeypatch: pytest.MonkeyPatch,
-    client: TestClient,
-) -> None:
+def test_default_database_path_is_packaged_file(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv(REBUILT_DATABASE_PATH_ENV, raising=False)
     monkeypatch.delenv("CHESS_DATABASE_PATH", raising=False)
     monkeypatch.chdir(ROOT)
 
     assert get_rebuilt_database_path() == Path("data/database/chess.db")
+
+
+def test_list_games_respects_page_size_bound(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    client: TestClient,
+) -> None:
+    _use_database(monkeypatch, _database(tmp_path))
+
     response = client.get("/api/games?page_size=1")
 
     assert response.status_code == 200
@@ -335,3 +344,20 @@ def test_default_dependency_is_the_clean_rebuilt_database_and_real_call_is_bound
         detail = client.get(f"/api/games/{response.json()['items'][0]['game_uuid']}")
         assert detail.status_code == 200
         assert detail.json()["game_uuid"] == response.json()["items"][0]["game_uuid"]
+
+
+def test_real_packaged_database_smoke(
+    monkeypatch: pytest.MonkeyPatch,
+    client: TestClient,
+) -> None:
+    if os.environ.get("CHESS_RUN_REAL_DB_SMOKE") != "1":
+        pytest.skip("set CHESS_RUN_REAL_DB_SMOKE=1 to touch the 142MB real DB")
+    monkeypatch.delenv(REBUILT_DATABASE_PATH_ENV, raising=False)
+    monkeypatch.delenv("CHESS_DATABASE_PATH", raising=False)
+    monkeypatch.chdir(ROOT)
+
+    response = client.get("/api/games?page_size=1")
+
+    assert response.status_code == 200
+    assert response.json()["page_size"] == 1
+    assert len(response.json()["items"]) <= 1

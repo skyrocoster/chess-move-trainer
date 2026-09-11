@@ -1,15 +1,5 @@
 """Opening recognition services and internal source/persistence modules."""
 
-from .recognition import (
-    MatchKind,
-    OpeningInputError,
-    OpeningRecognition,
-    OpeningRecognitionError,
-    RecognizedOpening,
-    lookup_fen,
-    replay_pgn,
-)
-from .keys import OpeningKeyError, opening_api_key, parse_opening_api_key
 from .catalogue import (
     OpeningCatalogueEntry,
     OpeningCatalogueError,
@@ -23,7 +13,17 @@ from .catalogue import (
     read_opening,
     read_openings,
 )
+from .keys import OpeningKeyError, opening_api_key, parse_opening_api_key
 from .persistence import OpeningCatalogueRepository
+from .recognition import (
+    MatchKind,
+    OpeningInputError,
+    OpeningRecognition,
+    OpeningRecognitionError,
+    RecognizedOpening,
+    lookup_fen,
+    replay_pgn,
+)
 from .source import OpeningRouteSource, OpeningSourceError, load_opening_sources
 
 __all__ = [

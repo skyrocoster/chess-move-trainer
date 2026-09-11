@@ -62,9 +62,11 @@ async function expectBoxes(canvasElement: HTMLElement, relationship: PreferredMo
 async function expectPanelDimensions(canvasElement: HTMLElement) {
   const panel = canvasElement.querySelector('section[aria-labelledby="preferred-move-heading"]');
   if (!(panel instanceof HTMLElement)) throw new Error("The preferred move panel is missing.");
-  const isNarrow = canvasElement.ownerDocument.defaultView?.matchMedia("(max-width: 40rem)").matches;
+  const isNarrow =
+    canvasElement.ownerDocument.defaultView?.matchMedia("(max-width: 40rem)").matches;
   const actions = panel.querySelector('[data-testid="preferred-actions"]');
-  const compatibilityShell = actions instanceof HTMLElement && actions.getBoundingClientRect().height > 100;
+  const compatibilityShell =
+    actions instanceof HTMLElement && actions.getBoundingClientRect().height > 100;
   const panelHeight = panel.getBoundingClientRect().height;
   if (isNarrow) {
     await expect(panelHeight).toBeGreaterThanOrEqual(360);
@@ -115,7 +117,8 @@ async function expectFooterActions(canvasElement: HTMLElement, actions: readonly
     await expect(footer).not.toBeInTheDocument();
     return;
   }
-  if (!(footer instanceof HTMLElement)) throw new Error("The preferred move action footer is missing.");
+  if (!(footer instanceof HTMLElement))
+    throw new Error("The preferred move action footer is missing.");
   await expect(
     within(footer)
       .getAllByRole("button")
@@ -232,9 +235,7 @@ export const UnsavableGate: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await expect(canvas.getByTestId("preferred-status")).toHaveTextContent("Ready to save");
-    await expect(
-      canvas.getByRole("heading", { name: "Preferred move" }),
-    ).toBeVisible();
+    await expect(canvas.getByRole("heading", { name: "Preferred move" })).toBeVisible();
     await expect(canvas.getByText("Never seen as White")).toBeVisible();
     await expectFooterActions(canvasElement, ["Save e4"]);
     await expectNoPanelOverflow(canvasElement);
@@ -277,9 +278,7 @@ export const Loading: Story = {
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await expect(
-      canvas.getByRole("heading", { name: "Preferred move" }),
-    ).toBeVisible();
+    await expect(canvas.getByRole("heading", { name: "Preferred move" })).toBeVisible();
     await expect(canvas.getByTestId("preferred-status")).toHaveTextContent(
       "Loading saved choice...",
     );
@@ -324,7 +323,9 @@ export const MutationPending: Story = {
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await expect(canvas.getByTestId("core-information")).toHaveTextContent("Saving preferred move...");
+    await expect(canvas.getByTestId("core-information")).toHaveTextContent(
+      "Saving preferred move...",
+    );
     await expectFooterActions(canvasElement, ["Save d4", "Remove"]);
     await expectNoPanelOverflow(canvasElement);
     await expect(canvas.getByRole("button", { name: "Save d4" })).toBeDisabled();
@@ -383,7 +384,9 @@ function overflowViewport(width: 640 | 480 | 412) {
 async function expectPromotionOverflowCase(canvasElement: HTMLElement) {
   const canvas = within(canvasElement);
   await expect(canvas.getByTestId("preferred-context")).toHaveTextContent(LONG_CONTEXT);
-  await expect(canvas.getByTestId("selected-move")).toHaveTextContent(/^Selected\s*e8=Q\+\s*e7e8q$/);
+  await expect(canvas.getByTestId("selected-move")).toHaveTextContent(
+    /^Selected\s*e8=Q\+\s*e7e8q$/,
+  );
   await expect(canvas.getByRole("button", { name: "Save e8=Q+" })).toBeEnabled();
   await expectFooterActions(canvasElement, ["Save e8=Q+", "Remove"]);
   await expectNoPanelOverflow(canvasElement);

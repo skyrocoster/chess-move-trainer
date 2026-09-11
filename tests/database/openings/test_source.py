@@ -4,7 +4,6 @@ import shutil
 from dataclasses import FrozenInstanceError
 from pathlib import Path
 
-import chess
 import pytest
 
 from chess_move_trainer.database.openings.source import (
@@ -12,7 +11,6 @@ from chess_move_trainer.database.openings.source import (
     OpeningSourceError,
     load_opening_sources,
 )
-
 
 FIXTURE_DIR = Path(__file__).parent / "fixtures" / "catalogue-valid"
 EXPECTED_FILES = ("a.tsv", "b.tsv", "c.tsv", "d.tsv", "e.tsv")
@@ -79,7 +77,10 @@ def test_reordered_rows_and_files_produce_the_same_deterministic_result(tmp_path
     _write_batch(
         second,
         {
-            "a.tsv": ["B00\tOther route\t1. e4 c6", "A00\tTransposing route\t1. e4 e5 2. Nf3 a6 3. Bb5 Nc6"],
+            "a.tsv": [
+                "B00\tOther route\t1. e4 c6",
+                "A00\tTransposing route\t1. e4 e5 2. Nf3 a6 3. Bb5 Nc6",
+            ],
             "b.tsv": ["A01\t\t1. d4 d5"],
             "c.tsv": ["A00\tBasic route\t1. e4 e5 2. Nf3 Nc6 *"],
             "d.tsv": ["A00\tTransposing route\t1. e4 e5 2. Nf3 Nc6 3. Bb5 a6"],

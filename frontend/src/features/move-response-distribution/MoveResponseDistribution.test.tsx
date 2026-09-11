@@ -45,6 +45,79 @@ function clientFor(data: MoveResponseDistributionResponse): MoveResponseDistribu
   return vi.fn().mockResolvedValue({ status: "success", data });
 }
 
+// Shared chart-label geometry for the label-layout tests below. Widths are
+// estimates, only good enough to prove labels stay inside the fixed 240x240
+// chart frame and do not collide.
+const CHART_FRAME_SIZE = 240;
+const ESTIMATED_CHAR_WIDTH = 6.2;
+const LABEL_HALF_HEIGHT = 5.5;
+
+type ChartLabel = {
+  text: string;
+  x: number;
+  y: number;
+  anchor: string;
+  left: number;
+  right: number;
+  top: number;
+  bottom: number;
+};
+
+function chartLabels(svg: SVGSVGElement): ChartLabel[] {
+  return Array.from(svg.querySelectorAll("text")).map((text) => {
+    const x = Number(text.getAttribute("x"));
+    const y = Number(text.getAttribute("y"));
+    const anchor = text.getAttribute("text-anchor") ?? "start";
+    const width = (text.textContent ?? "").length * ESTIMATED_CHAR_WIDTH;
+    return {
+      text: text.textContent ?? "",
+      x,
+      y,
+      anchor,
+      left: anchor === "start" ? x : x - width,
+      right: anchor === "start" ? x + width : x,
+      top: y - LABEL_HALF_HEIGHT,
+      bottom: y + LABEL_HALF_HEIGHT,
+    };
+  });
+}
+
+function labelsOverlap(a: ChartLabel, b: ChartLabel): boolean {
+  return a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
+}
+
+function segmentHitsBox(
+  leader: { x1: number; y1: number; x2: number; y2: number },
+  box: { left: number; right: number; top: number; bottom: number },
+): boolean {
+  let t0 = 0;
+  let t1 = 1;
+  const dx = leader.x2 - leader.x1;
+  const dy = leader.y2 - leader.y1;
+  const p = [-dx, dx, -dy, dy];
+  const q = [
+    leader.x1 - box.left,
+    box.right - leader.x1,
+    leader.y1 - box.top,
+    box.bottom - leader.y1,
+  ];
+  for (let index = 0; index < 4; index += 1) {
+    if (p[index] === 0) {
+      if (q[index]! < 0) return false;
+    } else {
+      const r = q[index]! / p[index]!;
+      if (p[index]! < 0) {
+        if (r > t1) return false;
+        if (r > t0) t0 = r;
+      } else {
+        if (r < t0) return false;
+        if (r < t1) t1 = r;
+      }
+    }
+  }
+  return true;
+}
+
 afterEach(() => cleanup());
 
 describe("MoveResponseDistribution", () => {
@@ -107,9 +180,15 @@ describe("MoveResponseDistribution", () => {
     expect(screen.getByRole("button", { name: /e4, 4 occurrences, 30.8%/ })).toBeVisible();
     expect(screen.getByRole("button", { name: /d4, 3 occurrences, 23.1%/ })).toBeVisible();
     expect(screen.queryByText("Queen's Pawn Game")).not.toBeInTheDocument();
-    expect(screen.queryByText(/one game may appear in more than one reply/)).not.toBeInTheDocument();
-    expect(screen.getByText(/outgoing move occurrences observed in 4 matching White/)).toBeVisible();
-    expect(screen.getByText(/Pie chart of outgoing moves by recorded occurrences/)).toBeInTheDocument();
+    expect(
+      screen.queryByText(/one game may appear in more than one reply/),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByText(/outgoing move occurrences observed in 4 matching White/),
+    ).toBeVisible();
+    expect(
+      screen.getByText(/Pie chart of outgoing moves by recorded occurrences/),
+    ).toBeInTheDocument();
   });
 
   it("uses the same UCI selection callback for chart sectors and text controls", async () => {
@@ -334,12 +413,7 @@ describe("MoveResponseDistribution", () => {
 
     const svg = container.querySelector("svg");
     expect(svg).not.toBeNull();
-    const labels = Array.from(svg!.querySelectorAll("text")).map((text) => ({
-      text: text.textContent ?? "",
-      x: Number(text.getAttribute("x")),
-      y: Number(text.getAttribute("y")),
-      anchor: text.getAttribute("text-anchor"),
-    }));
+    const labels = chartLabels(svg!);
     expect(labels.map((label) => label.text)).toEqual([
       "e4 30.8%",
       "d4 23.1%",
@@ -349,21 +423,13 @@ describe("MoveResponseDistribution", () => {
       "Other 15.4%",
     ]);
 
-    // Approximate rendered width used only to prove the anchored text stays
-    // inside the fixed 240x240 chart frame on both sides.
-    const frameSize = 240;
-    const estimatedCharWidth = 6.2;
     for (const label of labels) {
       expect(label.x).toBeGreaterThan(0);
-      expect(label.x).toBeLessThan(frameSize);
+      expect(label.x).toBeLessThan(CHART_FRAME_SIZE);
       expect(label.y).toBeGreaterThan(0);
-      expect(label.y).toBeLessThan(frameSize);
-      const extent =
-        label.anchor === "start"
-          ? label.x + label.text.length * estimatedCharWidth
-          : label.x - label.text.length * estimatedCharWidth;
-      expect(extent).toBeGreaterThanOrEqual(0);
-      expect(extent).toBeLessThanOrEqual(frameSize);
+      expect(label.y).toBeLessThan(CHART_FRAME_SIZE);
+      expect(label.left).toBeGreaterThanOrEqual(0);
+      expect(label.right).toBeLessThanOrEqual(CHART_FRAME_SIZE);
     }
 
     for (const anchor of ["start", "end"]) {
@@ -404,35 +470,7 @@ describe("MoveResponseDistribution", () => {
 
     const svg = container.querySelector("svg");
     expect(svg).not.toBeNull();
-    const frameSize = 240;
-    const estimatedCharWidth = 6.2;
-    const textHalfHeight = 5.5;
-    type DenseLabel = {
-      text: string;
-      x: number;
-      y: number;
-      anchor: string;
-      left: number;
-      right: number;
-      top: number;
-      bottom: number;
-    };
-    const labels: DenseLabel[] = Array.from(svg!.querySelectorAll("text")).map((text) => {
-      const x = Number(text.getAttribute("x"));
-      const y = Number(text.getAttribute("y"));
-      const anchor = text.getAttribute("text-anchor") ?? "start";
-      const width = (text.textContent ?? "").length * estimatedCharWidth;
-      return {
-        text: text.textContent ?? "",
-        x,
-        y,
-        anchor,
-        left: anchor === "start" ? x : x - width,
-        right: anchor === "start" ? x + width : x,
-        top: y - textHalfHeight,
-        bottom: y + textHalfHeight,
-      };
-    });
+    const labels = chartLabels(svg!);
 
     // The dominant reply sits alone on the left; the four tiny replies and
     // the grey Other label form the dense cluster on the right edge.
@@ -446,9 +484,9 @@ describe("MoveResponseDistribution", () => {
     // Every label stays inside the fixed chart frame.
     for (const label of labels) {
       expect(label.left).toBeGreaterThanOrEqual(0);
-      expect(label.right).toBeLessThanOrEqual(frameSize);
+      expect(label.right).toBeLessThanOrEqual(CHART_FRAME_SIZE);
       expect(label.top).toBeGreaterThanOrEqual(0);
-      expect(label.bottom).toBeLessThanOrEqual(frameSize);
+      expect(label.bottom).toBeLessThanOrEqual(CHART_FRAME_SIZE);
     }
 
     // The dense right-edge cluster spreads with a readable vertical gap
@@ -468,9 +506,7 @@ describe("MoveResponseDistribution", () => {
       for (let second = first + 1; second < labels.length; second += 1) {
         const a = labels[first]!;
         const b = labels[second]!;
-        const overlaps =
-          a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
-        expect(overlaps, `labels "${a.text}" and "${b.text}" overlap`).toBe(false);
+        expect(labelsOverlap(a, b), `labels "${a.text}" and "${b.text}" overlap`).toBe(false);
       }
     }
 
@@ -491,37 +527,6 @@ describe("MoveResponseDistribution", () => {
       ];
     });
     expect(leaders).toHaveLength(labels.length);
-    const segmentHitsBox = (
-      leader: { x1: number; y1: number; x2: number; y2: number },
-      box: { left: number; right: number; top: number; bottom: number },
-    ) => {
-      let t0 = 0;
-      let t1 = 1;
-      const dx = leader.x2 - leader.x1;
-      const dy = leader.y2 - leader.y1;
-      const p = [-dx, dx, -dy, dy];
-      const q = [
-        leader.x1 - box.left,
-        box.right - leader.x1,
-        leader.y1 - box.top,
-        box.bottom - leader.y1,
-      ];
-      for (let index = 0; index < 4; index += 1) {
-        if (p[index] === 0) {
-          if (q[index]! < 0) return false;
-        } else {
-          const r = q[index]! / p[index]!;
-          if (p[index]! < 0) {
-            if (r > t1) return false;
-            if (r > t0) t0 = r;
-          } else {
-            if (r < t0) return false;
-            if (r < t1) t1 = r;
-          }
-        }
-      }
-      return true;
-    };
     for (const leader of leaders) {
       for (const label of labels) {
         if (label.text === leader.text) continue;

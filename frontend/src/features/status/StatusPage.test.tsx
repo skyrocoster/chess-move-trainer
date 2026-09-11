@@ -24,15 +24,13 @@ function mockHealthyFetch() {
   // The generated client parses a 200 body as JSON only when the Content-Type
   // header says so (as the real backend does), so the mock must carry it. A
   // fresh Response per call keeps repeated requests independent.
-  return vi
-    .spyOn(globalThis, "fetch")
-    .mockImplementation(
-      () =>
-        new Response(JSON.stringify({ status: "ok" }), {
-          status: 200,
-          headers: { "Content-Type": "application/json" },
-        }),
-    );
+  return vi.spyOn(globalThis, "fetch").mockImplementation(
+    () =>
+      new Response(JSON.stringify({ status: "ok" }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }),
+  );
 }
 
 describe("StatusPage", () => {
@@ -86,7 +84,7 @@ describe("StatusPage", () => {
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
   });
 
-  it("rechecks from scratch on remount with one deliberately shared client", async () => {
+  it("checks again on remount when the shared cache is empty", async () => {
     const fetchMock = mockHealthyFetch();
     const client = createTestQueryClient();
 

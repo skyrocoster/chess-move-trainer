@@ -81,7 +81,9 @@ export const LocalLineSession: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await expect(canvas.getByTestId("repertoire-session")).toBeVisible();
-    await expect(canvas.getByTestId("session-status")).toHaveTextContent("Move played locally: e4.");
+    await expect(canvas.getByTestId("session-status")).toHaveTextContent(
+      "Move played locally: e4.",
+    );
   },
 };
 
@@ -107,15 +109,26 @@ export const FrequencyZero: Story = {
 export const FrequencyAbsent: Story = {
   name: "Frequency - globally unseen position",
   args: panelArgs({
-    positionContext: { ...POSITION_CONTEXT, observedInGames: false, distinctGameCount: 0, totalGameCount: 0 },
-    model: model({ personalCount: 0, contextMessage: "Never seen as White", saveability: "unsavable" }),
+    positionContext: {
+      ...POSITION_CONTEXT,
+      observedInGames: false,
+      distinctGameCount: 0,
+      totalGameCount: 0,
+    },
+    model: model({
+      personalCount: 0,
+      contextMessage: "Never seen as White",
+      saveability: "unsavable",
+    }),
   }),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await expect(
       canvas.getByText("This position is not present in the accepted game data for White."),
     ).toBeVisible();
-    await expect(canvas.queryByRole("meter", { name: /Position reach frequency/ })).not.toBeInTheDocument();
+    await expect(
+      canvas.queryByRole("meter", { name: /Position reach frequency/ }),
+    ).not.toBeInTheDocument();
     await expect(canvas.queryByText(/0 \/ 10 games|0%/)).not.toBeInTheDocument();
   },
 };

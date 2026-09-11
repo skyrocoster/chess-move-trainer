@@ -8,15 +8,14 @@ from uuid import UUID
 import pytest
 from sqlalchemy.engine import Connection
 
-from chess_move_trainer.database import create_schema
 import chess_move_trainer.database.games.persistence as persistence_service
+from chess_move_trainer.database import create_schema
 from chess_move_trainer.database.games.persistence import (
     GameRepository,
     import_normalized_games,
     import_raw_games,
     normalize_raw_games,
 )
-
 
 FIXTURES = Path(__file__).parent / "fixtures"
 TRAINER_UUID = UUID("11111111-1111-4111-8111-111111111111")

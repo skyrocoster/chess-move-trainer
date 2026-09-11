@@ -88,7 +88,9 @@ describe("analysisPanelDisplay", () => {
       candidateCount: 4,
     });
     expect(display.result?.lines).toHaveLength(4);
-    expect(display.result?.lines.map((nextLine) => [nextLine.rank, nextLine.score, nextLine.pv])).toEqual([
+    expect(
+      display.result?.lines.map((nextLine) => [nextLine.rank, nextLine.score, nextLine.pv]),
+    ).toEqual([
       [1, "+0.34", "1. e4"],
       [2, "-M3", "1. d4"],
       [3, "+M3", "1. c4"],
@@ -100,7 +102,11 @@ describe("analysisPanelDisplay", () => {
     const display = analysisPanelDisplay(
       state(
         "ready",
-        result(Array.from({ length: 6 }, (_, index) => line({ rank: index + 1, score_value: index * 10 }))),
+        result(
+          Array.from({ length: 6 }, (_, index) =>
+            line({ rank: index + 1, score_value: index * 10 }),
+          ),
+        ),
       ),
     );
 

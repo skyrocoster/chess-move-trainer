@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import re
 
-
 _ECO_PATTERN = re.compile(r"[A-E][0-9]{2}\Z")
 
 

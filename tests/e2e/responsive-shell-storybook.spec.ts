@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
-import { retryAxeWhenBusy } from "./axeBusyRetry";
+import { retryAxeWhenBusy } from "./axe-busy-retry";
 
 const STORYBOOK_ORIGIN = "http://127.0.0.1:6006";
 const STORYBOOK_ROOT_SELECTOR = "#storybook-root";
@@ -240,7 +240,7 @@ test("renders exact loading, healthy, and unavailable live-region states", async
       storyId: STORY_IDS.healthy,
     },
     {
-      copy: "Backend unavailable: Health request failed with HTTP 503",
+      copy: "Backend unavailable.",
       role: "alert" as const,
       storyId: STORY_IDS.unavailable,
     },

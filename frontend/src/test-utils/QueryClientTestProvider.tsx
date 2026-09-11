@@ -38,7 +38,5 @@ type QueryClientTestProviderProps = {
 
 export function QueryClientTestProvider({ children, client }: QueryClientTestProviderProps) {
   const [fallbackClient] = useState(() => createTestQueryClient());
-  return (
-    <QueryClientProvider client={client ?? fallbackClient}>{children}</QueryClientProvider>
-  );
+  return <QueryClientProvider client={client ?? fallbackClient}>{children}</QueryClientProvider>;
 }

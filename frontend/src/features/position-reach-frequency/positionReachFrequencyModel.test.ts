@@ -92,12 +92,16 @@ describe("derivePositionReachFrequencyModel", () => {
 
   it("bounds an unsafe percentage and avoids division by zero", () => {
     expect(
-      derivePositionReachFrequencyModel(context({ distinctGameCount: 9, totalGameCount: 4 }), "white")
-        .percentage,
+      derivePositionReachFrequencyModel(
+        context({ distinctGameCount: 9, totalGameCount: 4 }),
+        "white",
+      ).percentage,
     ).toBe(100);
     expect(
-      derivePositionReachFrequencyModel(context({ distinctGameCount: 1, totalGameCount: 0 }), "white")
-        .percentage,
+      derivePositionReachFrequencyModel(
+        context({ distinctGameCount: 1, totalGameCount: 0 }),
+        "white",
+      ).percentage,
     ).toBe(0);
   });
 });

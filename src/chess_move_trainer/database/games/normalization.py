@@ -7,14 +7,13 @@ import math
 import re
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from typing import Any, Literal
+from typing import Literal
 from uuid import UUID
 
 import chess
 import chess.pgn
 
 from ..positions import CanonicalPosition, canonicalize_board
-
 
 TrainerColor = Literal["white", "black"]
 TrainerOutcome = Literal["win", "loss", "draw"]
@@ -119,7 +118,9 @@ def _normalize_game(raw_game: object, trainer_uuid: UUID) -> NormalizedGame:
         if participant_uuid == trainer_uuid
     ]
     if len(matching_colors) != 1:
-        raise GameNormalizationError("exactly one participant must match the configured trainer UUID")
+        raise GameNormalizationError(
+            "exactly one participant must match the configured trainer UUID"
+        )
     trainer_color: TrainerColor = matching_colors[0]  # type: ignore[assignment]
     trainer = white_participant if trainer_color == "white" else black_participant
     opponent = black_participant if trainer_color == "white" else white_participant

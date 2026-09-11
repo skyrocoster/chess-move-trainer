@@ -1,7 +1,10 @@
 import { expect, userEvent, within } from "storybook/test";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 
-import { storyAnalysisClient, storyCandidateAnalysisClient } from "../analysis/analysisStoryClients";
+import {
+  storyAnalysisClient,
+  storyCandidateAnalysisClient,
+} from "../analysis/analysisStoryClients";
 import { GAME_UUID } from "../game/gameFixtures";
 import RepertoireBuilderWorkspace from "./RepertoireBuilderWorkspace";
 import {
@@ -31,7 +34,7 @@ export const ReadErrors: Story = {
   render: () =>
     workspace(
       { analysisClient: storyAnalysisClient() },
-        { readFailure: "preferred_moves_unavailable" },
+      { readFailure: "preferred_moves_unavailable" },
       { failure: "position_context_unavailable" },
     ),
   play: async ({ canvasElement }) => {
@@ -58,9 +61,7 @@ export const UnsavableGate: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await expectPreferredMoveState(canvasElement, "empty");
-    await expect(
-      canvas.getByText("Never seen as White"),
-    ).toBeVisible();
+    await expect(canvas.getByText("Never seen as White")).toBeVisible();
     await expectPreferredActions(canvasElement, []);
     await expect(
       canvas.queryByText("This position isn't in your corpus, so it can't be saved yet."),
@@ -131,8 +132,6 @@ export const OpponentTurnGate: Story = {
       canvas.getByText("Wait for your turn to select or save a preferred move."),
     ).toBeVisible();
     await expectPreferredActions(canvasElement, []);
-    await expect(
-      canvas.queryByRole("button", { name: /play this move/ }),
-    ).not.toBeInTheDocument();
+    await expect(canvas.queryByRole("button", { name: /play this move/ })).not.toBeInTheDocument();
   },
 };

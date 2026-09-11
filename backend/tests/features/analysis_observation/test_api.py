@@ -64,7 +64,7 @@ def _remove_result(database: Path) -> None:
         connection.execute("DELETE FROM derived_analysis_result")
 
 
-def test_success_has_exact_shape_and_ignores_unknown_queries(api_context) -> None:
+def test_finished_analysis_returns_full_detail_and_ignores_unknown_filters(api_context) -> None:
     client, _database = api_context
 
     response = client.get(
@@ -143,7 +143,7 @@ def test_success_has_exact_shape_and_ignores_unknown_queries(api_context) -> Non
 
 
 @pytest.mark.parametrize("params", ({}, {"fen": "not a fen"}))
-def test_missing_or_invalid_fen_is_422(client, params: dict[str, str]) -> None:
+def test_missing_or_bad_position_gives_clear_error(client, params: dict[str, str]) -> None:
     response = client.get("/api/analysis", params=params)
 
     assert response.status_code == 422
@@ -151,7 +151,7 @@ def test_missing_or_invalid_fen_is_422(client, params: dict[str, str]) -> None:
         assert response.json() == {"code": "invalid_fen", "message": "FEN is invalid"}
 
 
-def test_unseen_legal_fen_is_sparse_and_read_only(api_context) -> None:
+def test_unseen_position_returns_empty_result_without_changing_database(api_context) -> None:
     client, database = api_context
     before = database.read_bytes()
 
@@ -167,7 +167,7 @@ def test_unseen_legal_fen_is_sparse_and_read_only(api_context) -> None:
     assert not list(database.parent.glob(database.name + "-*"))
 
 
-def test_queue_states_precede_ready_and_preserve_result(api_context) -> None:
+def test_queued_and_running_show_before_ready_and_keep_old_result(api_context) -> None:
     client, database = api_context
 
     _queue(database, "queued")
@@ -184,7 +184,7 @@ def test_queue_states_precede_ready_and_preserve_result(api_context) -> None:
 
 
 @pytest.mark.parametrize("state", ("queued", "running"))
-def test_queue_states_can_observe_without_a_result(api_context, state: str) -> None:
+def test_queued_and_running_show_even_without_result(api_context, state: str) -> None:
     client, database = api_context
     _remove_result(database)
     _queue(database, state)
@@ -199,7 +199,7 @@ def test_queue_states_can_observe_without_a_result(api_context, state: str) -> N
     }
 
 
-def test_clean_dependency_override_selects_the_injected_database(
+def test_injected_database_is_used_when_configured(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     client,
@@ -215,7 +215,7 @@ def test_clean_dependency_override_selects_the_injected_database(
     assert response.json()["fen"] == TARGET_CANONICAL_FEN
 
 
-def test_missing_or_incompatible_data_is_typed_503_without_creation(
+def test_missing_or_broken_database_gives_unavailable_without_creating_file(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     client,
@@ -246,7 +246,7 @@ def test_missing_or_incompatible_data_is_typed_503_without_creation(
     assert incompatible.read_bytes() == before
 
 
-def test_unexpected_failures_are_typed_and_do_not_leak_messages(api_context, monkeypatch) -> None:
+def test_unexpected_failures_stay_safe_without_leaking_details(api_context, monkeypatch) -> None:
     client, _database = api_context
 
     def fail(*_args: object, **_kwargs: object) -> object:
@@ -263,7 +263,7 @@ def test_unexpected_failures_are_typed_and_do_not_leak_messages(api_context, mon
     assert "database secret" not in response.text
 
 
-def test_analysis_route_has_settled_operation_id() -> None:
+def test_analysis_route_uses_expected_name_and_old_evaluation_stays_gone() -> None:
     routes = {
         route.path: route
         for route in app.routes

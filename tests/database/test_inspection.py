@@ -11,7 +11,6 @@ import pytest
 from chess_move_trainer.database.inspection import inspect_schema, render_schema_markdown
 from chess_move_trainer.database.publication import publish_schema
 
-
 ROOT = Path(__file__).parents[2]
 
 
@@ -186,7 +185,10 @@ def test_atomic_publication_writes_identical_bytes_from_destination_directory(
     replacements: list[tuple[Path, Path]] = []
     original_replace = os.replace
 
-    def record_replace(source: str | bytes | os.PathLike[str], destination: str | bytes | os.PathLike[str]) -> None:
+    def record_replace(
+        source: str | bytes | os.PathLike[str],
+        destination: str | bytes | os.PathLike[str],
+    ) -> None:
         source_path = Path(source)
         destination_path = Path(destination)
         replacements.append((source_path, destination_path))

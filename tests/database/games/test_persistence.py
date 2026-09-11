@@ -21,7 +21,6 @@ from chess_move_trainer.database.games.persistence import (
     import_normalized_games,
 )
 
-
 FIXTURES = Path(__file__).parent / "fixtures"
 TRAINER_UUID = UUID("11111111-1111-4111-8111-111111111111")
 
@@ -218,7 +217,8 @@ def test_interrupted_active_game_rolls_back_without_removing_earlier_commit(tmp_
         chesscom_game_uuid=UUID("55555555-5555-4555-8555-555555555555"),
     )
     GameRepository(database).persist(first)
-    before = {table: _rows(database, table) for table in ("datasource_game", "derived_game_position", "derived_position")}
+    tables = ("datasource_game", "derived_game_position", "derived_position")
+    before = {table: _rows(database, table) for table in tables}
 
     def interrupt(boundary: str) -> None:
         if boundary == "occurrence":

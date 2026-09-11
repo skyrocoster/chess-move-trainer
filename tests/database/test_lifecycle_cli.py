@@ -12,7 +12,6 @@ from chess_move_trainer.database.lifecycle import (
     LifecycleResult,
 )
 
-
 runner = CliRunner()
 
 

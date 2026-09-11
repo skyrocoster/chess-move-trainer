@@ -111,7 +111,8 @@ function queuedDisplay(state: "queued" | "running"): AnalysisPanelDisplay {
   return displayFor({
     stateLabel: state === "queued" ? "Analysis queued" : "Analysis running",
     message: {
-      text: state === "queued" ? "This position is waiting for analysis." : "Analysis is in progress.",
+      text:
+        state === "queued" ? "This position is waiting for analysis." : "Analysis is in progress.",
     },
   });
 }
@@ -296,7 +297,9 @@ describe("AnalysisPanel", () => {
   it("shows request errors without adding a failed lifecycle or retry control", () => {
     renderPanel(missingDisplay({ requestError: "The analysis request could not be submitted." }));
 
-    expect(screen.getByRole("alert")).toHaveTextContent("The analysis request could not be submitted.");
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "The analysis request could not be submitted.",
+    );
     expect(screen.getByRole("button", { name: "Analyze position" })).toBeVisible();
     expect(screen.queryByRole("button", { name: "Retry analysis" })).not.toBeInTheDocument();
   });

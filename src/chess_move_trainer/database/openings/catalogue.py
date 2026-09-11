@@ -15,7 +15,6 @@ from ..connection import DEFAULT_LOCK_TIMEOUT_SECONDS, _open_connection
 from ..schema import SchemaIncompatibleError, _assert_compatible_schema
 from .keys import OpeningKeyError, opening_api_key, parse_opening_api_key
 
-
 OpeningCatalogueSort = Literal[
     "eco_asc",
     "eco_desc",
@@ -161,7 +160,10 @@ class OpeningCatalogueRepository:
             entry for entry in entries if _matches(entry, request)
         )
         ordered = tuple(
-            sorted(filtered, key=cmp_to_key(lambda left, right: _compare(left, right, request.sort)))
+            sorted(
+                filtered,
+                key=cmp_to_key(lambda left, right: _compare(left, right, request.sort)),
+            )
         )
 
         total = len(ordered)

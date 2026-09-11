@@ -66,7 +66,9 @@ describe("usePositionContextState", () => {
   });
 
   it("loads the displayed FEN with the requested trainer color and follows a branch FEN", async () => {
-    const client = vi.fn<PositionContextClient>(async (fen, trainerColor) => success(fen, trainerColor));
+    const client = vi.fn<PositionContextClient>(async (fen, trainerColor) =>
+      success(fen, trainerColor),
+    );
     const view = render(createElement(Probe, { fen: FEN, trainerColor: "white", client }));
 
     await waitFor(() => expect(screen.getByTestId("state")).toHaveTextContent(FEN));
@@ -78,7 +80,9 @@ describe("usePositionContextState", () => {
   });
 
   it("keys requests by the full displayed FEN, including counter fields", async () => {
-    const client = vi.fn<PositionContextClient>(async (fen, trainerColor) => success(fen, trainerColor));
+    const client = vi.fn<PositionContextClient>(async (fen, trainerColor) =>
+      success(fen, trainerColor),
+    );
     const view = render(createElement(Probe, { fen: FEN, trainerColor: "white", client }));
     await waitFor(() => expect(client).toHaveBeenCalledTimes(1));
 
@@ -90,7 +94,9 @@ describe("usePositionContextState", () => {
   });
 
   it("refetches for the new trainer color and abandons the previous request", async () => {
-    const client = vi.fn<PositionContextClient>(async (fen, trainerColor) => success(fen, trainerColor));
+    const client = vi.fn<PositionContextClient>(async (fen, trainerColor) =>
+      success(fen, trainerColor),
+    );
     const view = render(createElement(Probe, { fen: FEN, trainerColor: "white", client }));
     await waitFor(() => expect(client).toHaveBeenCalledTimes(1));
 
@@ -145,7 +151,12 @@ describe("usePositionContextState", () => {
 
     await waitFor(() =>
       expect(screen.getByTestId("state")).toHaveTextContent(
-        JSON.stringify({ fen: null, observed: null, loading: false, error: "position_context_unavailable" }),
+        JSON.stringify({
+          fen: null,
+          observed: null,
+          loading: false,
+          error: "position_context_unavailable",
+        }),
       ),
     );
 

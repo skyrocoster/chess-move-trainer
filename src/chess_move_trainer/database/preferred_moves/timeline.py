@@ -21,7 +21,6 @@ from .repository import (
     PreferredMoveValidationError,
 )
 
-
 TimelinePreferenceKind = Literal["move", "no_preference", "unconfigured"]
 
 

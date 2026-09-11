@@ -18,7 +18,6 @@ from chess_move_trainer.database.preferred_moves.ranges import (
     unset_preference,
 )
 
-
 MOVE_A = Preference.preferred_move("e2e4")
 MOVE_B = Preference.preferred_move("d2d4")
 NO_PREFERENCE = Preference.no_preference()

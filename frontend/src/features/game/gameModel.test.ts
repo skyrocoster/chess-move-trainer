@@ -52,11 +52,16 @@ describe("mapGameDetailResponse", () => {
     const first = mapGameDetailResponse(DETAIL);
     const second = mapGameDetailResponse(DETAIL);
 
-    expect(first.occurrences.map((occurrence) => occurrence.san)).toEqual(["e4", "e5", "Nf3", null]);
+    expect(first.occurrences.map((occurrence) => occurrence.san)).toEqual([
+      "e4",
+      "e5",
+      "Nf3",
+      null,
+    ]);
     expect(second).toEqual(first);
   });
 
-  it("does not carry clean response metadata into the neutral model", () => {
+  it("maps only the fields used by the board", () => {
     const model = mapGameDetailResponse(DETAIL);
 
     expect(Object.keys(model).sort()).toEqual([

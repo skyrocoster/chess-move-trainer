@@ -6,13 +6,12 @@ from pathlib import Path
 import pytest
 
 from chess_move_trainer.database import create_schema
-from chess_move_trainer.database.schema import SchemaIncompatibleError
 from chess_move_trainer.database.positions import (
     PositionRepository,
     PositionStorageError,
     PositionValidationError,
 )
-
+from chess_move_trainer.database.schema import SchemaIncompatibleError
 
 STARTING_PLACEMENT = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR"
 STARTING_FEN = f"{STARTING_PLACEMENT} w KQkq - 0 1"

@@ -135,7 +135,9 @@ class AnalysisResultInput:
         if not isinstance(self.engine_version, str):
             raise AnalysisValidationError("engine version must be a string")
         if isinstance(self.lines, (str, bytes)):
-            raise AnalysisValidationError("lines must be an ordered collection of AnalysisLine values")
+            raise AnalysisValidationError(
+                "lines must be an ordered collection of AnalysisLine values"
+            )
         try:
             normalized_lines = tuple(self.lines)
         except TypeError as error:
@@ -188,7 +190,9 @@ class PublicationOutcome:
         try:
             normalized_reason = NotSavedReason(self.reason)
         except ValueError as error:
-            raise AnalysisValidationError("publication outcome has an unknown not-saved reason") from error
+            raise AnalysisValidationError(
+                "publication outcome has an unknown not-saved reason"
+            ) from error
         object.__setattr__(self, "reason", normalized_reason)
 
     @classmethod

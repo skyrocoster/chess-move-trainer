@@ -13,7 +13,6 @@ from chess_move_trainer.database.analysis import (
     AnalysisRepository,
     AnalysisScoreKind,
     AnalysisStorageError,
-    NotSavedReason,
     PublicationOutcome,
     validate_analysis_result,
 )
@@ -23,7 +22,6 @@ from chess_move_trainer.database.stockfish import (
     QueueQualityError,
     QueueService,
 )
-
 
 STARTING_FEN = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1"
 OLD_ROOTS = (
@@ -130,7 +128,9 @@ def test_claim_is_fifo_and_replaces_a_stale_token_with_fresh_uuid(tmp_path: Path
     queue = QueueService(database_path)
     origin = datetime(2026, 1, 1, tzinfo=UTC)
     queue.enqueue(first_position, AnalysisQuality.BROWSER, requested_at=origin)
-    queue.enqueue(second_position, AnalysisQuality.BROWSER, requested_at=origin + timedelta(seconds=1))
+    queue.enqueue(
+        second_position, AnalysisQuality.BROWSER, requested_at=origin + timedelta(seconds=1)
+    )
 
     first_claim = queue.claim(now=origin + timedelta(seconds=2))
     assert first_claim is not None

@@ -29,9 +29,7 @@ export function sanFromFenAndUci(fen: Fen, uci: string): string {
   const to = match[2] as Square;
   const promotion = match[3];
   const move =
-    promotion === undefined
-      ? { from, to }
-      : { from, to, promotion: promotion as PieceSymbol };
+    promotion === undefined ? { from, to } : { from, to, promotion: promotion as PieceSymbol };
 
   return new Chess(fen).move(move).san;
 }

@@ -13,7 +13,6 @@ from chess_move_trainer.database.analysis import (
 from chess_move_trainer.database.analysis.reading import AnalysisReadRepository
 from chess_move_trainer.database.positions import PositionRepository
 
-
 STARTING_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 ROOT_MOVES = ("a2a3", "a2a4", "b2b3", "b2b4", "c2c3")
 

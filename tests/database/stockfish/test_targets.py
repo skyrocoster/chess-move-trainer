@@ -11,9 +11,7 @@ from chess_move_trainer.database.analysis import AnalysisQuality, AnalysisReposi
 from chess_move_trainer.database.positions import PositionRepository
 from chess_move_trainer.database.stockfish import (
     BulkTargetSelector,
-    TargetInputError,
 )
-
 
 START_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 E4_FEN = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1"
@@ -191,7 +189,11 @@ def _valid_result(
     version: int,
     engine: str,
 ):
-    from chess_move_trainer.database.analysis import AnalysisLine, AnalysisScoreKind, validate_analysis_result
+    from chess_move_trainer.database.analysis import (
+        AnalysisLine,
+        AnalysisScoreKind,
+        validate_analysis_result,
+    )
 
     with sqlite3.connect(database) as connection:
         row = connection.execute(

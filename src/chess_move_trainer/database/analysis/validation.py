@@ -9,6 +9,7 @@ from typing import Any
 
 import chess
 
+from .._position_identity import CanonicalPosition
 from .models import (
     AnalysisLine,
     AnalysisQuality,
@@ -19,7 +20,6 @@ from .models import (
     ValidatedAnalysisResult,
     _FrozenJsonObject,
 )
-from .._position_identity import CanonicalPosition
 
 
 def _normalize_quality(value: object) -> AnalysisQuality:

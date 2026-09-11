@@ -64,12 +64,6 @@ describe("BoardAdapter", () => {
     expect(description?.textContent).toBe(
       "Orientation: White at the bottom. Side to move: Black. Occupied squares in stable FEN order: black rook at a8, black knight at b8, black queen at d8, black king at e8, black rook at h8, black bishop at b7, black pawn at c7, black bishop at e7, black pawn at f7, black pawn at g7, black pawn at a6, black pawn at b6, black pawn at d6, black pawn at e6, black knight at f6, black pawn at h6, white pawn at e4, white bishop at f4, white knight at c3, white pawn at d3, white knight at f3, white pawn at g3, white pawn at a2, white pawn at b2, white pawn at c2, white queen at d2, white pawn at f2, white bishop at g2, white pawn at h2, white rook at a1, white king at e1, white rook at h1. Castling rights: White may castle kingside and queenside; Black may castle kingside and queenside. En-passant target: e3. Halfmove clock: 0. Fullmove number: 8.",
     );
-    expect(description).toHaveTextContent(
-      "Orientation: White at the bottom. Side to move: Black. Occupied squares in stable FEN order: black rook at a8, black knight at b8, black queen at d8, black king at e8, black rook at h8, black bishop at b7, black pawn at c7, black bishop at e7, black pawn at f7, black pawn at g7, black pawn at a6, black pawn at b6, black pawn at d6, black pawn at e6, black knight at f6, black pawn at h6, white pawn at e4, white bishop at f4, white knight at c3, white pawn at d3, white knight at f3, white pawn at g3, white pawn at a2, white pawn at b2, white pawn at c2, white queen at d2, white pawn at f2, white bishop at g2, white pawn at h2, white rook at a1, white king at e1, white rook at h1.",
-    );
-    expect(description).toHaveTextContent(
-      "Castling rights: White may castle kingside and queenside; Black may castle kingside and queenside. En-passant target: e3. Halfmove clock: 0. Fullmove number: 8.",
-    );
   });
 
   it("renders grouped inventories and facts from the same position model", () => {

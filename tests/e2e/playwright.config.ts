@@ -2,17 +2,18 @@ import { defineConfig } from "@playwright/test";
 
 const STORYBOOK_TEST_FILES = new Set([
   "board-adapter-storybook.spec.ts",
-  "design-system-accessibility.spec.ts",
+  "design-system-accessibility-storybook.spec.ts",
   "responsive-shell-storybook.spec.ts",
   "repertoire-builder-storybook.spec.ts",
+  "repertoire-builder-storybook-behaviors.spec.ts",
   "analysis-panel-storybook.spec.ts",
   "line-library-storybook.spec.ts",
 ]);
 
 const APP_TEST_FILES = new Set([
   "responsive-shell.spec.ts",
-  "routing.spec.ts",
-  "status.spec.ts",
+  "shell-routing.spec.ts",
+  "status-page.spec.ts",
 ]);
 
 function selectedTestFiles() {

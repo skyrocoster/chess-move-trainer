@@ -5,7 +5,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Path as FastAPIPath, Query
+from fastapi import APIRouter, Depends, Query
+from fastapi import Path as FastAPIPath
 from fastapi.responses import JSONResponse
 
 from backend.app.dependencies import get_rebuilt_database_path

@@ -18,7 +18,6 @@ from chess_move_trainer.database.openings.acquisition import (
     RAW_SOURCE_URL_TEMPLATE,
 )
 
-
 ROOT = Path(__file__).parents[2]
 GAME_FIXTURES = ROOT / "tests" / "database" / "games" / "fixtures"
 OPENING_FIXTURES = ROOT / "tests" / "database" / "openings" / "fixtures" / "catalogue-valid"
@@ -220,7 +219,9 @@ def test_setup_refuses_preexisting_database_before_any_side_effect(tmp_path: Pat
     assert _snapshot_files(tmp_path) == before_tree
 
 
-def test_setup_failure_after_creation_removes_only_new_database(tmp_path: Path, monkeypatch) -> None:
+def test_setup_failure_after_creation_removes_only_new_database(
+    tmp_path: Path, monkeypatch
+) -> None:
     database_root = tmp_path / "database"
     database_root.mkdir()
     unrelated = database_root / "other.db"
@@ -306,7 +307,8 @@ def test_setup_cleans_exact_stale_and_failed_database_sidecars_only(
     assert result.exit_code == 1
     assert "synthetic bulk import failure" in result.message
     assert not database.exists()
-    assert not any(database.with_name(database.name + suffix).exists() for suffix in ("-journal", "-wal", "-shm"))
+    sidecars = ("-journal", "-wal", "-shm")
+    assert not any(database.with_name(database.name + suffix).exists() for suffix in sidecars)
     assert unrelated.read_bytes() == b"unrelated database"
     assert similarly_named.read_bytes() == b"unrelated sibling"
 

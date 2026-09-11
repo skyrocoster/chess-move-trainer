@@ -20,11 +20,7 @@ import {
   expectSingleStagedStatus,
   sharedPositionSummary,
 } from "./repertoireBuilderStoryAssertions";
-import {
-  constrainedViewport,
-  mediumViewport,
-  workspace,
-} from "./repertoireBuilderStoryRender";
+import { constrainedViewport, mediumViewport, workspace } from "./repertoireBuilderStoryRender";
 import {
   STORY_BLACK_SUBJECT_GAME_DETAIL,
   STORY_PROMOTION_GAME_DETAIL,
@@ -56,23 +52,20 @@ function SelectedPositionAnalysisLifecycleStory() {
   const [events, setEvents] = useState<StoryAnalysisLifecycleEvent[]>([]);
   const analysisClient = useMemo(
     () =>
-      storySelectedPositionAnalysisClient((event) =>
-        setEvents((current) => [...current, event]),
-      ),
+      storySelectedPositionAnalysisClient((event) => setEvents((current) => [...current, event])),
     [],
   );
   const summary = events
-    .map(
-      ({ operation, state, hasResult }) =>
-        `${operation}:${state}${hasResult ? "+result" : ""}`,
-    )
+    .map(({ operation, state, hasResult }) => `${operation}:${state}${hasResult ? "+result" : ""}`)
     .join(" | ");
 
   return (
     <>
       {workspace({ analysisClient })}
       <output data-testid="analysis-lifecycle-proof" hidden>
-        observations: {events.filter(({ operation }) => operation === "observe").length}; requests: {events.filter(({ operation }) => operation === "request").length}; request quality: {events.some(({ quality }) => quality === "tool") ? "tool" : "none"}; states: {summary}
+        observations: {events.filter(({ operation }) => operation === "observe").length}; requests:{" "}
+        {events.filter(({ operation }) => operation === "request").length}; request quality:{" "}
+        {events.some(({ quality }) => quality === "tool") ? "tool" : "none"}; states: {summary}
       </output>
     </>
   );
@@ -293,8 +286,12 @@ export const SelectedPositionAnalysisLifecycle: Story = {
 
     await waitFor(() => expect(status).toHaveTextContent("Analysis complete"));
     await expect(analysisQueries.getByRole("button", { name: "1. e4" })).toBeVisible();
-    await expect(analysisQueries.queryByRole("button", { name: "Update analysis" })).not.toBeInTheDocument();
-    await expect(analysisQueries.queryByRole("button", { name: "Retry analysis" })).not.toBeInTheDocument();
+    await expect(
+      analysisQueries.queryByRole("button", { name: "Update analysis" }),
+    ).not.toBeInTheDocument();
+    await expect(
+      analysisQueries.queryByRole("button", { name: "Retry analysis" }),
+    ).not.toBeInTheDocument();
 
     await userEvent.click(analysisQueries.getByRole("button", { name: "1. e4" }));
     await expect(canvas.getByTestId("session-status")).toHaveTextContent(
@@ -499,9 +496,7 @@ export const KeyboardAndAccessibility: Story = {
     await userEvent.keyboard("{Enter}");
     await expectSessionBoundary(canvasElement);
     await expectSingleStagedStatus(canvasElement);
-    await expect(
-      canvas.getByRole("button", { name: "White, move 1, e4" }),
-    ).toHaveFocus();
+    await expect(canvas.getByRole("button", { name: "White, move 1, e4" })).toHaveFocus();
     await expectPositionSquares(canvasElement, "e2", 0);
     await expectPositionSquares(canvasElement, "e4", 1);
     await expectNoHorizontalOverflow(canvasElement);

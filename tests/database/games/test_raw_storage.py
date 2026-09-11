@@ -13,7 +13,6 @@ from chess_move_trainer.database.games.raw_storage import (
     validate_month_envelope,
 )
 
-
 FIXTURES = Path(__file__).parent / "fixtures"
 
 

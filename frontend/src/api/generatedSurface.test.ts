@@ -6,7 +6,7 @@ import * as generatedSdk from "./generated/sdk.gen";
 
 const dirname = path.dirname(fileURLToPath(import.meta.url));
 
-describe("SETUP-02 generated SDK surface", () => {
+describe("generated SDK surface", () => {
   it("exports exactly the approved operation request functions", () => {
     const functionExports = Object.keys(generatedSdk).filter(
       (key) => typeof (generatedSdk as Record<string, unknown>)[key] === "function",
@@ -24,17 +24,6 @@ describe("SETUP-02 generated SDK surface", () => {
       "getPreferredMoves",
       "putPreferredMoves",
     ]);
-    expect(typeof generatedSdk.deletePreferredMoves).toBe("function");
-    expect(typeof generatedSdk.getAnalysis).toBe("function");
-    expect(typeof generatedSdk.requestAnalysis).toBe("function");
-    expect(typeof generatedSdk.getHealth).toBe("function");
-    expect(typeof generatedSdk.getGames).toBe("function");
-    expect(typeof generatedSdk.getGame).toBe("function");
-    expect(typeof generatedSdk.getOpenings).toBe("function");
-    expect(typeof generatedSdk.getOpeningByKey).toBe("function");
-    expect(typeof generatedSdk.getPositionInsight).toBe("function");
-    expect(typeof generatedSdk.getPreferredMoves).toBe("function");
-    expect(typeof generatedSdk.putPreferredMoves).toBe("function");
   });
 
   it("checked-in contract contains only the approved clean operations", () => {
@@ -60,9 +49,7 @@ describe("SETUP-02 generated SDK surface", () => {
     expect(Object.keys(contract.paths["/api/analysis"])).toEqual(["get"]);
     expect(contract.paths["/api/analysis"].get?.operationId).toBe("getAnalysis");
     expect(Object.keys(contract.paths["/api/analysis-requests"])).toEqual(["post"]);
-    expect(contract.paths["/api/analysis-requests"].post?.operationId).toBe(
-      "requestAnalysis",
-    );
+    expect(contract.paths["/api/analysis-requests"].post?.operationId).toBe("requestAnalysis");
     expect(Object.keys(contract.paths["/api/health"])).toEqual(["get"]);
     expect(contract.paths["/api/health"].get?.operationId).toBe("getHealth");
     expect(Object.keys(contract.paths["/api/games"])).toEqual(["get"]);
@@ -72,27 +59,13 @@ describe("SETUP-02 generated SDK surface", () => {
     expect(Object.keys(contract.paths["/api/openings"])).toEqual(["get"]);
     expect(contract.paths["/api/openings"].get?.operationId).toBe("getOpenings");
     expect(Object.keys(contract.paths["/api/openings/{opening_key}"])).toEqual(["get"]);
-    expect(contract.paths["/api/openings/{opening_key}"].get?.operationId).toBe(
-      "getOpeningByKey",
-    );
+    expect(contract.paths["/api/openings/{opening_key}"].get?.operationId).toBe("getOpeningByKey");
     expect(Object.keys(contract.paths["/api/positions/insight"])).toEqual(["get"]);
-    expect(contract.paths["/api/positions/insight"].get?.operationId).toBe(
-      "getPositionInsight",
-    );
-    expect(Object.keys(contract.paths["/api/preferred-moves"])).toEqual([
-      "delete",
-      "get",
-      "put",
-    ]);
-    expect(contract.paths["/api/preferred-moves"].get?.operationId).toBe(
-      "getPreferredMoves",
-    );
-    expect(contract.paths["/api/preferred-moves"].put?.operationId).toBe(
-      "putPreferredMoves",
-    );
-    expect(contract.paths["/api/preferred-moves"].delete?.operationId).toBe(
-      "deletePreferredMoves",
-    );
+    expect(contract.paths["/api/positions/insight"].get?.operationId).toBe("getPositionInsight");
+    expect(Object.keys(contract.paths["/api/preferred-moves"])).toEqual(["delete", "get", "put"]);
+    expect(contract.paths["/api/preferred-moves"].get?.operationId).toBe("getPreferredMoves");
+    expect(contract.paths["/api/preferred-moves"].put?.operationId).toBe("putPreferredMoves");
+    expect(contract.paths["/api/preferred-moves"].delete?.operationId).toBe("deletePreferredMoves");
     expect(Object.keys(contract.components.schemas)).toEqual([
       "AnalysisObservationErrorResponse",
       "AnalysisObservationLineResponse",
@@ -139,5 +112,4 @@ describe("SETUP-02 generated SDK surface", () => {
       "ValidationError",
     ]);
   });
-
 });

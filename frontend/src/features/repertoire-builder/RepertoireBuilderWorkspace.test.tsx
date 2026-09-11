@@ -3,8 +3,22 @@ import "./RepertoireBuilderWorkspace.testSetup";
 import { cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import type { AnalysisClient, AnalysisObservation, AnalysisOperationResult } from "../analysis/analysisApi";
-import { GAME_DETAIL, GAME_UUID, renderWorkspace, testClients, STARTING_FEN, AFTER_E4_FEN, AFTER_E5_FEN, AFTER_D4_FEN, AFTER_NF3_FEN } from "./repertoireBuilderTestHelpers";
+import type {
+  AnalysisClient,
+  AnalysisObservation,
+  AnalysisOperationResult,
+} from "../analysis/analysisApi";
+import {
+  GAME_DETAIL,
+  GAME_UUID,
+  renderWorkspace,
+  testClients,
+  STARTING_FEN,
+  AFTER_E4_FEN,
+  AFTER_E5_FEN,
+  AFTER_D4_FEN,
+  AFTER_NF3_FEN,
+} from "./repertoireBuilderTestHelpers";
 import type { GameDetailClient } from "./RepertoireBuilderWorkspace";
 
 afterEach(() => cleanup());
@@ -61,7 +75,9 @@ async function loadGame(
   renderWorkspace({ gameClient, ...clients });
   fireEvent.change(screen.getByLabelText("Game UUID"), { target: { value: GAME_UUID } });
   await user.click(screen.getByRole("button", { name: "Load game" }));
-  await waitFor(() => expect(screen.getByTestId("session-origin")).toHaveTextContent("complete game loaded"));
+  await waitFor(() =>
+    expect(screen.getByTestId("session-origin")).toHaveTextContent("complete game loaded"),
+  );
   return user;
 }
 
@@ -71,15 +87,21 @@ describe("RepertoireBuilderWorkspace", () => {
     const user = userEvent.setup();
     renderWorkspace({ analysisClient });
 
-    await waitFor(() => expect(analysisClient.observe).toHaveBeenCalledWith(STARTING_FEN, expect.any(AbortSignal)));
+    await waitFor(() =>
+      expect(analysisClient.observe).toHaveBeenCalledWith(STARTING_FEN, expect.any(AbortSignal)),
+    );
     expect(analysisClient.request).not.toHaveBeenCalled();
     await user.click(screen.getByRole("button", { name: "Analyze position" }));
-    await waitFor(() => expect(analysisClient.request).toHaveBeenCalledWith(STARTING_FEN, expect.any(AbortSignal)));
+    await waitFor(() =>
+      expect(analysisClient.request).toHaveBeenCalledWith(STARTING_FEN, expect.any(AbortSignal)),
+    );
 
     const candidate = await screen.findByRole("button", { name: "1. e4" });
     await user.click(candidate);
     expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", AFTER_E4_FEN);
-    await waitFor(() => expect(analysisClient.observe).toHaveBeenCalledWith(AFTER_E4_FEN, expect.any(AbortSignal)));
+    await waitFor(() =>
+      expect(analysisClient.observe).toHaveBeenCalledWith(AFTER_E4_FEN, expect.any(AbortSignal)),
+    );
   });
 
   it("starts fresh at one selected standard-start position", async () => {
@@ -149,7 +171,9 @@ describe("RepertoireBuilderWorkspace", () => {
     const clients = testClients();
     const user = userEvent.setup();
     renderWorkspace(clients);
-    await waitFor(() => expect(clients.preferredMoveClient.get).toHaveBeenCalledWith(STARTING_FEN, expect.anything()));
+    await waitFor(() =>
+      expect(clients.preferredMoveClient.get).toHaveBeenCalledWith(STARTING_FEN, expect.anything()),
+    );
 
     await user.click(screen.getByTestId("move-e2-e4"));
     expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", AFTER_E4_FEN);
@@ -201,7 +225,9 @@ describe("RepertoireBuilderWorkspace", () => {
 
     fireEvent.change(screen.getByLabelText("Game UUID"), { target: { value: GAME_UUID } });
     await user.click(screen.getByRole("button", { name: "Load game" }));
-    await waitFor(() => expect(screen.getByTestId("session-origin")).toHaveTextContent("complete game loaded"));
+    await waitFor(() =>
+      expect(screen.getByTestId("session-origin")).toHaveTextContent("complete game loaded"),
+    );
     expect(screen.getByTestId("session-origin")).toHaveTextContent("Current Ply 0.");
     expect(screen.getByRole("button", { name: "Next" })).toBeEnabled();
   });
@@ -232,9 +258,9 @@ describe("RepertoireBuilderWorkspace", () => {
 
   it("aborts a pending clean load when Reset is pressed", async () => {
     let resolve!: (result: Awaited<ReturnType<GameDetailClient>>) => void;
-    const gameClient = vi.fn<GameDetailClient>().mockImplementation(
-      () => new Promise((done) => (resolve = done)),
-    );
+    const gameClient = vi
+      .fn<GameDetailClient>()
+      .mockImplementation(() => new Promise((done) => (resolve = done)));
     const user = userEvent.setup();
     renderWorkspace({ gameClient });
     fireEvent.change(screen.getByLabelText("Game UUID"), { target: { value: GAME_UUID } });

@@ -15,7 +15,6 @@ from ..positions import CanonicalPosition, canonicalize_board, canonicalize_fen
 from ..schema import SchemaIncompatibleError, _assert_compatible_schema
 from .source import OpeningSourceError, _read_one_game
 
-
 MatchKind = Literal["route", "transposition"]
 
 
@@ -182,7 +181,9 @@ def _load_routes(database_path: str | Path) -> tuple[_StoredRoute, ...]:
         raise OpeningRecognitionError("opening catalogue could not be read") from error
 
 
-def _materialize_routes(route_rows: list[object], move_rows: list[object]) -> tuple[_StoredRoute, ...]:
+def _materialize_routes(
+    route_rows: list[object], move_rows: list[object]
+) -> tuple[_StoredRoute, ...]:
     moves_by_route: dict[int, list[tuple[int, str]]] = defaultdict(list)
     for row in move_rows:
         try:
@@ -263,7 +264,9 @@ def _verify_route_replay(
     try:
         replayed = canonicalize_board(board)
     except ValueError as error:
-        raise OpeningRecognitionError("stored opening route produced an invalid position") from error
+        raise OpeningRecognitionError(
+            "stored opening route produced an invalid position"
+        ) from error
     if replayed != endpoint:
         raise OpeningRecognitionError("stored opening route endpoint does not match replay")
 
@@ -285,7 +288,9 @@ def _endpoint_map(
     for route in routes:
         grouped[route.endpoint].append(route)
     return {
-        endpoint: tuple(sorted(matching, key=lambda route: (route.eco, route.name, route.moves_uci)))
+        endpoint: tuple(
+            sorted(matching, key=lambda route: (route.eco, route.name, route.moves_uci))
+        )
         for endpoint, matching in grouped.items()
     }
 

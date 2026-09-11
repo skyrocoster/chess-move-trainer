@@ -66,11 +66,4 @@ describe("BoardControl", () => {
     expect(screen.getByRole("button", { name: "Previous" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Next" })).toBeDisabled();
   });
-
-  it("gates captured-game traversal when both direction capabilities are unavailable", () => {
-    render(<BoardControl hasGame canGoPrevious={false} canGoNext={false} />);
-
-    expect(screen.getByRole("button", { name: "Previous" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Next" })).toBeDisabled();
-  });
 });

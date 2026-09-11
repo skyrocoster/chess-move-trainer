@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import sqlite3
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, date, datetime
@@ -32,7 +31,6 @@ from .ranges import (
 from .repository import (
     PreferredMoveError,
     PreferredMoveSchemaError,
-    PreferredMoveStorageError,
     _translate_storage_error,
 )
 

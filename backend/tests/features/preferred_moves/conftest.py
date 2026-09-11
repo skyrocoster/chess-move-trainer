@@ -53,3 +53,51 @@ def api_context(
     database = create_preferred_moves_database(tmp_path / "preferred-moves.db")
     monkeypatch.setenv(REBUILT_DATABASE_PATH_ENV, str(database))
     return client, database
+
+
+def request_params(
+    fen: str = START_FEN,
+    from_date: str = "2026-01-15",
+    until: str = "2026-05-15",
+) -> dict[str, str]:
+    return {"fen": fen, "from": from_date, "until": until}
+
+
+def put_body(
+    client: TestClient,
+    *,
+    fen: str = START_FEN,
+    effective_from: str = "2026-06-01",
+    effective_until: str | None = "2026-07-01",
+    preference: dict[str, object] | None = None,
+    include_until: bool = True,
+    **extra: object,
+):
+    body: dict[str, object] = {
+        "fen": fen,
+        "effective_from": effective_from,
+        "preference": preference or {"kind": "move", "uci": "e2e4"},
+        **extra,
+    }
+    if include_until:
+        body["effective_until"] = effective_until
+    return client.put("/api/preferred-moves", json=body)
+
+
+def delete_body(
+    client: TestClient,
+    *,
+    fen: str = START_FEN,
+    effective_from: str = "2026-06-01",
+    effective_until: str | None = "2026-07-01",
+    include_until: bool = True,
+    **extra: object,
+):
+    body: dict[str, object] = {
+        "fen": fen,
+        "effective_from": effective_from,
+        **extra,
+    }
+    if include_until:
+        body["effective_until"] = effective_until
+    return client.request("DELETE", "/api/preferred-moves", json=body)

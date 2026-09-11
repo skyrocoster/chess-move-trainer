@@ -152,7 +152,10 @@ function narrowInsightResponse(
   };
 }
 
-function failureFromInsight(error: unknown, status: number | null): MoveResponseDistributionFailure {
+function failureFromInsight(
+  error: unknown,
+  status: number | null,
+): MoveResponseDistributionFailure {
   const code = isRecord(error) && typeof error.code === "string" ? error.code : null;
   if (status === 422 && code === "invalid_fen") return { status: "invalid_fen" };
   if (status === 422 && (code === "invalid_trainer_color" || code === "invalid_color")) {

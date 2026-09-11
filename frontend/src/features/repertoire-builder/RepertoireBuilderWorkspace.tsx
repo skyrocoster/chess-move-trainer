@@ -55,69 +55,8 @@ import {
 } from "./repertoireBuilderWorkspaceHandlers";
 import { useMoveResponseSelection } from "./moveResponseSelection";
 
-export type GameDetailClient = (options: {
-  path: { game_uuid: string };
-  signal?: AbortSignal;
-}) => ReturnType<typeof getGame>;
-
-export type RepertoireBuilderWorkspaceProps = {
-  gameClient?: GameDetailClient;
-  analysisClient?: AnalysisClient;
-  analysisPollIntervalMs?: number;
-  preferredMoveClient?: PreferredMoveClient;
-  positionContextClient?: PositionContextClient;
-  moveResponseDistributionClient?: MoveResponseDistributionClient;
-};
-
-type PositionPickerMove = {
-  sourceSquare: Square;
-  targetSquare: Square;
-  promotion?: PromotionPiece;
-};
-
-function moveToSessionMove(
-  session: PositionPickerSessionBoundary,
-  move: PositionPickerMove,
-): SessionMove | null {
-  const chess = new Chess(session.currentPosition.fen);
-  try {
-    const played = chess.move({
-      from: move.sourceSquare,
-      to: move.targetSquare,
-      ...(move.promotion ? { promotion: move.promotion } : {}),
-    });
-    return {
-      outgoingUCI: `${move.sourceSquare}${move.targetSquare}${move.promotion ?? ""}`,
-      resultingFEN: chess.fen({ forceEnpassantSquare: true }),
-      san: played.san,
-    };
-  } catch {
-    return null;
-  }
-}
-
-function failureCode(value: unknown): string | null {
-  return typeof value === "object" && value !== null && "code" in value && typeof value.code === "string"
-    ? value.code
-    : null;
-}
-
-function loadFailure(
-  result: Awaited<ReturnType<GameDetailClient>>,
-): Exclude<GameLoaderStatus, "idle" | "loading"> {
-  const code = failureCode(result.error);
-  const status = result.response?.status;
-  if (code === "game_not_found" || status === 404) {
-    return "game_not_found";
-  }
-  if (code === "games_unavailable" || status === 503) {
-    return "corpus_unavailable";
-  }
-  if (status === 422) {
-    return "game_unavailable";
-  }
-  return code === "unexpected_failure" || status === 500 ? "unexpected_failure" : "unexpected_failure";
-}
+import type { GameDetailClient, PositionPickerMove, RepertoireBuilderWorkspaceProps } from "./RepertoireBuilderWorkspaceTypes";
+import { failureCode, loadFailure, moveToSessionMove } from "./RepertoireBuilderWorkspaceTypes";
 
 export default function RepertoireBuilderWorkspace({
   gameClient = getGame,
@@ -227,7 +166,7 @@ export default function RepertoireBuilderWorkspace({
   const label = boardLabel(session, orientation);
   const localMoves = branchMoves(session);
   const lastMove = session.selectedTransition
-      ? lastMoveFromSquares(
+    ? lastMoveFromSquares(
         session.selectedTransition.outgoingUCI.slice(0, 2) as Square,
         session.selectedTransition.outgoingUCI.slice(2, 4) as Square,
       )
@@ -395,9 +334,7 @@ export default function RepertoireBuilderWorkspace({
     resetWorkflow();
     clearSelectedResponse();
     setOrientation((current) => (current === "white" ? "black" : "white"));
-    setSessionStatus(
-      `Flipped to ${orientation === "white" ? "Black" : "White"} at the bottom.`,
-    );
+    setSessionStatus(`Flipped to ${orientation === "white" ? "Black" : "White"} at the bottom.`);
   }, [cancelPromotion, clearSelectedResponse, orientation, resetWorkflow]);
 
   const branchOrigin = session.branch
@@ -493,7 +430,9 @@ export default function RepertoireBuilderWorkspace({
                 onRetry={workflow.onRetry}
               />
               <div className={styles.positionDescription} data-testid="position-description-row">
-                <PositionDescription model={createPositionModel(currentPosition.fen, orientation)} />
+                <PositionDescription
+                  model={createPositionModel(currentPosition.fen, orientation)}
+                />
               </div>
             </section>
           }

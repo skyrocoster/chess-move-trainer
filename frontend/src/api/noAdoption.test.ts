@@ -43,10 +43,12 @@ function collectProductionSourceFiles(dir: string): string[] {
 
 function runtimeClientImportNames(content: string): string[] | null {
   const match = content.match(/import\s+(?!type\b)\{([^}]*)\}\s+from\s+["'][^"']*api\/client["']/m);
-  return match?.[1]
-    .split(",")
-    .map((name) => name.trim().split(/\s+as\s+/)[0] ?? "")
-    .filter(Boolean) ?? null;
+  return (
+    match?.[1]
+      .split(",")
+      .map((name) => name.trim().split(/\s+as\s+/)[0] ?? "")
+      .filter(Boolean) ?? null
+  );
 }
 
 describe("generated client adoption guard", () => {

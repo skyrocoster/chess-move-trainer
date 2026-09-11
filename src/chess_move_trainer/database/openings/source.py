@@ -13,7 +13,6 @@ import chess.pgn
 
 from ..positions import CanonicalPosition, canonicalize_fen
 
-
 EXPECTED_SOURCE_FILES = ("a.tsv", "b.tsv", "c.tsv", "d.tsv", "e.tsv")
 SOURCE_FIELDS = ("eco", "name", "pgn")
 _ECO_PATTERN = re.compile(r"[A-E][0-9]{2}\Z")
@@ -53,7 +52,9 @@ class OpeningRouteSource:
             raise ValueError("name must be a string")
         if type(self.moves_uci) is not tuple or not self.moves_uci:
             raise ValueError("moves_uci must be a non-empty tuple")
-        if any(type(move) is not str or _UCI_PATTERN.fullmatch(move) is None for move in self.moves_uci):
+        if any(
+            type(move) is not str or _UCI_PATTERN.fullmatch(move) is None for move in self.moves_uci
+        ):
             raise ValueError("moves_uci must contain valid UCI moves")
         if type(self.endpoint_fen) is not str:
             raise ValueError("endpoint_fen must be a complete FEN string")

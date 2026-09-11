@@ -219,7 +219,9 @@ function renderTooltip({ active, payload }: TooltipContentProps) {
     <div className={styles.tooltip} role="tooltip">
       <strong className={styles.tooltipLabel}>{item.label}</strong>
       <span className={styles.tooltipMetric}>{item.value} occurrences</span>
-      <span className={styles.tooltipMetric}>{item.percentageLabel} of outgoing move occurrences</span>
+      <span className={styles.tooltipMetric}>
+        {item.percentageLabel} of outgoing move occurrences
+      </span>
     </div>
   );
 }
@@ -319,8 +321,8 @@ export function MoveResponseDistributionChart({
       data-other-expanded={otherExpanded ? "true" : "false"}
     >
       <p className={styles.visuallyHidden} id={descriptionId}>
-        Pie chart of outgoing moves by recorded occurrences. The text controls provide the
-        complete keyboard-operable outgoing-move list.
+        Pie chart of outgoing moves by recorded occurrences. The text controls provide the complete
+        keyboard-operable outgoing-move list.
       </p>
       <PieChart
         width={CHART_SIZE}

@@ -43,9 +43,7 @@ export async function expectSessionBoundary(canvasElement: HTMLElement): Promise
   await expect(status).toBeVisible();
   await expect(status).toHaveAttribute("role", "status");
   await expect(status).toHaveAttribute("aria-live", "polite");
-  await expect(
-    sessionContent.getByRole("heading", { name: "Preferred move" }),
-  ).toBeVisible();
+  await expect(sessionContent.getByRole("heading", { name: "Preferred move" })).toBeVisible();
 }
 
 export async function expectSessionHistory(

@@ -76,7 +76,9 @@ def _db(path: Path) -> sqlite3.Connection:
     return connection
 
 
-def test_inspect_missing_never_launches_engine(connection: sqlite3.Connection, profile) -> None:
+def test_missing_position_reports_missing_without_using_engine(
+    connection: sqlite3.Connection, profile
+) -> None:
     initialized(connection)
     engines, _ = _factory(profile)
     result = inspect(connection, START_FEN, profile)
@@ -88,7 +90,7 @@ def test_inspect_missing_never_launches_engine(connection: sqlite3.Connection, p
     assert all(engine.calls == [] for engine in engines)
 
 
-def test_inspect_eligible_returns_result_without_computation(
+def test_ready_result_returns_without_using_engine(
     connection: sqlite3.Connection, profile
 ) -> None:
     initialized(connection)
@@ -104,7 +106,7 @@ def test_inspect_eligible_returns_result_without_computation(
     assert all(engine.calls == [] for engine in engines)
 
 
-def test_inspect_uses_position_key_for_counter_variant_result(
+def test_counter_variant_shares_result_by_position_key(
     connection: sqlite3.Connection, profile
 ) -> None:
     initialized(connection)
@@ -118,7 +120,7 @@ def test_inspect_uses_position_key_for_counter_variant_result(
     assert result.item is None
 
 
-def test_inspect_stale_keeps_result_readable(connection: sqlite3.Connection, profile) -> None:
+def test_outdated_result_stays_readable(connection: sqlite3.Connection, profile) -> None:
     initialized(connection)
     AnalysisRepository(connection).publish(result_for(profile, START_FEN))
     stale_profile = AnalysisProfile(
@@ -138,7 +140,7 @@ def test_inspect_stale_keeps_result_readable(connection: sqlite3.Connection, pro
     assert all(engine.calls == [] for engine in engines)
 
 
-def test_inspect_detects_terminal_position(connection: sqlite3.Connection, profile) -> None:
+def test_finished_positions_are_detected(connection: sqlite3.Connection, profile) -> None:
     initialized(connection)
     terminal = inspect(connection, FOOLS_MATE_FEN, profile)
     assert terminal.terminal is True
@@ -146,7 +148,7 @@ def test_inspect_detects_terminal_position(connection: sqlite3.Connection, profi
     assert nonterminal.terminal is False
 
 
-def test_request_actions_follow_deliberate_semantics(
+def test_analyze_update_retry_follow_rules(
     connection: sqlite3.Connection, profile
 ) -> None:
     initialized(connection)
@@ -183,7 +185,9 @@ def test_request_rejects_invalid_action(connection: sqlite3.Connection, profile)
         request(connection, START_FEN, profile, "explode")
 
 
-def test_run_session_drains_fifo_with_five_bounded_workers(database_path: Path, profile) -> None:
+def test_run_session_completes_queued_work_with_limited_workers(
+    database_path: Path, profile
+) -> None:
     connection = _db(database_path)
     enqueue(connection, START_FEN)
     enqueue(connection, STALEMATE_FEN)
@@ -203,7 +207,7 @@ def test_run_session_drains_fifo_with_five_bounded_workers(database_path: Path, 
     assert all(engine.closed for engine in engines)
 
 
-def test_run_session_marks_failure_without_auto_retry(database_path: Path, profile) -> None:
+def test_failed_run_stays_failed_until_manual_retry(database_path: Path, profile) -> None:
     connection = _db(database_path)
     enqueue(connection, START_FEN)
     connection.close()
@@ -226,7 +230,7 @@ def test_run_session_marks_failure_without_auto_retry(database_path: Path, profi
     connection.close()
 
 
-def test_run_session_respects_shared_analysis_lock(database_path: Path, profile) -> None:
+def test_run_session_refuses_to_run_when_lock_held(database_path: Path, profile) -> None:
     connection = _db(database_path)
     connection.close()
 
@@ -252,7 +256,7 @@ def test_run_session_respects_shared_analysis_lock(database_path: Path, profile)
         holder.release()
 
 
-def test_run_session_restart_requeues_interrupted_running(database_path: Path, profile) -> None:
+def test_restart_returns_interrupted_work_to_queue(database_path: Path, profile) -> None:
     connection = _db(database_path)
     enqueue(connection, START_FEN)
     enqueue(connection, STALEMATE_FEN)
@@ -269,7 +273,7 @@ def test_run_session_restart_requeues_interrupted_running(database_path: Path, p
     assert calls == [START_FEN]
 
 
-def test_run_session_refuses_workers_ceiling_and_wrong_profile(
+def test_run_session_rejects_too_many_workers_and_wrong_profile(
     database_path: Path, profile
 ) -> None:
     connection = _db(database_path)

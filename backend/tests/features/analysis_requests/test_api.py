@@ -10,15 +10,13 @@ from fastapi.routing import APIRoute
 import backend.app.features.analysis_requests.router as router_module
 from backend.app.dependencies import REBUILT_DATABASE_PATH_ENV, get_rebuilt_database_path
 from backend.app.main import app
-from chess_move_trainer.database.stockfish import QueueService
-
-from .conftest import api_context
 from backend.tests.features.analysis_observation.conftest import (
     STARTING_FEN,
     TARGET_CANONICAL_FEN,
     TARGET_FEN,
     TARGET_WITH_COUNTERS,
 )
+from chess_move_trainer.database.stockfish import QueueService
 
 
 def _post(client, body: dict[str, object]):
@@ -53,7 +51,7 @@ def _queue_row(database: Path, position_id: int) -> tuple[object, ...] | None:
         ).fetchone()
 
 
-def test_ready_reuse_returns_exact_observation_and_ignores_unknown_fields(
+def test_finished_analysis_is_reused_and_ignores_unknown_fields(
     api_context,
 ) -> None:
     client, _database = api_context
@@ -75,7 +73,7 @@ def test_ready_reuse_returns_exact_observation_and_ignores_unknown_fields(
     assert "queue" not in json.dumps(post_response.json()).lower()
 
 
-def test_default_browser_request_queues_and_get_observes_the_committed_postcondition(
+def test_first_request_queues_work_and_read_back_matches(
     api_context,
 ) -> None:
     client, database = api_context
@@ -95,7 +93,7 @@ def test_default_browser_request_queues_and_get_observes_the_committed_postcondi
     assert _queue_row(database, position_id)[0] == "browser"
 
 
-def test_tool_request_returns_202_and_retains_a_complete_stale_result(
+def test_tool_request_queues_but_keeps_old_complete_result(
     api_context,
 ) -> None:
     client, _database = api_context
@@ -109,7 +107,7 @@ def test_tool_request_returns_202_and_retains_a_complete_stale_result(
     assert response.json()["result"]["quality"] == "tool"
 
 
-def test_repeated_request_promotes_live_work_without_downgrading_and_preserves_running_claim(
+def test_repeat_request_upgrades_quality_without_losing_running_work(
     api_context,
 ) -> None:
     client, database = api_context
@@ -147,7 +145,7 @@ def test_repeated_request_promotes_live_work_without_downgrading_and_preserves_r
         ),
     ),
 )
-def test_known_invalid_values_use_exact_422_errors(api_context, body, error) -> None:
+def test_bad_values_give_clear_error(api_context, body, error) -> None:
     client, _database = api_context
 
     response = _post(client, body)
@@ -156,7 +154,7 @@ def test_known_invalid_values_use_exact_422_errors(api_context, body, error) -> 
     assert response.json() == error
 
 
-def test_required_and_strict_body_fields_are_enforced(api_context) -> None:
+def test_missing_or_wrong_type_fields_give_error(api_context) -> None:
     client, _database = api_context
 
     missing_fen = _post(client, {"quality": "browser"})
@@ -168,7 +166,7 @@ def test_required_and_strict_body_fields_are_enforced(api_context) -> None:
     assert non_string_quality.status_code == 422
 
 
-def test_missing_incompatible_and_malformed_storage_use_503_without_creation(
+def test_missing_or_broken_database_gives_unavailable_without_creating_file(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     client,
@@ -199,7 +197,7 @@ def test_missing_incompatible_and_malformed_storage_use_503_without_creation(
     assert malformed_response.json()["code"] == "analysis_unavailable"
 
 
-def test_dependency_override_selects_explicit_rebuilt_database(
+def test_injected_database_is_used_when_configured(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     client,
@@ -220,7 +218,7 @@ def test_dependency_override_selects_explicit_rebuilt_database(
     assert response.json()["fen"] == TARGET_CANONICAL_FEN
 
 
-def test_unexpected_failures_use_safe_500(monkeypatch, api_context) -> None:
+def test_unexpected_failures_stay_safe_without_leaking_details(monkeypatch, api_context) -> None:
     client, _database = api_context
 
     def fail(*_args: object, **_kwargs: object) -> object:
@@ -237,7 +235,7 @@ def test_unexpected_failures_use_safe_500(monkeypatch, api_context) -> None:
     assert "database secret" not in response.text
 
 
-def test_request_route_has_settled_operation_and_coexists_with_observation() -> None:
+def test_request_route_coexists_with_observation_and_uses_expected_name() -> None:
     routes = {
         (route.path, tuple(sorted(route.methods))): route
         for route in app.routes

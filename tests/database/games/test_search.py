@@ -23,7 +23,6 @@ from chess_move_trainer.database.games.search import (
 from chess_move_trainer.database.openings.persistence import OpeningCatalogueRepository
 from chess_move_trainer.database.openings.source import OpeningRouteSource
 
-
 TRAINER_UUID = "11111111-1111-4111-8111-111111111111"
 GAMES_ROOT = Path(__file__).parent / "fixtures"
 
@@ -45,7 +44,7 @@ def _raw_game(
     time_control: str | None = "300+5",
     time_class: str | None = "blitz",
 ) -> dict[str, object]:
-    headers = [f'[Event "search fixture"]']
+    headers = ['[Event "search fixture"]']
     if date is not None:
         headers.extend([f'[UTCDate "{date}"]', f'[UTCTime "{time}"]'])
     if end_date is not None:
@@ -97,7 +96,12 @@ def _occurrence_ids(database: Path, game_id: int) -> list[tuple[int, int, str, s
     game = GameReadRepository(database).read(game_id)
     assert game is not None
     return [
-        (occurrence.ply, occurrence.position_id, occurrence.position.placement, occurrence.move_uci or "")
+        (
+            occurrence.ply,
+            occurrence.position_id,
+            occurrence.position.placement,
+            occurrence.move_uci or "",
+        )
         for occurrence in game.occurrences
     ]
 
@@ -205,7 +209,8 @@ def test_search_returns_rich_summaries_and_selects_deepest_opening(tmp_path: Pat
         "route_id",
     }
     serialized_text = json.dumps(serialized)
-    assert all(private not in serialized_text for private in ("game_id", "position_id", "opening_id", "route_id"))
+    private_fields = ("game_id", "position_id", "opening_id", "route_id")
+    assert all(private not in serialized_text for private in private_fields)
 
 
 def test_every_filter_family_combines_and_canonical_fen_move_filters(tmp_path: Path) -> None:
@@ -307,7 +312,9 @@ def test_coverage_states_pagination_and_deterministic_repeated_reads(tmp_path: P
         analysis=position_ids[1:],
         preferred=position_ids[1:],
     )
-    complete = repository.search(GameSearchQuery(analysis_coverage="complete", preferred_coverage="complete"))
+    complete = repository.search(
+        GameSearchQuery(analysis_coverage="complete", preferred_coverage="complete")
+    )
     assert complete.total == 1
     assert repository.search(GameSearchQuery()) == repository.search(GameSearchQuery())
 

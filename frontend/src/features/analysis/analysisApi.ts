@@ -49,8 +49,14 @@ export type AnalysisFailure = { status: AnalysisFailureCode };
 export type AnalysisOperationResult<T> = { status: "success"; data: T } | AnalysisFailure;
 
 export type AnalysisClient = {
-  observe: (fen: Fen, signal?: AbortSignal) => Promise<AnalysisOperationResult<AnalysisObservation>>;
-  request: (fen: Fen, signal?: AbortSignal) => Promise<AnalysisOperationResult<AnalysisObservation>>;
+  observe: (
+    fen: Fen,
+    signal?: AbortSignal,
+  ) => Promise<AnalysisOperationResult<AnalysisObservation>>;
+  request: (
+    fen: Fen,
+    signal?: AbortSignal,
+  ) => Promise<AnalysisOperationResult<AnalysisObservation>>;
 };
 
 function isRecord(value: unknown): value is JsonRecord {
@@ -93,7 +99,9 @@ export function validateAnalysisFen(value: unknown): AnalysisFailureCode | null 
 }
 
 function isState(value: unknown): value is AnalysisStateValue {
-  return value === "not_requested" || value === "queued" || value === "running" || value === "ready";
+  return (
+    value === "not_requested" || value === "queued" || value === "running" || value === "ready"
+  );
 }
 
 function isScoreKind(value: unknown): value is AnalysisScoreKind {
@@ -186,7 +194,10 @@ function failureFromResponse(
 ): AnalysisFailure {
   const code = isRecord(error) && isFailureCode(error.code) ? error.code : null;
 
-  if (status === 422 && (code === "invalid_fen" || (operation === "request" && code === "invalid_quality"))) {
+  if (
+    status === 422 &&
+    (code === "invalid_fen" || (operation === "request" && code === "invalid_quality"))
+  ) {
     return { status: code };
   }
   if (status === 503 && code === "analysis_unavailable") {
@@ -220,7 +231,9 @@ export const fetchAnalysis = async (
   }
 
   const observation = mapObservation(response.data, fen);
-  return observation === null ? { status: "unexpected_failure" } : { status: "success", data: observation };
+  return observation === null
+    ? { status: "unexpected_failure" }
+    : { status: "success", data: observation };
 };
 
 export const requestAnalysis = async (
@@ -241,7 +254,9 @@ export const requestAnalysis = async (
   }
 
   const observation = mapObservation(response.data, fen);
-  return observation === null ? { status: "unexpected_failure" } : { status: "success", data: observation };
+  return observation === null
+    ? { status: "unexpected_failure" }
+    : { status: "success", data: observation };
 };
 
 export const defaultAnalysisClient: AnalysisClient = {

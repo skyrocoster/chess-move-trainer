@@ -14,7 +14,6 @@ from chess_move_trainer.database.analysis import (
 )
 from chess_move_trainer.database.positions import CanonicalPosition, canonicalize_fen
 
-
 STARTING_PLACEMENT = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR"
 STARTING_FEN = f"{STARTING_PLACEMENT} w KQkq - 0 1"
 CHECKMATE_FEN = "7k/6Q1/6K1/8/8/8/8/8 b - - 0 1"

@@ -12,7 +12,6 @@ from chess_move_trainer.database.positions import (
     canonicalize_fen,
 )
 
-
 STARTING_PLACEMENT = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR"
 STARTING_FEN = f"{STARTING_PLACEMENT} w KQkq - 0 1"
 

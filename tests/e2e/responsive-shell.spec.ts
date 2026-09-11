@@ -31,7 +31,7 @@ async function expectNoHorizontalOverflow(page: Page) {
   expect(dimensions.scrollWidth).toBeLessThanOrEqual(dimensions.clientWidth);
 }
 
-test("uses the approved shell at desktop and breakpoint widths", async ({
+test("uses the shell layout at desktop and breakpoint widths", async ({
   page,
 }) => {
   for (const width of desktopWidths) {

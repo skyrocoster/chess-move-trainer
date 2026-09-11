@@ -12,7 +12,6 @@ from ..connection import DEFAULT_LOCK_TIMEOUT_SECONDS, _open_connection
 from ..positions import CanonicalPosition
 from ..schema import SchemaIncompatibleError, _assert_compatible_schema
 
-
 TrainerColor = Literal["white", "black"]
 
 

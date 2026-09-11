@@ -25,14 +25,9 @@ function cleanLine(move: string, rank: number, scoreValue: number): AnalysisLine
   };
 }
 
-function cleanResult(
-  moves: readonly string[],
-  scoreOffset = 0,
-): AnalysisResult {
+function cleanResult(moves: readonly string[], scoreOffset = 0): AnalysisResult {
   return {
-    lines: moves.map((move, index) =>
-      cleanLine(move, index + 1, 34 - index * 10 + scoreOffset),
-    ),
+    lines: moves.map((move, index) => cleanLine(move, index + 1, 34 - index * 10 + scoreOffset)),
     terminal_kind: null,
   };
 }
@@ -74,12 +69,8 @@ export function storyCandidateAnalysisClient(
   moves: readonly string[] = ["e2e4", "d2d4", "c2c4", "g1f3", "b1c3"],
 ): AnalysisClient {
   return {
-    observe: fn(async (fen) =>
-      cleanObservation(fen, "ready", cleanResult(moves)),
-    ),
-    request: fn(async (fen) =>
-      cleanObservation(fen, "ready", cleanResult(moves)),
-    ),
+    observe: fn(async (fen) => cleanObservation(fen, "ready", cleanResult(moves))),
+    request: fn(async (fen) => cleanObservation(fen, "ready", cleanResult(moves))),
   };
 }
 

@@ -63,8 +63,7 @@ export function deriveRepertoirePositionModel({
   selectedTransition?: SelectedTransition | null;
   preferredMoveKnown?: boolean;
 }): RepertoirePositionModel {
-  const personalCount =
-    context === null ? null : context.distinctGameCount;
+  const personalCount = context === null ? null : context.distinctGameCount;
   const color = colorLabel(context === null ? bottomColor : context.trainerColor);
   const ownTurn = sideToMove === bottomColor;
   const savedPresence = !preferredMoveKnown
@@ -116,8 +115,7 @@ export function deriveRepertoirePositionModel({
         : context.observedInGames && context.distinctGameCount > 0
           ? `Seen in ${context.distinctGameCount} games as ${color}`
           : `Never seen as ${color}`,
-    saveability:
-      context === null ? "unknown" : context.observedInGames ? "savable" : "unsavable",
+    saveability: context === null ? "unknown" : context.observedInGames ? "savable" : "unsavable",
     savedPresence,
     saved,
     selected,

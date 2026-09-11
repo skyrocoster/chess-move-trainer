@@ -20,7 +20,6 @@ from chess_move_trainer.database.analysis import (
 )
 from chess_move_trainer.database.positions import PositionRepository
 
-
 STARTING_FEN = (
     "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 )
@@ -83,7 +82,9 @@ def _repository(tmp_path: Path) -> tuple[Path, AnalysisRepository, int]:
     return database_path, AnalysisRepository(database_path), position_id
 
 
-def _stored_result(database_path: Path, position_id: int) -> tuple[tuple[object, ...] | None, list[tuple[object, ...]]]:
+def _stored_result(
+    database_path: Path, position_id: int
+) -> tuple[tuple[object, ...] | None, list[tuple[object, ...]]]:
     with sqlite3.connect(database_path) as connection:
         parent = connection.execute(
             """

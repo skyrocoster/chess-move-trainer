@@ -9,6 +9,29 @@ from fastapi.testclient import TestClient
 
 from backend.app.main import app
 
+EXPECTED_OPERATION_IDS: dict[str, dict[str, str]] = {
+    "/api/health": {"get": "getHealth"},
+    "/api/games": {"get": "getGames"},
+    "/api/games/{game_uuid}": {"get": "getGame"},
+    "/api/openings": {"get": "getOpenings"},
+    "/api/openings/{opening_key}": {"get": "getOpeningByKey"},
+    "/api/positions/insight": {"get": "getPositionInsight"},
+    "/api/analysis": {"get": "getAnalysis"},
+    "/api/analysis-requests": {"post": "requestAnalysis"},
+    "/api/preferred-moves": {
+        "get": "getPreferredMoves",
+        "put": "putPreferredMoves",
+        "delete": "deletePreferredMoves",
+    },
+}
+
+
+def _assert_expected_operation_ids(paths: dict) -> None:
+    for path, methods in EXPECTED_OPERATION_IDS.items():
+        assert path in paths, f"served schema lost {path}"
+        for method, expected_operation_id in methods.items():
+            assert paths[path][method]["operationId"] == expected_operation_id
+
 
 def test_served_schema_remains_full_with_only_clean_operationid_changes() -> None:
     spec = app.openapi()
@@ -20,54 +43,12 @@ def test_served_schema_remains_full_with_only_clean_operationid_changes() -> Non
     for route in current_api_routes:
         assert route.path in spec["paths"], f"served schema lost {route.path}"
 
-    health_operation = spec["paths"]["/api/health"]["get"]
-    assert health_operation["operationId"] == "getHealth"
-    assert spec["paths"]["/api/games"]["get"]["operationId"] == "getGames"
-    assert (
-        spec["paths"]["/api/games/{game_uuid}"]["get"]["operationId"]
-        == "getGame"
-    )
-    assert spec["paths"]["/api/openings"]["get"]["operationId"] == "getOpenings"
-    assert (
-        spec["paths"]["/api/openings/{opening_key}"]["get"]["operationId"]
-        == "getOpeningByKey"
-    )
-    assert (
-        spec["paths"]["/api/positions/insight"]["get"]["operationId"]
-        == "getPositionInsight"
-    )
-    assert spec["paths"]["/api/analysis"]["get"]["operationId"] == "getAnalysis"
-    assert (
-        spec["paths"]["/api/analysis-requests"]["post"]["operationId"]
-        == "requestAnalysis"
-    )
-    assert (
-        spec["paths"]["/api/preferred-moves"]["get"]["operationId"]
-        == "getPreferredMoves"
-    )
-    assert (
-        spec["paths"]["/api/preferred-moves"]["put"]["operationId"]
-        == "putPreferredMoves"
-    )
-    assert (
-        spec["paths"]["/api/preferred-moves"]["delete"]["operationId"]
-        == "deletePreferredMoves"
-    )
+    _assert_expected_operation_ids(spec["paths"])
 
     # No drift attributable to this stage: every other operation keeps the
     # FastAPI-generated default operation id.
     for route in current_api_routes:
-        if route.path in {
-            "/api/health",
-            "/api/games",
-            "/api/games/{game_uuid}",
-            "/api/openings",
-            "/api/openings/{opening_key}",
-            "/api/positions/insight",
-            "/api/analysis",
-            "/api/analysis-requests",
-            "/api/preferred-moves",
-        }:
+        if route.path in EXPECTED_OPERATION_IDS:
             continue
         path_item = spec["paths"][route.path]
         for method, operation in path_item.items():
@@ -98,38 +79,7 @@ def test_docs_and_served_openapi_remain_available() -> None:
     assert "/api/preferred-moves" in served_spec["paths"]
     assert set(served_spec["paths"]["/api/preferred-moves"]) == {"delete", "get", "put"}
     assert not any(path.startswith("/api/evaluation") for path in served_spec["paths"])
-    assert served_spec["paths"]["/api/health"]["get"]["operationId"] == "getHealth"
-    assert served_spec["paths"]["/api/games"]["get"]["operationId"] == "getGames"
-    assert (
-        served_spec["paths"]["/api/games/{game_uuid}"]["get"]["operationId"]
-        == "getGame"
-    )
-    assert served_spec["paths"]["/api/openings"]["get"]["operationId"] == "getOpenings"
-    assert (
-        served_spec["paths"]["/api/openings/{opening_key}"]["get"]["operationId"]
-        == "getOpeningByKey"
-    )
-    assert (
-        served_spec["paths"]["/api/positions/insight"]["get"]["operationId"]
-        == "getPositionInsight"
-    )
-    assert served_spec["paths"]["/api/analysis"]["get"]["operationId"] == "getAnalysis"
-    assert (
-        served_spec["paths"]["/api/analysis-requests"]["post"]["operationId"]
-        == "requestAnalysis"
-    )
-    assert (
-        served_spec["paths"]["/api/preferred-moves"]["get"]["operationId"]
-        == "getPreferredMoves"
-    )
-    assert (
-        served_spec["paths"]["/api/preferred-moves"]["put"]["operationId"]
-        == "putPreferredMoves"
-    )
-    assert (
-        served_spec["paths"]["/api/preferred-moves"]["delete"]["operationId"]
-        == "deletePreferredMoves"
-    )
+    _assert_expected_operation_ids(served_spec["paths"])
     assert served_spec["paths"]["/api/health"]["get"]["responses"]["200"]["content"][
         "application/json"
     ]["schema"] == {"$ref": "#/components/schemas/HealthResponse"}

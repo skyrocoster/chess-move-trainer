@@ -4,7 +4,6 @@ import csv
 import json
 from dataclasses import dataclass
 from pathlib import Path
-from types import SimpleNamespace
 from typing import Any
 
 import pytest
@@ -15,20 +14,18 @@ from chess_move_trainer.database.analysis import (
     AnalysisScoreKind,
 )
 from chess_move_trainer.database.stockfish import (
-    AtomicArtifactWriter,
-    BenchmarkCompatibilityError,
-    BenchmarkPersistenceError,
-    BenchmarkPosition,
-    BenchmarkRunner,
-    BenchmarkSpec,
     DEFAULT_HASH_SIZES_MB,
     DEFAULT_NODE_BUDGETS,
     DEFAULT_THREAD_COUNTS,
+    AtomicArtifactWriter,
+    BenchmarkCompatibilityError,
+    BenchmarkPersistenceError,
+    BenchmarkRunner,
+    BenchmarkSpec,
     SearchMetrics,
     StockfishAnalysis,
     run_benchmark,
 )
-
 
 STARTING_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 AFTER_E4_FEN = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1"
@@ -98,7 +95,9 @@ def _fake_analysis(profile: Any) -> StockfishAnalysis:
         profile=profile,
         result=result,
         terminal_kind=None,
-        metrics=SearchMetrics(nodes=profile.nodes, nps=1000, depth=12, seldepth=18, hashfull=4, time_ms=3),
+        metrics=SearchMetrics(
+            nodes=profile.nodes, nps=1000, depth=12, seldepth=18, hashfull=4, time_ms=3
+        ),
     )
 
 
@@ -216,9 +215,18 @@ def test_run_writes_normalized_contained_artifacts_and_completed_run_is_noop(
     assert first.complete
     assert first.successful_jobs == 4
     assert first.attempts == 4
-    expected_files = {"manifest.json", "attempts.jsonl", "checkpoint.json", "summary.json", "summary.csv", "status.txt"}
+    expected_files = {
+        "manifest.json",
+        "attempts.jsonl",
+        "checkpoint.json",
+        "summary.json",
+        "summary.csv",
+        "status.txt",
+    }
     assert {path.name for path in output_dir.iterdir()} == expected_files
-    attempt_records = [json.loads(line) for line in (output_dir / "attempts.jsonl").read_text().splitlines()]
+    attempt_records = [
+        json.loads(line) for line in (output_dir / "attempts.jsonl").read_text().splitlines()
+    ]
     assert len(attempt_records) == 4
     assert all(record["record_type"] == "benchmark_attempt" for record in attempt_records)
     assert all(record["metrics"]["engine_nodes"] in (100, 200) for record in attempt_records)
@@ -241,7 +249,13 @@ def test_incompatible_manifest_stops_without_mixing_state(tmp_path: Path) -> Non
     from chess_move_trainer.database.stockfish import load_positions
 
     incompatible = BenchmarkRunner(
-        BenchmarkSpec(positions=load_positions(input_path), node_budgets=(300,), thread_counts=(1,), hash_sizes_mb=(64,), repetitions=1),
+        BenchmarkSpec(
+            positions=load_positions(input_path),
+            node_budgets=(300,),
+            thread_counts=(1,),
+            hash_sizes_mb=(64,),
+            repetitions=1,
+        ),
         executable=Path("fake-stockfish.exe"),
         position_input=input_path,
         output_dir=output_dir,
@@ -268,12 +282,16 @@ def test_failures_continue_and_next_invocation_retries_only_failed_jobs(tmp_path
     assert second.failed_jobs == 0
     assert second.attempts == 3
     assert len(second_factory.instances) == 1
-    records = [json.loads(line) for line in (output_dir / "attempts.jsonl").read_text().splitlines()]
+    records = [
+        json.loads(line) for line in (output_dir / "attempts.jsonl").read_text().splitlines()
+    ]
     assert len(records) == 3
     assert sum(record["status"] == "failure" for record in records) == 1
 
 
-def test_transient_artifact_permission_is_retried_but_only_for_current_write(tmp_path: Path) -> None:
+def test_transient_artifact_permission_is_retried_but_only_for_current_write(
+    tmp_path: Path,
+) -> None:
     input_path = _write_input(tmp_path / "positions.json", count=1)
     output_dir = tmp_path / "artifacts"
     writer = _InjectedWriter(transient_appends=2)
@@ -295,14 +313,18 @@ def test_permanent_artifact_failure_stops_without_engine_failure_classification(
     with pytest.raises(BenchmarkPersistenceError) as error:
         _runner(input_path, output_dir, _FakeFactory(), writer=writer, retries=0).run()
     assert error.value.exit_code == 1
-    records = [json.loads(line) for line in (output_dir / "attempts.jsonl").read_text().splitlines()]
+    records = [
+        json.loads(line) for line in (output_dir / "attempts.jsonl").read_text().splitlines()
+    ]
     assert len(records) == 1
     assert records[0]["status"] == "success"
     assert not list(output_dir.glob("*.log"))
     assert all(path.resolve().is_relative_to(output_dir.resolve()) for path in writer.paths)
 
 
-def test_interrupt_leaves_readable_checkpoint_without_partial_current_result(tmp_path: Path) -> None:
+def test_interrupt_leaves_readable_checkpoint_without_partial_current_result(
+    tmp_path: Path,
+) -> None:
     input_path = _write_input(tmp_path / "positions.json", count=1)
     output_dir = tmp_path / "artifacts"
     outcome = _runner(

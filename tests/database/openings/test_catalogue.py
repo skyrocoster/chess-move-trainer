@@ -16,7 +16,6 @@ from chess_move_trainer.database.openings.catalogue import (
 )
 from chess_move_trainer.database.openings.keys import opening_api_key
 
-
 _POSITIONS = {
     1: (
         "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR",
@@ -197,12 +196,30 @@ def test_read_opening_rejects_malformed_key(
         ("eco_desc", ["E99:Echo", "D30:Empty", "C20:Gamma", "B10:Beta:Study", "A00:Alpha"]),
         ("name_asc", ["A00:Alpha", "B10:Beta:Study", "E99:Echo", "D30:Empty", "C20:Gamma"]),
         ("name_desc", ["C20:Gamma", "D30:Empty", "E99:Echo", "B10:Beta:Study", "A00:Alpha"]),
-        ("route_count_asc", ["D30:Empty", "E99:Echo", "C20:Gamma", "A00:Alpha", "B10:Beta:Study"]),
-        ("route_count_desc", ["A00:Alpha", "B10:Beta:Study", "C20:Gamma", "D30:Empty", "E99:Echo"]),
-        ("games_reached_asc", ["D30:Empty", "E99:Echo", "C20:Gamma", "A00:Alpha", "B10:Beta:Study"]),
-        ("games_reached_desc", ["B10:Beta:Study", "A00:Alpha", "C20:Gamma", "D30:Empty", "E99:Echo"]),
-        ("games_deepest_asc", ["C20:Gamma", "D30:Empty", "E99:Echo", "A00:Alpha", "B10:Beta:Study"]),
-        ("games_deepest_desc", ["B10:Beta:Study", "A00:Alpha", "C20:Gamma", "D30:Empty", "E99:Echo"]),
+        (
+            "route_count_asc",
+            ["D30:Empty", "E99:Echo", "C20:Gamma", "A00:Alpha", "B10:Beta:Study"],
+        ),
+        (
+            "route_count_desc",
+            ["A00:Alpha", "B10:Beta:Study", "C20:Gamma", "D30:Empty", "E99:Echo"],
+        ),
+        (
+            "games_reached_asc",
+            ["D30:Empty", "E99:Echo", "C20:Gamma", "A00:Alpha", "B10:Beta:Study"],
+        ),
+        (
+            "games_reached_desc",
+            ["B10:Beta:Study", "A00:Alpha", "C20:Gamma", "D30:Empty", "E99:Echo"],
+        ),
+        (
+            "games_deepest_asc",
+            ["C20:Gamma", "D30:Empty", "E99:Echo", "A00:Alpha", "B10:Beta:Study"],
+        ),
+        (
+            "games_deepest_desc",
+            ["B10:Beta:Study", "A00:Alpha", "C20:Gamma", "D30:Empty", "E99:Echo"],
+        ),
     ],
 )
 def test_catalogue_supports_all_approved_sorts(

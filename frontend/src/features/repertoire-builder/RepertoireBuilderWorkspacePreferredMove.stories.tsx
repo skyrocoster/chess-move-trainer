@@ -310,9 +310,7 @@ export const PendingRemove: Story = {
     const dialog = await body.findByRole("alertdialog", { name: "Remove preferred move?" });
     await userEvent.click(within(dialog).getByRole("button", { name: "Remove" }));
     await expect(canvas.getByText("Removing preferred move...")).toBeVisible();
-    await expect(canvas.getByTestId("saved-move")).toHaveTextContent(
-      /^Saved\s*e4\s*e2e4/,
-    );
+    await expect(canvas.getByTestId("saved-move")).toHaveTextContent(/^Saved\s*e4\s*e2e4/);
     await expect(canvas.getByRole("button", { name: "Remove" })).toBeDisabled();
     await expectDateFreePreferredPanel(canvasElement);
   },
@@ -376,7 +374,9 @@ export const PromotionPreferred: Story = {
     await expect(body.getByRole("dialog", { name: "Choose a promotion piece" })).toBeVisible();
     await userEvent.click(body.getByRole("button", { name: "Promote to knight" }));
     await expectPreferredMoveState(canvasElement, "first-choice");
-    await expect(canvas.getByTestId("selected-move")).toHaveTextContent(/^Selected\s*e8=N\s*e7e8n$/);
+    await expect(canvas.getByTestId("selected-move")).toHaveTextContent(
+      /^Selected\s*e8=N\s*e7e8n$/,
+    );
     await expect(canvas.getByTestId("saved-move")).toHaveTextContent("None yet");
     await expect(canvas.getByRole("button", { name: "Save e8=N" })).toBeEnabled();
     await expectSessionHistory(canvasElement, ["Initial position", "White, move 1, e8=N"]);
@@ -485,12 +485,7 @@ export const AbsentUnsavable: Story = {
 
 export const AssignedUnsavable: Story = {
   name: "Preferred move - assigned move remains removable when unseen",
-  render: () =>
-    workspace(
-      {},
-      { relationship: "saved" },
-      { observedInGames: false },
-    ),
+  render: () => workspace({}, { relationship: "saved" }, { observedInGames: false }),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await expectPreferredMoveState(canvasElement, "saved");

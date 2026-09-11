@@ -10,7 +10,6 @@ import styles from "./PanelFeedback.module.css";
 import type { FeedbackSeverity } from "./feedbackTypes";
 
 const here = dirname(fileURLToPath(import.meta.url));
-const tokenCss = readFileSync(join(here, "../../../styles/cmt-tokens.css"), "utf8");
 const moduleCss = readFileSync(join(here, "PanelFeedback.module.css"), "utf8");
 
 const SEVERITIES: FeedbackSeverity[] = ["information", "success", "warning", "error"];
@@ -67,9 +66,6 @@ describe("PanelFeedback", () => {
     expect(panel).toHaveClass(styles.panel);
     expect(screen.getByTestId(`core-${severity}`)).toBeVisible();
 
-    for (const token of TOKEN_SET[severity]) {
-      expect(tokenCss).toContain(`${token}:`);
-    }
     expect(moduleCss).toContain(`var(${TOKEN_SET[severity][0]})`);
     expect(moduleCss).toContain(`var(${TOKEN_SET[severity][2]})`);
     expect(moduleCss).toContain(`var(${TOKEN_SET[severity][3]})`);

@@ -14,7 +14,6 @@ from chess_move_trainer.database.stockfish import (
     normalize_database_path,
 )
 
-
 pytestmark = pytest.mark.skipif(os.name != "nt", reason="the DB-07 mutex is Windows-only")
 
 

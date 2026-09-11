@@ -53,12 +53,7 @@ function renderLoader(props: LoaderHarnessProps = {}) {
 describe("GameLoader", () => {
   it("follows parent-controlled UUID values and emits field changes", async () => {
     const onGameUuidChange = vi.fn();
-    const { rerender } = render(
-      <GameLoader
-        gameUuid=""
-        onGameUuidChange={onGameUuidChange}
-      />,
-    );
+    const { rerender } = render(<GameLoader gameUuid="" onGameUuidChange={onGameUuidChange} />);
     const user = userEvent.setup();
 
     await user.type(screen.getByLabelText("Game UUID"), "x");

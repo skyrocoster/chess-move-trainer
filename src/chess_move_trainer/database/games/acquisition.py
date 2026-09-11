@@ -16,7 +16,6 @@ import httpx
 from .configuration import AcquireConfiguration
 from .raw_storage import load_month, merge_current_month, publish_month
 
-
 CHESSCOM_API_ORIGIN = "https://api.chess.com"
 _MONTH_PATH = re.compile(r"^/pub/player/([^/]+)/games/(\d{4})/(\d{2})$")
 _MONTH_SELECTION = re.compile(r"^([0-9]{4})-([0-9]{2})$")
@@ -158,7 +157,9 @@ def acquire_months(
             selected_processed = True
         if month_key > current:
             continue
-        target = raw_root / "games" / f"{archive_month.year:04d}" / f"{archive_month.month:02d}.json"
+        target = (
+            raw_root / "games" / f"{archive_month.year:04d}" / f"{archive_month.month:02d}.json"
+        )
         is_current = month_key == current
         if not is_current and target.exists():
             skipped.append(archive_month.label)
@@ -246,7 +247,9 @@ def acquire_incremental_months(
         month_key = (archive_month.year, archive_month.month)
         if month_key < newest or month_key > current:
             continue
-        target = raw_root / "games" / f"{archive_month.year:04d}" / f"{archive_month.month:02d}.json"
+        target = (
+            raw_root / "games" / f"{archive_month.year:04d}" / f"{archive_month.month:02d}.json"
+        )
         try:
             if configuration.request_delay:
                 sleep(configuration.request_delay)

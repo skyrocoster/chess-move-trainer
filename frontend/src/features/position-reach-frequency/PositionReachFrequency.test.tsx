@@ -59,10 +59,7 @@ describe("PositionReachFrequency", () => {
 
   it("renders an existing zero distinct-game count as an available zero meter", () => {
     render(
-      <PositionReachFrequency
-        context={context({ distinctGameCount: 0 })}
-        selectedColor="white"
-      />,
+      <PositionReachFrequency context={context({ distinctGameCount: 0 })} selectedColor="white" />,
     );
 
     expect(screen.getByTestId("position-reach-indicator")).toBeInTheDocument();

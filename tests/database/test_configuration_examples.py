@@ -6,7 +6,6 @@ import yaml
 
 from chess_move_trainer.database.games.configuration import load_acquire_configuration
 
-
 ROOT = Path(__file__).parents[2]
 EXAMPLES = ROOT / "docs" / "examples"
 PLACEHOLDER_USERNAME = "YOUR_CHESS_COM_USERNAME"

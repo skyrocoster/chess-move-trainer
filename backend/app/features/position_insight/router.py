@@ -12,8 +12,8 @@ from backend.app.dependencies import get_rebuilt_database_path
 from chess_move_trainer.database.positions import (
     PositionInsight,
     PositionInsightResult,
-    PositionInsightStorageError,
     PositionInsightSchemaError,
+    PositionInsightStorageError,
     PositionInsightValidationError,
     read_position_insight,
 )

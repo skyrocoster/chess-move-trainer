@@ -137,7 +137,10 @@ export function analysisPanelDisplay(
 
   const message = active
     ? {
-        text: state === "queued" ? "This position is waiting for analysis." : "Analysis is in progress.",
+        text:
+          state === "queued"
+            ? "This position is waiting for analysis."
+            : "Analysis is in progress.",
       }
     : showAnalyze
       ? {

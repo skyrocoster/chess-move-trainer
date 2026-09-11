@@ -21,7 +21,6 @@ from chess_move_trainer.database.analysis import (
 )
 from chess_move_trainer.database.positions import PositionRepository
 
-
 STARTING_FEN = (
     "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 )

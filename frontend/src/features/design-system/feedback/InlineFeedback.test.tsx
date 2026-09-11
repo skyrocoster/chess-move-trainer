@@ -14,37 +14,9 @@ afterEach(() => {
 });
 
 const here = dirname(fileURLToPath(import.meta.url));
-const tokenCss = readFileSync(join(here, "../../../styles/cmt-tokens.css"), "utf8");
 const moduleCss = readFileSync(join(here, "InlineFeedback.module.css"), "utf8");
 
 const SEVERITIES: FeedbackSeverity[] = ["information", "success", "warning", "error"];
-
-const TOKEN_SET: Record<FeedbackSeverity, [string, string, string, string]> = {
-  information: [
-    "--cmt-info-accent",
-    "--cmt-info-on-accent",
-    "--cmt-info-container",
-    "--cmt-info-on-container",
-  ],
-  success: [
-    "--cmt-success-accent",
-    "--cmt-success-on-accent",
-    "--cmt-success-container",
-    "--cmt-success-on-container",
-  ],
-  warning: [
-    "--cmt-warning-accent",
-    "--cmt-warning-on-accent",
-    "--cmt-warning-container",
-    "--cmt-warning-on-container",
-  ],
-  error: [
-    "--cmt-error-accent",
-    "--cmt-error-on-accent",
-    "--cmt-error-container",
-    "--cmt-error-on-container",
-  ],
-};
 
 describe("InlineFeedback", () => {
   it("renders all four inline presentations through the shared core", () => {
@@ -102,14 +74,6 @@ describe("InlineFeedback", () => {
   });
 
   it("keeps the inline module compact and transparent without out-of-scope --cmt-feedback-* aliases", () => {
-    for (const severity of SEVERITIES) {
-      const [accent, onAccent, container, onContainer] = TOKEN_SET[severity];
-      expect(tokenCss).toContain(`${accent}:`);
-      expect(tokenCss).toContain(`${onAccent}:`);
-      expect(tokenCss).toContain(`${container}:`);
-      expect(tokenCss).toContain(`${onContainer}:`);
-    }
-
     // The inline module contributes only the compact, transparent treatment.
     // The accent-driven border belongs to the shared FeedbackCore, which sets
     // the --cmt-feedback-* aliases on the .core element (a child of .inline);

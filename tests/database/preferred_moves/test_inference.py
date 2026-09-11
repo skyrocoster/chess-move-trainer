@@ -13,7 +13,6 @@ from chess_move_trainer.database.preferred_moves.ranges import (
     PreferenceState,
 )
 
-
 MOVE_A = "e2e4"
 MOVE_B = "d2d4"
 POSITION = CanonicalPosition("8/8/8/8/8/8/8/8", "w", "-", "-")

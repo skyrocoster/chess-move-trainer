@@ -8,14 +8,13 @@ from .canonicalization import (
 )
 from .insight import (
     AnalysisState,
-    PreferenceKind,
     PositionInsight,
     PositionInsightAnalysis,
     PositionInsightError,
     PositionInsightExperience,
-    PositionInsightOpening,
     PositionInsightObservedMove,
     PositionInsightObservedMoveTotals,
+    PositionInsightOpening,
     PositionInsightPreference,
     PositionInsightRepository,
     PositionInsightRequest,
@@ -24,6 +23,7 @@ from .insight import (
     PositionInsightStorageError,
     PositionInsightTerminalTotals,
     PositionInsightValidationError,
+    PreferenceKind,
     TrainerColor,
     get_position_insight,
     read_position_insight,

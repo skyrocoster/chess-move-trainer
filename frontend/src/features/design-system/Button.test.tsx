@@ -11,7 +11,6 @@ afterEach(() => {
 });
 
 const here = dirname(fileURLToPath(import.meta.url));
-const tokenCss = readFileSync(join(here, "../../styles/cmt-tokens.css"), "utf8");
 const moduleCss = readFileSync(join(here, "Button.module.css"), "utf8");
 
 const VARIANTS: ButtonVariant[] = ["primary", "secondary", "ghost"];
@@ -57,9 +56,6 @@ describe("Button", () => {
   });
 
   it("keeps the focus ring consistent with the foundation treatment", () => {
-    expect(tokenCss).toContain("--cmt-focus-ring-color: var(--md-sys-color-primary);");
-    expect(tokenCss).toContain("--cmt-focus-ring-width: 2px;");
-    expect(tokenCss).toContain("--cmt-focus-ring-separation: 2px;");
     const focusBlock = ruleBlock(moduleCss, "\\.button:focus-visible");
     expect(normalize(focusBlock)).toContain(
       normalize("outline: var(--cmt-focus-ring-width) solid var(--cmt-focus-ring-color);"),

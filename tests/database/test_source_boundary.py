@@ -3,7 +3,6 @@ from __future__ import annotations
 import ast
 from pathlib import Path
 
-
 ROOT = Path(__file__).parents[2]
 PACKAGE_PATH = ROOT / "src" / "chess_move_trainer" / "database"
 
@@ -71,40 +70,32 @@ def test_package_contains_no_runtime_wrapper_or_copied_legacy_generator() -> Non
     assert "backend" not in package_text.lower()
 
 
-def test_rebuild_boundary_has_only_aggregate_proof_modules() -> None:
-    rebuild_path = PACKAGE_PATH / "rebuild"
-    assert sorted(path.name for path in rebuild_path.glob("*.py")) == [
-        "__init__.py",
-        "proof.py",
-    ]
+def test_proof_boundary_has_only_the_aggregate_proof_module() -> None:
+    assert (PACKAGE_PATH / "proof.py").is_file()
+    assert not (PACKAGE_PATH / "rebuild").exists()
 
-    for source_path in sorted(rebuild_path.rglob("*.py")):
-        tree = ast.parse(source_path.read_text(encoding="utf-8"))
-        imported_modules = []
-        for node in ast.walk(tree):
-            if isinstance(node, ast.Import):
-                imported_modules.extend(alias.name for alias in node.names)
-            elif isinstance(node, ast.ImportFrom) and node.module:
-                imported_modules.append(node.module)
-        assert not any(
-            module == prefix or module.startswith(f"{prefix}.")
-            for module in imported_modules
-            for prefix in ("backend", "frontend", "scripts", "legacy")
-        )
-
-    proof_text = "\n".join(
-        path.read_text(encoding="utf-8") for path in rebuild_path.rglob("*.py")
+    source_path = PACKAGE_PATH / "proof.py"
+    tree = ast.parse(source_path.read_text(encoding="utf-8"))
+    imported_modules = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            imported_modules.extend(alias.name for alias in node.names)
+        elif isinstance(node, ast.ImportFrom) and node.module:
+            imported_modules.append(node.module)
+    assert not any(
+        module == prefix or module.startswith(f"{prefix}.")
+        for module in imported_modules
+        for prefix in ("backend", "frontend", "scripts", "legacy")
     )
+
+    proof_text = source_path.read_text(encoding="utf-8")
     assert "data/database/chess.db" in proof_text
     assert "subprocess" not in proof_text.lower()
     assert "sqlite3" not in proof_text.lower()
 
 
-def test_rebuild_has_no_file_lifecycle_commands_or_persistent_run_state() -> None:
-    rebuild_text = "\n".join(
-        path.read_text(encoding="utf-8")
-        for path in sorted((PACKAGE_PATH / "rebuild").rglob("*.py"))
-    )
+def test_proof_has_no_file_lifecycle_commands_or_persistent_run_state() -> None:
+    proof_module_text = (PACKAGE_PATH / "proof.py").read_text(encoding="utf-8")
     for forbidden in (
         "recover",
         "manifest",
@@ -118,7 +109,7 @@ def test_rebuild_has_no_file_lifecycle_commands_or_persistent_run_state() -> Non
         "replacement",
         "replacement_ready",
     ):
-        assert forbidden not in rebuild_text.lower()
+        assert forbidden not in proof_module_text.lower()
 
 
 def test_position_service_does_not_promote_raw_handles_or_schema_creation() -> None:

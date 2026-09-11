@@ -61,7 +61,8 @@ function getCard(canvasElement: HTMLElement) {
 
 async function expectCardDimensions(canvasElement: HTMLElement) {
   const { card, saved, staged } = getCard(canvasElement);
-  const isNarrow = canvasElement.ownerDocument.defaultView?.matchMedia("(max-width: 40rem)").matches;
+  const isNarrow =
+    canvasElement.ownerDocument.defaultView?.matchMedia("(max-width: 40rem)").matches;
   await expect(card.getBoundingClientRect().height).toBe(isNarrow ? 360 : 256);
   await expect(saved.getBoundingClientRect().height).toBe(88);
   await expect(staged.getBoundingClientRect().height).toBe(88);
@@ -90,9 +91,13 @@ export const NotInCorpus: Story = {
     const { canvas } = getCard(canvasElement);
     await expectCardDimensions(canvasElement);
     await expect(canvas.getByRole("status")).toHaveTextContent("Not in Corpus");
-    await expect(canvas.getByText("This position isn't in your corpus, so it can't be saved yet.")).toBeVisible();
+    await expect(
+      canvas.getByText("This position isn't in your corpus, so it can't be saved yet."),
+    ).toBeVisible();
     await expect(canvas.getByRole("region", { name: "Saved" })).toHaveTextContent("Nce2");
-    await expect(canvas.getByRole("region", { name: "Staged" })).toHaveTextContent("No move staged");
+    await expect(canvas.getByRole("region", { name: "Staged" })).toHaveTextContent(
+      "No move staged",
+    );
     await expect(canvas.queryByRole("button")).not.toBeInTheDocument();
   },
 };
@@ -126,17 +131,16 @@ export const Matches: Story = {
     await expect(canvas.getByRole("region", { name: "Staged" })).toHaveTextContent("e4");
     await expect(canvas.getByRole("button", { name: "Matches saved" })).toBeDisabled();
     await expect(canvas.getByRole("button", { name: "Remove" })).toBeEnabled();
-    await expect(
-      canvas.getAllByRole("button").map((button) => button.textContent?.trim()),
-    ).toEqual(["Matches saved", "Remove"]);
+    await expect(canvas.getAllByRole("button").map((button) => button.textContent?.trim())).toEqual(
+      ["Matches saved", "Remove"],
+    );
     await expect(canvas.getByTestId("preferred-exploration-connector")).toHaveAttribute(
       "aria-hidden",
       "true",
     );
-    await expect(canvas.getByRole("button", { name: "Remove" }).querySelector("svg")).toHaveAttribute(
-      "aria-hidden",
-      "true",
-    );
+    await expect(
+      canvas.getByRole("button", { name: "Remove" }).querySelector("svg"),
+    ).toHaveAttribute("aria-hidden", "true");
     await userEvent.click(canvas.getByRole("button", { name: "Remove" }));
     await expect(args.onRemove).toHaveBeenCalledOnce();
   },
@@ -148,8 +152,11 @@ export const NarrowStacking: Story = {
   parameters: constrainedViewport,
   play: async ({ canvasElement }) => {
     const { card, saved, staged } = getCard(canvasElement);
-    const relationship = canvasElement.querySelector('[data-testid="preferred-exploration-relationship"]');
-    if (!(relationship instanceof HTMLElement)) throw new Error("The relationship layout is missing.");
+    const relationship = canvasElement.querySelector(
+      '[data-testid="preferred-exploration-relationship"]',
+    );
+    if (!(relationship instanceof HTMLElement))
+      throw new Error("The relationship layout is missing.");
     await expect(card.getBoundingClientRect().height).toBe(360);
     await expect(saved.getBoundingClientRect().height).toBe(88);
     await expect(staged.getBoundingClientRect().height).toBe(88);

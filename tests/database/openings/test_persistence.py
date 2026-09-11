@@ -18,7 +18,6 @@ from chess_move_trainer.database.openings.source import OpeningSourceError, load
 from chess_move_trainer.database.positions import PositionRepository
 from chess_move_trainer.database.schema import SchemaIncompatibleError
 
-
 FIXTURE_DIR = Path(__file__).parent / "fixtures" / "catalogue-valid"
 SOURCE_NAMES = ("a.tsv", "b.tsv", "c.tsv", "d.tsv", "e.tsv")
 
@@ -29,7 +28,9 @@ def _source_dir(tmp_path: Path) -> Path:
     return source_dir
 
 
-def _write_source_dir(tmp_path: Path, pgn: str, *, eco: str = "A00", name: str = "Replacement") -> Path:
+def _write_source_dir(
+    tmp_path: Path, pgn: str, *, eco: str = "A00", name: str = "Replacement"
+) -> Path:
     source_dir = tmp_path / "replacement"
     source_dir.mkdir()
     for source_name in SOURCE_NAMES:

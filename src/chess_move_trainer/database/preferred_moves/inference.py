@@ -16,7 +16,6 @@ from types import MappingProxyType
 from ..positions import CanonicalPosition
 from .ranges import NormalizedPeriod, Preference, normalize_periods
 
-
 QUALIFICATION_WINDOW_DAYS = 90
 MINIMUM_MATCHES = 21
 

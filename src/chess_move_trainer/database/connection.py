@@ -13,7 +13,6 @@ from sqlalchemy import create_engine
 from sqlalchemy.engine import Connection
 from sqlalchemy.pool import NullPool
 
-
 DEFAULT_LOCK_TIMEOUT_SECONDS: Final[float] = 5.0
 _MAX_SQLITE_TIMEOUT_MS: Final[int] = 2_147_483_647
 AccessMode = Literal["read-write", "read-only"]

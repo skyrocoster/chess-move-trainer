@@ -99,7 +99,7 @@ describe("MoveHistory", () => {
     expect(onActivePlyChange.mock.calls.map(([ply]) => ply)).toEqual([2, 0, 0, 3]);
   });
 
-  it("moves focus to the newly controlled active row and preserves focus on the initial row", async () => {
+  it("moves focus to the newly selected row", async () => {
     const { rerender } = renderHistory(0);
     const initial = screen.getByRole("button", { name: "Initial position" });
     initial.focus();

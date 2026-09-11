@@ -1,18 +1,8 @@
-import { Chess } from "chess.js";
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { useCallback, useMemo, useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import {
-  InteractiveBoardAdapter,
-  type InteractiveBoardMoveIntent,
-} from "./InteractiveBoardAdapter";
-import {
-  isPromotionTarget,
-  type PromotionColor,
-  type PromotionCommit,
-  usePromotionController,
-} from "./PromotionPicker";
+import { InteractiveBoardAdapter } from "./InteractiveBoardAdapter";
+import { InteractiveBoardHarness } from "./InteractiveBoardHarness";
 import type { BranchSnapshot } from "./branchModel";
 import { lastMoveFromSquares } from "./lastMove";
 
@@ -128,180 +118,15 @@ const CASTLING_FEN = "r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1";
 const EN_PASSANT_FEN = "4k3/3p4/8/4P3/8/8/8/4K3 b - - 0 1";
 const TERMINAL_ORIGIN_FEN = "7k/5Q2/p5K1/8/8/8/8/8 b - - 0 1";
 
-function terminalDescription(chess: Chess) {
-  if (chess.isCheckmate()) {
-    return "Checkmate";
-  }
-  if (chess.isStalemate()) {
-    return "Stalemate";
-  }
-  if (chess.isInsufficientMaterial()) {
-    return "Draw by insufficient material";
-  }
-  if (chess.isDrawByFiftyMoves()) {
-    return "Draw by fifty-move rule";
-  }
-  return null;
-}
-
-function ControlledAdapterHarness({
-  originFen,
-  originPly = 0,
-}: {
-  originFen: string;
-  originPly?: number;
-}) {
-  const chess = useMemo(() => new Chess(originFen), [originFen]);
-  const [branchSnapshot, setBranchSnapshot] = useState<BranchSnapshot>(() => ({
-    viewKey: "game:0",
-    resetToken: 0,
-    originFen,
-    currentFen: originFen,
-    originPly,
-    moves: [],
-    active: false,
-  }));
-  const [notice, setNotice] = useState("Make a legal move to start a temporary branch.");
-  const [promotionColor, setPromotionColor] = useState<PromotionColor>(chess.turn());
-
-  const createSnapshot = useCallback(
-    (active: boolean) => ({
-      viewKey: "game:0",
-      resetToken: 0,
-      originFen,
-      currentFen: chess.fen(),
-      originPly,
-      moves: chess.history({ verbose: true }).map((move) => ({
-        color: move.color,
-        from: move.from,
-        to: move.to,
-        san: move.san,
-        ...(move.promotion ? { promotion: move.promotion } : {}),
-      })),
-      active,
-    }),
-    [chess, originFen, originPly],
-  );
-
-  const handleCommit = useCallback(
-    (commit: PromotionCommit) => {
-      setBranchSnapshot(createSnapshot(true));
-      setPromotionColor(chess.turn());
-      setNotice(`Branch move committed: ${commit.move.san}.`);
-    },
-    [chess, createSnapshot],
-  );
-
-  const handleReject = useCallback(
-    (reason: "illegal" | "stale") => {
-      const moves = chess.history();
-      setBranchSnapshot(createSnapshot(moves.length > 0));
-      setPromotionColor(chess.turn());
-      setNotice(
-        reason === "stale"
-          ? "Promotion rejected because the displayed branch position is stale."
-          : "Promotion rejected because the move is illegal.",
-      );
-    },
-    [chess, createSnapshot],
-  );
-
-  const controller = usePromotionController({
-    chess,
-    onCommit: handleCommit,
-    onReject: handleReject,
-  });
-  const {
-    pending,
-    sourceElement,
-    anchorElement,
-    requestPromotion,
-    selectPromotion,
-    cancelPromotion,
-  } = controller;
-
-  const handleMoveIntent = useCallback(
-    (intent: InteractiveBoardMoveIntent) => {
-      const piece = chess.get(intent.sourceSquare);
-      if (piece?.type === "p" && isPromotionTarget(piece.color, intent.targetSquare)) {
-        const opened = requestPromotion(
-          intent.sourceSquare,
-          intent.targetSquare,
-          intent.sourceElement,
-          intent.anchorElement,
-        );
-        if (opened) {
-          setBranchSnapshot(createSnapshot(true));
-          setPromotionColor(piece.color);
-          setNotice("Choose a promotion piece for the temporary branch.");
-        }
-        return false;
-      }
-
-      try {
-        const move = chess.move({ from: intent.sourceSquare, to: intent.targetSquare });
-        setBranchSnapshot(createSnapshot(true));
-        setNotice(`Branch move committed: ${move.san}.`);
-        return true;
-      } catch {
-        setNotice("Move rejected because it is illegal.");
-        return false;
-      }
-    },
-    [chess, createSnapshot, requestPromotion],
-  );
-
-  const handlePromotionCancel = useCallback(() => {
-    cancelPromotion();
-    setBranchSnapshot(createSnapshot(chess.history().length > 0));
-    setPromotionColor(chess.turn());
-    setNotice("Promotion cancelled; the captured position is unchanged.");
-  }, [cancelPromotion, chess, createSnapshot]);
-
-  const handleUndo = useCallback(() => {
-    cancelPromotion();
-    if (!chess.undo()) {
-      return;
-    }
-    setBranchSnapshot(createSnapshot(chess.history().length > 0));
-    setPromotionColor(chess.turn());
-    setNotice("Undid the latest temporary branch move.");
-  }, [cancelPromotion, chess, createSnapshot]);
-
-  const handleReset = useCallback(() => {
-    cancelPromotion();
-    chess.load(originFen);
-    setBranchSnapshot(createSnapshot(false));
-    setPromotionColor(chess.turn());
-    setNotice("Temporary branch reset to its captured-game ply.");
-  }, [cancelPromotion, chess, createSnapshot, originFen]);
-
-  return (
-    <InteractiveBoardAdapter
-      branchSnapshot={branchSnapshot}
-      lastMove={
-        branchSnapshot.moves.at(-1)
-          ? lastMoveFromSquares(branchSnapshot.moves.at(-1)!.from, branchSnapshot.moves.at(-1)!.to)
-          : null
-      }
-      label="Interactive analysis board"
-      notice={notice}
-      terminal={terminalDescription(chess)}
-      promotionPending={pending}
-      promotionColor={promotionColor}
-      promotionSourceElement={sourceElement}
-      promotionAnchorElement={anchorElement}
-      onMoveIntent={handleMoveIntent}
-      onPromotionSelect={selectPromotion}
-      onPromotionCancel={handlePromotionCancel}
-      onUndo={handleUndo}
-      onReset={handleReset}
-    />
-  );
-}
-
 function renderAdapter(originFen = STARTING_FEN) {
-  return render(<ControlledAdapterHarness originFen={originFen} />);
+  return render(
+    <InteractiveBoardHarness
+      viewKey="game:0"
+      originFen={originFen}
+      originPly={0}
+      label="Interactive analysis board"
+    />,
+  );
 }
 
 describe("InteractiveBoardAdapter", () => {

@@ -295,18 +295,18 @@ export function AnalysisPanel({
 
       {actions.analyze || actions.observationRetry ? (
         <div className={styles.actionRow}>
-        <div className={styles.actions}>
-          {actions.analyze ? (
-            <Button onClick={() => void onAnalyze()} disabled={actions.pending}>
-              Analyze position
-            </Button>
-          ) : null}
-          {actions.observationRetry ? (
-            <Button variant="secondary" onClick={onRetryObservation}>
-              Retry observation
-            </Button>
-          ) : null}
-        </div>
+          <div className={styles.actions}>
+            {actions.analyze ? (
+              <Button onClick={() => void onAnalyze()} disabled={actions.pending}>
+                Analyze position
+              </Button>
+            ) : null}
+            {actions.observationRetry ? (
+              <Button variant="secondary" onClick={onRetryObservation}>
+                Retry observation
+              </Button>
+            ) : null}
+          </div>
         </div>
       ) : null}
     </section>

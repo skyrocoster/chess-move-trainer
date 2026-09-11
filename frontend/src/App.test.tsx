@@ -25,7 +25,7 @@ describe("App routes", () => {
     expect(screen.getByRole("status")).toHaveTextContent("Checking backend health");
   });
 
-  it("renders the ordinary in-shell not-found state for /viewer with no compatibility surface", () => {
+  it("renders the not-found page for /viewer", () => {
     renderApp(["/viewer"]);
 
     expect(screen.getByRole("heading", { name: "Page not found", level: 1 })).toBeInTheDocument();

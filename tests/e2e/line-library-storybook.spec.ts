@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
-import { retryAxeWhenBusy } from "./axeBusyRetry";
+import { retryAxeWhenBusy } from "./axe-busy-retry";
 
 const STORYBOOK_URL = "http://127.0.0.1:6006";
 const STORYBOOK_ROOT = "#storybook-root";
@@ -81,7 +81,7 @@ async function expectOpeningSurface(page: Page) {
 test.describe("Opening Line Library Storybook surface", () => {
   test.describe.configure({ timeout: 60_000 });
 
-  test("proves the synthetic opening specialization, keyboard focus, selection, and commit", async ({
+  test("shows the synthetic opening specialization with keyboard focus, selection, and commit", async ({
     page,
   }) => {
     await openStory(page, STORY_IDS.browserSelectionAndCommit);
@@ -108,102 +108,120 @@ test.describe("Opening Line Library Storybook surface", () => {
     await checkA11y(page);
   });
 
-  test("proves the approved synthetic filter scenarios", async ({ page }) => {
-    await openStory(page, STORY_IDS.textSearch);
-    await expectOpeningSurface(page);
-    await expect(page.getByRole("searchbox", { name: "Search" })).toHaveValue(
-      "Caro",
-    );
-    await expect(
-      page.getByRole("treeitem", { name: /Synthetic Caro-Kann branch/ }),
-    ).toBeVisible();
-    await expect(
-      page.getByRole("treeitem", { name: /Synthetic English branch/ }),
-    ).toHaveCount(0);
-    await expectNoHorizontalOverflow(page);
-    await checkA11y(page);
+  test("shows the synthetic filter scenarios", async ({ page }) => {
+    await test.step("text search", async () => {
+      await openStory(page, STORY_IDS.textSearch);
+      await expectOpeningSurface(page);
+      await expect(page.getByRole("searchbox", { name: "Search" })).toHaveValue(
+        "Caro",
+      );
+      await expect(
+        page.getByRole("treeitem", { name: /Synthetic Caro-Kann branch/ }),
+      ).toBeVisible();
+      await expect(
+        page.getByRole("treeitem", { name: /Synthetic English branch/ }),
+      ).toHaveCount(0);
+      await expectNoHorizontalOverflow(page);
+      await checkA11y(page);
+    });
 
-    await openStory(page, STORY_IDS.ecoRange);
-    await expectOpeningSurface(page);
-    await expect(page.getByRole("textbox", { name: "ECO code/range" })).toHaveValue(
-      "B00:B99",
-    );
-    await expect(
-      page.getByRole("treeitem", { name: /Synthetic Sicilian branch/ }),
-    ).toBeVisible();
-    await expect(
-      page.getByRole("treeitem", { name: /Synthetic English branch/ }),
-    ).toHaveCount(0);
-    await expectNoHorizontalOverflow(page);
+    await test.step("ECO range", async () => {
+      await openStory(page, STORY_IDS.ecoRange);
+      await expectOpeningSurface(page);
+      await expect(page.getByRole("textbox", { name: "ECO code/range" })).toHaveValue(
+        "B00:B99",
+      );
+      await expect(
+        page.getByRole("treeitem", { name: /Synthetic Sicilian branch/ }),
+      ).toBeVisible();
+      await expect(
+        page.getByRole("treeitem", { name: /Synthetic English branch/ }),
+      ).toHaveCount(0);
+      await expectNoHorizontalOverflow(page);
+    });
 
-    await openStory(page, STORY_IDS.acceptedCorpus);
-    await expectOpeningSurface(page);
-    await expect(
-      page.getByRole("checkbox", { name: "Appears in my games" }),
-    ).toBeChecked();
-    await expect(
-      page.getByRole("treeitem", { name: /Synthetic Sicilian branch/ }),
-    ).toBeVisible();
-    await expect(
-      page.getByRole("treeitem", { name: /Synthetic English branch/ }),
-    ).toHaveCount(0);
-    await expectNoHorizontalOverflow(page);
+    await test.step("accepted corpus", async () => {
+      await openStory(page, STORY_IDS.acceptedCorpus);
+      await expectOpeningSurface(page);
+      await expect(
+        page.getByRole("checkbox", { name: "Appears in my games" }),
+      ).toBeChecked();
+      await expect(
+        page.getByRole("treeitem", { name: /Synthetic Sicilian branch/ }),
+      ).toBeVisible();
+      await expect(
+        page.getByRole("treeitem", { name: /Synthetic English branch/ }),
+      ).toHaveCount(0);
+      await expectNoHorizontalOverflow(page);
+    });
   });
 
-  test("proves disabled rows, references, and the declared selection limit", async ({
+  test("shows disabled rows, references, and the declared selection limit", async ({
     page,
   }) => {
-    await openStory(page, STORY_IDS.disabledAndReference);
-    await expectOpeningSurface(page);
-    await expect(
-      page.getByRole("treeitem", { name: /Synthetic unavailable branch/ }),
-    ).toHaveAttribute("aria-disabled", "true");
-    await expect(
-      page.getByRole("checkbox", { name: /Select Synthetic transposition reference/ }),
-    ).toHaveCount(0);
-    await expect(
-      page.getByRole("button", { name: "Target: synthetic-line-sicilian" }),
-    ).toBeVisible();
-    await checkA11y(page);
+    await test.step("disabled rows and transposition reference", async () => {
+      await openStory(page, STORY_IDS.disabledAndReference);
+      await expectOpeningSurface(page);
+      await expect(
+        page.getByRole("treeitem", { name: /Synthetic unavailable branch/ }),
+      ).toHaveAttribute("aria-disabled", "true");
+      await expect(
+        page.getByRole("checkbox", { name: /Select Synthetic transposition reference/ }),
+      ).toHaveCount(0);
+      await expect(
+        page.getByRole("button", { name: "Target: synthetic-line-sicilian" }),
+      ).toBeVisible();
+      await checkA11y(page);
+    });
 
-    await openStory(page, STORY_IDS.selectionLimit);
-    await expectOpeningSurface(page);
-    await expect(
-      page.getByRole("checkbox", { name: /Select Synthetic central family/ }),
-    ).not.toBeChecked();
-    await expect(
-      page.getByRole("checkbox", { name: /Select Synthetic Sicilian branch/ }),
-    ).not.toBeChecked();
-    await expectNoHorizontalOverflow(page);
+    await test.step("declared selection limit", async () => {
+      await openStory(page, STORY_IDS.selectionLimit);
+      await expectOpeningSurface(page);
+      await expect(
+        page.getByRole("checkbox", { name: /Select Synthetic central family/ }),
+      ).not.toBeChecked();
+      await expect(
+        page.getByRole("checkbox", { name: /Select Synthetic Sicilian branch/ }),
+      ).not.toBeChecked();
+      await expectNoHorizontalOverflow(page);
+    });
   });
 
-  test("proves loading, stale, error-retry, and empty states", async ({ page }) => {
-    await openStory(page, STORY_IDS.initialLoading);
-    await expect(page.getByRole("status")).toContainText("Loading lines");
-    await checkA11y(page);
+  test("shows the loading, stale, error-retry, and empty states", async ({ page }) => {
+    await test.step("initial loading", async () => {
+      await openStory(page, STORY_IDS.initialLoading);
+      await expect(page.getByRole("status")).toContainText("Loading lines");
+      await checkA11y(page);
+    });
 
-    await openStory(page, STORY_IDS.staleRefresh);
-    await expectOpeningSurface(page);
-    await expect(page.getByRole("status")).toContainText("Updating results");
-    await expect(
-      page.getByRole("treeitem", { name: /Synthetic Sicilian branch/ }),
-    ).toHaveAttribute("aria-disabled", "true");
-    await expectNoHorizontalOverflow(page);
-    await checkA11y(page);
+    await test.step("stale refresh", async () => {
+      await openStory(page, STORY_IDS.staleRefresh);
+      await expectOpeningSurface(page);
+      await expect(page.getByRole("status")).toContainText("Updating results");
+      await expect(
+        page.getByRole("treeitem", { name: /Synthetic Sicilian branch/ }),
+      ).toHaveAttribute("aria-disabled", "true");
+      await expectNoHorizontalOverflow(page);
+      await checkA11y(page);
+    });
 
-    await openStory(page, STORY_IDS.failureAndRetry);
-    await expectOpeningSurface(page);
-    await expect(
-      page.getByRole("treeitem", { name: /Synthetic Sicilian branch/ }),
-    ).toBeVisible();
-    await expect(page.getByRole("alert")).toHaveCount(0);
-    await checkA11y(page);
+    await test.step("failure and retry", async () => {
+      await openStory(page, STORY_IDS.failureAndRetry);
+      await expectOpeningSurface(page);
+      await expect(
+        page.getByRole("treeitem", { name: /Synthetic Sicilian branch/ }),
+      ).toBeVisible();
+      await expect(page.getByRole("alert")).toHaveCount(0);
+      await checkA11y(page);
+    });
 
-    await openStory(page, STORY_IDS.emptyResult);
-    await expect(page.getByRole("status")).toContainText("No lines match");
-    await expect(page.getByRole("tree")).toHaveCount(0);
-    await expectNoHorizontalOverflow(page);
-    await checkA11y(page);
+    await test.step("empty result", async () => {
+      await openStory(page, STORY_IDS.emptyResult);
+      await expect(page.getByRole("status")).toContainText("No lines match");
+      await expect(page.getByRole("tree")).toHaveCount(0);
+      await expectNoHorizontalOverflow(page);
+      await checkA11y(page);
+    });
   });
 
   test("keeps the opening picker accessible and bounded at responsive viewports", async ({

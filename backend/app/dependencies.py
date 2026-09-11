@@ -7,7 +7,6 @@ from pathlib import Path
 
 from chess_move_trainer.database.lifecycle import DEFAULT_DATABASE_PATH
 
-
 REBUILT_DATABASE_PATH_ENV = "CHESS_REBUILT_DATABASE_PATH"
 
 

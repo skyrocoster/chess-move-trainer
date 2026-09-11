@@ -6,7 +6,6 @@ from pathlib import Path
 
 from chess_move_trainer.database.schema import create_schema
 
-
 EXPECTED_COLUMNS = {
     "datasource_game": [
         ("dg_game_id", "INTEGER", 1, None, 1),
@@ -129,31 +128,46 @@ EXPECTED_UNIQUE_CONSTRAINTS = {
 EXPECTED_CHECKS = {
     "datasource_game": [
         "dg_trainer_color IN ('white','black')",
-        "dg_opponent_chesscom_uuid IS NULL OR dg_opponent_chesscom_uuid <> dg_trainer_chesscom_uuid",
+        (
+            "dg_opponent_chesscom_uuid IS NULL OR dg_opponent_chesscom_uuid"
+            " <> dg_trainer_chesscom_uuid"
+        ),
         "dg_trainer_outcome IN ('win','loss','draw')",
         "dg_termination_reason IS NULL OR dg_termination_reason NOT IN ('win','loss')",
     ],
     "derived_position": [
         "dp_side_to_move IN ('w','b')",
-        "dp_castling_rights IN ('-','K','Q','k','q','KQ','Kk','Kq','Qk','Qq','kq','KQk','KQq','Kkq','Qkq','KQkq')",
+        (
+            "dp_castling_rights IN ('-','K','Q','k','q','KQ','Kk','Kq','Qk','Qq',"
+            "'kq','KQk','KQq','Kkq','Qkq','KQkq')"
+        ),
         "dp_legal_en_passant = '-' OR dp_legal_en_passant GLOB '[a-h][36]'",
     ],
     "derived_game_position": [
         "dgp_ply >= 0",
-        "dgp_move_uci IS NULL OR dgp_move_uci GLOB '[a-h][1-8][a-h][1-8]' OR dgp_move_uci GLOB '[a-h][1-8][a-h][1-8][qrbn]'",
+        (
+            "dgp_move_uci IS NULL OR dgp_move_uci GLOB '[a-h][1-8][a-h][1-8]'"
+            " OR dgp_move_uci GLOB '[a-h][1-8][a-h][1-8][qrbn]'"
+        ),
         "dgp_halfmove_clock >= 0",
         "dgp_fullmove_number >= 1",
     ],
     "datasource_opening": ["do_eco GLOB '[A-E][0-9][0-9]'"],
     "derived_opening_route_move": [
         "dorm_ply >= 1",
-        "dorm_move_uci GLOB '[a-h][1-8][a-h][1-8]' OR dorm_move_uci GLOB '[a-h][1-8][a-h][1-8][qrbn]'",
+        (
+            "dorm_move_uci GLOB '[a-h][1-8][a-h][1-8]'"
+            " OR dorm_move_uci GLOB '[a-h][1-8][a-h][1-8][qrbn]'"
+        ),
     ],
     "derived_analysis_result": [
         "dar_quality IN ('browser','tool')",
         "dar_configuration_version >= 1",
         "json_valid(dar_settings_json)",
-        "dar_terminal_kind IS NULL OR dar_terminal_kind IN ('checkmate','stalemate','insufficient_material')",
+        (
+            "dar_terminal_kind IS NULL OR dar_terminal_kind"
+            " IN ('checkmate','stalemate','insufficient_material')"
+        ),
     ],
     "derived_analysis_line": [
         "dal_rank BETWEEN 1 AND 5",
@@ -162,7 +176,10 @@ EXPECTED_CHECKS = {
         "dal_wdl_draws >= 0",
         "dal_wdl_losses >= 0",
         "dal_wdl_wins + dal_wdl_draws + dal_wdl_losses = 1000",
-        "json_valid(dal_pv_uci_json) AND json_type(dal_pv_uci_json) = 'array' AND json_array_length(dal_pv_uci_json) > 0",
+        (
+            "json_valid(dal_pv_uci_json) AND json_type(dal_pv_uci_json) = 'array'"
+            " AND json_array_length(dal_pv_uci_json) > 0"
+        ),
         "dal_depth >= 0",
     ],
     "derived_analysis_queue": [
@@ -173,8 +190,14 @@ EXPECTED_CHECKS = {
     ],
     "datasource_preferred_move_period": [
         "dpm_effective_from GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]'",
-        "dpm_effective_until IS NULL OR (dpm_effective_until GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]'",
-        "dpm_move_uci IS NULL OR dpm_move_uci GLOB '[a-h][1-8][a-h][1-8]' OR dpm_move_uci GLOB '[a-h][1-8][a-h][1-8][qrbn]'",
+        (
+            "dpm_effective_until IS NULL OR (dpm_effective_until"
+            " GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]'"
+        ),
+        (
+            "dpm_move_uci IS NULL OR dpm_move_uci GLOB '[a-h][1-8][a-h][1-8]'"
+            " OR dpm_move_uci GLOB '[a-h][1-8][a-h][1-8][qrbn]'"
+        ),
     ],
 }
 
@@ -223,7 +246,7 @@ def test_canonical_resource_is_installed_and_schema_is_exact(tmp_path: Path) -> 
             )
             if not row[1].startswith("sqlite_autoindex")
         }
-        assert selected_indexes == set()
+        assert selected_indexes == {"derived_game_position_position_idx"}
 
         for table, expected_columns in EXPECTED_COLUMNS.items():
             actual_columns = [
@@ -253,6 +276,10 @@ def test_unique_constraints_are_exact_and_internal_autoindexes_only(tmp_path: Pa
         for table in EXPECTED_COLUMNS:
             unique_constraints = set()
             for row in connection.execute(f'PRAGMA index_list("{table}")'):
+                if row[1] == "derived_game_position_position_idx":
+                    assert table == "derived_game_position"
+                    assert row[3] == "c"
+                    continue
                 assert row[1].startswith("sqlite_autoindex_")
                 assert row[3] in {"pk", "u"}
                 if row[3] == "u":

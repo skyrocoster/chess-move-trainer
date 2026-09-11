@@ -163,8 +163,7 @@ export function usePreferredMoveWorkflow({
     selectedTransition !== null && sideFromFen(selectedTransition.parentFEN) === bottomColor
       ? selectedTransition
       : null;
-  const preferredPositionFen =
-    focusedOwnerTransition?.parentFEN ?? session.currentPosition.fen;
+  const preferredPositionFen = focusedOwnerTransition?.parentFEN ?? session.currentPosition.fen;
   const preferredSideToMove = sideFromFen(preferredPositionFen);
   const preferredState = usePreferredMoveState(preferredPositionFen, preferredReader, refreshToken);
   const contextState = usePositionContextState(
@@ -311,10 +310,7 @@ export function usePreferredMoveWorkflow({
       const result = await (async () => {
         try {
           return kind === "remove"
-            ? await preferredMoveClient.remove(
-                { fen: mutationFen },
-                { signal: controller.signal },
-              )
+            ? await preferredMoveClient.remove({ fen: mutationFen }, { signal: controller.signal })
             : await preferredMoveClient.put(
                 {
                   fen: mutationFen,
@@ -383,7 +379,15 @@ export function usePreferredMoveWorkflow({
     setWorkflowError(null);
     setSession(applySessionMove(session, nextMove));
     setSessionStatus(`Move played locally: ${nextMove.san}.`);
-  }, [mutation, positionModel.ownTurn, positionModel.saved, positionModel.sourceFen, session, setSession, setSessionStatus]);
+  }, [
+    mutation,
+    positionModel.ownTurn,
+    positionModel.saved,
+    positionModel.sourceFen,
+    session,
+    setSession,
+    setSessionStatus,
+  ]);
 
   const onRetry = useCallback(() => {
     if (failedMutation !== null) {

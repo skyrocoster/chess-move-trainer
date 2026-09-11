@@ -8,8 +8,7 @@ from uuid import UUID
 
 import pytest
 
-from chess_move_trainer.database import create_schema
-from chess_move_trainer.database import lifecycle
+from chess_move_trainer.database import create_schema, lifecycle
 from chess_move_trainer.database.games.persistence import GameRepository, import_raw_games
 from chess_move_trainer.database.openings.acquisition import (
     COMMIT_RESOLUTION_URL,
@@ -22,7 +21,6 @@ from chess_move_trainer.database.openings.persistence import (
     import_opening_catalogue,
 )
 from chess_move_trainer.database.openings.source import load_opening_sources
-
 
 ROOT = Path(__file__).parents[2]
 FIXTURES = ROOT / "tests" / "database"

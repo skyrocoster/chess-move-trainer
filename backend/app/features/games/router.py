@@ -14,9 +14,9 @@ from backend.app.features.games.api_schemas import (
     GameCoverageResponse,
     GameDetailOccurrenceResponse,
     GameDetailResponse,
-    GameSummaryResponse,
     GamesErrorResponse,
     GamesResponse,
+    GameSummaryResponse,
     OpeningSummaryResponse,
 )
 from chess_move_trainer.database.games import (
@@ -29,7 +29,6 @@ from chess_move_trainer.database.games import (
 )
 from chess_move_trainer.database.games.reading import GameReadError
 from chess_move_trainer.database.schema import SchemaIncompatibleError
-
 
 router = APIRouter(prefix="/api", tags=["games"])
 

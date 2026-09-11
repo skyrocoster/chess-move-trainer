@@ -14,7 +14,6 @@ from backend.app.main import app
 from .conftest import (
     OTHER_COLOR_CANONICAL_FEN,
     OTHER_COLOR_FEN,
-    STARTING_FEN,
     TARGET_CANONICAL_FEN,
     TARGET_FEN,
     TARGET_WITH_COUNTERS,
@@ -24,7 +23,9 @@ from .conftest import (
 )
 
 
-def _params(fen: str = TARGET_FEN, trainer_color: str = "white", as_of: str = "2026-01-15") -> dict[str, str]:
+def _params(
+    fen: str = TARGET_FEN, trainer_color: str = "white", as_of: str = "2026-01-15"
+) -> dict[str, str]:
     return {"fen": fen, "trainer_color": trainer_color, "as_of": as_of}
 
 
@@ -44,7 +45,7 @@ def _target_position_id(database: Path) -> int:
         ).fetchone()[0]
 
 
-def test_success_returns_exact_public_position_insight_and_ignores_unknown_queries(
+def test_known_position_returns_full_insight_and_ignores_unknown_filters(
     api_context,
 ) -> None:
     client, _database = api_context
@@ -110,7 +111,7 @@ def test_success_returns_exact_public_position_insight_and_ignores_unknown_queri
     assert "route_id" not in json.dumps(response.json())
 
 
-def test_other_color_only_observation_and_terminal_totals_are_exact(api_context) -> None:
+def test_opponent_only_position_and_finished_games_count_correctly(api_context) -> None:
     client, _database = api_context
 
     other_color = client.get(
@@ -169,7 +170,7 @@ def test_other_color_only_observation_and_terminal_totals_are_exact(api_context)
         {"fen": TARGET_FEN, "trainer_color": "white"},
     ),
 )
-def test_required_query_fields_are_required(api_context, params: dict[str, str]) -> None:
+def test_missing_required_fields_gives_error(api_context, params: dict[str, str]) -> None:
     client, _database = api_context
 
     response = client.get("/api/positions/insight", params=params)
@@ -204,7 +205,7 @@ def test_required_query_fields_are_required(api_context, params: dict[str, str])
         ),
     ),
 )
-def test_invalid_values_use_strict_typed_422_errors(api_context, params, error) -> None:
+def test_bad_values_give_clear_error(api_context, params, error) -> None:
     client, _database = api_context
 
     response = client.get("/api/positions/insight", params=params)
@@ -213,11 +214,13 @@ def test_invalid_values_use_strict_typed_422_errors(api_context, params, error) 
     assert response.json() == error
 
 
-def test_unseen_legal_position_is_sparse_success_and_read_only(api_context) -> None:
+def test_unseen_position_returns_empty_insight_without_changing_database(api_context) -> None:
     client, database = api_context
     before = database.read_bytes()
 
-    response = client.get("/api/positions/insight", params=_params(UNSEEN_FEN, "black", "2026-09-09"))
+    response = client.get(
+        "/api/positions/insight", params=_params(UNSEEN_FEN, "black", "2026-09-09")
+    )
 
     assert response.status_code == 200
     assert response.json() == {
@@ -246,7 +249,7 @@ def test_unseen_legal_position_is_sparse_success_and_read_only(api_context) -> N
         assert connection.execute("SELECT COUNT(*) FROM derived_position").fetchone()[0] == 2
 
 
-def test_analysis_queue_precedence_and_date_resolved_preference_are_public(api_context) -> None:
+def test_queued_analysis_and_date_based_preference_are_shown(api_context) -> None:
     client, database = api_context
     with sqlite3.connect(database) as connection:
         position_id = _target_position_id(database)
@@ -294,7 +297,7 @@ def test_analysis_queue_precedence_and_date_resolved_preference_are_public(api_c
     assert running.json()["preference"] == {"kind": "move", "uci": "b2b3"}
 
 
-def test_clean_dependency_override_selects_the_injected_database(
+def test_injected_database_is_used_when_configured(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     client,
@@ -309,7 +312,7 @@ def test_clean_dependency_override_selects_the_injected_database(
     assert response.json()["fen"] == TARGET_CANONICAL_FEN
 
 
-def test_missing_or_incompatible_data_is_typed_503_without_target_creation(
+def test_missing_or_broken_database_gives_unavailable_without_creating_file(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     client,
@@ -340,7 +343,7 @@ def test_missing_or_incompatible_data_is_typed_503_without_target_creation(
     assert incompatible.read_bytes() == before
 
 
-def test_unexpected_failures_are_safe_and_do_not_leak_internal_messages(api_context, monkeypatch) -> None:
+def test_unexpected_failures_stay_safe_without_leaking_details(api_context, monkeypatch) -> None:
     client, _database = api_context
 
     def fail(*_args: object, **_kwargs: object) -> object:
@@ -357,7 +360,7 @@ def test_unexpected_failures_are_safe_and_do_not_leak_internal_messages(api_cont
     assert "database secret" not in response.text
 
 
-def test_new_clean_route_coexists_with_accepted_clean_routes() -> None:
+def test_insight_route_coexists_with_games_and_openings() -> None:
     routes = {route.path for route in app.routes if isinstance(route, APIRoute)}
 
     assert "/api/positions/insight" in routes
@@ -369,7 +372,7 @@ def test_new_clean_route_coexists_with_accepted_clean_routes() -> None:
     assert "/api/position-context" not in routes
 
 
-def test_position_insight_route_has_the_settled_operation_id() -> None:
+def test_insight_route_uses_expected_operation_name() -> None:
     route = next(
         route
         for route in app.routes

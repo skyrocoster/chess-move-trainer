@@ -7,7 +7,10 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { PREFERRED_MOVE_DATE_UNAVAILABLE } from "./preferredMoveWorkflowState";
 import { PreferredMovePanel, type PreferredMovePanelProps } from "./PreferredMovePanel";
-import type { RepertoirePositionModel, RepertoireSelectedMoveFact } from "./repertoireWorkflowModel";
+import type {
+  RepertoirePositionModel,
+  RepertoireSelectedMoveFact,
+} from "./repertoireWorkflowModel";
 
 afterEach(() => cleanup());
 
@@ -66,14 +69,21 @@ function panelArgs(overrides: Partial<PreferredMovePanelProps> = {}): PreferredM
 }
 
 function savedModel(overrides: Partial<RepertoirePositionModel> = {}): RepertoirePositionModel {
-  return model({ savedPresence: "present", saved: SAVED_FACT, relationship: "saved", ...overrides });
+  return model({
+    savedPresence: "present",
+    saved: SAVED_FACT,
+    relationship: "saved",
+    ...overrides,
+  });
 }
 
 function actionLabels(panel: HTMLElement): string[] {
   return within(panel)
     .queryAllByRole("button")
     .map((button) => button.textContent?.trim() ?? "")
-    .filter((label) => label === "Matches saved" || label === "Remove" || label.startsWith("Save "));
+    .filter(
+      (label) => label === "Matches saved" || label === "Remove" || label.startsWith("Save "),
+    );
 }
 
 describe("PreferredMovePanel selected-transition composition", () => {
@@ -106,7 +116,9 @@ describe("PreferredMovePanel selected-transition composition", () => {
 
     const panel = screen.getByRole("region", { name: "Preferred move" });
     expect(within(panel).getByText("No move selected")).toBeVisible();
-    expect(within(panel).getByText("Play a legal move to select the first saved choice.")).toBeVisible();
+    expect(
+      within(panel).getByText("Play a legal move to select the first saved choice."),
+    ).toBeVisible();
     expect(within(panel).queryByTestId("preferred-actions")).not.toBeInTheDocument();
   });
 
@@ -125,10 +137,16 @@ describe("PreferredMovePanel selected-transition composition", () => {
   it("does not make a saved choice actionable on the opponent turn", async () => {
     const user = userEvent.setup();
     const onPlaySavedMove = vi.fn();
-    render(<PreferredMovePanel {...panelArgs({ model: savedModel({ ownTurn: false }), onPlaySavedMove })} />);
+    render(
+      <PreferredMovePanel
+        {...panelArgs({ model: savedModel({ ownTurn: false }), onPlaySavedMove })}
+      />,
+    );
 
     const panel = screen.getByRole("region", { name: "Preferred move" });
-    expect(within(panel).queryByRole("button", { name: /Current saved choice/ })).not.toBeInTheDocument();
+    expect(
+      within(panel).queryByRole("button", { name: /Current saved choice/ }),
+    ).not.toBeInTheDocument();
     await user.click(within(panel).getByRole("region", { name: "Current saved choice" }));
     expect(onPlaySavedMove).not.toHaveBeenCalled();
   });
@@ -139,7 +157,11 @@ describe("PreferredMovePanel selected-transition composition", () => {
     render(
       <PreferredMovePanel
         {...panelArgs({
-          model: savedModel({ selected: SELECTED_D4, comparison: "different", relationship: "replacement" }),
+          model: savedModel({
+            selected: SELECTED_D4,
+            comparison: "different",
+            relationship: "replacement",
+          }),
           date: new Date("2026-08-29T00:00:00.000Z"),
           onDateChange,
           dateEdit: {
@@ -154,7 +176,9 @@ describe("PreferredMovePanel selected-transition composition", () => {
 
     const panel = screen.getByRole("region", { name: "Preferred move" });
     expect(within(panel).queryByTestId("effective-date")).not.toBeInTheDocument();
-    expect(within(panel).queryByRole("button", { name: /effective date/i })).not.toBeInTheDocument();
+    expect(
+      within(panel).queryByRole("button", { name: /effective date/i }),
+    ).not.toBeInTheDocument();
     expect(onActivate).not.toHaveBeenCalled();
     expect(onDateChange).not.toHaveBeenCalled();
   });
@@ -164,7 +188,11 @@ describe("PreferredMovePanel selected-transition composition", () => {
     render(
       <PreferredMovePanel
         {...panelArgs({
-          model: model({ savedPresence: "unknown", relationship: "unknown", saveability: "unknown" }),
+          model: model({
+            savedPresence: "unknown",
+            relationship: "unknown",
+            saveability: "unknown",
+          }),
           preferredError: "preferred_moves_unavailable",
           onRetry,
         })}
@@ -181,10 +209,18 @@ describe("PreferredMovePanel selected-transition composition", () => {
     cleanup();
     render(
       <PreferredMovePanel
-        {...panelArgs({ model: model({ saveability: "unsavable", selected: SELECTED_D4, relationship: "first-choice" }) })}
+        {...panelArgs({
+          model: model({
+            saveability: "unsavable",
+            selected: SELECTED_D4,
+            relationship: "first-choice",
+          }),
+        })}
       />,
     );
-    expect(screen.queryByText("This position isn't in your corpus, so it can't be saved yet.")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("This position isn't in your corpus, so it can't be saved yet."),
+    ).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Save d4" })).toBeVisible();
   });
 
@@ -192,7 +228,11 @@ describe("PreferredMovePanel selected-transition composition", () => {
     render(
       <PreferredMovePanel
         {...panelArgs({
-          model: savedModel({ selected: SELECTED_D4, comparison: "different", relationship: "replacement" }),
+          model: savedModel({
+            selected: SELECTED_D4,
+            comparison: "different",
+            relationship: "replacement",
+          }),
           mutation: "save",
         })}
       />,
@@ -208,7 +248,11 @@ describe("PreferredMovePanel selected-transition composition", () => {
     render(
       <PreferredMovePanel
         {...panelArgs({
-          model: savedModel({ selected: SELECTED_D4, comparison: "different", relationship: "replacement" }),
+          model: savedModel({
+            selected: SELECTED_D4,
+            comparison: "different",
+            relationship: "replacement",
+          }),
         })}
       />,
     );
@@ -216,7 +260,8 @@ describe("PreferredMovePanel selected-transition composition", () => {
     const panel = screen.getByRole("region", { name: "Preferred move" });
     const savedBox = screen.getByTestId("saved-move");
     const relationship = savedBox.parentElement;
-    if (!(relationship instanceof HTMLElement)) throw new Error("The relationship layout is missing.");
+    if (!(relationship instanceof HTMLElement))
+      throw new Error("The relationship layout is missing.");
     expect(relationship.children).toHaveLength(3);
     expect(relationship.children[2]).toHaveAttribute("data-testid", "selected-move");
     expect(panelCss).toContain("container-name: preferred-move-panel;");

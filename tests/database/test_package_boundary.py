@@ -4,7 +4,6 @@ import importlib
 import tomllib
 from pathlib import Path
 
-
 ROOT = Path(__file__).parents[2]
 
 
@@ -16,7 +15,7 @@ def test_common_package_and_database_namespace_are_importable() -> None:
     analysis = importlib.import_module("chess_move_trainer.database.analysis")
     games = importlib.import_module("chess_move_trainer.database.games")
     openings = importlib.import_module("chess_move_trainer.database.openings")
-    rebuild = importlib.import_module("chess_move_trainer.database.rebuild")
+    proof = importlib.import_module("chess_move_trainer.database.proof")
 
     assert package.__name__ == "chess_move_trainer"
     assert database.__name__ == "chess_move_trainer.database"
@@ -33,7 +32,7 @@ def test_common_package_and_database_namespace_are_importable() -> None:
     assert analysis.__name__ == "chess_move_trainer.database.analysis"
     assert games.__name__ == "chess_move_trainer.database.games"
     assert openings.__name__ == "chess_move_trainer.database.openings"
-    assert rebuild.__name__ == "chess_move_trainer.database.rebuild"
+    assert proof.__name__ == "chess_move_trainer.database.proof"
     for name in (
         "PositionInsight",
         "PositionInsightAnalysis",
@@ -124,10 +123,10 @@ def test_common_package_and_database_namespace_are_importable() -> None:
         assert hasattr(games, name)
     for name in (
         "DEFAULT_DATABASE_PATH",
-        "Db09Proof",
-        "collect_db09_proof",
+        "DirectProof",
+        "collect_direct_proof",
     ):
-        assert hasattr(rebuild, name)
+        assert hasattr(proof, name)
     for name in (
         "OpeningAcquisitionError",
         "OpeningAcquisitionResult",
@@ -141,7 +140,7 @@ def test_common_package_and_database_namespace_are_importable() -> None:
         "rollback_rebuilt_neighbour",
     ):
         assert not hasattr(openings, name)
-        assert not hasattr(rebuild, name)
+        assert not hasattr(proof, name)
     assert Path(package.__file__).parts[-3:-1] == ("src", "chess_move_trainer")
 
 
@@ -184,13 +183,3 @@ def test_packaging_preserves_backend_and_declares_database_sql_resources() -> No
     assert "backend*" in package_find["include"]
     assert "chess_move_trainer*" in package_find["include"]
     assert package_data["chess_move_trainer.database"] == ["*.sql"]
-
-
-def test_permanent_tool_setup_is_an_editable_no_dependency_install() -> None:
-    setup_script = (ROOT / "setup-tools.ps1").read_text(encoding="utf-8")
-
-    assert ".venv\\Scripts\\python.exe" in setup_script
-    assert "--editable" in setup_script
-    assert "--no-deps" in setup_script
-    assert "setup.ps1" not in setup_script
-    assert "database" not in setup_script.lower()

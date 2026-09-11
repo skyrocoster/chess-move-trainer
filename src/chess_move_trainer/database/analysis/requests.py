@@ -17,12 +17,6 @@ from ..positions.repository import (
     _resolve_canonical_position,
 )
 from ..schema import SchemaIncompatibleError, _assert_compatible_schema
-from ..stockfish.configuration import CONFIGURATION_VERSION, STOCKFISH_VERSION
-from ..stockfish.queue import (
-    QueueStorageError,
-    _enqueue_in_transaction,
-    _read_live_queue_request,
-)
 from .models import (
     AnalysisError,
     AnalysisQuality,
@@ -33,7 +27,6 @@ from .observation import (
     AnalysisObservation,
     AnalysisObservationError,
     AnalysisObservationResult,
-    AnalysisObservationState,
     _canonical_fen,
     _materialize_observation,
     _observation_result,
@@ -141,6 +134,10 @@ class AnalysisRequestRepository:
         return self._request(normalized_request)
 
     def _request(self, request: AnalysisRequest) -> AnalysisRequestResult:
+        # Local import: stockfish.queue needs analysis at load time, so importing
+        # it here keeps both import orders working.
+        from ..stockfish.queue import _enqueue_in_transaction, _read_live_queue_request
+
         try:
             with _open_existing_connection(
                 self._database_path, self._lock_timeout
@@ -268,6 +265,9 @@ def _result_satisfies(
     result: AnalysisReadResult | None,
     requested_quality: AnalysisQuality,
 ) -> bool:
+    # Local import: see _request above for why this stays out of module scope.
+    from ..stockfish.configuration import CONFIGURATION_VERSION, STOCKFISH_VERSION
+
     if result is None:
         return False
     if _quality_rank(result.quality) > _quality_rank(requested_quality):
@@ -285,6 +285,9 @@ def _quality_rank(quality: AnalysisQuality) -> int:
 
 
 def _translate_storage_error(error: Exception) -> AnalysisRequestStorageError:
+    # Local import: see _request above for why this stays out of module scope.
+    from ..stockfish.queue import QueueStorageError
+
     candidate: BaseException | None = error
     while candidate is not None:
         if isinstance(candidate, sqlite3.OperationalError) and "locked" in str(

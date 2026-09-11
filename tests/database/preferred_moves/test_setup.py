@@ -15,7 +15,6 @@ from chess_move_trainer.database.preferred_moves.setup import (
     PreferredMoveSetupValidationError,
 )
 
-
 STARTING_PLACEMENT = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR"
 STARTING_POSITION = (STARTING_PLACEMENT, "w", "KQkq", "-")
 AFTER_E4_POSITION = (

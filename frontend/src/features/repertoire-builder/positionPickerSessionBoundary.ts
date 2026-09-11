@@ -35,8 +35,7 @@ export type PositionPickerSessionBoundary = {
 
 export type SessionNavigation = "previous" | "next" | "home" | "end";
 
-export const STANDARD_START_FEN: Fen =
-  "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+export const STANDARD_START_FEN: Fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
 const STANDARD_START_POSITION: SessionPosition = {
   ply: 0,
@@ -53,21 +52,18 @@ function importedPositions(mainLine: GameMainLineModel): readonly SessionPositio
 }
 
 function mainLinePositions(session: PositionPickerSessionBoundary): readonly SessionPosition[] {
-  return session.mainLine === null ? [STANDARD_START_POSITION] : importedPositions(session.mainLine);
+  return session.mainLine === null
+    ? [STANDARD_START_POSITION]
+    : importedPositions(session.mainLine);
 }
 
-export function sessionHistory(
-  session: PositionPickerSessionBoundary,
-): readonly SessionPosition[] {
+export function sessionHistory(session: PositionPickerSessionBoundary): readonly SessionPosition[] {
   const positions = mainLinePositions(session);
   if (session.branch === null) {
     return positions;
   }
 
-  return [
-    ...positions.slice(0, session.branch.branchPointIndex + 1),
-    ...session.branch.positions,
-  ];
+  return [...positions.slice(0, session.branch.branchPointIndex + 1), ...session.branch.positions];
 }
 
 function selectedTransitionAt(
@@ -128,9 +124,7 @@ export function createFreshSession(): PositionPickerSessionBoundary {
   return createSession("fresh", null);
 }
 
-export function loadImportedSession(
-  mainLine: GameMainLineModel,
-): PositionPickerSessionBoundary {
+export function loadImportedSession(mainLine: GameMainLineModel): PositionPickerSessionBoundary {
   if (mainLine.occurrences.length === 0 || mainLine.occurrences[0]?.ply !== 0) {
     throw new Error("Imported main line must begin with a Ply 0 occurrence.");
   }
@@ -215,7 +209,8 @@ export function applySessionMove(
 ): PositionPickerSessionBoundary {
   const mainPositions = mainLinePositions(session);
   const branchPointIndex = session.branch?.branchPointIndex;
-  const isOnImportedPrefix = branchPointIndex === undefined || session.currentIndex <= branchPointIndex;
+  const isOnImportedPrefix =
+    branchPointIndex === undefined || session.currentIndex <= branchPointIndex;
   const expectedMainUCI =
     session.mainLine !== null && session.currentIndex < mainPositions.length - 1
       ? session.mainLine.occurrences[session.currentIndex]?.outgoingUci
@@ -261,8 +256,6 @@ export function sessionHistoryBounds(session: PositionPickerSessionBoundary): {
   };
 }
 
-export function sessionOrientation(
-  session: PositionPickerSessionBoundary,
-): ChessSide {
+export function sessionOrientation(session: PositionPickerSessionBoundary): ChessSide {
   return session.mainLine?.trainerOrientation ?? "white";
 }

@@ -18,7 +18,6 @@ from chess_move_trainer.database.preferred_moves.repository import (
     PreferredMoveValidationError,
 )
 
-
 STARTING_PLACEMENT = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR"
 STARTING_FEN = f"{STARTING_PLACEMENT} w KQkq -"
 AFTER_E4_WITH_UNUSED_EP = (
@@ -185,7 +184,10 @@ def test_failure_or_interruption_rolls_back_standalone_position_and_period(
             raise failure
 
     service = PreferredMoveRepository(database_path, _checkpoint=checkpoint)
-    expected = KeyboardInterrupt if isinstance(failure, KeyboardInterrupt) else PreferredMoveStorageError
+    if isinstance(failure, KeyboardInterrupt):
+        expected = KeyboardInterrupt
+    else:
+        expected = PreferredMoveStorageError
     with pytest.raises(expected):
         service.set(STARTING_FEN, "2026-01-01", None, MOVE_E4)
 

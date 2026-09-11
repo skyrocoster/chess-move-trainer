@@ -50,17 +50,12 @@ function sideFromColor(color: "w" | "b"): ChessSide {
   return color === "w" ? "white" : "black";
 }
 
-export function branchMoves(
-  session: PositionPickerSessionBoundary,
-): readonly BranchMove[] {
+export function branchMoves(session: PositionPickerSessionBoundary): readonly BranchMove[] {
   if (session.branch === null) {
     return [];
   }
 
-  const branchLength = Math.max(
-    0,
-    session.currentIndex - session.branch.branchPointIndex,
-  );
+  const branchLength = Math.max(0, session.currentIndex - session.branch.branchPointIndex);
   return session.branch.transitions.slice(0, branchLength).map((transition, index) => {
     const chess = new Chess(transition.parentFEN);
     const move = chess.move(moveFromUci(transition.outgoingUCI));

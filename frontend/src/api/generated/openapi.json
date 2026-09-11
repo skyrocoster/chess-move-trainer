@@ -5,11 +5,7 @@
         "additionalProperties": false,
         "properties": {
           "code": {
-            "enum": [
-              "invalid_fen",
-              "analysis_unavailable",
-              "unexpected_failure"
-            ],
+            "enum": ["invalid_fen", "analysis_unavailable", "unexpected_failure"],
             "title": "Code",
             "type": "string"
           },
@@ -18,10 +14,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "code",
-          "message"
-        ],
+        "required": ["code", "message"],
         "title": "AnalysisObservationErrorResponse",
         "type": "object"
       },
@@ -46,10 +39,7 @@
             "type": "integer"
           },
           "score_kind": {
-            "enum": [
-              "cp",
-              "mate"
-            ],
+            "enum": ["cp", "mate"],
             "title": "Score Kind",
             "type": "string"
           },
@@ -104,21 +94,12 @@
             ]
           },
           "state": {
-            "enum": [
-              "not_requested",
-              "queued",
-              "running",
-              "ready"
-            ],
+            "enum": ["not_requested", "queued", "running", "ready"],
             "title": "State",
             "type": "string"
           }
         },
-        "required": [
-          "fen",
-          "state",
-          "result"
-        ],
+        "required": ["fen", "state", "result"],
         "title": "AnalysisObservationResponse",
         "type": "object"
       },
@@ -146,10 +127,7 @@
             "type": "array"
           },
           "quality": {
-            "enum": [
-              "browser",
-              "tool"
-            ],
+            "enum": ["browser", "tool"],
             "title": "Quality",
             "type": "string"
           },
@@ -160,11 +138,7 @@
           "terminal_kind": {
             "anyOf": [
               {
-                "enum": [
-                  "checkmate",
-                  "stalemate",
-                  "insufficient_material"
-                ],
+                "enum": ["checkmate", "stalemate", "insufficient_material"],
                 "type": "string"
               },
               {
@@ -195,17 +169,12 @@
           },
           "quality": {
             "default": "browser",
-            "enum": [
-              "browser",
-              "tool"
-            ],
+            "enum": ["browser", "tool"],
             "title": "Quality",
             "type": "string"
           }
         },
-        "required": [
-          "fen"
-        ],
+        "required": ["fen"],
         "title": "AnalysisRequestBody",
         "type": "object"
       },
@@ -228,10 +197,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "code",
-          "message"
-        ],
+        "required": ["code", "message"],
         "title": "AnalysisRequestErrorResponse",
         "type": "object"
       },
@@ -239,11 +205,7 @@
         "additionalProperties": false,
         "properties": {
           "analysis_coverage": {
-            "enum": [
-              "none",
-              "partial",
-              "complete"
-            ],
+            "enum": ["none", "partial", "complete"],
             "title": "Analysis Coverage",
             "type": "string"
           },
@@ -256,11 +218,7 @@
             "type": "integer"
           },
           "preferred_coverage": {
-            "enum": [
-              "none",
-              "partial",
-              "complete"
-            ],
+            "enum": ["none", "partial", "complete"],
             "title": "Preferred Coverage",
             "type": "string"
           },
@@ -302,11 +260,7 @@
             "type": "integer"
           }
         },
-        "required": [
-          "ply",
-          "fen",
-          "move_uci"
-        ],
+        "required": ["ply", "fen", "move_uci"],
         "title": "GameDetailOccurrenceResponse",
         "type": "object"
       },
@@ -392,12 +346,7 @@
           "time_class": {
             "anyOf": [
               {
-                "enum": [
-                  "bullet",
-                  "blitz",
-                  "rapid",
-                  "daily"
-                ],
+                "enum": ["bullet", "blitz", "rapid", "daily"],
                 "type": "string"
               },
               {
@@ -423,21 +372,14 @@
             "type": "string"
           },
           "trainer_color": {
-            "enum": [
-              "white",
-              "black"
-            ],
+            "enum": ["white", "black"],
             "title": "Trainer Color",
             "type": "string"
           },
           "trainer_outcome": {
             "anyOf": [
               {
-                "enum": [
-                  "win",
-                  "loss",
-                  "draw"
-                ],
+                "enum": ["win", "loss", "draw"],
                 "type": "string"
               },
               {
@@ -570,12 +512,7 @@
           "time_class": {
             "anyOf": [
               {
-                "enum": [
-                  "bullet",
-                  "blitz",
-                  "rapid",
-                  "daily"
-                ],
+                "enum": ["bullet", "blitz", "rapid", "daily"],
                 "type": "string"
               },
               {
@@ -601,21 +538,14 @@
             "type": "string"
           },
           "trainer_color": {
-            "enum": [
-              "white",
-              "black"
-            ],
+            "enum": ["white", "black"],
             "title": "Trainer Color",
             "type": "string"
           },
           "trainer_outcome": {
             "anyOf": [
               {
-                "enum": [
-                  "win",
-                  "loss",
-                  "draw"
-                ],
+                "enum": ["win", "loss", "draw"],
                 "type": "string"
               },
               {
@@ -662,12 +592,7 @@
         "additionalProperties": false,
         "properties": {
           "code": {
-            "enum": [
-              "invalid_filter",
-              "game_not_found",
-              "games_unavailable",
-              "unexpected_failure"
-            ],
+            "enum": ["invalid_filter", "game_not_found", "games_unavailable", "unexpected_failure"],
             "title": "Code",
             "type": "string"
           },
@@ -676,10 +601,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "code",
-          "message"
-        ],
+        "required": ["code", "message"],
         "title": "GamesErrorResponse",
         "type": "object"
       },
@@ -714,14 +636,7 @@
             "type": "integer"
           }
         },
-        "required": [
-          "items",
-          "page",
-          "page_size",
-          "total",
-          "total_pages",
-          "has_next"
-        ],
+        "required": ["items", "page", "page_size", "total", "total_pages", "has_next"],
         "title": "GamesResponse",
         "type": "object"
       },
@@ -746,9 +661,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "status"
-        ],
+        "required": ["status"],
         "title": "HealthResponse",
         "type": "object"
       },
@@ -765,10 +678,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "kind",
-          "uci"
-        ],
+        "required": ["kind", "uci"],
         "title": "MovePreferenceResponse",
         "type": "object"
       },
@@ -784,10 +694,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "kind",
-          "uci"
-        ],
+        "required": ["kind", "uci"],
         "title": "MutationMovePreferenceRequest",
         "type": "object"
       },
@@ -810,9 +717,7 @@
             "title": "Uci"
           }
         },
-        "required": [
-          "kind"
-        ],
+        "required": ["kind"],
         "title": "MutationNoPreferenceRequest",
         "type": "object"
       },
@@ -825,9 +730,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "kind"
-        ],
+        "required": ["kind"],
         "title": "NoPreferenceResponse",
         "type": "object"
       },
@@ -835,11 +738,7 @@
         "additionalProperties": false,
         "properties": {
           "code": {
-            "enum": [
-              "invalid_filter",
-              "openings_unavailable",
-              "unexpected_failure"
-            ],
+            "enum": ["invalid_filter", "openings_unavailable", "unexpected_failure"],
             "title": "Code",
             "type": "string"
           },
@@ -848,10 +747,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "code",
-          "message"
-        ],
+        "required": ["code", "message"],
         "title": "OpeningCatalogueErrorResponse",
         "type": "object"
       },
@@ -883,14 +779,7 @@
             "type": "integer"
           }
         },
-        "required": [
-          "key",
-          "eco",
-          "name",
-          "route_count",
-          "games_reached",
-          "games_deepest"
-        ],
+        "required": ["key", "eco", "name", "route_count", "games_reached", "games_deepest"],
         "title": "OpeningCatalogueItemResponse",
         "type": "object"
       },
@@ -925,14 +814,7 @@
             "type": "integer"
           }
         },
-        "required": [
-          "items",
-          "page",
-          "page_size",
-          "total",
-          "total_pages",
-          "has_next"
-        ],
+        "required": ["items", "page", "page_size", "total", "total_pages", "has_next"],
         "title": "OpeningCatalogueResponse",
         "type": "object"
       },
@@ -954,10 +836,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "code",
-          "message"
-        ],
+        "required": ["code", "message"],
         "title": "OpeningDetailErrorResponse",
         "type": "object"
       },
@@ -981,12 +860,7 @@
             "type": "integer"
           }
         },
-        "required": [
-          "key",
-          "eco",
-          "name",
-          "ply"
-        ],
+        "required": ["key", "eco", "name", "ply"],
         "title": "OpeningSummaryResponse",
         "type": "object"
       },
@@ -1004,20 +878,12 @@
             ]
           },
           "state": {
-            "enum": [
-              "not_requested",
-              "queued",
-              "running",
-              "ready"
-            ],
+            "enum": ["not_requested", "queued", "running", "ready"],
             "title": "State",
             "type": "string"
           }
         },
-        "required": [
-          "state",
-          "result"
-        ],
+        "required": ["state", "result"],
         "title": "PositionInsightAnalysisResponse",
         "type": "object"
       },
@@ -1040,10 +906,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "code",
-          "message"
-        ],
+        "required": ["code", "message"],
         "title": "PositionInsightErrorResponse",
         "type": "object"
       },
@@ -1066,11 +929,7 @@
             "type": "integer"
           }
         },
-        "required": [
-          "distinct_game_count",
-          "occurrence_count",
-          "total_game_count"
-        ],
+        "required": ["distinct_game_count", "occurrence_count", "total_game_count"],
         "title": "PositionInsightExperienceResponse",
         "type": "object"
       },
@@ -1095,10 +954,7 @@
             "type": "integer"
           },
           "score_kind": {
-            "enum": [
-              "cp",
-              "mate"
-            ],
+            "enum": ["cp", "mate"],
             "title": "Score Kind",
             "type": "string"
           },
@@ -1153,11 +1009,7 @@
             "type": "integer"
           }
         },
-        "required": [
-          "move_uci",
-          "distinct_game_count",
-          "occurrence_count"
-        ],
+        "required": ["move_uci", "distinct_game_count", "occurrence_count"],
         "title": "PositionInsightObservedMoveResponse",
         "type": "object"
       },
@@ -1178,11 +1030,7 @@
             "$ref": "#/components/schemas/PositionInsightTerminalTotalsResponse"
           }
         },
-        "required": [
-          "distinct_game_count",
-          "occurrence_count",
-          "terminal"
-        ],
+        "required": ["distinct_game_count", "occurrence_count", "terminal"],
         "title": "PositionInsightObservedMoveTotalsResponse",
         "type": "object"
       },
@@ -1198,10 +1046,7 @@
             "type": "string"
           },
           "match": {
-            "enum": [
-              "route",
-              "transposition"
-            ],
+            "enum": ["route", "transposition"],
             "title": "Match",
             "type": "string"
           },
@@ -1215,13 +1060,7 @@
             "type": "integer"
           }
         },
-        "required": [
-          "key",
-          "eco",
-          "name",
-          "ply",
-          "match"
-        ],
+        "required": ["key", "eco", "name", "ply", "match"],
         "title": "PositionInsightOpeningResponse",
         "type": "object"
       },
@@ -1289,10 +1128,7 @@
             "title": "Preference"
           },
           "trainer_color": {
-            "enum": [
-              "white",
-              "black"
-            ],
+            "enum": ["white", "black"],
             "title": "Trainer Color",
             "type": "string"
           }
@@ -1336,10 +1172,7 @@
             "type": "array"
           },
           "quality": {
-            "enum": [
-              "browser",
-              "tool"
-            ],
+            "enum": ["browser", "tool"],
             "title": "Quality",
             "type": "string"
           },
@@ -1350,11 +1183,7 @@
           "terminal_kind": {
             "anyOf": [
               {
-                "enum": [
-                  "checkmate",
-                  "stalemate",
-                  "insufficient_material"
-                ],
+                "enum": ["checkmate", "stalemate", "insufficient_material"],
                 "type": "string"
               },
               {
@@ -1390,10 +1219,7 @@
             "type": "integer"
           }
         },
-        "required": [
-          "distinct_game_count",
-          "occurrence_count"
-        ],
+        "required": ["distinct_game_count", "occurrence_count"],
         "title": "PositionInsightTerminalTotalsResponse",
         "type": "object"
       },
@@ -1422,10 +1248,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "code",
-          "message"
-        ],
+        "required": ["code", "message"],
         "title": "PreferredMovesErrorResponse",
         "type": "object"
       },
@@ -1469,11 +1292,7 @@
             "title": "Preference"
           }
         },
-        "required": [
-          "fen",
-          "effective_from",
-          "preference"
-        ],
+        "required": ["fen", "effective_from", "preference"],
         "title": "PreferredMovesMutationRequest",
         "type": "object"
       },
@@ -1525,13 +1344,7 @@
             "title": "Preference"
           }
         },
-        "required": [
-          "fen",
-          "effective_from",
-          "effective_until",
-          "preference",
-          "periods"
-        ],
+        "required": ["fen", "effective_from", "effective_until", "preference", "periods"],
         "title": "PreferredMovesMutationResponse",
         "type": "object"
       },
@@ -1572,11 +1385,7 @@
             "title": "Preference"
           }
         },
-        "required": [
-          "effective_from",
-          "effective_until",
-          "preference"
-        ],
+        "required": ["effective_from", "effective_until", "preference"],
         "title": "PreferredMovesPeriodResponse",
         "type": "object"
       },
@@ -1602,10 +1411,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "fen",
-          "effective_from"
-        ],
+        "required": ["fen", "effective_from"],
         "title": "PreferredMovesRemovalRequest",
         "type": "object"
       },
@@ -1639,12 +1445,7 @@
             "type": "array"
           }
         },
-        "required": [
-          "fen",
-          "effective_from",
-          "effective_until",
-          "periods"
-        ],
+        "required": ["fen", "effective_from", "effective_until", "periods"],
         "title": "PreferredMovesRemovalResponse",
         "type": "object"
       },
@@ -1671,12 +1472,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "fen",
-          "from",
-          "until",
-          "segments"
-        ],
+        "required": ["fen", "from", "until", "segments"],
         "title": "PreferredMovesResponse",
         "type": "object"
       },
@@ -1714,11 +1510,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "from",
-          "until",
-          "preference"
-        ],
+        "required": ["from", "until", "preference"],
         "title": "PreferredMovesSegmentResponse",
         "type": "object"
       },
@@ -1731,9 +1523,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "kind"
-        ],
+        "required": ["kind"],
         "title": "UnconfiguredPreferenceResponse",
         "type": "object"
       },
@@ -1762,11 +1552,7 @@
             "type": "string"
           }
         },
-        "required": [
-          "loc",
-          "msg",
-          "type"
-        ],
+        "required": ["loc", "msg", "type"],
         "title": "ValidationError",
         "type": "object"
       }
@@ -1835,9 +1621,7 @@
           }
         },
         "summary": "Get Analysis",
-        "tags": [
-          "analysis"
-        ]
+        "tags": ["analysis"]
       }
     },
     "/api/analysis-requests": {
@@ -1906,9 +1690,7 @@
           }
         },
         "summary": "Post Analysis Request",
-        "tags": [
-          "analysis"
-        ]
+        "tags": ["analysis"]
       }
     },
     "/api/games": {
@@ -2357,9 +2139,7 @@
           }
         },
         "summary": "Get Games",
-        "tags": [
-          "games"
-        ]
+        "tags": ["games"]
       }
     },
     "/api/games/{game_uuid}": {
@@ -2430,9 +2210,7 @@
           }
         },
         "summary": "Get Game",
-        "tags": [
-          "games"
-        ]
+        "tags": ["games"]
       }
     },
     "/api/health": {
@@ -2451,9 +2229,7 @@
           }
         },
         "summary": "Health",
-        "tags": [
-          "health"
-        ]
+        "tags": ["health"]
       }
     },
     "/api/openings": {
@@ -2582,9 +2358,7 @@
           }
         },
         "summary": "Get Openings",
-        "tags": [
-          "openings"
-        ]
+        "tags": ["openings"]
       }
     },
     "/api/openings/{opening_key}": {
@@ -2654,9 +2428,7 @@
           }
         },
         "summary": "Get Opening By Key",
-        "tags": [
-          "openings"
-        ]
+        "tags": ["openings"]
       }
     },
     "/api/positions/insight": {
@@ -2734,9 +2506,7 @@
           }
         },
         "summary": "Get Position Insight",
-        "tags": [
-          "position-insight"
-        ]
+        "tags": ["position-insight"]
       }
     },
     "/api/preferred-moves": {
@@ -2795,9 +2565,7 @@
           }
         },
         "summary": "Delete Preferred Moves",
-        "tags": [
-          "preferred-moves"
-        ]
+        "tags": ["preferred-moves"]
       },
       "get": {
         "operationId": "getPreferredMoves",
@@ -2873,9 +2641,7 @@
           }
         },
         "summary": "Get Preferred Moves",
-        "tags": [
-          "preferred-moves"
-        ]
+        "tags": ["preferred-moves"]
       },
       "put": {
         "operationId": "putPreferredMoves",
@@ -2932,9 +2698,7 @@
           }
         },
         "summary": "Put Preferred Moves",
-        "tags": [
-          "preferred-moves"
-        ]
+        "tags": ["preferred-moves"]
       }
     }
   }

@@ -141,7 +141,9 @@ describe("analysisApi", () => {
   });
 
   it("deliberately requests Tool analysis through the generated clean POST", async () => {
-    generatedRequestAnalysisMock.mockResolvedValue(apiResult(observation({ state: "queued" }), 202));
+    generatedRequestAnalysisMock.mockResolvedValue(
+      apiResult(observation({ state: "queued" }), 202),
+    );
 
     await expect(requestAnalysis(FEN)).resolves.toEqual({
       status: "success",

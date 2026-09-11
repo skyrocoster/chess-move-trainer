@@ -53,48 +53,52 @@ async function waitForHealth(baseUrl: string): Promise<void> {
   throw new Error(`uvicorn did not become healthy within ${STARTUP_TIMEOUT_MS}ms`);
 }
 
-it(
-  "real generated getHealth() through the central module returns the typed health data",
-  async () => {
-    const port = await findFreePort();
-    const baseUrl = `http://127.0.0.1:${port}`;
-    const child = spawn(
-      pythonPath,
-      [
-        "-m",
-        "uvicorn",
-        "backend.app.main:app",
-        "--host",
-        "127.0.0.1",
-        "--port",
-        String(port),
-        "--log-level",
-        "warning",
-      ],
-      { cwd: repoRoot, stdio: "ignore", windowsHide: true },
-    );
+it("real generated getHealth() through the central module returns the typed health data", async () => {
+  const port = await findFreePort();
+  const baseUrl = `http://127.0.0.1:${port}`;
+  const previousProcessBaseUrl = process.env.VITE_API_BASE_URL;
+  const previousImportMetaBaseUrl = import.meta.env.VITE_API_BASE_URL;
+  const child = spawn(
+    pythonPath,
+    [
+      "-m",
+      "uvicorn",
+      "backend.app.main:app",
+      "--host",
+      "127.0.0.1",
+      "--port",
+      String(port),
+      "--log-level",
+      "warning",
+    ],
+    { cwd: repoRoot, stdio: "ignore", windowsHide: true },
+  );
 
-    try {
-      await waitForHealth(baseUrl);
+  try {
+    await waitForHealth(baseUrl);
 
-      // Configure the central module for the ephemeral test server before it
-      // is imported, so the real call runs through the handwritten central
-      // configuration exactly as production would.
-      process.env.VITE_API_BASE_URL = baseUrl;
-      import.meta.env.VITE_API_BASE_URL = baseUrl;
-      const { getHealth } = await import("./client");
+    // Configure the central module for the ephemeral test server before it
+    // is imported, so the real call runs through the handwritten central
+    // configuration exactly as production would.
+    process.env.VITE_API_BASE_URL = baseUrl;
+    import.meta.env.VITE_API_BASE_URL = baseUrl;
+    const { getHealth } = await import("./client");
 
-      const result = await getHealth();
-      expect(result.error).toBeUndefined();
-      expect(result.data).toEqual({ status: "ok" });
-    } finally {
-      killTree(child);
-      const exited = await Promise.race([
-        new Promise<boolean>((resolve) => child.once("exit", () => resolve(true))),
-        new Promise<boolean>((resolve) => setTimeout(() => resolve(false), TEARDOWN_TIMEOUT_MS)),
-      ]);
-      if (!exited) killTree(child);
+    const result = await getHealth();
+    expect(result.error).toBeUndefined();
+    expect(result.data).toEqual({ status: "ok" });
+  } finally {
+    if (previousProcessBaseUrl === undefined) {
+      delete process.env.VITE_API_BASE_URL;
+    } else {
+      process.env.VITE_API_BASE_URL = previousProcessBaseUrl;
     }
-  },
-  15_000,
-);
+    import.meta.env.VITE_API_BASE_URL = previousImportMetaBaseUrl;
+    killTree(child);
+    const exited = await Promise.race([
+      new Promise<boolean>((resolve) => child.once("exit", () => resolve(true))),
+      new Promise<boolean>((resolve) => setTimeout(() => resolve(false), TEARDOWN_TIMEOUT_MS)),
+    ]);
+    if (!exited) killTree(child);
+  }
+}, 15_000);

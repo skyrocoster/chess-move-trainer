@@ -7,15 +7,15 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from ..analysis import AnalysisRepository, AnalysisResultInput, PublicationOutcome
+from ..analysis import AnalysisRepository, AnalysisResultInput
 from .configuration import TOOL_PROFILE
 from .engine import StockfishAnalysis, StockfishEngine
 from .mutex import DatabaseMutex
 from .targets import (
     INITIAL_TECHNICAL_CATEGORIES,
-    InitialAnalysisTargetSelector,
     BulkTarget,
     BulkTargetSelector,
+    InitialAnalysisTargetSelector,
     _validate_limit,
 )
 

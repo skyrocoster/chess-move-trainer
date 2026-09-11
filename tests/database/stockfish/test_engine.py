@@ -3,7 +3,6 @@ from __future__ import annotations
 import queue
 import subprocess
 import threading
-from pathlib import Path
 from typing import Any
 
 import chess
@@ -33,7 +32,6 @@ from chess_move_trainer.database.stockfish import (
     normalize_wdl,
     parse_uci_info,
 )
-
 
 STARTING_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 CHECKMATE_FEN = "7k/6Q1/6K1/8/8/8/8/8 b - - 0 1"

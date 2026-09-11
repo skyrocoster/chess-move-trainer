@@ -22,8 +22,7 @@ from typing import Callable, Protocol
 
 import httpx
 
-from .source import OpeningSourceError, load_opening_sources
-
+from .source import load_opening_sources
 
 LICHESS_REPOSITORY = "lichess-org/chess-openings"
 LICHESS_REPOSITORY_URL = f"https://github.com/{LICHESS_REPOSITORY}"

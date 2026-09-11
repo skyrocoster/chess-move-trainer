@@ -8,24 +8,23 @@ import pytest
 
 from chess_move_trainer.database import create_schema
 from chess_move_trainer.database.preferred_moves import (
+    PreferredMoveRemovalRequest,
     PreferredMoveTimeline,
     PreferredMoveTimelinePreference,
     PreferredMoveTimelineRepository,
     PreferredMoveTimelineRequest,
     PreferredMoveTimelineSegment,
-    PreferredMoveRemovalRequest,
     delete_preferred_move,
     read_preferred_moves,
 )
 from chess_move_trainer.database.preferred_moves.ranges import Preference
 from chess_move_trainer.database.preferred_moves.repository import (
     PreferredMoveLockError,
+    PreferredMoveRepository,
     PreferredMoveSchemaError,
     PreferredMoveStorageError,
     PreferredMoveValidationError,
-    PreferredMoveRepository,
 )
-
 
 STARTING_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 STARTING_FEN_WITH_COUNTERS = (
@@ -199,7 +198,11 @@ def test_read_values_are_ordinary_immutable_dataclasses(tmp_path: Path) -> None:
 @pytest.mark.parametrize(
     "mutation",
     [
-        "UPDATE datasource_preferred_move_period SET dpm_effective_from = '2026-02-30' WHERE dpm_effective_from = '2026-01-01'",
+        (
+            "UPDATE datasource_preferred_move_period"
+            " SET dpm_effective_from = '2026-02-30'"
+            " WHERE dpm_effective_from = '2026-01-01'"
+        ),
         "UPDATE datasource_preferred_move_period SET dpm_move_uci = 'e2e5'",
     ],
 )

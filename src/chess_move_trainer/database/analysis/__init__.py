@@ -13,14 +13,6 @@ from .models import (
     PublicationOutcome,
     ValidatedAnalysisResult,
 )
-from .validation import (
-    classify_terminal_kind,
-    validate_analysis_line,
-    validate_analysis_position,
-    validate_analysis_result,
-    validate_settings_object,
-)
-from .repository import AnalysisRepository
 from .observation import (
     AnalysisObservation,
     AnalysisObservationError,
@@ -34,6 +26,7 @@ from .observation import (
     get_analysis_observation,
     read_analysis_observation,
 )
+from .repository import AnalysisRepository
 from .requests import (
     AnalysisRequest,
     AnalysisRequestDisposition,
@@ -44,6 +37,13 @@ from .requests import (
     AnalysisRequestStorageError,
     AnalysisRequestValidationError,
     request_analysis,
+)
+from .validation import (
+    classify_terminal_kind,
+    validate_analysis_line,
+    validate_analysis_position,
+    validate_analysis_result,
+    validate_settings_object,
 )
 
 __all__ = [
