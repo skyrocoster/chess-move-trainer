@@ -167,14 +167,15 @@ function mapObservation(value: unknown, requestedFen: Fen): AnalysisObservation 
   if (!isRecord(value) || !samePositionFen(value.fen, requestedFen) || !isState(value.state)) {
     return null;
   }
-  if (value.result !== null && mapResult(value.result) === null) {
+  const mappedResult = value.result === null ? null : mapResult(value.result);
+  if (value.result !== null && mappedResult === null) {
     return null;
   }
 
   return {
     fen: value.fen,
     state: value.state,
-    result: value.result === null ? null : mapResult(value.result),
+    result: mappedResult,
   };
 }
 

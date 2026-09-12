@@ -7,7 +7,7 @@ import App from "./App";
 import "./app.css";
 
 /**
- * The single application QueryClient (CONSUMER-01). Conservative defaults only:
+ * The single application QueryClient. Conservative defaults only:
  * no automatic retry, no refetch on window focus, no refetch on reconnect.
  * Freshness, caching, persistence, and mutation behavior stay unset until a
  * consumer feature needs them.

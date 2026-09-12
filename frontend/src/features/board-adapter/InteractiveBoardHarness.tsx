@@ -173,13 +173,13 @@ export function InteractiveBoardHarness({
     setNotice("Temporary branch reset to its captured-game ply.");
   }, [cancelPromotion, chess, createSnapshot, originFen]);
 
+  const lastBranchMove = branchSnapshot.moves.at(-1);
+
   return (
     <InteractiveBoardAdapter
       branchSnapshot={branchSnapshot}
       lastMove={
-        branchSnapshot.moves.at(-1)
-          ? lastMoveFromSquares(branchSnapshot.moves.at(-1)!.from, branchSnapshot.moves.at(-1)!.to)
-          : null
+        lastBranchMove ? lastMoveFromSquares(lastBranchMove.from, lastBranchMove.to) : null
       }
       label={label}
       notice={notice}

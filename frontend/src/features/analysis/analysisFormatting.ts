@@ -4,18 +4,10 @@ import type {
   AnalysisPanelDisplay,
   AnalysisPanelWdl,
   AnalysisPanelWdlValue,
-} from "../analysis/AnalysisPanel";
+} from "./AnalysisPanel";
 import type { AnalysisLine, AnalysisObservation, AnalysisResult } from "./analysisApi";
 import type { AnalysisState } from "./analysisState";
 import type { Fen } from "../chess/chessPrimitives";
-
-export type {
-  AnalysisPanelDisplay,
-  AnalysisPanelLine,
-  AnalysisPanelResultMetadata,
-  AnalysisPanelWdl,
-  AnalysisPanelWdlValue,
-} from "../analysis/AnalysisPanel";
 
 export type AnalysisPanelDisplayOptions = {
   displayedPly?: number;

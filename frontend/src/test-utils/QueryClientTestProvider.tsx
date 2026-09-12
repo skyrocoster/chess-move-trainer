@@ -3,7 +3,7 @@ import { useState, type ReactNode } from "react";
 
 /**
  * Test-only provider support for components that consume the application
- * QueryClient (introduced by CONSUMER-01 Stage 2).
+ * QueryClient.
  *
  * The conservative defaults here match the production provider in
  * `main.tsx`: no automatic retry, no refetch on window focus, no refetch on

@@ -79,7 +79,7 @@ describe("InlineFeedback", () => {
     // the --cmt-feedback-* aliases on the .core element (a child of .inline);
     // custom properties inherit downward only, so the aliases are out of
     // scope on this wrapper and must not appear here. The container surface
-    // aliases are reserved for the Stage 6 panel presentation.
+    // aliases are reserved for the future panel presentation.
     expect(moduleCss).toContain("max-width");
     expect(moduleCss).toContain("transparent");
     expect(moduleCss).not.toContain("--cmt-feedback-accent");

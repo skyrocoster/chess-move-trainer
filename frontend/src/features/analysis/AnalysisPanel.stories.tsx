@@ -105,7 +105,6 @@ function missingDisplay(overrides: DisplayOverrides = {}): AnalysisPanelDisplay 
     stateLabel: "Analysis available on request",
     message: {
       text: "Analyze this displayed position deliberately to request a result.",
-      alert: false,
     },
     ...displayOverrides,
     actions: { analyze: true, ...actions },
@@ -121,7 +120,6 @@ function queuedDisplay(
     message: {
       text:
         state === "queued" ? "This position is waiting for analysis." : "Analysis is in progress.",
-      alert: false,
     },
     ...overrides,
   });

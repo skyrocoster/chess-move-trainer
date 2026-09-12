@@ -27,7 +27,6 @@ export function BoardControl({
     <div className={styles.container}>
       {!hasGame ? <p className={styles.empty}>No game loaded</p> : null}
       <Toolbar.Root className={styles.toolbar} aria-label="Board controls">
-        {/* Future skip controls: First/Last. */}
         <Toolbar.Button
           className={styles.button}
           type="button"
@@ -39,7 +38,6 @@ export function BoardControl({
           <ChevronLeft aria-hidden="true" />
           <span className={styles.label}>Previous</span>
         </Toolbar.Button>
-        {/* Future playback controls: Play/Pause. */}
         <Toolbar.Button
           className={styles.button}
           type="button"

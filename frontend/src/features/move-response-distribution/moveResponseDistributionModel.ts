@@ -30,7 +30,7 @@ export type MoveResponseDistributionModel = {
   message: string;
 };
 
-function colorLabel(color: ChessSide): "White" | "Black" {
+export function colorLabel(color: ChessSide): "White" | "Black" {
   return color === "white" ? "White" : "Black";
 }
 

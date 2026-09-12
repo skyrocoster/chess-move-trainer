@@ -166,7 +166,6 @@ export function BoardAdapter({
   );
 }
 
-// Exported for Storybook fixtures only; moving it to a separate file would
-// create an unauthorized new source path.
+// Exported for Storybook fixtures only.
 // eslint-disable-next-line react-refresh/only-export-components
 export { STARTING_FEN };

@@ -9,7 +9,7 @@ export function StatusPage() {
   if (healthQuery.isPending) {
     return <StatusView state={{ kind: "loading" }} />;
   }
-  if (healthQuery.isError || healthQuery.data.status !== "ok") {
+  if (healthQuery.isError || healthQuery.data?.status !== "ok") {
     return <StatusView state={{ kind: "error" }} />;
   }
   return <StatusView state={{ kind: "success" }} />;

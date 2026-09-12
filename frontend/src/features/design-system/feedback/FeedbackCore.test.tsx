@@ -117,8 +117,8 @@ describe("FeedbackCore", () => {
     // The CSS Module consumes exactly the two core aliases (accent for the
     // border/icon/heading cue and on-container for the message). The
     // on-accent and container aliases are wired inline from FEEDBACK_VARIANTS
-    // (asserted below) but are not consumed by module rules until the Stage 6
-    // panel presentations own the container-backed surface.
+    // (asserted below) but are not consumed by module rules yet - they are
+    // saved for the future panel presentation that owns the container-backed surface.
     for (const alias of ["--cmt-feedback-accent", "--cmt-feedback-on-container"]) {
       expect(moduleCss).toContain(alias);
     }

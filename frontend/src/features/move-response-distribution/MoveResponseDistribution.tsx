@@ -8,7 +8,10 @@ import {
 } from "./moveResponseDistributionApi";
 import { MoveResponseDistributionChart } from "./MoveResponseDistributionChart";
 import { MoveResponseDistributionControls } from "./MoveResponseDistributionControls";
-import { deriveMoveResponseDistributionModel } from "./moveResponseDistributionModel";
+import {
+  colorLabel,
+  deriveMoveResponseDistributionModel,
+} from "./moveResponseDistributionModel";
 import { useMoveResponseDistributionState } from "./moveResponseDistributionState";
 import styles from "./MoveResponseDistribution.module.css";
 
@@ -21,10 +24,6 @@ export type MoveResponseDistributionProps = {
   client?: MoveResponseDistributionClient;
   onMoveSelect: (childUci: string) => void;
 };
-
-function colorLabel(color: ChessSide): "White" | "Black" {
-  return color === "white" ? "White" : "Black";
-}
 
 export function MoveResponseDistribution({
   fen,
