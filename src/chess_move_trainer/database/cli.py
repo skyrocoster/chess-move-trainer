@@ -35,6 +35,7 @@ from .cli_lifecycle import (
     inspect,
     setup_command,
     setup_database,
+    upgrade,
     update_games,
     update_games_command,
     update_openings,
@@ -62,6 +63,7 @@ __all__ = [
     "resolve_preferred_move",
     "set_preferred_move",
     "setup_command",
+    "upgrade",
     "unset_preferred_move",
     "worker_stockfish",
 ]

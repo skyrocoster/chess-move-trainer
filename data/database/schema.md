@@ -4,7 +4,7 @@
 
 ## Database
 
-- `user_version`: 1
+- `user_version`: 2
 
 ## Object inventory
 
@@ -20,6 +20,7 @@
 | table | `derived_opening_route` | derived_opening_route | yes |
 | table | `derived_opening_route_move` | derived_opening_route_move | yes |
 | table | `derived_position` | derived_position | yes |
+| table | `derived_position_training_aggregate` | derived_position_training_aggregate | yes |
 | index | `derived_game_position_position_idx` | derived_game_position | yes |
 | index | `sqlite_autoindex_datasource_game_1` | datasource_game | no |
 | index | `sqlite_autoindex_datasource_opening_1` | datasource_opening | no |
@@ -29,6 +30,7 @@
 | index | `sqlite_autoindex_derived_game_position_1` | derived_game_position | no |
 | index | `sqlite_autoindex_derived_opening_route_move_1` | derived_opening_route_move | no |
 | index | `sqlite_autoindex_derived_position_1` | derived_position | no |
+| index | `sqlite_autoindex_derived_position_training_aggregate_1` | derived_position_training_aggregate | no |
 
 ## Tables
 
@@ -199,6 +201,21 @@ None recorded.
 
 None recorded.
 
+### `derived_position_training_aggregate`
+
+| Ordinal | Column | Declared type | Nullability | Default | PK order | Kind |
+| ---: | --- | --- | --- | --- | ---: | --- |
+| 0 | `derived_position_id` | INTEGER | NOT NULL | — | 1 | normal |
+| 1 | `dpta_preferred_move_uci` | TEXT | NOT NULL | — | 2 | normal |
+| 2 | `dpta_training_balance` | REAL | NOT NULL | — | — | normal |
+| 3 | `dpta_updated_on` | TEXT | NULLABLE | — | — | normal |
+
+#### Foreign keys
+
+| Constraint | Sequence | From | References | To | On update | On delete | Match |
+| ---: | ---: | --- | --- | --- | --- | --- | --- |
+| 0 | 0 | `derived_position_id` | `derived_position` | `dp_position_id` | NO ACTION | RESTRICT | NONE |
+
 ## Indexes
 
 | Name | Table | Unique | Origin | Partial | Columns | Stored SQL |
@@ -212,6 +229,7 @@ None recorded.
 | `sqlite_autoindex_derived_game_position_1` | `derived_game_position` | yes | pk | no | datasource_game_id, dgp_ply | no |
 | `sqlite_autoindex_derived_opening_route_move_1` | `derived_opening_route_move` | yes | pk | no | derived_opening_route_id, dorm_ply | no |
 | `sqlite_autoindex_derived_position_1` | `derived_position` | yes | u | no | dp_placement, dp_side_to_move, dp_castling_rights, dp_legal_en_passant | no |
+| `sqlite_autoindex_derived_position_training_aggregate_1` | `derived_position_training_aggregate` | yes | pk | no | derived_position_id, dpta_preferred_move_uci | no |
 
 ## Triggers
 
@@ -402,6 +420,33 @@ CREATE TABLE derived_position (
     CHECK (dp_castling_rights IN ('-', 'K', 'Q', 'k', 'q', 'KQ', 'Kk', 'Kq', 'Qk', 'Qq', 'kq', 'KQk', 'KQq', 'Kkq', 'Qkq', 'KQkq')),
     CHECK (dp_legal_en_passant = '-' OR dp_legal_en_passant GLOB '[a-h][36]'),
     UNIQUE (dp_placement, dp_side_to_move, dp_castling_rights, dp_legal_en_passant)
+)
+```
+
+### table `derived_position_training_aggregate`
+
+```sql
+CREATE TABLE derived_position_training_aggregate (
+    derived_position_id INTEGER NOT NULL,
+    dpta_preferred_move_uci TEXT NOT NULL,
+    dpta_training_balance REAL NOT NULL,
+    dpta_updated_on TEXT,
+    PRIMARY KEY (derived_position_id, dpta_preferred_move_uci),
+    FOREIGN KEY (derived_position_id) REFERENCES derived_position(dp_position_id) ON DELETE RESTRICT,
+    CHECK (dpta_preferred_move_uci GLOB '[a-h][1-8][a-h][1-8]' OR dpta_preferred_move_uci GLOB '[a-h][1-8][a-h][1-8][qrbn]'),
+    CHECK (
+        typeof(dpta_training_balance) = 'real'
+        AND dpta_training_balance = dpta_training_balance
+        AND dpta_training_balance BETWEEN -1.7976931348623157e+308 AND 1.7976931348623157e+308
+    ),
+    CHECK (
+        dpta_updated_on IS NULL OR (
+            typeof(dpta_updated_on) = 'text'
+            AND dpta_updated_on GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]'
+            AND date(dpta_updated_on) IS NOT NULL
+            AND dpta_updated_on = date(dpta_updated_on)
+        )
+    )
 )
 ```
 

@@ -44,7 +44,7 @@ from .preferred_moves.setup import (
     setup_preferred_moves as run_preferred_moves_setup,
 )
 from .publication import SchemaPublicationCollisionError, publish_schema
-from .schema import SchemaIncompatibleError, create_schema
+from .schema import SchemaIncompatibleError, create_schema, upgrade_schema
 from .stockfish import (
     BenchmarkCompatibilityError,
     BenchmarkInputError,
@@ -112,7 +112,7 @@ def create(
         help="Finite positive SQLite lock wait in seconds.",
     ),
 ) -> None:
-    """Create schema v1 or accept an exactly compatible existing database."""
+    """Create schema v2 or accept an exactly compatible existing database."""
 
     try:
         result = create_schema(database, lock_timeout=lock_timeout)
@@ -124,9 +124,37 @@ def create(
         _operational_error(error, 1)
     else:
         if result.created:
-            typer.echo(f"Created schema v1: {result.database_path}")
+            typer.echo(f"Created schema v2: {result.database_path}")
         else:
-            typer.echo(f"Schema v1 is already compatible: {result.database_path}")
+            typer.echo(f"Schema v2 is already compatible: {result.database_path}")
+
+
+@schema_app.command("upgrade")
+def upgrade(
+    database: Path = typer.Option(..., "--database", help="Existing SQLite database path."),
+    lock_timeout: float = typer.Option(
+        DEFAULT_LOCK_TIMEOUT_SECONDS,
+        "--lock-timeout",
+        help="Finite positive SQLite lock wait in seconds.",
+    ),
+) -> None:
+    """Upgrade an existing exact schema v1 database to schema v2."""
+
+    try:
+        result = upgrade_schema(database, lock_timeout=lock_timeout)
+    except SchemaIncompatibleError as error:
+        _operational_error(error, 3)
+    except ValueError as error:
+        _usage_error(error)
+    except KeyboardInterrupt:
+        _interrupted()
+    except Exception as error:
+        _operational_error(error, 1)
+    else:
+        if result.upgraded:
+            typer.echo(f"Upgraded schema v1 to v2: {result.database_path}")
+        else:
+            typer.echo(f"Schema v2 is already compatible: {result.database_path}")
 
 
 @schema_app.command("inspect")

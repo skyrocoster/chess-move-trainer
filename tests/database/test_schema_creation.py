@@ -55,10 +55,10 @@ def test_an_existing_truly_empty_database_is_initialized(tmp_path: Path) -> None
 
     assert result.created is True
     with sqlite3.connect(database_path) as connection:
-        assert connection.execute("PRAGMA user_version").fetchone()[0] == 1
+        assert connection.execute("PRAGMA user_version").fetchone()[0] == 2
 
 
-@pytest.mark.parametrize("version", [1, 2])
+@pytest.mark.parametrize("version", [1, 3])
 def test_nonempty_or_other_version_targets_are_rejected_unchanged(
     tmp_path: Path,
     version: int,
@@ -155,7 +155,7 @@ def test_interrupted_existing_empty_creation_preserves_the_target(
         ).fetchall() == []
 
 
-def test_internal_compatibility_assertion_accepts_v1_and_leaves_connection_clean(
+def test_internal_compatibility_assertion_accepts_v2_and_leaves_connection_clean(
     tmp_path: Path,
 ) -> None:
     database_path = tmp_path / "compatible-existing.db"

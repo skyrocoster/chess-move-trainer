@@ -17,7 +17,14 @@ from .inspection import (
     render_schema_markdown,
 )
 from .publication import publish_schema
-from .schema import SCHEMA_VERSION, SchemaCreationResult, SchemaIncompatibleError, create_schema
+from .schema import (
+    SCHEMA_VERSION,
+    SchemaCreationResult,
+    SchemaIncompatibleError,
+    SchemaUpgradeResult,
+    create_schema,
+    upgrade_schema,
+)
 
 __all__ = [
     "AccessMode",
@@ -32,9 +39,11 @@ __all__ = [
     "SCHEMA_VERSION",
     "SchemaCreationResult",
     "SchemaIncompatibleError",
+    "SchemaUpgradeResult",
     "create_schema",
     "inspect_schema",
     "publish_schema",
     "probe_connection",
     "render_schema_markdown",
+    "upgrade_schema",
 ]

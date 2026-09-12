@@ -32,7 +32,9 @@ def test_database_package_has_no_legacy_or_production_import_direction() -> None
 
 
 def test_canonical_sql_is_the_only_executable_ddl_owner_and_cli_is_thin() -> None:
-    sql_resource = (PACKAGE_PATH / "schema_v1.sql").read_text(encoding="utf-8").upper()
+    legacy_resource = (PACKAGE_PATH / "schema_v1.sql").read_text(encoding="utf-8").upper()
+    canonical_resource = (PACKAGE_PATH / "schema_v2.sql").read_text(encoding="utf-8").upper()
+    migration_resource = (PACKAGE_PATH / "schema_v1_to_v2.sql").read_text(encoding="utf-8").upper()
     python_text = "\n".join(path.read_text(encoding="utf-8") for path in _python_sources())
     cli_text = "\n".join(
         (PACKAGE_PATH / name).read_text(encoding="utf-8")
@@ -40,8 +42,12 @@ def test_canonical_sql_is_the_only_executable_ddl_owner_and_cli_is_thin() -> Non
         if (PACKAGE_PATH / name).exists()
     )
 
-    assert sql_resource.count("CREATE TABLE") == 10
-    assert "PRAGMA USER_VERSION = 1" in sql_resource
+    assert legacy_resource.count("CREATE TABLE") == 10
+    assert "PRAGMA USER_VERSION = 1" in legacy_resource
+    assert canonical_resource.count("CREATE TABLE") == 11
+    assert "PRAGMA USER_VERSION = 2" in canonical_resource
+    assert migration_resource.count("CREATE TABLE") == 1
+    assert "PRAGMA USER_VERSION = 2" in migration_resource
     assert "CREATE TABLE" not in python_text.upper()
     assert "PRAGMA USER_VERSION =" not in python_text.upper()
     assert "SQLITE3" not in cli_text.upper()
@@ -89,7 +95,9 @@ def test_proof_boundary_has_only_the_aggregate_proof_module() -> None:
     )
 
     proof_text = source_path.read_text(encoding="utf-8")
-    assert "data/database/chess.db" in proof_text
+    assert "data/database/chess.db" in (
+        PACKAGE_PATH / "proof_models.py"
+    ).read_text(encoding="utf-8")
     assert "subprocess" not in proof_text.lower()
     assert "sqlite3" not in proof_text.lower()
 

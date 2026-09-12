@@ -7,6 +7,9 @@ from backend.app.features.games.router import router as games_router
 from backend.app.features.health.router import router as health_router
 from backend.app.features.openings.router import router as openings_router
 from backend.app.features.position_insight.router import router as position_insight_router
+from backend.app.features.position_training_requirements.router import (
+    router as position_training_requirements_router,
+)
 from backend.app.features.preferred_moves.router import router as preferred_moves_router
 
 
@@ -25,6 +28,7 @@ def create_app() -> FastAPI:
     app.include_router(analysis_requests_router)
     app.include_router(preferred_moves_router)
     app.include_router(position_insight_router)
+    app.include_router(position_training_requirements_router)
     app.include_router(openings_router)
     return app
 

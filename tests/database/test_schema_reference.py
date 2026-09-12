@@ -10,7 +10,7 @@ REFERENCE_PATH = ROOT / "data" / "database" / "schema.md"
 
 
 def test_committed_reference_matches_a_fresh_canonical_database(tmp_path: Path) -> None:
-    database_path = tmp_path / "fresh-v1.db"
+    database_path = tmp_path / "fresh-v2.db"
     create_schema(database_path)
 
     generated = render_schema_markdown(inspect_schema(database_path))

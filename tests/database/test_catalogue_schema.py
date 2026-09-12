@@ -88,6 +88,12 @@ EXPECTED_COLUMNS = {
         ("dpm_effective_until", "TEXT", 0, None, 0),
         ("dpm_move_uci", "TEXT", 0, None, 0),
     ],
+    "derived_position_training_aggregate": [
+        ("derived_position_id", "INTEGER", 1, None, 1),
+        ("dpta_preferred_move_uci", "TEXT", 1, None, 2),
+        ("dpta_training_balance", "REAL", 1, None, 0),
+        ("dpta_updated_on", "TEXT", 0, None, 0),
+    ],
 }
 
 EXPECTED_FOREIGN_KEYS = {
@@ -112,6 +118,9 @@ EXPECTED_FOREIGN_KEYS = {
         ("derived_position_id", "derived_position", "dp_position_id", "RESTRICT"),
     },
     "datasource_preferred_move_period": {
+        ("derived_position_id", "derived_position", "dp_position_id", "RESTRICT"),
+    },
+    "derived_position_training_aggregate": {
         ("derived_position_id", "derived_position", "dp_position_id", "RESTRICT"),
     },
 }
@@ -199,6 +208,15 @@ EXPECTED_CHECKS = {
             " OR dpm_move_uci GLOB '[a-h][1-8][a-h][1-8][qrbn]'"
         ),
     ],
+    "derived_position_training_aggregate": [
+        (
+            "dpta_preferred_move_uci GLOB '[a-h][1-8][a-h][1-8]'"
+            " OR dpta_preferred_move_uci GLOB '[a-h][1-8][a-h][1-8][qrbn]'"
+        ),
+        "typeof(dpta_training_balance) = 'real'",
+        "dpta_training_balance = dpta_training_balance",
+        "dpta_updated_on IS NULL OR",
+    ],
 }
 
 EXPECTED_CHECK_COUNTS = {
@@ -212,6 +230,7 @@ EXPECTED_CHECK_COUNTS = {
     "derived_analysis_line": 8,
     "derived_analysis_queue": 3,
     "datasource_preferred_move_period": 3,
+    "derived_position_training_aggregate": 3,
 }
 
 
@@ -235,7 +254,7 @@ def test_canonical_resource_is_installed_and_schema_is_exact(tmp_path: Path) -> 
             )
         }
         assert tables == set(EXPECTED_COLUMNS)
-        assert connection.execute("PRAGMA user_version").fetchone()[0] == 1
+        assert connection.execute("PRAGMA user_version").fetchone()[0] == 2
         assert connection.execute("PRAGMA foreign_key_check").fetchall() == []
         assert connection.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
 
