@@ -25,8 +25,6 @@ from .configuration import (
     StockfishProfile,
 )
 from .engine import ANALYSIS_WATCHDOG_SECONDS, SearchMetrics, StockfishEngine
-
-BENCHMARK_FORMAT_VERSION: Final[int] = 1
 from .benchmark_models import BENCHMARK_FORMAT_VERSION, DEFAULT_ARTIFACT_WRITE_RETRIES, DEFAULT_HASH_SIZES_MB, DEFAULT_NODE_BUDGETS, DEFAULT_REPETITIONS, DEFAULT_SHUFFLE_SEED, DEFAULT_THREAD_COUNTS, _MAX_DIAGNOSTIC_LENGTH, BenchmarkError, BenchmarkInputError
 
 

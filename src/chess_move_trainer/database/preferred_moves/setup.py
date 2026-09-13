@@ -1,4 +1,4 @@
-"""Database-bound preferred-move setup over the rebuilt schema."""
+"""Database-bound preferred-move setup over the app schema."""
 
 from __future__ import annotations
 

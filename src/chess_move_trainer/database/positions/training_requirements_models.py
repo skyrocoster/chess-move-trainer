@@ -38,7 +38,7 @@ class TrainingRequirementStaleError(TrainingRequirementError, RuntimeError):
 
 @dataclass(frozen=True, slots=True)
 class TrainingRequirementPolicy:
-    """Immutable scoring inputs supplied by a later application configuration."""
+    """Immutable scoring inputs supplied by application configuration."""
 
     target_success_rate: float
     credit_half_life_days: float

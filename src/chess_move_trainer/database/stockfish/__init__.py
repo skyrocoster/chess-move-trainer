@@ -1,4 +1,4 @@
-"""Clean Stockfish process and database-lock services."""
+"""Stockfish process and database-lock services."""
 
 from .benchmark import (
     BENCHMARK_FORMAT_VERSION,

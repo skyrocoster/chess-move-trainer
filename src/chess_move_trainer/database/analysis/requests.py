@@ -232,7 +232,7 @@ def request_analysis(
     *,
     lock_timeout: float = DEFAULT_LOCK_TIMEOUT_SECONDS,
 ) -> AnalysisRequestResult:
-    """Request one desired analysis through an explicit rebuilt database path."""
+    """Request one desired analysis through an explicit app database path."""
 
     return AnalysisRequestRepository(
         database_path,

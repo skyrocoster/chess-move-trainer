@@ -12,7 +12,7 @@ class OpeningKeyError(ValueError):
 
 
 def opening_api_key(eco: str, name: str) -> str:
-    """Return the stable ``ECO:Name`` key used by clean API capabilities."""
+    """Return the stable ``ECO:Name`` key used by API capabilities."""
 
     if type(eco) is not str or _ECO_PATTERN.fullmatch(eco) is None:
         raise OpeningKeyError("eco must be an uppercase ECO code from A00 through E99")

@@ -173,7 +173,7 @@ class ValidatedAnalysisResult:
 
 @dataclass(frozen=True, slots=True)
 class PublicationOutcome:
-    """Saved or expected not-saved result for the future publication service."""
+    """Saved or expected not-saved result for the publication service."""
 
     saved: bool
     reason: NotSavedReason | None = None

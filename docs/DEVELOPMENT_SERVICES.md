@@ -31,7 +31,9 @@ powershell -ExecutionPolicy Bypass -File .\dev.ps1 logs storybook
 
 Use `rebuild` instead of `restart` after changing a Dockerfile, Compose configuration, `requirements.txt`, or
 the npm package manifests and lockfile. Target `backend` for Python dependencies; rebuild all services after npm
-dependency changes because the frontend and Storybook share them:
+dependency changes because the frontend and Storybook share them. Storybook is the exception to manual rebuilds:
+it has `pull_policy: build`, so an ordinary `start` already rebuilds its image (fast from Docker layer cache when
+dependencies are unchanged).
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\dev.ps1 rebuild backend
@@ -58,6 +60,7 @@ one is already occupied. The containers have no automatic restart policy: `resta
 - Frontend source changes use Vite hot module replacement.
 - Story and component changes use Storybook hot module replacement.
 - `stop` preserves the containers so a later `start` is quick.
+- `start` always rebuilds the Storybook image; backend and frontend reuse their existing images unless you run `rebuild`.
 - Avoid `docker compose down`; it removes the persistent containers and is unnecessary for normal development.
 
 ## AI agent behavior

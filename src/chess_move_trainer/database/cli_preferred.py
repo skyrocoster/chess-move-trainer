@@ -87,7 +87,7 @@ def list_preferred_moves(
 
 @preferred_moves_app.command("setup")
 def setup_preferred_moves_command() -> None:
-    """Initialize preferred moves from the fixed rebuilt database."""
+    """Initialize preferred moves from the fixed app database."""
 
     try:
         result = run_preferred_moves_setup(DEFAULT_DATABASE_PATH)

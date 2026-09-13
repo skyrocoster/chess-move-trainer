@@ -222,7 +222,7 @@ def read_analysis_observation(
     *,
     lock_timeout: float = DEFAULT_LOCK_TIMEOUT_SECONDS,
 ) -> AnalysisObservation:
-    """Read one FEN observation from an explicit rebuilt database path."""
+    """Read one FEN observation from an explicit app database path."""
 
     if isinstance(fen, AnalysisObservationRequest):
         request = fen

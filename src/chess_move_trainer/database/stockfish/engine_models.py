@@ -107,7 +107,7 @@ class SearchMetrics:
 
 @dataclass(frozen=True, slots=True)
 class StockfishAnalysis:
-    """A normalized result ready for the engine-independent DB-06 publisher."""
+    """A normalized result ready for the engine-independent publisher."""
 
     profile: StockfishProfile
     result: AnalysisResultInput

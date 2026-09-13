@@ -4,11 +4,19 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 from contextlib import ExitStack
+from itertools import chain
 from pathlib import Path
 from uuid import UUID
 
+from ..positions.repository import PositionIdentity
 from .normalization import NormalizationResult, NormalizationWarning, normalize_game
-from .persistence_repository import GamePersistenceError, GameRepository, ImportResult
+from .persistence_repository import (
+    GamePersistenceError,
+    GameRepository,
+    ImportFailure,
+    ImportResult,
+    _BulkImportAbort,
+)
 from .raw_storage import load_month
 
 def import_raw_games(
@@ -162,7 +170,7 @@ def import_raw_months(
     *,
     bulk: bool = False,
 ) -> ImportResult:
-    """Read only DB-03 month files in deterministic order and import their games."""
+    """Read month files in deterministic order and import their games."""
 
     return import_normalized_games(
         load_normalized_months(raw_root, trainer_uuid),

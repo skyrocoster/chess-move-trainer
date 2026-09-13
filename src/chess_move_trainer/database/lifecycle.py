@@ -393,14 +393,6 @@ def _failure(
     )
 
 
-def _pending(operation: LifecycleOperation, detail: str) -> LifecycleResult:
-    return LifecycleResult(
-        operation=operation,
-        message=f"{operation.value} is not available yet: {detail}",
-        exit_code=1,
-    )
-
-
 __all__ = [
     "DEFAULT_DATABASE_PATH",
     "LifecycleExitCode",

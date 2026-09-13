@@ -147,7 +147,7 @@ def _publish_in_transaction(
     validated: ValidatedAnalysisResult,
     checkpoint: Callable[[str], None] = lambda _: None,
 ) -> PublicationOutcome:
-    """Join DB-06 publication to an already-owned package transaction.
+    """Join publication to an already-owned package transaction.
 
     This is deliberately a package-internal participant seam.  The caller owns
     the transaction and must commit or roll it back after this function returns.

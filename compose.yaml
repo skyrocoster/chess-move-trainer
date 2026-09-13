@@ -84,6 +84,7 @@ services:
     build:
       context: .
       dockerfile: frontend/Dockerfile
+    pull_policy: build
     command:
       - npm
       - --workspace

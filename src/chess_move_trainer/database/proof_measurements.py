@@ -17,21 +17,6 @@ from .openings.source import OpeningRouteSource, load_opening_sources
 from .positions import canonicalize_board
 from .schema import _assert_compatible_schema
 from .statistics import MoveResponseDistributionReader, PositionContextReader
-
-import time
-from pathlib import Path
-from typing import Any
-
-import chess
-from sqlalchemy import text
-
-from .connection import DEFAULT_LOCK_TIMEOUT_SECONDS, _open_connection
-from .games.reading import GameReadRepository
-from .openings.recognition import lookup_fen, replay_pgn
-from .openings.source import load_opening_sources
-from .positions import canonicalize_board
-from .schema import _assert_compatible_schema
-from .statistics import MoveResponseDistributionReader, PositionContextReader
 from .proof_models import (
     DirectMeasurementCorpus,
     DirectMeasurements,
@@ -75,7 +60,7 @@ def collect_direct_measurements(
     lock_timeout: float = DEFAULT_LOCK_TIMEOUT_SECONDS,
     repetitions: int = _MEASUREMENT_REPETITIONS,
 ) -> DirectMeasurements:
-    """Measure the named clean-package SQL reads without retaining row data.
+    """Measure the named SQL reads without retaining row data.
 
     The statements below intentionally mirror the SQL in the package-owned
     readers and selectors.  Inputs are selected inside the read-only

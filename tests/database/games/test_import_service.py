@@ -9,6 +9,7 @@ import pytest
 from sqlalchemy.engine import Connection
 
 import chess_move_trainer.database.games.persistence as persistence_service
+import chess_move_trainer.database.games.persistence_repository as persistence_repository
 from chess_move_trainer.database import create_schema
 from chess_move_trainer.database.games.persistence import (
     GameRepository,
@@ -61,8 +62,8 @@ def test_import_opens_and_validates_schema_once_for_multiple_games(
 ) -> None:
     database = tmp_path / "one-connection.db"
     create_schema(database)
-    original_open = persistence_service._open_existing_connection
-    original_assert = persistence_service._assert_compatible_schema
+    original_open = persistence_repository._open_existing_connection
+    original_assert = persistence_repository._assert_compatible_schema
     open_calls = 0
     validation_calls = 0
 
@@ -76,8 +77,8 @@ def test_import_opens_and_validates_schema_once_for_multiple_games(
         validation_calls += 1
         original_assert(*args, **kwargs)
 
-    monkeypatch.setattr(persistence_service, "_open_existing_connection", count_open)
-    monkeypatch.setattr(persistence_service, "_assert_compatible_schema", count_validation)
+    monkeypatch.setattr(persistence_repository, "_open_existing_connection", count_open)
+    monkeypatch.setattr(persistence_repository, "_assert_compatible_schema", count_validation)
 
     result = import_raw_games(
         [_raw("game-trainer-white.json"), _raw("game-trainer-black.json")],

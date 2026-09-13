@@ -43,7 +43,7 @@ class AnalysisReadResult:
 
     @property
     def quality_order(self) -> int:
-        """Return the settled Browser < Tool ordering."""
+        """Return the Browser < Tool ordering."""
 
         return 0 if self.quality is AnalysisQuality.BROWSER else 1
 
