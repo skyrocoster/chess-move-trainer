@@ -1,4 +1,4 @@
-"""Application dependencies for clean rebuilt-database capabilities."""
+"""Application dependencies for database capabilities."""
 
 from __future__ import annotations
 
@@ -16,10 +16,6 @@ TRAINING_TARGET_SUCCESS_RATE_ENV = "CHESS_TRAINING_TARGET_SUCCESS_RATE"
 TRAINING_CREDIT_HALF_LIFE_DAYS_ENV = "CHESS_TRAINING_CREDIT_HALF_LIFE_DAYS"
 DEFAULT_TRAINING_TARGET_SUCCESS_RATE = 0.8
 DEFAULT_TRAINING_CREDIT_HALF_LIFE_DAYS = 30.0
-
-
-class TrainingRequirementConfigurationError(RuntimeError):
-    """Raised when training configuration cannot form a valid policy."""
 
 
 def get_rebuilt_database_path() -> Path:
@@ -56,7 +52,6 @@ __all__ = [
     "REBUILT_DATABASE_PATH_ENV",
     "TRAINING_CREDIT_HALF_LIFE_DAYS_ENV",
     "TRAINING_TARGET_SUCCESS_RATE_ENV",
-    "TrainingRequirementConfigurationError",
     "get_rebuilt_database_path",
     "get_training_requirement_policy",
 ]

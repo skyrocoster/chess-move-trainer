@@ -45,7 +45,7 @@ def test_served_schema_remains_full_with_only_clean_operationid_changes() -> Non
 
     _assert_expected_operation_ids(spec["paths"])
 
-    # No drift attributable to this stage: every other operation keeps the
+    # No other drift: every other operation keeps the
     # FastAPI-generated default operation id.
     for route in current_api_routes:
         if route.path in EXPECTED_OPERATION_IDS:

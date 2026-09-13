@@ -1,4 +1,4 @@
-"""MP-10 browser-evaluation service boundary over the durable queue and MP-09 storage."""
+"""Browser-evaluation service boundary over the durable queue and analysis storage."""
 
 from .errors import (
     EvaluationLockError,

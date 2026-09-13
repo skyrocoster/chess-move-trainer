@@ -1,1 +1,1 @@
-"""HTTP adapter for the clean preferred-move timeline capability."""
+"""HTTP adapter for the preferred-move timeline capability."""

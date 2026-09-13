@@ -42,7 +42,7 @@ def api_context(
 
 
 def _complete_analysis_result(database: Path) -> None:
-    """Extend the shared position-insight fixture to Stage 1's complete result."""
+    """Extend the shared position-insight fixture to a complete five-line result."""
 
     board = chess.Board(TARGET_FEN)
     additional_moves = ("g1h3", "g1f3", "g1e2", "f1a6")

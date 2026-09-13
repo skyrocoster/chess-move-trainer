@@ -1,4 +1,4 @@
-"""Thin HTTP translation layer for one clean position insight."""
+"""Thin HTTP translation layer for one position insight."""
 
 from __future__ import annotations
 

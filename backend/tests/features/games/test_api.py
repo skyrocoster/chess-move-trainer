@@ -30,10 +30,10 @@ def _database(tmp_path: Path) -> Path:
     create_schema(database)
     raw = {
         "uuid": GAME_UUID,
-        "url": "https://www.chess.com/game/live/clean-api",
+        "url": "https://www.chess.com/game/live/sample-game",
         "rules": "chess",
         "pgn": (
-            '[Event "clean adapter"]\n'
+            '[Event "sample adapter"]\n'
             '[UTCDate "2026.08.01"]\n'
             '[UTCTime "12:00:00"]\n'
             '[EndDate "2026.08.01"]\n'
@@ -78,7 +78,7 @@ def test_list_games_returns_public_summary_and_ignores_unknown_filters(
         "items": [
             {
                 "game_uuid": GAME_UUID,
-                "source_url": "https://www.chess.com/game/live/clean-api",
+                "source_url": "https://www.chess.com/game/live/sample-game",
                 "trainer_color": "white",
                 "trainer_chesscom_uuid": TRAINER_UUID,
                 "opponent_chesscom_uuid": OPPONENT_UUID,
@@ -127,9 +127,9 @@ def test_get_one_game_returns_pgn_and_moves_in_order(
     body = response.json()
     assert body == {
         "game_uuid": GAME_UUID,
-        "source_url": "https://www.chess.com/game/live/clean-api",
+        "source_url": "https://www.chess.com/game/live/sample-game",
         "original_pgn": (
-            '[Event "clean adapter"]\n'
+            '[Event "sample adapter"]\n'
             '[UTCDate "2026.08.01"]\n'
             '[UTCTime "12:00:00"]\n'
             '[EndDate "2026.08.01"]\n'

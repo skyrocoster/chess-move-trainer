@@ -1,1 +1,1 @@
-"""Clean opening catalogue HTTP feature."""
+"""Opening catalogue HTTP feature."""

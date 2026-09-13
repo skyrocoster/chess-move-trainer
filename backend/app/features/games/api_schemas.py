@@ -1,4 +1,4 @@
-"""Strict HTTP models for the clean games collection."""
+"""Strict HTTP models for the games collection."""
 
 from __future__ import annotations
 

@@ -223,7 +223,7 @@ def run_batch(
     consecutive_failures = 0
     circuit_breaker = False
     started_at = datetime.now(UTC).isoformat()
-    executor = ThreadPoolExecutor(max_workers=workers, thread_name_prefix="mp09-analysis")
+    executor = ThreadPoolExecutor(max_workers=workers, thread_name_prefix="analysis")
 
     def dispatch() -> None:
         if active_controller.stop_dispatch.is_set() or circuit_breaker:

@@ -1,1 +1,1 @@
-"""MP-10 evaluation feature tests."""
+"""Evaluation feature tests."""

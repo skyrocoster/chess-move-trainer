@@ -290,5 +290,5 @@ def test_run_session_rejects_too_many_workers_and_wrong_profile(
         engine_version="18-test",
         node_budget=200_000,
     )
-    with pytest.raises(EvaluationValidationError, match="fixed MP-09 profile"):
+    with pytest.raises(EvaluationValidationError, match="fixed qualified profile"):
         run_session(database_path, other, factory, workers=5)

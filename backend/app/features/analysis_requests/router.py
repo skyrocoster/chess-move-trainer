@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
 
 from backend.app.dependencies import get_rebuilt_database_path
-from backend.app.features.analysis_observation.router import _response
+from backend.app.features.analysis_observation.router import observation_response
 from chess_move_trainer.database.analysis import (
     AnalysisRequestDisposition,
     AnalysisRequestSchemaError,
@@ -59,7 +59,7 @@ def post_analysis_request(
             if outcome.disposition is AnalysisRequestDisposition.RESULT_REUSED
             else 202
         )
-        response = _response(outcome.observation)
+        response = observation_response(outcome.observation)
         return JSONResponse(
             status_code=status_code,
             content=response.model_dump(mode="json"),

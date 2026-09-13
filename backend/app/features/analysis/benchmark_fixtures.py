@@ -1,4 +1,4 @@
-"""Deterministic, strictly read-only selection of the frozen MP-09 fixtures."""
+"""Deterministic, strictly read-only selection of the frozen benchmark fixtures."""
 
 from __future__ import annotations
 

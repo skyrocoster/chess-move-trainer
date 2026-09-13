@@ -1,4 +1,4 @@
-"""HTTP routes for the clean opening catalogue."""
+"""HTTP routes for the opening catalogue."""
 
 from __future__ import annotations
 

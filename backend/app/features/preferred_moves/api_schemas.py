@@ -65,7 +65,7 @@ class MutationMovePreferenceRequest(MutationRequestModel):
 
 class MutationNoPreferenceRequest(MutationRequestModel):
     kind: Literal["no_preference"]
-    # This field lets the adapter reject the settled known invalid combination
+    # This field lets the adapter reject the known invalid combination
     # while still ignoring all other forward-compatible nested fields.
     uci: StrictStr | None = None
 

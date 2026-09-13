@@ -1,4 +1,4 @@
-"""Versioned MP-09 Stockfish qualification calculations."""
+"""Versioned Stockfish qualification calculations."""
 
 from __future__ import annotations
 

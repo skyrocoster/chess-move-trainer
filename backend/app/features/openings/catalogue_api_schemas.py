@@ -1,4 +1,4 @@
-"""Strict HTTP models for the clean opening catalogue collection."""
+"""Strict HTTP models for the opening catalogue collection."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from pydantic import BaseModel, ConfigDict
 
 
 class OpeningsModel(BaseModel):
-    """Base model that rejects fields outside the clean catalogue contract."""
+    """Base model that rejects fields outside the catalogue contract."""
 
     model_config = ConfigDict(extra="forbid", strict=True)
 

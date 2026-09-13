@@ -39,7 +39,7 @@ class ProvisionedStockfish:
 
 def _download(url: str, target: Path, timeout: float) -> None:
     deadline = time.monotonic() + timeout
-    request = urllib.request.Request(url, headers={"User-Agent": "ChessMoveTrainer-MP09/1"})
+    request = urllib.request.Request(url, headers={"User-Agent": "ChessMoveTrainer/1"})
     try:
         with (
             urllib.request.urlopen(request, timeout=timeout) as response,

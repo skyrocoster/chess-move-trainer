@@ -1,4 +1,4 @@
-"""Bounded five-worker evaluation service over the durable queue and MP-09 storage."""
+"""Bounded five-worker evaluation service over the durable queue and analysis storage."""
 
 from __future__ import annotations
 
@@ -287,7 +287,7 @@ def _drain(
     inflight: dict[Future[AnalysisResult], EvaluationQueueItem] = {}
     completed = 0
     failed = 0
-    executor = ThreadPoolExecutor(max_workers=workers, thread_name_prefix="mp10-eval")
+    executor = ThreadPoolExecutor(max_workers=workers, thread_name_prefix="eval")
 
     def dispatch() -> None:
         while len(inflight) < workers:
@@ -345,7 +345,7 @@ def run_session(
     if not 1 <= workers <= MAX_WORKERS:
         raise ValueError(f"workers must be between 1 and {MAX_WORKERS}")
     if profile.profile_id != QUALIFIED_PROFILE_ID:
-        raise EvaluationValidationError("the evaluation service uses the fixed MP-09 profile only")
+        raise EvaluationValidationError("the evaluation service uses the fixed qualified profile only")
     database_path = Path(database)
     if not database_path.is_file():
         raise AnalysisLockError(f"database does not exist: {database_path}")

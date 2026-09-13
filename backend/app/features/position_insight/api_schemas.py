@@ -1,4 +1,4 @@
-"""Strict HTTP contracts for one clean position insight."""
+"""Strict HTTP contracts for one position insight."""
 
 from __future__ import annotations
 

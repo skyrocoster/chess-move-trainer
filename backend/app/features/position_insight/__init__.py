@@ -1,1 +1,1 @@
-"""HTTP adapter for the clean rebuilt position-insight capability."""
+"""HTTP adapter for the position-insight capability."""

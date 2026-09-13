@@ -76,6 +76,14 @@ def _response(observation: AnalysisObservation) -> AnalysisObservationResponse:
     )
 
 
+def observation_response(
+    observation: AnalysisObservation,
+) -> AnalysisObservationResponse:
+    """Build the public observation body; shared with the request endpoint."""
+
+    return _response(observation)
+
+
 @router.get(
     "/analysis",
     response_model=AnalysisObservationResponse,
@@ -100,4 +108,4 @@ def get_analysis(
         return _error(500, "unexpected_failure", "Unable to observe analysis")
 
 
-__all__ = ["get_analysis", "router"]
+__all__ = ["get_analysis", "observation_response", "router"]

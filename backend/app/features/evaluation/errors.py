@@ -1,4 +1,4 @@
-"""Typed errors for the MP-10 browser-evaluation service boundary."""
+"""Typed errors for the browser-evaluation service boundary."""
 
 from __future__ import annotations
 
