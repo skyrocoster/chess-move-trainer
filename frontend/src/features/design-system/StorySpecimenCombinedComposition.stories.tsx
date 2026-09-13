@@ -6,7 +6,8 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { StorySpecimenCombinedComposition } from "./StorySpecimenCombinedComposition";
 
 const meta = {
-  title: "Documentation/Compositions/Tournament Analysis Desk",
+  title: "Reference/Compositions/Tournament Analysis Desk",
+  tags: ["status-reference"],
   component: StorySpecimenCombinedComposition,
   parameters: {
     layout: "fullscreen",

@@ -7,7 +7,8 @@ import { RemovePreferredMoveButton, SavePreferredMoveButton } from "./PreferredM
 import { PreferredMoveActionLayout } from "./PreferredMovePrimitives";
 
 const meta = {
-  title: "Application/Repertoire Builder/Preferred Move Action Buttons",
+  title: "Production/Application/Repertoire Builder/Preferred Move Actions",
+  tags: ["status-production"],
   parameters: { layout: "fullscreen" },
   render: () => (
     <main

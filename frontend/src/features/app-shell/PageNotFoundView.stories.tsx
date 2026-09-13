@@ -5,7 +5,8 @@ import "../../styles/cmt-typescale.css";
 import PageNotFoundView from "./PageNotFoundView";
 
 const meta = {
-  title: "Application/Shell/Page Not Found",
+  title: "Production/Application/Shell/Page Not Found",
+  tags: ["status-production"],
   component: PageNotFoundView,
   parameters: { layout: "fullscreen" },
 } satisfies Meta<typeof PageNotFoundView>;

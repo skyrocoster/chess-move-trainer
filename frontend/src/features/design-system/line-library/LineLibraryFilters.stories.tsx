@@ -26,7 +26,8 @@ const definitions: LineLibraryFilterDefinition[] = [
 ];
 
 const meta = {
-  title: "Design System/Components/Line Library Filters",
+  title: "Production/Design System/Components/Line Library Filters",
+  tags: ["status-production"],
   component: LineLibraryFilters,
   parameters: { layout: "fullscreen" },
   args: {

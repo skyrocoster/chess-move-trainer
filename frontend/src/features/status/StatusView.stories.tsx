@@ -5,7 +5,8 @@ import "../../styles/cmt-typescale.css";
 import { StatusView, type StatusViewState } from "./StatusView";
 
 const meta = {
-  title: "Application/Status/Status View",
+  title: "Production/Application/Status/Status View",
+  tags: ["status-production"],
   component: StatusView,
   parameters: { layout: "fullscreen" },
 } satisfies Meta<typeof StatusView>;

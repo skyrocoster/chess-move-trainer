@@ -40,7 +40,8 @@ function boundaryFrame(width: number) {
 }
 
 const meta = {
-  title: "Application/Repertoire Builder/Responsive Stage",
+  title: "Production/Application/Repertoire Builder/Responsive Stage",
+  tags: ["status-production"],
   component: RepertoireResponsiveStage,
   parameters: { layout: "fullscreen" },
   args: { board: boardLane, session: sessionLane, engine: engineLane },
@@ -65,25 +66,25 @@ async function verifyBoundary(canvasElement: HTMLElement, mode: string, separato
 }
 
 export const Boundary699: Story = {
-  name: "Boundary - 699px narrow",
+  name: "Boundary — 699px narrow",
   render: () => boundaryFrame(699),
   play: async ({ canvasElement }) => verifyBoundary(canvasElement, "narrow", 0),
 };
 
 export const Boundary700: Story = {
-  name: "Boundary - 700px medium",
+  name: "Boundary — 700px medium",
   render: () => boundaryFrame(700),
   play: async ({ canvasElement }) => verifyBoundary(canvasElement, "medium", 1),
 };
 
 export const Boundary1039: Story = {
-  name: "Boundary - 1039px medium",
+  name: "Boundary — 1039px medium",
   render: () => boundaryFrame(1039),
   play: async ({ canvasElement }) => verifyBoundary(canvasElement, "medium", 1),
 };
 
 export const Boundary1040: Story = {
-  name: "Boundary - 1040px wide",
+  name: "Boundary — 1040px wide",
   render: () => boundaryFrame(1040),
   play: async ({ canvasElement }) => verifyBoundary(canvasElement, "wide", 2),
 };

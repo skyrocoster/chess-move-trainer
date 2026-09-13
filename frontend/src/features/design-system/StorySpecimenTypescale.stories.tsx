@@ -3,7 +3,8 @@ import "../../styles/cmt-typescale.css";
 import { StorySpecimenTypescale } from "./StorySpecimenTypescale";
 
 const meta = {
-  title: "Design System/Documentation/Typography",
+  title: "Reference/Design System/Typography",
+  tags: ["status-reference"],
   component: StorySpecimenTypescale,
   parameters: {
     layout: "fullscreen",

@@ -10,7 +10,8 @@ import { PositionReachFrequency } from "./PositionReachFrequency";
 const FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
 const meta = {
-  title: "Application/Position Reach Frequency",
+  title: "Production/Application/Position Reach Frequency",
+  tags: ["status-production"],
   component: PositionReachFrequency,
   parameters: {
     layout: "fullscreen",
@@ -87,7 +88,7 @@ function expectAvailable(
 }
 
 export const PositiveWhite: Story = {
-  name: "Positive - White 2 of 5 games",
+  name: "Positive — White 2 of 5 games",
   args: { context: context(), selectedColor: "white" },
   render: (args) => frame(<PositionReachFrequency {...args} />),
   play: async ({ canvasElement }) => {
@@ -96,7 +97,7 @@ export const PositiveWhite: Story = {
 };
 
 export const PositiveBlack: Story = {
-  name: "Positive - Black 3 of 7 games",
+  name: "Positive — Black 3 of 7 games",
   args: { context: context(BLACK_CONTEXT), selectedColor: "black" },
   render: (args) => frame(<PositionReachFrequency {...args} />),
   play: async ({ canvasElement }) => {
@@ -105,7 +106,7 @@ export const PositiveBlack: Story = {
 };
 
 export const AvailableZero: Story = {
-  name: "Available zero - White 0 of 5 games",
+  name: "Available zero — White 0 of 5 games",
   args: { context: context({ distinctGameCount: 0 }), selectedColor: "white" },
   render: (args) => frame(<PositionReachFrequency {...args} />),
   play: async ({ canvasElement }) => {
@@ -119,7 +120,7 @@ export const AvailableZero: Story = {
 };
 
 export const Absent: Story = {
-  name: "Absent - position not in accepted game data",
+  name: "Absent — position not in accepted game data",
   args: {
     context: context({ observedInGames: false, distinctGameCount: 0, totalGameCount: 0 }),
     selectedColor: "black",
@@ -136,7 +137,7 @@ export const Absent: Story = {
 };
 
 export const Unavailable: Story = {
-  name: "Unavailable - no position reach data",
+  name: "Unavailable — no position reach data",
   args: { context: null, selectedColor: "white" },
   render: (args) => frame(<PositionReachFrequency {...args} />),
   play: async ({ canvasElement }) => {
@@ -147,7 +148,7 @@ export const Unavailable: Story = {
 };
 
 export const ConstrainedWidth: Story = {
-  name: "Constrained width - wrapped summary and bar",
+  name: "Constrained width — wrapped summary and bar",
   args: { context: context(), selectedColor: "white" },
   render: (args) => constrainedFrame(<PositionReachFrequency {...args} />),
   play: async ({ canvasElement }) => {
@@ -156,7 +157,7 @@ export const ConstrainedWidth: Story = {
 };
 
 export const Accessibility: Story = {
-  name: "Accessibility - labelled proportional meter",
+  name: "Accessibility — labelled proportional meter",
   parameters: { a11y: { disable: false } },
   args: { context: context(BLACK_CONTEXT), selectedColor: "black" },
   render: (args) => frame(<PositionReachFrequency {...args} />),
@@ -171,7 +172,7 @@ export const Accessibility: Story = {
 };
 
 export const ForcedColorsAndReducedMotion: Story = {
-  name: "Media emulation - forced colors and reduced motion",
+  name: "Accessibility — forced colors and reduced motion",
   args: { context: context(), selectedColor: "white" },
   render: (args) => constrainedFrame(<PositionReachFrequency {...args} />),
   parameters: {

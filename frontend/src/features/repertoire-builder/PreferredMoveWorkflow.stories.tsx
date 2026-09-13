@@ -21,7 +21,8 @@ import {
 } from "./repertoireBuilderStoryHelpers";
 
 const meta = {
-  title: "Application/Repertoire Builder/Workspace",
+  title: "Production/Application/Repertoire Builder/Workspace/Preferred Move Workflow",
+  tags: ["status-production"],
   component: RepertoireBuilderWorkspace,
   parameters: { layout: "fullscreen" },
 } satisfies Meta<typeof RepertoireBuilderWorkspace>;
@@ -30,7 +31,7 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const ReadErrors: Story = {
-  name: "Preferred move - read errors are announced safely",
+  name: "Preferred move — read errors are announced safely",
   render: () =>
     workspace(
       { analysisClient: storyAnalysisClient() },
@@ -51,7 +52,7 @@ export const ReadErrors: Story = {
 };
 
 export const UnsavableGate: Story = {
-  name: "Preferred move - novel position remains savable in the same shell",
+  name: "Preferred move — novel position remains savable in the same shell",
   render: () =>
     workspace(
       { analysisClient: storyCandidateAnalysisClient(["e2e4"]) },
@@ -73,7 +74,7 @@ export const UnsavableGate: Story = {
 };
 
 export const LoadingGate: Story = {
-  name: "Preferred move - loading keeps the relationship shell",
+  name: "Preferred move — loading keeps the relationship shell",
   render: () => workspace({}, { relationship: "empty", pendingRead: true }, { pending: true }),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -86,7 +87,7 @@ export const LoadingGate: Story = {
 };
 
 export const OpponentLocalOnly: Story = {
-  name: "Preferred move - opponent turn stays local-only",
+  name: "Preferred move — opponent turn stays local-only",
   render: () =>
     workspace(
       {
@@ -123,7 +124,7 @@ export const OpponentLocalOnly: Story = {
 };
 
 export const OpponentTurnGate: Story = {
-  name: "Preferred move - opponent turn is a read-only gate",
+  name: "Preferred move — opponent turn is a read-only gate",
   render: () => workspace({}, { relationship: "saved" }),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);

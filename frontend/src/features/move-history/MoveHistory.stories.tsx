@@ -22,7 +22,8 @@ const HISTORY: MoveHistoryInput = {
 };
 
 const meta = {
-  title: "Shared/Move History",
+  title: "Production/Application/Move History",
+  tags: ["status-production"],
   component: MoveHistory,
   parameters: { layout: "fullscreen" },
   args: { ...HISTORY, activePly: 0, onActivePlyChange: () => {} },

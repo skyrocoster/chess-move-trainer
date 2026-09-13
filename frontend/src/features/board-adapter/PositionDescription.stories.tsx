@@ -7,7 +7,8 @@ import { createPositionModel } from "./positionDescriptionModel";
 const RICH_FEN = "rn1qk2r/1bp1bpp1/pp1ppn1p/8/4PB2/2NP1NP1/PPPQ1PBP/R3K2R b KQkq e3 0 8";
 
 const meta = {
-  title: "Application/Board/Position Description",
+  title: "Production/Application/Board/Position Description",
+  tags: ["status-production"],
   component: PositionDescription,
   parameters: { layout: "fullscreen" },
 } satisfies Meta<typeof PositionDescription>;

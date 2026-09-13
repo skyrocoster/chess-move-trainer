@@ -9,8 +9,8 @@ import {
   type StoryAnalysisLifecycleEvent,
 } from "../analysis/analysisStoryClients";
 import { GAME, GAME_UUID } from "../game/gameFixtures";
-import RepertoireBuilderWorkspace from "./RepertoireBuilderWorkspace";
-import {
+import { storyViewport } from "../../storybook/viewports";
+import RepertoireBuilderWorkspace from "./RepertoireBuilderWorkspace";import {
   expectActiveSessionHistoryEntry,
   expectPositionReachFrequency,
   expectPositionSquares,
@@ -20,8 +20,7 @@ import {
   expectSingleStagedStatus,
   sharedPositionSummary,
 } from "./repertoireBuilderStoryAssertions";
-import { constrainedViewport, mediumViewport, workspace } from "./repertoireBuilderStoryRender";
-import {
+import { workspace } from "./repertoireBuilderStoryRender";import {
   STORY_BLACK_SUBJECT_GAME_DETAIL,
   STORY_PROMOTION_GAME_DETAIL,
   expectNoHorizontalOverflow,
@@ -30,7 +29,8 @@ import {
 } from "./repertoireBuilderStoryHelpers";
 
 const meta = {
-  title: "Application/Repertoire Builder/Workspace",
+  title: "Production/Application/Repertoire Builder/Workspace/Core",
+  tags: ["status-production"],
   component: RepertoireBuilderWorkspace,
   parameters: { layout: "fullscreen" },
 } satisfies Meta<typeof RepertoireBuilderWorkspace>;
@@ -167,26 +167,22 @@ async function verifyStandardWorkspace(
 }
 
 export const Wide: Story = {
-  name: "Standard starting position - Wide",
+  name: "Standard starting position — Wide",
+  parameters: storyViewport("workspace-wide-1280"),
   render: () => workspace(),
   play: async ({ canvasElement }) => verifyStandardWorkspace(canvasElement),
 };
 
-export const ImportedGameSession: Story = {
-  name: "Imported game session - navigation, branching, and preferred parent",
-  render: () => workspace({ gameClient: storyGameClient() }),
-};
-
 export const Constrained: Story = {
-  name: "Standard starting position - Constrained",
-  parameters: constrainedViewport,
+  name: "Standard starting position — Constrained",
+  parameters: storyViewport("constrained-412"),
   render: () => workspace(),
   play: async ({ canvasElement }) => verifyStandardWorkspace(canvasElement, "narrow"),
 };
 
 export const Medium: Story = {
-  name: "Standard starting position - Medium",
-  parameters: mediumViewport,
+  name: "Standard starting position — Medium",
+  parameters: storyViewport("workspace-medium-800"),
   render: () => workspace(),
   play: async ({ canvasElement }) => {
     await verifyStandardWorkspace(canvasElement, "medium");
@@ -202,7 +198,7 @@ export const Medium: Story = {
   },
 };
 export const StoredPrefixBlackSubject: Story = {
-  name: "Stored prefix through selected Ply - Black subject",
+  name: "Stored prefix through selected ply — Black subject",
   render: () =>
     workspace({
       gameClient: storyGameClient(STORY_BLACK_SUBJECT_GAME_DETAIL),
@@ -232,7 +228,7 @@ export const StoredPrefixBlackSubject: Story = {
   },
 };
 export const StagedMy: Story = {
-  name: "Local line - staged my move",
+  name: "Local line — staged my move",
   render: () => {
     stagedObservedFens.length = 0;
     return workspace({ analysisClient: stagedIdentityClient });
@@ -260,7 +256,7 @@ export const StagedMy: Story = {
 };
 
 export const SelectedPositionAnalysisLifecycle: Story = {
-  name: "Selected-position analysis lifecycle - observe, request, poll, navigate",
+  name: "Selected-position analysis lifecycle — observe, request, poll, navigate",
   render: () => <SelectedPositionAnalysisLifecycleStory />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -304,7 +300,7 @@ export const SelectedPositionAnalysisLifecycle: Story = {
 };
 
 export const OpponentImmediate: Story = {
-  name: "Local line - immediate opponent move",
+  name: "Local line — immediate opponent move",
   render: () =>
     workspace({
       analysisClient: storyCandidateAnalysisClient(["g1f3"]),
@@ -331,8 +327,8 @@ export const OpponentImmediate: Story = {
 };
 
 export const ConstrainedStoredPrefixAndLocalLine: Story = {
-  name: "Stored prefix and local line - Constrained",
-  parameters: constrainedViewport,
+  name: "Stored prefix and local line — Constrained",
+  parameters: storyViewport("constrained-412"),
   render: () =>
     workspace({
       analysisClient: storyCandidateAnalysisClient(["g1f3"]),
@@ -358,7 +354,7 @@ export const ConstrainedStoredPrefixAndLocalLine: Story = {
 };
 
 export const CandidateActivation: Story = {
-  name: "Candidate - Best line uses local move path",
+  name: "Candidate — Best line uses local move path",
   render: () =>
     workspace({
       analysisClient: storyCandidateAnalysisClient(["e2e4"]),
@@ -380,7 +376,7 @@ export const CandidateActivation: Story = {
 };
 
 export const NavigationAndReplacement: Story = {
-  name: "Navigation - local history and replacement truncation",
+  name: "Navigation — local history and replacement truncation",
   render: () =>
     workspace({
       analysisClient: storyCandidateAnalysisClient(["e2e4", "e7e5", "e7e6"]),
@@ -417,7 +413,7 @@ export const NavigationAndReplacement: Story = {
   },
 };
 export const FlipCancellation: Story = {
-  name: "Flip - preserves FEN and cancels pending staging",
+  name: "Flip — preserves FEN and cancels pending staging",
   render: () =>
     workspace({
       analysisClient: storyCandidateAnalysisClient(["e2e4"]),
@@ -442,7 +438,7 @@ export const FlipCancellation: Story = {
   },
 };
 export const Promotion: Story = {
-  name: "Promotion - selected piece stages a child preview",
+  name: "Promotion — selected piece stages a child preview",
   render: () =>
     workspace({
       analysisClient: storyCandidateAnalysisClient(["e7e8q"]),
@@ -479,8 +475,8 @@ export const Promotion: Story = {
   },
 };
 export const KeyboardAndAccessibility: Story = {
-  name: "Keyboard and accessibility - bounded workspace",
-  parameters: constrainedViewport,
+  name: "Keyboard and accessibility — bounded workspace",
+  parameters: storyViewport("constrained-412"),
   render: () =>
     workspace({
       analysisClient: storyCandidateAnalysisClient(["e2e4"]),
@@ -505,7 +501,7 @@ export const KeyboardAndAccessibility: Story = {
   },
 };
 export const Accessibility: Story = {
-  name: "Accessibility - semantic controls and no overflow",
+  name: "Accessibility — semantic controls and no overflow",
   render: () => workspace(),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -520,7 +516,7 @@ export const Accessibility: Story = {
 };
 
 export const ResponseDistributionIntegration: Story = {
-  name: "Response distribution - integrated move flow",
+  name: "Response distribution — integrated move flow",
   render: () =>
     workspace({
       gameClient: storyGameClient(STORY_BLACK_SUBJECT_GAME_DETAIL),

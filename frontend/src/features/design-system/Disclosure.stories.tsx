@@ -7,7 +7,8 @@ import type { ReactNode } from "react";
 import { Disclosure } from "./Disclosure";
 
 const meta = {
-  title: "Design System/Components/Disclosure",
+  title: "Production/Design System/Components/Disclosure",
+  tags: ["status-production"],
   component: Disclosure,
   args: {
     summary: "Disclosure",

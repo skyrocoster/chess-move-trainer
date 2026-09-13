@@ -18,6 +18,10 @@ Do routine and tightly coupled work yourself. Use subagents deliberately when th
 parallelize independent work, or provide useful specialization:
 
 - Use `scout` for bounded repository facts and targeted searches.
+- Use `jesus` only for larger, bounded implementation chunks that can be described with an objective,
+  relevant paths and known facts, expected output, and a clear stop condition. `jesus` is your
+  God-only subagent (Muse Spark 1.3 Contributor on high) for simple, bounded implementation. Do not
+  pass off routine edits, tightly coupled work, or tiny changes that you can finish directly.
 - Use `exploration` and `readme-updater` only when their defined specialty matches the task.
 - Do not use the built-in `explore` or `general` subagents unless the user explicitly requests one.
 

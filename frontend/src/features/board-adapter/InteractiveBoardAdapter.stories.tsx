@@ -12,7 +12,8 @@ const ILLEGAL_MOVE_FEN = "4r1k1/8/8/8/8/4N3/4P3/4K3 w - - 0 1";
 const TERMINAL_ORIGIN_FEN = "7k/6Q1/6K1/p7/8/8/8/8 b - - 1 2";
 
 const meta = {
-  title: "Application/Board/Interactive Board",
+  title: "Production/Application/Board/Interactive Board",
+  tags: ["status-production"],
   component: InteractiveBoardHarness,
   parameters: { layout: "fullscreen" },
 } satisfies Meta<typeof InteractiveBoardHarness>;

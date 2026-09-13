@@ -48,7 +48,8 @@ const sampleData: LineLibraryData = {
 const DEFAULT_EXPANDED = ["group-a", "nested", "group-b"];
 
 const meta = {
-  title: "Design System/Components/Line Library Tree",
+  title: "Production/Design System/Components/Line Library Tree",
+  tags: ["status-production"],
   parameters: { layout: "fullscreen" },
 } satisfies Meta;
 

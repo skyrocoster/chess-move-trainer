@@ -3,7 +3,8 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { StoryHarnessPromotionPicker } from "./StoryHarnessPromotionPicker";
 
 const meta = {
-  title: "Documentation/Demos/Promotion Picker Harness",
+  title: "Reference/Storybook Fixtures/Promotion Picker Harness",
+  tags: ["status-reference"],
   component: StoryHarnessPromotionPicker,
   decorators: [
     (Story) => (

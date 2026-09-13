@@ -5,7 +5,8 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { StorySpecimenAccessibilityReview } from "./StorySpecimenAccessibilityReview";
 
 const meta = {
-  title: "Documentation/Reviews/Responsive Accessibility",
+  title: "Reference/Reviews/Responsive Accessibility",
+  tags: ["status-reference"],
   component: StorySpecimenAccessibilityReview,
   parameters: {
     layout: "fullscreen",

@@ -7,6 +7,7 @@ import {
   PreferredMoveSchedulePrototype,
   type PreferredMoveSchedulePeriod,
 } from "./PreferredMoveSchedulePrototype";
+import { storyViewport } from "../../storybook/viewports";
 
 const PERIODS: PreferredMoveSchedulePeriod[] = [
   {
@@ -35,20 +36,9 @@ const PERIODS: PreferredMoveSchedulePeriod[] = [
   },
 ];
 
-const narrowViewport = {
-  viewport: {
-    defaultViewport: "preferred-schedule-narrow",
-    options: {
-      "preferred-schedule-narrow": {
-        name: "Preferred schedule narrow",
-        styles: { width: "390px", height: "844px" },
-      },
-    },
-  },
-};
-
 const meta = {
-  title: "Exploration/Preferred Move Effective Dates",
+  title: "In Development/Application/Repertoire Builder/Preferred Move Effective Dates",
+  tags: ["status-in-development"],
   component: PreferredMoveSchedulePrototype,
   parameters: {
     layout: "fullscreen",
@@ -111,8 +101,8 @@ export const OpenEndedDraft: Story = {
 };
 
 export const NarrowCalendar: Story = {
-  name: "Responsive - 390px calendar and schedule",
-  parameters: narrowViewport,
+  name: "Responsive — 390px calendar and schedule",
+  parameters: storyViewport("phone-390"),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await expect(

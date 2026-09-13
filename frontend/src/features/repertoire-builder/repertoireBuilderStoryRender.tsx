@@ -14,30 +14,6 @@ import {
 
 export const BLACK_SUBJECT_GAME: Game = { ...GAME, subject_color: "black" };
 
-export const constrainedViewport = {
-  viewport: {
-    defaultViewport: "cmt-repertoire-constrained",
-    options: {
-      "cmt-repertoire-constrained": {
-        name: "Constrained workspace",
-        styles: { width: "412px", height: "915px" },
-      },
-    },
-  },
-};
-
-export const mediumViewport = {
-  viewport: {
-    defaultViewport: "cmt-repertoire-medium",
-    options: {
-      "cmt-repertoire-medium": {
-        name: "Medium workspace",
-        styles: { width: "800px", height: "1000px" },
-      },
-    },
-  },
-};
-
 export const R2_ASSIGNED_CONTEXT = {
   observedInGames: true,
   distinctGameCount: 5,

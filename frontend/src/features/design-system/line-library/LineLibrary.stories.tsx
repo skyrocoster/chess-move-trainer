@@ -48,7 +48,8 @@ const sampleData: LineLibraryData = {
 };
 
 const meta = {
-  title: "Design System/Components/Line Library",
+  title: "Production/Design System/Components/Line Library",
+  tags: ["status-production"],
   component: LineLibrary,
   parameters: { layout: "fullscreen" },
   args: {

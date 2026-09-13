@@ -56,7 +56,8 @@ function panelArgs(
 }
 
 const meta = {
-  title: "Application/Repertoire Builder/Session Panel",
+  title: "Production/Application/Repertoire Builder/Session Panel",
+  tags: ["status-production"],
   component: RepertoireSessionPanel,
   parameters: { layout: "fullscreen" },
   render: (args) => (
@@ -93,7 +94,7 @@ export const SessionFactsOnly: Story = {
 };
 
 export const FrequencyZero: Story = {
-  name: "Frequency - observed position with zero selected-color experience",
+  name: "Frequency — observed position with zero selected-color experience",
   args: panelArgs({
     positionContext: { ...POSITION_CONTEXT, distinctGameCount: 0 },
     model: model({ personalCount: 0, contextMessage: "Never seen as White" }),
@@ -107,7 +108,7 @@ export const FrequencyZero: Story = {
 };
 
 export const FrequencyAbsent: Story = {
-  name: "Frequency - globally unseen position",
+  name: "Frequency — globally unseen position",
   args: panelArgs({
     positionContext: {
       ...POSITION_CONTEXT,
@@ -134,7 +135,7 @@ export const FrequencyAbsent: Story = {
 };
 
 export const FrequencyUnavailable: Story = {
-  name: "Frequency - no position reach data",
+  name: "Frequency — no position reach data",
   args: panelArgs({ positionContext: null }),
   play: async ({ canvasElement }) => {
     await expect(

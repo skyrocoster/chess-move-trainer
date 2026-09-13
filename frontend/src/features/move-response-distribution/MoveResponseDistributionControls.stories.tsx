@@ -16,7 +16,8 @@ const replies = [
 ];
 
 const meta = {
-  title: "Application/Move Response Distribution/Controls",
+  title: "Production/Application/Move Response Distribution/Controls",
+  tags: ["status-production"],
   component: MoveResponseDistributionControls,
   decorators: [
     (Story) => (

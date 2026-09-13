@@ -7,7 +7,8 @@ import { BoardControl } from "./BoardControl";
 import styles from "../../storybook/StoryFrame.module.css";
 
 const meta = {
-  title: "Application/Board Adapter/Board Controls",
+  title: "Production/Application/Board/Board Controls",
+  tags: ["status-production"],
   component: BoardControl,
   parameters: { layout: "fullscreen" },
 } satisfies Meta<typeof BoardControl>;
@@ -102,7 +103,7 @@ export const Loading: Story = {
 };
 
 export const TemporaryBranch: Story = {
-  name: "Temporary branch - navigation gated",
+  name: "Temporary branch — navigation gated",
   args: { hasGame: true, canGoPrevious: false, canGoNext: false },
   render: (args) => frame(<BoardControl {...args} />),
   play: async ({ canvasElement }) => {

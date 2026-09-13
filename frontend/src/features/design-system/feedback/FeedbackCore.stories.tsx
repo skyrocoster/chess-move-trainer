@@ -5,7 +5,8 @@ import { FEEDBACK_VARIANTS } from "./feedbackTypes";
 import type { FeedbackSeverity } from "./feedbackTypes";
 
 const meta = {
-  title: "Design System/Feedback/Semantic Variants",
+  title: "Reference/Design System/Feedback Semantic Variants",
+  tags: ["status-reference"],
   component: FeedbackCore,
   parameters: {
     layout: "fullscreen",

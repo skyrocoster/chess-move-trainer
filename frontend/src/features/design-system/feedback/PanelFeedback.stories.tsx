@@ -6,7 +6,8 @@ import { PanelFeedback } from "./PanelFeedback";
 import styles from "./PanelFeedback.module.css";
 
 const meta = {
-  title: "Design System/Feedback/Panel",
+  title: "Production/Design System/Feedback/Panel",
+  tags: ["status-production"],
   component: PanelFeedback,
   parameters: {
     layout: "fullscreen",

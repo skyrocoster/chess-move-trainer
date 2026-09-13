@@ -22,7 +22,8 @@ import {
 import type { OpeningLineLibraryResponse } from "./openingsApi";
 
 const meta = {
-  title: "Application/Openings/Opening Line Library",
+  title: "Production/Application/Openings/Opening Line Library",
+  tags: ["status-production"],
   component: LineLibrary,
   parameters: { layout: "fullscreen" },
 } satisfies Meta<typeof LineLibrary>;
@@ -127,7 +128,7 @@ function SyntheticOpeningBrowser({
 }
 
 export const BrowserSelectionAndCommit: Story = {
-  name: "Synthetic hierarchy, keyboard selection, and generic commit",
+  name: "Hierarchy, keyboard selection, and commit",
   args: { onCommit: fn() },
   render: (args) => <SyntheticOpeningBrowser onCommit={args.onCommit} />,
   play: async ({ args, canvasElement }) => {
@@ -146,7 +147,7 @@ export const BrowserSelectionAndCommit: Story = {
 };
 
 export const TextSearchScenario: Story = {
-  name: "Approved filter - text search",
+  name: "Approved filter — text search",
   render: () => <SyntheticOpeningBrowser />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -164,7 +165,7 @@ export const TextSearchScenario: Story = {
 };
 
 export const EcoRangeScenario: Story = {
-  name: "Approved filter - ECO code/range",
+  name: "Approved filter — ECO code/range",
   render: () => <SyntheticOpeningBrowser />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -181,7 +182,7 @@ export const EcoRangeScenario: Story = {
 };
 
 export const AcceptedCorpusScenario: Story = {
-  name: "Approved filter - appears in my games (fixed accepted corpus simulation)",
+  name: "Approved filter — appears in my games",
   render: () => (
     <SyntheticOpeningBrowser
       description={`${SYNTHETIC_FIXTURE_NOTICE} The checkbox simulates the fixed accepted corpus selected by SUBJECT_PLAYER_UUID; it is not an authenticated user lookup.`}
@@ -201,7 +202,7 @@ export const AcceptedCorpusScenario: Story = {
 };
 
 export const DisabledAndTranspositionReference: Story = {
-  name: "Synthetic disabled row and non-selectable transposition reference",
+  name: "Disabled row and non-selectable transposition reference",
   render: () => <SyntheticOpeningBrowser />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -219,7 +220,7 @@ export const DisabledAndTranspositionReference: Story = {
 };
 
 export const DeclaredSyntheticSelectionLimit: Story = {
-  name: "Synthetic backend-declared selection limit",
+  name: "Selection limit — declared limit",
   args: { onSelectionLimitReached: fn() },
   render: (args) => (
     <SyntheticOpeningBrowser
@@ -240,7 +241,7 @@ export const DeclaredSyntheticSelectionLimit: Story = {
 };
 
 export const InitialLoading: Story = {
-  name: "Synthetic provider loading before first result",
+  name: "Loading — before first result",
   render: () =>
     frame(
       <LineLibrary
@@ -257,7 +258,7 @@ export const InitialLoading: Story = {
 };
 
 export const StaleRefresh: Story = {
-  name: "Synthetic provider stale refresh",
+  name: "State — stale refresh",
   render: () =>
     frame(
       <LineLibrary
@@ -285,7 +286,7 @@ export const StaleRefresh: Story = {
 };
 
 export const FailureAndRetry: Story = {
-  name: "Synthetic provider failure with retry",
+  name: "Error — failure with retry",
   args: { onRetry: fn() },
   render: (args) => <FailureFixture onRetry={args.onRetry} />,
   play: async ({ args, canvasElement }) => {
@@ -325,7 +326,7 @@ function FailureFixture({ onRetry }: { onRetry?: () => void }) {
 }
 
 export const EmptyResult: Story = {
-  name: "Synthetic provider empty result",
+  name: "Empty result",
   render: () =>
     frame(
       <LineLibrary

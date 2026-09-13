@@ -12,7 +12,8 @@ import {
 } from "./AnalysisPanel";
 
 const meta = {
-  title: "Application/Analysis/Analysis Panel",
+  title: "Production/Application/Analysis/Analysis Panel",
+  tags: ["status-production"],
   component: AnalysisPanel,
   parameters: { layout: "fullscreen" },
 } satisfies Meta<typeof AnalysisPanel>;
@@ -205,13 +206,13 @@ const constrainedPanel = (args: ComponentProps<typeof AnalysisPanel>) => (
 );
 
 export const Loading: Story = {
-  name: "Loading - observation pending",
+  name: "Loading — observation pending",
   args: panelArgs(displayFor()),
   render: (args) => panel(args),
 };
 
 export const NotRequested: Story = {
-  name: "Not requested - Analyze required",
+  name: "Not requested — Analyze required",
   args: panelArgs(missingDisplay()),
   render: (args) => panel(args),
   play: async ({ args, canvasElement }) => {
@@ -222,25 +223,25 @@ export const NotRequested: Story = {
 };
 
 export const Queued: Story = {
-  name: "Queued - observed automatically",
+  name: "Queued — observed automatically",
   args: panelArgs(queuedDisplay("queued")),
   render: (args) => panel(args),
 };
 
 export const Running: Story = {
-  name: "Running - observed automatically",
+  name: "Running — observed automatically",
   args: panelArgs(queuedDisplay("running")),
   render: (args) => panel(args),
 };
 
 export const Ready: Story = {
-  name: "Ready - five ranked lines and formatted values",
+  name: "Ready — five ranked lines and formatted values",
   args: panelArgs(completeDisplay()),
   render: (args) => panel(args),
 };
 
 export const ActiveWithResult: Story = {
-  name: "Running - current result retained while work is active",
+  name: "Running — current result retained while work is active",
   args: panelArgs(
     queuedDisplay("running", {
       result: {
@@ -257,7 +258,7 @@ export const ActiveWithResult: Story = {
 };
 
 export const CandidateActivation: Story = {
-  name: "Ready - controlled candidate activation",
+  name: "Ready — controlled candidate activation",
   args: panelArgs(completeDisplay()),
   render: (args) => panel(args),
   play: async ({ args, canvasElement }) => {
@@ -285,13 +286,13 @@ export const CandidateActivation: Story = {
 };
 
 export const ConstrainedReady: Story = {
-  name: "Ready - constrained review frame",
+  name: "Ready — constrained review frame",
   args: panelArgs(completeDisplay()),
   render: (args) => constrainedPanel(args),
 };
 
 export const RequestError: Story = {
-  name: "Request error - Analyze remains deliberate",
+  name: "Request error — Analyze remains deliberate",
   args: panelArgs(requestErrorDisplay()),
   render: (args) => panel(args),
   play: async ({ args, canvasElement }) => {
@@ -302,7 +303,7 @@ export const RequestError: Story = {
 };
 
 export const ObservationError: Story = {
-  name: "Error - Observation retry",
+  name: "Error — observation retry",
   args: panelArgs(errorDisplay()),
   render: (args) => panel(args),
   play: async ({ args, canvasElement }) => {
@@ -313,19 +314,19 @@ export const ObservationError: Story = {
 };
 
 export const RequestPending: Story = {
-  name: "Request pending - deliberate action disabled",
+  name: "Request pending — deliberate action disabled",
   args: panelArgs(missingDisplay({ actions: { pending: true } })),
   render: (args) => panel(args),
 };
 
 export const TerminalEmpty: Story = {
-  name: "Ready - terminal empty result",
+  name: "Ready — terminal empty result",
   args: panelArgs(completeDisplay([])),
   render: (args) => panel(args),
 };
 
 export const Accessibility: Story = {
-  name: "Accessibility - complete semantic presentation",
+  name: "Accessibility — complete semantic presentation",
   args: panelArgs(completeDisplay()),
   render: (args) => panel(args),
   play: async ({ canvasElement }) => {

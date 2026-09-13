@@ -4,7 +4,8 @@ import "../../styles/cmt-typescale.css";
 import { Button, type ButtonSize, type ButtonVariant } from "./Button";
 
 const meta = {
-  title: "Design System/Components/Button",
+  title: "Production/Design System/Components/Button",
+  tags: ["status-production"],
   component: Button,
   parameters: {
     layout: "fullscreen",

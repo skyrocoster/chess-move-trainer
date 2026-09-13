@@ -12,7 +12,8 @@ import {
 } from "./PreferredMovePrimitives";
 
 const meta = {
-  title: "Application/Repertoire Builder/Preferred Move Primitives",
+  title: "Production/Application/Repertoire Builder/Preferred Move Primitives",
+  tags: ["status-production"],
   parameters: { layout: "fullscreen" },
   render: () => (
     <main

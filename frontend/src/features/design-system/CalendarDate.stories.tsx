@@ -6,9 +6,11 @@ import { useState, type ReactNode } from "react";
 
 import { CalendarDate, type CalendarDateProps, type CalendarDateValue } from "./CalendarDate";
 import { getUtcCalendarDay, toUtcMidnight, type UtcCalendarDay } from "./CalendarDateUtils";
+import { storyViewport } from "../../storybook/viewports";
 
 const meta = {
-  title: "Design System/Components/Calendar Date",
+  title: "Production/Design System/Components/Calendar Date",
+  tags: ["status-production"],
   component: CalendarDate,
   args: {
     value: null,
@@ -24,18 +26,6 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 const JANUARY_15_2025 = new Date("2025-01-15T00:00:00.000Z");
-
-const constrainedViewport = {
-  viewport: {
-    defaultViewport: "cmt-constrained",
-    options: {
-      "cmt-constrained": {
-        name: "Constrained calendar",
-        styles: { width: "412px", height: "915px" },
-      },
-    },
-  },
-};
 
 function shell(children: ReactNode) {
   return (
@@ -128,7 +118,7 @@ function calendarDayName(day: UtcCalendarDay) {
 }
 
 export const Blank: Story = {
-  name: "Blank - effective now until selected",
+  name: "Blank — effective now until selected",
   render: renderCalendar,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -152,7 +142,7 @@ export const Blank: Story = {
 };
 
 export const Selected: Story = {
-  name: "Selected - canonical UTC date",
+  name: "Selected — canonical UTC date",
   args: { value: JANUARY_15_2025 },
   render: renderCalendar,
   play: async ({ canvasElement }) => {
@@ -201,7 +191,7 @@ export const CurrentDayAndFutureDisabled: Story = {
 };
 
 export const Clearable: Story = {
-  name: "Clear - return to blank",
+  name: "Clear — return to blank",
   args: { value: JANUARY_15_2025 },
   render: renderCalendar,
   play: async ({ canvasElement }) => {
@@ -254,7 +244,7 @@ export const KeyboardAndFocus: Story = {
 export const Constrained: Story = {
   name: "Constrained viewport",
   args: { value: JANUARY_15_2025 },
-  parameters: constrainedViewport,
+  parameters: storyViewport("constrained-412"),
   render: renderCalendar,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);

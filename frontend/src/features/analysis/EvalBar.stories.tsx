@@ -6,7 +6,8 @@ import "../../styles/cmt-typescale.css";
 import { EvalBar, type EvalBarProps } from "./EvalBar";
 
 const meta = {
-  title: "Application/Analysis/Evaluation Bar",
+  title: "Production/Application/Analysis/Evaluation Bar",
+  tags: ["status-production"],
   component: EvalBar,
   decorators: [
     (Story) => (
@@ -48,7 +49,7 @@ function expectDisplay(canvasElement: HTMLElement, expected: ExpectedDisplay) {
 }
 
 export const Neutral: Story = {
-  name: "Neutral - before analysis",
+  name: "Neutral — before analysis",
   args: {
     orientation: "white",
     state: "neutral",
@@ -70,7 +71,7 @@ export const Neutral: Story = {
 };
 
 export const Unavailable: Story = {
-  name: "Unavailable - neutral fallback",
+  name: "Unavailable — neutral fallback",
   args: {
     orientation: "white",
     state: "neutral",
@@ -90,7 +91,7 @@ export const Unavailable: Story = {
 };
 
 export const Queued: Story = {
-  name: "Queued - pending analysis",
+  name: "Queued — pending analysis",
   args: {
     orientation: "white",
     state: "pending",
@@ -110,7 +111,7 @@ export const Queued: Story = {
 };
 
 export const Running: Story = {
-  name: "Running - pending analysis",
+  name: "Running — pending analysis",
   args: {
     orientation: "black",
     state: "pending",
@@ -130,7 +131,7 @@ export const Running: Story = {
 };
 
 export const BestLine: Story = {
-  name: "Best line - completed evaluation",
+  name: "Best line — completed evaluation",
   args: {
     orientation: "black",
     state: "best-line",
@@ -150,7 +151,7 @@ export const BestLine: Story = {
 };
 
 export const CompletedNegativeCp: Story = {
-  name: "Completed - negative CP",
+  name: "Completed — negative CP",
   args: {
     orientation: "white",
     state: "best-line",
@@ -170,7 +171,7 @@ export const CompletedNegativeCp: Story = {
 };
 
 export const CompletedPositiveMate: Story = {
-  name: "Completed - positive mate",
+  name: "Completed — positive mate",
   args: {
     orientation: "white",
     state: "best-line",
@@ -190,7 +191,7 @@ export const CompletedPositiveMate: Story = {
 };
 
 export const CompletedNegativeMate: Story = {
-  name: "Completed - negative mate",
+  name: "Completed — negative mate",
   args: {
     orientation: "black",
     state: "best-line",
@@ -210,7 +211,7 @@ export const CompletedNegativeMate: Story = {
 };
 
 export const CompletedMateGiven: Story = {
-  name: "Completed - mate given",
+  name: "Completed — mate given",
   args: {
     orientation: "white",
     state: "best-line",
@@ -230,7 +231,7 @@ export const CompletedMateGiven: Story = {
 };
 
 export const StaleWithRetainedCandidate: Story = {
-  name: "Stale - retained candidate",
+  name: "Stale — retained candidate",
   args: {
     orientation: "white",
     state: "best-line",
@@ -250,7 +251,7 @@ export const StaleWithRetainedCandidate: Story = {
 };
 
 export const StaleWithoutRetainedCandidate: Story = {
-  name: "Stale - no retained candidate",
+  name: "Stale — no retained candidate",
   args: {
     orientation: "white",
     state: "neutral",
@@ -270,7 +271,7 @@ export const StaleWithoutRetainedCandidate: Story = {
 };
 
 export const FailedWithRetainedCandidate: Story = {
-  name: "Failed - retained candidate",
+  name: "Failed — retained candidate",
   args: {
     orientation: "black",
     state: "best-line",
@@ -290,7 +291,7 @@ export const FailedWithRetainedCandidate: Story = {
 };
 
 export const FailedWithoutRetainedCandidate: Story = {
-  name: "Failed - no retained candidate",
+  name: "Failed — no retained candidate",
   args: {
     orientation: "black",
     state: "neutral",
@@ -310,7 +311,7 @@ export const FailedWithoutRetainedCandidate: Story = {
 };
 
 export const ClampedMinimum: Story = {
-  name: "Completed - clamped minimum",
+  name: "Completed — clamped minimum",
   args: {
     orientation: "white",
     state: "best-line",
@@ -330,7 +331,7 @@ export const ClampedMinimum: Story = {
 };
 
 export const ClampedMaximum: Story = {
-  name: "Completed - clamped maximum",
+  name: "Completed — clamped maximum",
   args: {
     orientation: "black",
     state: "best-line",

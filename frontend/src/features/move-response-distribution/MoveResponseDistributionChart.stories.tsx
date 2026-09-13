@@ -4,7 +4,8 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { MoveResponseDistributionChart } from "./MoveResponseDistributionChart";
 
 const meta = {
-  title: "Application/Move Response Distribution/Chart",
+  title: "Production/Application/Move Response Distribution/Chart",
+  tags: ["status-production"],
   component: MoveResponseDistributionChart,
   decorators: [
     (Story) => (

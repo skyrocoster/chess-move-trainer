@@ -7,7 +7,8 @@ import {
 } from "./StoryHarnessPromotionPicker";
 
 const meta = {
-  title: "Documentation/Demos/Promotion Picker",
+  title: "Production/Application/Board/Promotion Picker",
+  tags: ["status-production"],
   component: StoryHarnessPromotionPicker,
   decorators: [
     (Story) => (
@@ -78,7 +79,7 @@ export const KeyboardSelection: Story = {
 };
 
 export const NativeKeyboardPromotionInitiation: Story = {
-  name: "Promotion initiation browser fixture",
+  name: "Promotion initiation",
   args: {
     color: "w",
     presentation: "drawer",
@@ -105,7 +106,7 @@ export const Cancellation: Story = {
 };
 
 export const StaleAndIllegalRejection: Story = {
-  name: "Pending selection for rejection browser proof",
+  name: "Pending selection — stale and illegal moves rejected",
   args: {
     ...defaultArgs,
     presentation: "popover",
@@ -113,7 +114,7 @@ export const StaleAndIllegalRejection: Story = {
 };
 
 export const ForcedColorsAndReducedMotion: Story = {
-  name: "Media emulation browser fixture",
+  name: "Accessibility — forced colors and reduced motion",
   args: {
     ...defaultArgs,
     presentation: "drawer",

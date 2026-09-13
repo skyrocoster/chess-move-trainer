@@ -7,7 +7,8 @@ import "../../styles/cmt-typescale.css";
 import { Tabs, type TabDefinition } from "./Tabs";
 
 const meta = {
-  title: "Design System/Components/Tabs",
+  title: "Production/Design System/Components/Tabs",
+  tags: ["status-production"],
   component: Tabs,
   parameters: { layout: "fullscreen" },
   decorators: [
@@ -96,7 +97,7 @@ function ControlledTabs() {
 }
 
 export const Default: Story = {
-  name: "Default / fitting",
+  name: "Default",
   args: { ariaLabel: "Training tabs", tabs: FITTING_TABS },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);

@@ -2,7 +2,8 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { StorySpecimenTokenOverview } from "./StorySpecimenTokenOverview";
 
 const meta = {
-  title: "Design System/Documentation/Tokens",
+  title: "Reference/Design System/Tokens",
+  tags: ["status-reference"],
   component: StorySpecimenTokenOverview,
   parameters: {
     layout: "fullscreen",

@@ -7,7 +7,8 @@ import "../../styles/cmt-typescale.css";
 import { PageContentBoundary } from "./PageContentBoundary";
 
 const meta = {
-  title: "Application/Shell/Page Content Boundary",
+  title: "Production/Application/Shell/Page Content Boundary",
+  tags: ["status-production"],
   component: PageContentBoundary,
   args: { children: <p>Page content is available.</p> },
   parameters: { layout: "fullscreen" },
@@ -39,6 +40,7 @@ export const HealthyContent: Story = {
 };
 
 export const UnexpectedFailureTryAgain: Story = {
+  name: "Error — try again recovers content",
   render: () => <FailureComposition />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);

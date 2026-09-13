@@ -18,6 +18,7 @@ permission:
   task:
     "*": allow
     god: deny
+    jesus: deny
   webfetch: deny
   websearch: deny
   external_directory: deny
@@ -32,6 +33,7 @@ Use `grilling` only for an explicit interview or a genuine unsettled decision. W
 under `docs/grilling-docs/` yourself; it is a coordinator-owned workflow record, not an implementation task to
 delegate.
 Never invoke `god`; it is an independent user-facing primary agent, not a coordinator subagent.
+Never invoke `jesus`; it works only for `god`.
 
 Own the outcome, route, scope, approvals, Plan state, proof sufficiency, acceptance, and stopping. Ask the user
 only for decisions. Use `scout` for bounded factual questions with narrow answers. The case-workers may invoke the

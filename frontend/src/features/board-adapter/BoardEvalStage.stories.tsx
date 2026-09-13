@@ -6,7 +6,8 @@ import { BoardAdapter, STARTING_FEN } from "./BoardAdapter";
 import { BoardEvalStage } from "./BoardEvalStage";
 
 const meta = {
-  title: "Application/Board Adapter/Board Evaluation Stage",
+  title: "Production/Application/Board/Evaluation Stage",
+  tags: ["status-production"],
   component: BoardEvalStage,
   args: { children: <div /> },
   parameters: { layout: "fullscreen" },

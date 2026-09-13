@@ -6,7 +6,8 @@ import { PageFeedback } from "./PageFeedback";
 import styles from "./PageFeedback.module.css";
 
 const meta = {
-  title: "Design System/Feedback/Page",
+  title: "Production/Design System/Feedback/Page",
+  tags: ["status-production"],
   component: PageFeedback,
   parameters: {
     layout: "fullscreen",

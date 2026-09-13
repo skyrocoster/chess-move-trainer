@@ -6,6 +6,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 
 import { storyCandidateAnalysisClient } from "../analysis/analysisStoryClients";
 import { GAME_UUID } from "../game/gameFixtures";
+import { storyViewport } from "../../storybook/viewports";
 import RepertoireBuilderWorkspace from "./RepertoireBuilderWorkspace";
 import { PREFERRED_MOVE_SOURCE_FEN } from "./preferredMoveStoryFixtures";
 import {
@@ -19,7 +20,7 @@ import {
   expectSingleStagedStatus,
   expectStagedStatus,
 } from "./repertoireBuilderStoryAssertions";
-import { constrainedViewport, assignedWorkspace, workspace } from "./repertoireBuilderStoryRender";
+import { assignedWorkspace, workspace } from "./repertoireBuilderStoryRender";
 import {
   expectNoHorizontalOverflow,
   loadGame,
@@ -58,7 +59,8 @@ function CleanPreferredTimelineStory() {
 }
 
 const meta = {
-  title: "Application/Repertoire Builder/Workspace",
+  title: "Production/Application/Repertoire Builder/Workspace/Preferred Move",
+  tags: ["status-production"],
   component: RepertoireBuilderWorkspace,
   parameters: { layout: "fullscreen" },
 } satisfies Meta<typeof RepertoireBuilderWorkspace>;
@@ -67,7 +69,7 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const SavedNoStage: Story = {
-  name: "Preferred move - saved choice with no staged move",
+  name: "Preferred move — saved choice with no staged move",
   render: () => assignedWorkspace(),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -146,7 +148,7 @@ export const CleanPreferredTimelineNovelParent: Story = {
 };
 
 export const FirstChoice: Story = {
-  name: "Preferred move - first-choice staged proposal",
+  name: "Preferred move — first-choice staged proposal",
   render: () =>
     workspace(
       { analysisClient: storyCandidateAnalysisClient(["e2e4"]) },
@@ -167,8 +169,8 @@ export const FirstChoice: Story = {
 };
 
 export const ReplacementConstrained: Story = {
-  name: "Preferred move - differing staged replacement at 412px",
-  parameters: constrainedViewport,
+  name: "Preferred move — differing staged replacement at 412px",
+  parameters: storyViewport("constrained-412"),
   render: () => assignedWorkspace({ analysisClient: storyCandidateAnalysisClient(["d2d4"]) }),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -185,7 +187,7 @@ export const ReplacementConstrained: Story = {
 };
 
 export const Matching: Story = {
-  name: "Preferred move - matching staged move",
+  name: "Preferred move — matching staged move",
   render: () => assignedWorkspace({ analysisClient: storyCandidateAnalysisClient(["e2e4"]) }),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -200,7 +202,7 @@ export const Matching: Story = {
 };
 
 export const SavedBoxKeyboard: Story = {
-  name: "Preferred move - saved box pointer, Enter, and Space stage locally",
+  name: "Preferred move — saved box pointer, Enter, and Space stage locally",
   render: () => assignedWorkspace({ analysisClient: storyCandidateAnalysisClient(["d2d4"]) }),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -228,7 +230,7 @@ export const SavedBoxKeyboard: Story = {
 };
 
 export const SaveReplacement: Story = {
-  name: "Preferred move - Save refreshes before clearing the proposal",
+  name: "Preferred move — Save refreshes before clearing the proposal",
   render: () => assignedWorkspace({ analysisClient: storyCandidateAnalysisClient(["d2d4"]) }),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -249,7 +251,7 @@ export const SaveReplacement: Story = {
 };
 
 export const RemoveRetainsStaging: Story = {
-  name: "Preferred move - Remove retains staged replacement",
+  name: "Preferred move — Remove retains staged replacement",
   render: () => assignedWorkspace({ analysisClient: storyCandidateAnalysisClient(["d2d4"]) }),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -276,7 +278,7 @@ export const RemoveRetainsStaging: Story = {
 };
 
 export const PendingSave: Story = {
-  name: "Preferred move - pending Save retains confirmed and staged facts",
+  name: "Preferred move — pending Save retains confirmed and staged facts",
   render: () =>
     workspace(
       { analysisClient: storyCandidateAnalysisClient(["d2d4"]) },
@@ -301,7 +303,7 @@ export const PendingSave: Story = {
 };
 
 export const PendingRemove: Story = {
-  name: "Preferred move - pending Remove retains the saved choice",
+  name: "Preferred move — pending Remove retains the saved choice",
   render: () => assignedWorkspace({}, { pendingMutation: "remove" }),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -317,7 +319,7 @@ export const PendingRemove: Story = {
 };
 
 export const SaveFailureRetention: Story = {
-  name: "Preferred move - failed Save retains both facts",
+  name: "Preferred move — failed Save retains both facts",
   render: () =>
     workspace(
       { analysisClient: storyCandidateAnalysisClient(["d2d4"]) },
@@ -339,7 +341,7 @@ export const SaveFailureRetention: Story = {
 };
 
 export const RemoveFailureRetention: Story = {
-  name: "Preferred move - failed Remove retains the saved choice",
+  name: "Preferred move — failed Remove retains the saved choice",
   render: () => assignedWorkspace({}, { removeFailure: "unexpected_failure" }),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -356,7 +358,7 @@ export const RemoveFailureRetention: Story = {
 };
 
 export const PromotionPreferred: Story = {
-  name: "Preferred move - promotion stages the canonical move",
+  name: "Preferred move — promotion stages the canonical move",
   render: () =>
     workspace(
       {
@@ -386,8 +388,8 @@ export const PromotionPreferred: Story = {
 };
 
 export const AccessibilityAndResponsive: Story = {
-  name: "Preferred move - focus, accessibility, and no overflow",
-  parameters: constrainedViewport,
+  name: "Preferred move — focus, accessibility, and no overflow",
+  parameters: storyViewport("constrained-412"),
   render: () => assignedWorkspace({ analysisClient: storyCandidateAnalysisClient(["d2d4"]) }),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -404,7 +406,7 @@ export const AccessibilityAndResponsive: Story = {
 };
 
 export const FirstChoiceFromEmpty: Story = {
-  name: "Preferred move - first choice, seen, and Save",
+  name: "Preferred move — first choice, seen, and Save",
   render: () =>
     workspace(
       { analysisClient: storyCandidateAnalysisClient(["e2e4"]) },
@@ -440,7 +442,7 @@ export const FirstChoiceFromEmpty: Story = {
 };
 
 export const ZeroPersonalCount: Story = {
-  name: "Preferred move - zero personal count remains savable",
+  name: "Preferred move — zero personal count remains savable",
   render: () =>
     workspace(
       { analysisClient: storyCandidateAnalysisClient(["e2e4"]) },
@@ -462,7 +464,7 @@ export const ZeroPersonalCount: Story = {
 };
 
 export const AbsentUnsavable: Story = {
-  name: "Preferred move - absent overall remains savable",
+  name: "Preferred move — absent overall remains savable",
   render: () =>
     workspace(
       { analysisClient: storyCandidateAnalysisClient(["e2e4"]) },
@@ -484,7 +486,7 @@ export const AbsentUnsavable: Story = {
 };
 
 export const AssignedUnsavable: Story = {
-  name: "Preferred move - assigned move remains removable when unseen",
+  name: "Preferred move — assigned move remains removable when unseen",
   render: () => workspace({}, { relationship: "saved" }, { observedInGames: false }),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -501,7 +503,7 @@ export const AssignedUnsavable: Story = {
 };
 
 export const SavedChoiceStagesMove: Story = {
-  name: "Preferred move - saved choice stages on own turn",
+  name: "Preferred move — saved choice stages on own turn",
   render: () =>
     workspace(
       { analysisClient: storyCandidateAnalysisClient(["e2e4"]) },

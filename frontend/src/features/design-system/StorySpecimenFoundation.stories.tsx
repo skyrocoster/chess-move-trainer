@@ -4,7 +4,8 @@ import "../../styles/cmt-tokens.css";
 import { StorySpecimenFoundation } from "./StorySpecimenFoundation";
 
 const meta = {
-  title: "Design System/Documentation/Foundations",
+  title: "Reference/Design System/Foundations",
+  tags: ["status-reference"],
   component: StorySpecimenFoundation,
   parameters: {
     layout: "fullscreen",

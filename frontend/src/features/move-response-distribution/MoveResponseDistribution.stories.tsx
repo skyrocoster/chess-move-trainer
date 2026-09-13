@@ -60,7 +60,8 @@ function frame(children: ReactNode, narrow = false) {
 }
 
 const meta = {
-  title: "Application/Move Response Distribution",
+  title: "Production/Application/Move Response Distribution/Overview",
+  tags: ["status-production"],
   component: MoveResponseDistribution,
   parameters: {
     layout: "fullscreen",
@@ -82,7 +83,7 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const AvailableWithTail: Story = {
-  name: "Available - five common replies and Other tail",
+  name: "Available — five common replies and Other tail",
   args: { client: resolvedClient(response()) },
   render: (args) => frame(<MoveResponseDistribution {...args} />),
   play: async ({ args, canvasElement }) => {
@@ -130,7 +131,7 @@ export const AvailableWithTail: Story = {
 };
 
 export const AvailableWithoutTail: Story = {
-  name: "Available - no Other tail",
+  name: "Available — no Other tail",
   args: {
     client: resolvedClient(
       response({ replies: response().replies.slice(0, 5), outgoing_occurrence_count: 11 }),
@@ -147,7 +148,7 @@ export const AvailableWithoutTail: Story = {
 };
 
 export const Loading: Story = {
-  name: "Loading - replacement-safe request",
+  name: "Loading",
   args: { client: async () => new Promise(() => {}) },
   render: (args) => frame(<MoveResponseDistribution {...args} />),
   play: async ({ canvasElement }) => {
@@ -160,7 +161,7 @@ export const Loading: Story = {
 };
 
 export const NoGames: Story = {
-  name: "No games - successful empty data",
+  name: "Empty — no matching games",
   args: {
     client: resolvedClient(
       response({ matching_game_count: 0, outgoing_occurrence_count: 0, replies: [] }),
@@ -185,7 +186,7 @@ const unavailableThenSuccess: MoveResponseDistributionClient = async () => {
 };
 
 export const UnavailableWithRetry: Story = {
-  name: "Unavailable - retry current request",
+  name: "Unavailable — retry current request",
   args: { client: unavailableThenSuccess },
   render: (args) => frame(<MoveResponseDistribution {...args} />),
   play: async ({ canvasElement }) => {
@@ -197,7 +198,7 @@ export const UnavailableWithRetry: Story = {
 };
 
 export const MatchingGamesWithoutNextMoves: Story = {
-  name: "No next moves - matching games without outgoing occurrences",
+  name: "No next moves — matching games without outgoing occurrences",
   args: {
     client: resolvedClient(
       response({ matching_game_count: 4, outgoing_occurrence_count: 0, replies: [] }),
@@ -214,7 +215,7 @@ export const MatchingGamesWithoutNextMoves: Story = {
 };
 
 export const DenseTinySectorCluster: Story = {
-  name: "Dense tiny-sector cluster - user-reported regression layout",
+  name: "Dense tiny-sector cluster",
   args: {
     client: resolvedClient({
       fen: FEN,
@@ -243,7 +244,7 @@ export const DenseTinySectorCluster: Story = {
 };
 
 export const ConstrainedWidth: Story = {
-  name: "Constrained width - stacked controls",
+  name: "Constrained width — stacked controls",
   args: { client: resolvedClient(response()) },
   render: (args) => frame(<MoveResponseDistribution {...args} />, true),
   play: async ({ canvasElement }) => {

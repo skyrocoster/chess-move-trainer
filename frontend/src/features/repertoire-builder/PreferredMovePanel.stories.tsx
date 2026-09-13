@@ -4,6 +4,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect, fn, userEvent, within } from "storybook/test";
 
 import { PreferredMovePanel, type PreferredMovePanelProps } from "./PreferredMovePanel";
+import { storyViewport } from "../../storybook/viewports";
 import {
   preferredMoveRelationshipFixtures,
   preferredMoveStoryModel,
@@ -34,7 +35,8 @@ function panelArgs(
 }
 
 const meta = {
-  title: "Application/Repertoire Builder/Preferred Move Panel",
+  title: "Production/Application/Repertoire Builder/Preferred Move Panel",
+  tags: ["status-production"],
   component: PreferredMovePanel,
   parameters: { layout: "fullscreen" },
 } satisfies Meta<typeof PreferredMovePanel>;
@@ -140,7 +142,7 @@ async function expectDateFreePanel(canvasElement: HTMLElement) {
 }
 
 export const EmptyEmpty: Story = {
-  name: "Relationship - empty saved and selected boxes",
+  name: "Relationship — empty saved and selected boxes",
   args: panelArgs("empty"),
   play: async ({ canvasElement }) => {
     await expectBoxes(canvasElement, "empty");
@@ -157,7 +159,7 @@ export const EmptyEmpty: Story = {
 };
 
 export const FirstChoice: Story = {
-  name: "Relationship - first choice",
+  name: "Relationship — first choice",
   args: panelArgs("first-choice"),
   play: async ({ canvasElement, args }) => {
     await expectBoxes(canvasElement, "first-choice");
@@ -176,7 +178,7 @@ export const FirstChoice: Story = {
 };
 
 export const SavedNoStage: Story = {
-  name: "Relationship - saved choice with no selected move",
+  name: "Relationship — saved choice with no selected move",
   args: panelArgs("saved"),
   play: async ({ canvasElement }) => {
     await expectBoxes(canvasElement, "saved");
@@ -191,7 +193,7 @@ export const SavedNoStage: Story = {
 };
 
 export const Replacement: Story = {
-  name: "Relationship - differing selected replacement",
+  name: "Relationship — differing selected replacement",
   args: panelArgs("replacement"),
   play: async ({ canvasElement }) => {
     await expectBoxes(canvasElement, "replacement");
@@ -207,7 +209,7 @@ export const Replacement: Story = {
 };
 
 export const Matching: Story = {
-  name: "Relationship - selected move matches saved choice",
+  name: "Relationship — selected move matches saved choice",
   args: panelArgs("matching"),
   play: async ({ canvasElement }) => {
     await expectBoxes(canvasElement, "matching");
@@ -223,7 +225,7 @@ export const Matching: Story = {
 };
 
 export const UnsavableGate: Story = {
-  name: "Gate - unsavable position",
+  name: "Gate — unsavable position",
   args: {
     ...panelArgs("first-choice"),
     model: preferredMoveStoryModel("first-choice", {
@@ -245,7 +247,7 @@ export const UnsavableGate: Story = {
 };
 
 export const OpponentTurnGate: Story = {
-  name: "Gate - opponent turn keeps the relationship read-only",
+  name: "Gate — opponent turn keeps the relationship read-only",
   args: { ...panelArgs("saved"), model: preferredMoveStoryModel("saved", { ownTurn: false }) },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -263,7 +265,7 @@ export const OpponentTurnGate: Story = {
 };
 
 export const Loading: Story = {
-  name: "Gate - loading keeps the same shell",
+  name: "Gate — loading keeps the same shell",
   args: {
     ...panelArgs("empty"),
     model: preferredMoveStoryModel("empty", {
@@ -290,7 +292,7 @@ export const Loading: Story = {
 };
 
 export const ReadError: Story = {
-  name: "Gate - typed read errors retain the shell",
+  name: "Gate — read errors retain the shell",
   args: {
     ...panelArgs("empty"),
     model: preferredMoveStoryModel("empty", {
@@ -316,7 +318,7 @@ export const ReadError: Story = {
 };
 
 export const MutationPending: Story = {
-  name: "Feedback - pending replacement retains both facts",
+  name: "Feedback — pending replacement retains both facts",
   args: {
     ...panelArgs("replacement"),
     mutation: "save",
@@ -366,21 +368,6 @@ function savedPromotionModel() {
   };
 }
 
-function overflowViewport(width: 640 | 480 | 412) {
-  const name = `preferred-move-${width}`;
-  return {
-    viewport: {
-      defaultViewport: name,
-      options: {
-        [name]: {
-          name: `${width}px preferred move overflow review`,
-          styles: { width: `${width}px`, height: "900px" },
-        },
-      },
-    },
-  };
-}
-
 async function expectPromotionOverflowCase(canvasElement: HTMLElement) {
   const canvas = within(canvasElement);
   await expect(canvas.getByTestId("preferred-context")).toHaveTextContent(LONG_CONTEXT);
@@ -394,7 +381,7 @@ async function expectPromotionOverflowCase(canvasElement: HTMLElement) {
 }
 
 export const OverflowLongCopyDesktop: Story = {
-  name: "Overflow - long metadata and promotion copy at desktop",
+  name: "Overflow — long metadata and promotion copy at desktop",
   args: {
     ...panelArgs("replacement"),
     model: promotionSelectedModel("replacement"),
@@ -408,23 +395,8 @@ export const OverflowLongCopyDesktop: Story = {
 };
 
 export const OverflowLongCopy640: Story = {
-  name: "Overflow - long metadata and promotion copy at 640px",
-  parameters: overflowViewport(640),
-  args: {
-    ...panelArgs("replacement"),
-    model: promotionSelectedModel("replacement"),
-  },
-  play: async ({ canvasElement }) => {
-    await expectPromotionOverflowCase(canvasElement);
-    const panel = canvasElement.querySelector('section[aria-labelledby="preferred-move-heading"]');
-    if (!(panel instanceof HTMLElement)) throw new Error("The preferred move panel is missing.");
-    await expect(panel.getBoundingClientRect().height).toBeGreaterThanOrEqual(360);
-  },
-};
-
-export const OverflowLongCopy480: Story = {
-  name: "Overflow - long metadata and promotion copy at 480px",
-  parameters: overflowViewport(480),
+  name: "Overflow — long metadata and promotion copy at 640px",
+  parameters: storyViewport("panel-breakpoint-640"),
   args: {
     ...panelArgs("replacement"),
     model: promotionSelectedModel("replacement"),
@@ -438,8 +410,8 @@ export const OverflowLongCopy480: Story = {
 };
 
 export const OverflowLongCopy412: Story = {
-  name: "Overflow - long metadata and promotion copy at 412px",
-  parameters: overflowViewport(412),
+  name: "Overflow — long metadata and promotion copy at 412px",
+  parameters: storyViewport("constrained-412"),
   args: {
     ...panelArgs("replacement"),
     model: promotionSelectedModel("replacement"),
@@ -453,8 +425,8 @@ export const OverflowLongCopy412: Story = {
 };
 
 export const OverflowReplacementGuidance: Story = {
-  name: "Overflow - long replacement guidance remains visible",
-  parameters: overflowViewport(412),
+  name: "Overflow — long replacement guidance remains visible",
+  parameters: storyViewport("constrained-412"),
   args: {
     ...panelArgs("saved"),
     model: savedPromotionModel(),

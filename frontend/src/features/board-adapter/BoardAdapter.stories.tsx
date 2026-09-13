@@ -8,7 +8,8 @@ const RICH_FEN = "rn1qk2r/1bp1bpp1/pp1ppn1p/8/4PB2/2NP1NP1/PPPQ1PBP/R3K2R b KQkq
 const INVALID_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 99";
 
 const meta = {
-  title: "Application/Board/Read-only Board",
+  title: "Production/Application/Board/Read-only Board",
+  tags: ["status-production"],
   component: BoardAdapter,
 } satisfies Meta<typeof BoardAdapter>;
 
@@ -155,7 +156,7 @@ export const InvalidFen: Story = {
 };
 
 export const ExpandedPositionDescription: Story = {
-  name: "Expanded Position description",
+  name: "Expanded position description",
   args: {
     fen: RICH_FEN,
     label: "Rich position with expanded description",

@@ -60,7 +60,8 @@ const history = {
 };
 
 const meta = {
-  title: "Application/Repertoire Builder/Board Lane",
+  title: "Production/Application/Repertoire Builder/Board Lane",
+  tags: ["status-production"],
   component: RepertoireBoardLane,
   parameters: { layout: "fullscreen" },
   args: {

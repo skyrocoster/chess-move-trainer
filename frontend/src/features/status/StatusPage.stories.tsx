@@ -21,7 +21,8 @@ const queryClient = new QueryClient({
 });
 
 const meta = {
-  title: "Application/Status/Status Page",
+  title: "Production/Application/Status/Status Page",
+  tags: ["status-production"],
   component: StatusPage,
   parameters: { layout: "fullscreen" },
   decorators: [

@@ -5,11 +5,13 @@ import { expect, userEvent, within } from "storybook/test";
 import { MemoryRouter } from "react-router-dom";
 
 import { AppShell } from "./AppShell";
+import { storyViewport } from "../../storybook/viewports";
 import { PageContentBoundary } from "./PageContentBoundary";
 import { StatusView } from "../status/StatusView";
 
 const meta = {
-  title: "Application/Shell",
+  title: "Production/Application/Shell/App Shell",
+  tags: ["status-production"],
   component: AppShell,
   args: {
     children: <StatusView state={{ kind: "success" }} />,
@@ -30,29 +32,18 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 const healthy = <StatusView state={{ kind: "success" }} />;
-const constrainedViewport = {
-  viewport: {
-    defaultViewport: "cmt-constrained",
-    options: {
-      "cmt-constrained": {
-        name: "Constrained shell",
-        styles: { width: "412px", height: "915px" },
-      },
-    },
-  },
-};
 
 export const WideHealthy: Story = {
   render: () => <AppShell>{healthy}</AppShell>,
 };
 
 export const ConstrainedClosed: Story = {
-  parameters: constrainedViewport,
+  parameters: storyViewport("constrained-412"),
   render: () => <AppShell>{healthy}</AppShell>,
 };
 
 export const ConstrainedOpen: Story = {
-  parameters: constrainedViewport,
+  parameters: storyViewport("constrained-412"),
   render: () => <AppShell>{healthy}</AppShell>,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -102,6 +93,7 @@ function UnexpectedFailureComposition() {
 }
 
 export const UnexpectedFailureTryAgain: Story = {
+  name: "Error — try again recovers content",
   render: () => <UnexpectedFailureComposition />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -118,5 +110,6 @@ export const UnexpectedFailureTryAgain: Story = {
 
 // Browser proof owns the recovery click; reusing the play story would race its automated click.
 export const UnexpectedFailureBrowserProof: Story = {
+  name: "Error — manual recovery check",
   render: () => <UnexpectedFailureComposition />,
 };
