@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { InteractiveBoardAdapter } from "./InteractiveBoardAdapter";
 import { InteractiveBoardHarness } from "./InteractiveBoardHarness";
+import type { BoardAnswerPresentation } from "./answerPresentation";
 import type { BranchSnapshot } from "./branchModel";
 import { lastMoveFromSquares } from "./lastMove";
 
@@ -365,5 +366,238 @@ describe("InteractiveBoardAdapter", () => {
     expect(onMoveIntent).toHaveBeenCalledWith(
       expect.objectContaining({ sourceSquare: "e7", targetSquare: "e5" }),
     );
+  });
+});
+
+function renderAdapterWithAnswer(answer: BoardAnswerPresentation | null, lastMove = null) {
+  const branchSnapshot: BranchSnapshot = {
+    viewKey: "game:answer",
+    resetToken: 0,
+    originFen: BLACK_TO_MOVE_FEN,
+    currentFen: BLACK_TO_MOVE_FEN,
+    originPly: 1,
+    moves: [],
+    active: false,
+  };
+  const onMoveIntent = vi.fn(() => false);
+  render(
+    <InteractiveBoardAdapter
+      branchSnapshot={branchSnapshot}
+      lastMove={lastMove}
+      answer={answer}
+      label="Answer board"
+      notice="Make a move."
+      terminal={null}
+      promotionPending={null}
+      promotionColor="b"
+      promotionSourceElement={null}
+      promotionAnchorElement={null}
+      onMoveIntent={onMoveIntent}
+      onPromotionSelect={vi.fn()}
+      onPromotionCancel={vi.fn()}
+      onUndo={vi.fn()}
+      onReset={vi.fn()}
+    />,
+  );
+  return { onMoveIntent };
+}
+
+describe("InteractiveBoardAdapter answer presentation", () => {
+  it("highlights an attempted illegal move, locks interaction, and announces it", () => {
+    const { onMoveIntent } = renderAdapterWithAnswer({
+      status: "illegal",
+      attemptedMove: { sourceSquare: "e7", targetSquare: "e5" },
+      message: "That move cannot be played.",
+    });
+
+    expect(screen.getByTestId("board-square-e7")).toHaveAttribute("data-highlighted", "true");
+    expect(screen.getByTestId("board-square-e5")).toHaveAttribute("data-highlighted", "true");
+    expect(screen.getByTestId("interactive-board")).toHaveAttribute("data-locked", "true");
+    expect(screen.getByRole("group", { name: "Answer board" })).toHaveAttribute(
+      "aria-disabled",
+      "true",
+    );
+    expect(screen.getByTestId("board-answer-status")).toHaveTextContent(
+      "That move cannot be played.",
+    );
+    expect(screen.getByTestId("board-answer-status")).toHaveAttribute("role", "status");
+
+    fireEvent.click(screen.getByTestId("move-e7-e5"));
+    expect(onMoveIntent).not.toHaveBeenCalled();
+  });
+
+  it("keeps interaction allowed and no locked cue while awaiting input", () => {
+    const { onMoveIntent } = renderAdapterWithAnswer({ status: "awaiting-input" });
+
+    expect(screen.getByTestId("interactive-board")).toHaveAttribute("data-locked", "false");
+    expect(screen.getByRole("group", { name: "Answer board" })).not.toHaveAttribute(
+      "aria-disabled",
+    );
+    expect(screen.getByTestId("branch-current-fen")).toHaveTextContent(BLACK_TO_MOVE_FEN);
+    expect(screen.getByTestId("board-answer-status")).toHaveTextContent("Awaiting your move.");
+
+    fireEvent.click(screen.getByTestId("move-e7-e5"));
+    expect(onMoveIntent).toHaveBeenCalledWith(
+      expect.objectContaining({ sourceSquare: "e7", targetSquare: "e5" }),
+    );
+  });
+
+  it("shows both attempted and expected highlights for an incorrect legal move", () => {
+    renderAdapterWithAnswer({
+      status: "incorrect",
+      attemptedMove: { sourceSquare: "e7", targetSquare: "e5" },
+      expectedMove: { sourceSquare: "g8", targetSquare: "f6" },
+    });
+
+    expect(screen.getByTestId("board-square-e7")).toHaveAttribute("data-highlighted", "true");
+    expect(screen.getByTestId("board-square-e5")).toHaveAttribute("data-highlighted", "true");
+    expect(screen.getByTestId("board-square-g8")).toHaveAttribute("data-highlighted", "true");
+    expect(screen.getByTestId("board-square-f6")).toHaveAttribute("data-highlighted", "true");
+    expect(screen.getByTestId("interactive-board")).toHaveAttribute("data-locked", "true");
+    expect(screen.getByTestId("board-answer-status")).toHaveTextContent(
+      "That move is legal but not the expected move.",
+    );
+  });
+
+  it("renders a correct move with its played-move highlights and locked interaction", () => {
+    renderAdapterWithAnswer({
+      status: "correct",
+      attemptedMove: { sourceSquare: "e7", targetSquare: "e5" },
+    });
+
+    expect(screen.getByTestId("board-square-e7")).toHaveAttribute("data-highlighted", "true");
+    expect(screen.getByTestId("board-square-e5")).toHaveAttribute("data-highlighted", "true");
+    expect(screen.getByTestId("interactive-board")).toHaveAttribute("data-locked", "true");
+    expect(screen.getByTestId("board-answer-status")).toHaveTextContent("Correct move.");
+  });
+
+  it("reveals the expected move when the answer status is revealed", () => {
+    renderAdapterWithAnswer({
+      status: "revealed",
+      expectedMove: { sourceSquare: "d7", targetSquare: "d5" },
+    });
+
+    expect(screen.getByTestId("board-square-d7")).toHaveAttribute("data-highlighted", "true");
+    expect(screen.getByTestId("board-square-d5")).toHaveAttribute("data-highlighted", "true");
+    expect(screen.getByTestId("board-square-e7")).toHaveAttribute("data-highlighted", "false");
+    expect(screen.getByTestId("interactive-board")).toHaveAttribute("data-locked", "true");
+    expect(screen.getByTestId("board-answer-status")).toHaveAttribute(
+      "data-answer-status",
+      "revealed",
+    );
+  });
+
+  it("locks a disabled board without highlights but keeps last-move context", () => {
+    renderAdapterWithAnswer({ status: "disabled" }, lastMoveFromSquares("e7", "e5"));
+
+    expect(screen.getByTestId("interactive-board")).toHaveAttribute("data-locked", "true");
+    expect(screen.getByTestId("board-square-e7")).toHaveAttribute("data-highlighted", "true");
+    expect(screen.getByTestId("board-square-e5")).toHaveAttribute("data-highlighted", "true");
+    expect(screen.getByTestId("board-answer-status")).toHaveTextContent(
+      "The board is locked while the position updates.",
+    );
+  });
+
+  it("renders no announcement and stays unlocked when no answer is present", () => {
+    renderAdapterWithAnswer(null);
+
+    expect(screen.queryByTestId("board-answer-status")).not.toBeInTheDocument();
+    expect(screen.getByTestId("interactive-board")).toHaveAttribute("data-locked", "false");
+    expect(screen.getByRole("group", { name: "Answer board" })).not.toHaveAttribute(
+      "aria-disabled",
+    );
+  });
+
+  it("keeps its own last-move highlight alive alongside the answer interaction gate", () => {
+    const { onMoveIntent } = renderAdapterWithAnswer(
+      { status: "awaiting-input" },
+      lastMoveFromSquares("e7", "e5"),
+    );
+
+    expect(screen.getByTestId("board-square-e7")).toHaveAttribute("data-highlighted", "true");
+    expect(screen.getByTestId("board-square-e5")).toHaveAttribute("data-highlighted", "true");
+    expect(screen.getByTestId("interactive-board")).toHaveAttribute("data-locked", "false");
+
+    fireEvent.click(screen.getByTestId("move-e7-e5"));
+    expect(onMoveIntent).toHaveBeenCalledWith(
+      expect.objectContaining({ sourceSquare: "e7", targetSquare: "e5" }),
+    );
+  });
+});
+
+describe("InteractiveBoardHarness illegal highlighting", () => {
+  it("highlights a rejected illegal attempt while staying interactive", () => {
+    renderAdapter();
+
+    fireEvent.click(screen.getByTestId("move-e2-e5"));
+    expect(screen.getByTestId("branch-status")).toHaveTextContent("illegal");
+    expect(screen.getByTestId("board-square-e2")).toHaveAttribute("data-highlighted", "true");
+    expect(screen.getByTestId("board-square-e5")).toHaveAttribute("data-highlighted", "true");
+    expect(screen.getByTestId("interactive-board")).toHaveAttribute("data-locked", "false");
+  });
+
+  it("clears the illegal highlight after a legal move and after undo/reset", () => {
+    renderAdapter();
+
+    fireEvent.click(screen.getByTestId("move-e2-e5"));
+    expect(screen.getByTestId("board-square-e5")).toHaveAttribute("data-highlighted", "true");
+
+    fireEvent.click(screen.getByTestId("move-e2-e4"));
+    expect(screen.getByTestId("branch-san")).toHaveTextContent("1. e4");
+    expect(screen.getByTestId("board-square-e5")).toHaveAttribute("data-highlighted", "false");
+    expect(screen.getByTestId("board-square-e4")).toHaveAttribute("data-highlighted", "true");
+
+    fireEvent.click(screen.getByTestId("move-e2-e5"));
+    expect(screen.getByTestId("board-square-e5")).toHaveAttribute("data-highlighted", "true");
+
+    fireEvent.click(screen.getByRole("button", { name: "Undo" }));
+    expect(screen.getByTestId("board-square-e5")).toHaveAttribute("data-highlighted", "false");
+
+    fireEvent.click(screen.getByTestId("move-e2-e4"));
+    fireEvent.click(screen.getByTestId("move-e2-e5"));
+    expect(screen.getByTestId("board-square-e5")).toHaveAttribute("data-highlighted", "true");
+
+    fireEvent.click(screen.getByRole("button", { name: "Reset" }));
+    expect(screen.getByTestId("board-square-e2")).toHaveAttribute("data-highlighted", "false");
+    expect(screen.getByTestId("board-square-e5")).toHaveAttribute("data-highlighted", "false");
+  });
+
+  it("renders a directly supplied rejected move without locking interaction", () => {
+    const branchSnapshot: BranchSnapshot = {
+      viewKey: "game:rejected",
+      resetToken: 0,
+      originFen: STARTING_FEN,
+      currentFen: STARTING_FEN,
+      originPly: 0,
+      moves: [],
+      active: false,
+    };
+    const onMoveIntent = vi.fn(() => false);
+    render(
+      <InteractiveBoardAdapter
+        branchSnapshot={branchSnapshot}
+        lastMove={null}
+        rejectedMove={lastMoveFromSquares("e2", "e5")}
+        label="Rejected move board"
+        notice="Move rejected because it is illegal."
+        terminal={null}
+        promotionPending={null}
+        promotionColor="w"
+        promotionSourceElement={null}
+        promotionAnchorElement={null}
+        onMoveIntent={onMoveIntent}
+        onPromotionSelect={vi.fn()}
+        onPromotionCancel={vi.fn()}
+        onUndo={vi.fn()}
+        onReset={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByTestId("board-square-e2")).toHaveAttribute("data-highlighted", "true");
+    expect(screen.getByTestId("board-square-e5")).toHaveAttribute("data-highlighted", "true");
+    expect(screen.getByTestId("interactive-board")).toHaveAttribute("data-locked", "false");
+
+    fireEvent.click(screen.getByTestId("move-e2-e4"));
+    expect(onMoveIntent).toHaveBeenCalled();
   });
 });

@@ -1,0 +1,31 @@
+{
+  "name": "real-games-list",
+  "measured_at_utc": "2026-09-14T13:05:14.910662+00:00",
+  "endpoint": "/api/games",
+  "params": {
+    "page": 1,
+    "page_size": 50
+  },
+  "database": {
+    "kind": "real",
+    "file_name": "chess.db",
+    "size_bytes": 148500480
+  },
+  "repeats": 3,
+  "timeout_s": 60.0,
+  "samples_ms": [
+    88901.62,
+    88187.938,
+    88522.39
+  ],
+  "stats": {
+    "count": 3,
+    "min_ms": 88187.938,
+    "median_ms": 88522.39,
+    "mean_ms": 88537.316,
+    "max_ms": 88901.62
+  },
+  "threshold_median_ms": 120000.0,
+  "items_returned": 50,
+  "total_reported": 12710
+}

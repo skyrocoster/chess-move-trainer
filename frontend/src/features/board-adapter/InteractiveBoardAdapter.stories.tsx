@@ -3,6 +3,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 
 import "../../styles/cmt-tokens.css";
 import "../../styles/cmt-typescale.css";
+import type { BoardAnswerPresentation } from "./answerPresentation";
 import { InteractiveBoardHarness } from "./InteractiveBoardHarness";
 import styles from "./PromotionPicker.module.css";
 
@@ -298,5 +299,134 @@ export const ConstrainedWidth: Story = {
     await expect(canvas.getByTestId("branch-current-fen")).toHaveTextContent(STARTING_FEN);
     await expect(canvas.getByRole("button", { name: "Copy branch origin FEN" })).toBeVisible();
     await expect(canvas.getByRole("button", { name: "Copy current branch FEN" })).toBeVisible();
+  },
+};
+
+const answerStoryFrame =
+  (answer: BoardAnswerPresentation) =>
+  (args: { viewKey: string; originFen: string; originPly: number; label: string }) =>
+    frame(<InteractiveBoardHarness {...args} answer={answer} />);
+
+const answerStoryArgs = {
+  viewKey: "story:answer",
+  originFen: STARTING_FEN,
+  originPly: 0,
+  label: "Interactive answer board",
+} as const;
+
+async function expectAnswerStatus(
+  canvasElement: HTMLElement,
+  message: string,
+  lock: "true" | "false",
+) {
+  const canvas = within(canvasElement);
+  const status = canvas.getByTestId("board-answer-status");
+  await expect(status).toHaveTextContent(message);
+  await expect(status).toHaveAttribute("role", "status");
+  await expect(canvasElement.querySelector('[data-testid="interactive-board"]')).toHaveAttribute(
+    "data-locked",
+    lock,
+  );
+}
+
+export const AnswerAwaitingInput: Story = {
+  name: "Answer: awaiting input",
+  args: { ...answerStoryArgs },
+  render: answerStoryFrame({ status: "awaiting-input" }),
+  play: async ({ canvasElement }) => {
+    await expectAnswerStatus(canvasElement, "Awaiting your move.", "false");
+    const group = within(canvasElement).getByRole("group", { name: "Interactive answer board" });
+    await expect(group).not.toHaveAttribute("aria-disabled");
+  },
+};
+
+export const AnswerIllegal: Story = {
+  name: "Answer: illegal attempted move",
+  args: { ...answerStoryArgs },
+  render: answerStoryFrame({
+    status: "illegal",
+    attemptedMove: { sourceSquare: "e2", targetSquare: "e4" },
+  }),
+  play: async ({ canvasElement }) => {
+    await expectAnswerStatus(canvasElement, "That move is illegal here.", "true");
+    const group = within(canvasElement).getByRole("group", { name: "Interactive answer board" });
+    await expect(group).toHaveAttribute("aria-disabled", "true");
+  },
+};
+
+export const AnswerIncorrect: Story = {
+  name: "Answer: incorrect legal move with expected reveal",
+  args: { ...answerStoryArgs },
+  render: answerStoryFrame({
+    status: "incorrect",
+    attemptedMove: { sourceSquare: "e2", targetSquare: "e4" },
+    expectedMove: { sourceSquare: "g1", targetSquare: "f3" },
+  }),
+  play: async ({ canvasElement }) => {
+    await expectAnswerStatus(
+      canvasElement,
+      "That move is legal but not the expected move.",
+      "true",
+    );
+  },
+};
+
+export const AnswerCorrect: Story = {
+  name: "Answer: correct move",
+  args: { ...answerStoryArgs },
+  render: answerStoryFrame({
+    status: "correct",
+    attemptedMove: { sourceSquare: "g1", targetSquare: "f3" },
+  }),
+  play: async ({ canvasElement }) => {
+    await expectAnswerStatus(canvasElement, "Correct move.", "true");
+  },
+};
+
+export const AnswerRevealed: Story = {
+  name: "Answer: revealed expected move",
+  args: { ...answerStoryArgs },
+  render: answerStoryFrame({
+    status: "revealed",
+    expectedMove: { sourceSquare: "e2", targetSquare: "e4" },
+  }),
+  play: async ({ canvasElement }) => {
+    await expectAnswerStatus(
+      canvasElement,
+      "The expected move is highlighted on the board.",
+      "true",
+    );
+  },
+};
+
+export const AnswerDisabled: Story = {
+  name: "Answer: locked while updating",
+  args: { ...answerStoryArgs },
+  render: answerStoryFrame({ status: "disabled" }),
+  play: async ({ canvasElement }) => {
+    await expectAnswerStatus(
+      canvasElement,
+      "The board is locked while the position updates.",
+      "true",
+    );
+  },
+};
+
+export const AnswerWithContext: Story = {
+  name: "Answer: awaiting input with last-move context",
+  args: {
+    viewKey: "story:answer-context",
+    originFen: STARTING_FEN,
+    originPly: 0,
+    label: "Interactive answer board with context",
+  },
+  render: answerStoryFrame({ status: "awaiting-input" }),
+  play: async ({ canvasElement }) => {
+    await startWhitePawnBranch(canvasElement);
+    const canvas = within(canvasElement);
+    await expect(canvas.getByTestId("board-answer-status")).toHaveTextContent(
+      "Awaiting your move.",
+    );
+    await expect(canvas.getByTestId("interactive-board")).toHaveAttribute("data-locked", "false");
   },
 };

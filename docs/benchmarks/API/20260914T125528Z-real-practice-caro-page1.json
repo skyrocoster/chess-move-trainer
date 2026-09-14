@@ -1,0 +1,35 @@
+{
+  "name": "real-practice-caro-page1",
+  "measured_at_utc": "2026-09-14T12:55:28.546120+00:00",
+  "endpoint": "/api/positions/training-requirements",
+  "params": {
+    "as_of": "2026-09-14",
+    "training_requirement_lt": 0,
+    "opening_key": "B10:Caro-Kann Defense",
+    "opening_match": "reached",
+    "page": 1,
+    "page_size": 100
+  },
+  "database": {
+    "kind": "real",
+    "file_name": "chess.db",
+    "size_bytes": 148500480
+  },
+  "repeats": 3,
+  "timeout_s": 60.0,
+  "samples_ms": [
+    6060.199,
+    5891.518,
+    6000.256
+  ],
+  "stats": {
+    "count": 3,
+    "min_ms": 5891.518,
+    "median_ms": 6000.256,
+    "mean_ms": 5983.991,
+    "max_ms": 6060.199
+  },
+  "threshold_median_ms": 60000.0,
+  "items_returned": 4,
+  "total_reported": 4
+}

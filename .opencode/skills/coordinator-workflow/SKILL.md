@@ -109,8 +109,9 @@ tool or constraint. Temporary maintenance violations do not block Plan acceptanc
 complete repository-suite closeout.
 
 After behavioral proof and any required human or visual breakpoint pass, update only the active Plan's progress,
-decisions, and concise proof. When every stage is accepted, set the Plan to done, remove any transient
-`handoff.md`, and move its feature directory from `docs/plans/active/` to `docs/plans/done/`. Complete test/fix
-runs belong to a separate maintenance workflow and do not block Plan completion.
+decisions, and concise proof. An active Plan may contain one transient `handoff.md` during context rollover; it is
+coordinator-reviewed, overwritten on rollover, and deleted at closeout. When every stage is accepted, set the Plan to
+done, remove any transient `handoff.md`, and move its feature directory from `docs/plans/active/` to
+`docs/plans/done/`. Complete test/fix runs belong to a separate maintenance workflow and do not block Plan completion.
 
 Never create legacy lifecycle artifacts, commit, push, rewrite completed records, or disturb unrelated changes.

@@ -75,7 +75,11 @@ async function loadGame(
   fireEvent.change(screen.getByLabelText("Game UUID"), { target: { value: GAME_UUID } });
   await user.click(screen.getByRole("button", { name: "Load game" }));
   await waitFor(() =>
-    expect(screen.getByTestId("session-origin")).toHaveTextContent("complete game loaded"),
+    expect(
+      within(screen.getByTestId("board-move-history")).getByRole("button", {
+        name: "White, move 1, e4",
+      }),
+    ).toBeVisible(),
   );
   return user;
 }
@@ -107,9 +111,7 @@ describe("RepertoireBuilderWorkspace", () => {
     const clients = testClients();
     renderWorkspace(clients);
 
-    expect(screen.getByTestId("session-origin")).toHaveTextContent(
-      "Standard starting position; local session begins at Ply 0. Current Ply 0.",
-    );
+    expect(screen.queryByTestId("session-origin")).not.toBeInTheDocument();
     expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", STARTING_FEN);
     expect(screen.getByRole("button", { name: "Previous" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Next" })).toBeDisabled();
@@ -133,7 +135,6 @@ describe("RepertoireBuilderWorkspace", () => {
       signal: expect.any(AbortSignal),
     });
     expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", STARTING_FEN);
-    expect(screen.getByTestId("session-origin")).toHaveTextContent("Current Ply 0.");
     expect(historyEntry("Initial position")).toHaveAttribute("aria-current", "step");
     expect(historyEntry("White, move 1, e4")).toBeVisible();
     expect(historyEntry("Black, move 1, e5")).toBeVisible();
@@ -147,7 +148,6 @@ describe("RepertoireBuilderWorkspace", () => {
     const user = await loadGame(successfulGameClient(), clients);
 
     await user.click(screen.getByRole("button", { name: "Next" }));
-    expect(screen.getByTestId("session-origin")).toHaveTextContent("Current Ply 1.");
     expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", AFTER_E4_FEN);
     expect(historyEntry("White, move 1, e4")).toHaveAttribute("aria-current", "step");
     await waitFor(() =>
@@ -160,10 +160,8 @@ describe("RepertoireBuilderWorkspace", () => {
     expect(screen.getByRole("button", { name: "Previous" })).toBeEnabled();
 
     await user.click(historyEntry("White, move 2, Nf3"));
-    expect(screen.getByTestId("session-origin")).toHaveTextContent("Current Ply 3.");
     expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", AFTER_NF3_FEN);
     await user.click(historyEntry("Initial position"));
-    expect(screen.getByTestId("session-origin")).toHaveTextContent("Current Ply 0.");
   });
 
   it("advances a recorded UCI move immediately and derives the trainer transition from its parent", async () => {
@@ -176,7 +174,6 @@ describe("RepertoireBuilderWorkspace", () => {
 
     await user.click(screen.getByTestId("move-e2-e4"));
     expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", AFTER_E4_FEN);
-    expect(screen.getByTestId("session-origin")).toHaveTextContent("Current Ply 1.");
     expect(historyEntry("White, move 1, e4")).toHaveAttribute("aria-current", "step");
     expect(screen.getByTestId("selected-move")).toHaveTextContent("e4");
     expect(screen.getByRole("button", { name: "Save e4" })).toBeVisible();
@@ -207,7 +204,6 @@ describe("RepertoireBuilderWorkspace", () => {
     const branch = screen.getByLabelText("Temporary branch");
     await user.click(within(branch).getByRole("button", { name: "Reset" }));
     expect(screen.queryByLabelText("Temporary branch")).not.toBeInTheDocument();
-    expect(screen.getByTestId("session-origin")).toHaveTextContent("Current Ply 0.");
     expect(historyEntry("White, move 1, e4")).toBeVisible();
     expect(screen.getByRole("button", { name: "Next" })).toBeEnabled();
   });
@@ -219,15 +215,17 @@ describe("RepertoireBuilderWorkspace", () => {
     await user.click(screen.getByTestId("move-e2-e4"));
     const loaderActions = screen.getByRole("button", { name: "Load game" }).parentElement!;
     await user.click(within(loaderActions).getByRole("button", { name: "Reset" }));
-    expect(screen.getByTestId("session-origin")).toHaveTextContent("Standard starting position");
-    expect(screen.getByTestId("session-origin")).toHaveTextContent("Current Ply 0.");
+    expect(screen.queryByTestId("session-origin")).not.toBeInTheDocument();
 
     fireEvent.change(screen.getByLabelText("Game UUID"), { target: { value: GAME_UUID } });
     await user.click(screen.getByRole("button", { name: "Load game" }));
     await waitFor(() =>
-      expect(screen.getByTestId("session-origin")).toHaveTextContent("complete game loaded"),
+      expect(
+        within(screen.getByTestId("board-move-history")).getByRole("button", {
+          name: "White, move 1, e4",
+        }),
+      ).toBeVisible(),
     );
-    expect(screen.getByTestId("session-origin")).toHaveTextContent("Current Ply 0.");
     expect(screen.getByRole("button", { name: "Next" })).toBeEnabled();
   });
 
@@ -269,7 +267,7 @@ describe("RepertoireBuilderWorkspace", () => {
     const loaderActions = screen.getByRole("button", { name: "Load game" }).parentElement!;
     await user.click(within(loaderActions).getByRole("button", { name: "Reset" }));
     expect(signal?.aborted).toBe(true);
-    expect(screen.getByTestId("session-origin")).toHaveTextContent("Standard starting position");
+    expect(screen.queryByTestId("session-origin")).not.toBeInTheDocument();
     resolve({ data: GAME_DETAIL, error: undefined });
   });
 
@@ -292,7 +290,6 @@ describe("RepertoireBuilderWorkspace", () => {
       expect.any(AbortSignal),
     );
     expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", AFTER_E4_FEN);
-    expect(screen.getByTestId("session-origin")).toHaveTextContent("Current Ply 1.");
   });
 
   it("refetches context for the opposite trainer color when the board flips", async () => {
@@ -316,6 +313,30 @@ describe("RepertoireBuilderWorkspace", () => {
       ),
     );
     expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", STARTING_FEN);
-    expect(screen.getByTestId("session-origin")).toHaveTextContent("Current Ply 0.");
+  });
+
+  it("highlights an illegal board attempt and clears it on the next legal move", async () => {
+    const clients = testClients();
+    const user = userEvent.setup();
+    renderWorkspace(clients);
+    await waitFor(() =>
+      expect(clients.positionContextClient).toHaveBeenCalledWith(
+        STARTING_FEN,
+        "white",
+        expect.any(AbortSignal),
+      ),
+    );
+
+    expect(screen.getByTestId("board-square-e5")).toHaveAttribute("data-highlighted", "false");
+
+    await user.click(screen.getByTestId("move-e2-e5"));
+    expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", STARTING_FEN);
+    expect(screen.getByTestId("board-square-e2")).toHaveAttribute("data-highlighted", "true");
+    expect(screen.getByTestId("board-square-e5")).toHaveAttribute("data-highlighted", "true");
+
+    await user.click(screen.getByTestId("move-e2-e4"));
+    expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", AFTER_E4_FEN);
+    expect(screen.getByTestId("board-square-e5")).toHaveAttribute("data-highlighted", "false");
+    expect(screen.getByTestId("board-square-e4")).toHaveAttribute("data-highlighted", "true");
   });
 });

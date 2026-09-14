@@ -16,6 +16,9 @@ EXPECTED_OPERATION_IDS: dict[str, dict[str, str]] = {
     "/api/openings": {"get": "getOpenings"},
     "/api/openings/{opening_key}": {"get": "getOpeningByKey"},
     "/api/positions/insight": {"get": "getPositionInsight"},
+    "/api/positions/training-requirements": {
+        "get": "getPositionTrainingRequirements"
+    },
     "/api/analysis": {"get": "getAnalysis"},
     "/api/analysis-requests": {"post": "requestAnalysis"},
     "/api/preferred-moves": {
@@ -74,6 +77,13 @@ def test_docs_and_served_openapi_remain_available() -> None:
     assert "/api/openings/{opening_key}" in served_spec["paths"]
     assert "/api/openings/line-library" not in served_spec["paths"]
     assert "/api/positions/insight" in served_spec["paths"]
+    assert "/api/positions/training-requirements" in served_spec["paths"]
+    assert "trainer_color" in {
+        parameter["name"]
+        for parameter in served_spec["paths"]["/api/positions/training-requirements"]["get"][
+            "parameters"
+        ]
+    }
     assert "/api/analysis" in served_spec["paths"]
     assert "/api/analysis-requests" in served_spec["paths"]
     assert "/api/preferred-moves" in served_spec["paths"]

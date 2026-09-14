@@ -24,13 +24,6 @@ export function boardLabel(
   return `Chess board: game ${session.mainLine!.gameUuid}, ply ${session.currentPosition.ply}, ${orientationLabel}`;
 }
 
-export function originDescription(session: PositionPickerSessionBoundary): string {
-  if (session.kind === "fresh") {
-    return "Standard starting position; local session begins at Ply 0.";
-  }
-  return `Game ${session.mainLine!.gameUuid}; complete game loaded at Ply 0.`;
-}
-
 export function sessionViewKey(session: PositionPickerSessionBoundary): string {
   return session.kind === "fresh"
     ? "repertoire:standard"

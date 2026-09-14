@@ -21,6 +21,7 @@ from chess_move_trainer.database.positions import (
 DEFAULT_POLICY = TrainingRequirementPolicy(0.8, 30)
 TARGET_FEN = "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 1"
 ANCHOR_FEN = "rnbqkb1r/pppppppp/5n2/8/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 1"
+BLACK_TARGET_FEN = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1"
 
 
 def _position_fen(*moves: str) -> str:
@@ -163,6 +164,15 @@ def _item(page, preferred_move: str, fen: str | None = None):
     )
 
 
+def _add_black_training_item(database: Path) -> None:
+    position_id = PositionRepository(database).resolve_fen(BLACK_TARGET_FEN)
+    with sqlite3.connect(database) as connection:
+        _game(connection, 8, "black", "2026-01-10T00:00:00Z")
+        _occurrence(connection, 8, 1, position_id, "e7e5")
+        _preference(connection, position_id, (("2026-01-01", None, "d7d5"),))
+        _opening_route(connection, position_id, "C00", "Black Label")
+
+
 def test_discovery_counts_eligible_repeated_occurrences_and_current_preference(
     tmp_path: Path,
 ) -> None:
@@ -259,12 +269,64 @@ def test_opening_filters_use_game_association_without_recalculating_global_evide
     ).encounters == 3
 
 
+def test_trainer_color_filter_intersects_due_and_opening_filters(tmp_path: Path) -> None:
+    database, _positions = _fixture(tmp_path)
+    _add_black_training_item(database)
+
+    global_due = discover_training_requirements(
+        database,
+        TrainingRequirementQuery("2026-01-25", training_requirement_lt=0),
+        DEFAULT_POLICY,
+    )
+    black_due = discover_training_requirements(
+        database,
+        TrainingRequirementQuery(
+            "2026-01-25",
+            training_requirement_lt=0,
+            trainer_color="black",
+        ),
+        DEFAULT_POLICY,
+    )
+    combined = discover_training_requirements(
+        database,
+        TrainingRequirementQuery(
+            "2026-01-25",
+            training_requirement_lt=0,
+            trainer_color="black",
+            opening_key="C00:Black Label",
+            opening_match="reached",
+        ),
+        DEFAULT_POLICY,
+    )
+    empty = discover_training_requirements(
+        database,
+        TrainingRequirementQuery(
+            "2026-01-25",
+            training_requirement_lt=0,
+            trainer_color="black",
+            opening_key="A00:Early Label",
+            opening_match="reached",
+        ),
+        DEFAULT_POLICY,
+    )
+
+    assert len(global_due.items) == 2
+    assert all(item.training_required for item in global_due.items)
+    assert [item.trainer_color for item in black_due.items] == ["black"]
+    assert len(combined.items) == 1
+    assert combined.items[0].fen == BLACK_TARGET_FEN.rsplit(" ", 2)[0] + " 0 1"
+    assert combined.items[0].preferred_move_uci == "d7d5"
+    assert empty.items == ()
+    assert empty.total == 0
+
+
 @pytest.mark.parametrize(
     "kwargs",
     [
         {},
         {"training_requirement_gt": float("nan")},
         {"training_requirement_gt": 2, "training_requirement_lt": 1},
+        {"training_requirement_lt": 0, "trainer_color": "purple"},
         {"opening_key": "A00:Early Label"},
         {"opening_match": "reached"},
         {"page": 0},

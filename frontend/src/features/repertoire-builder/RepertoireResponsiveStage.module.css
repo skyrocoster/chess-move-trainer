@@ -45,6 +45,10 @@
   align-items: stretch;
 }
 
+.group > [id="board"] {
+  max-inline-size: calc(40rem + 30px + var(--cmt-spacing-24));
+}
+
 .panel {
   min-inline-size: 0;
 }

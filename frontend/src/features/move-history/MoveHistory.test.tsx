@@ -116,7 +116,7 @@ describe("MoveHistory", () => {
     );
   });
 
-  it("scrolls the active row into view when it changes", async () => {
+  it("keeps the active row inside the history list without scrolling the page", async () => {
     const originalScrollIntoView = HTMLElement.prototype.scrollIntoView;
     const scrollIntoView = vi.fn();
     Object.defineProperty(HTMLElement.prototype, "scrollIntoView", {
@@ -126,7 +126,7 @@ describe("MoveHistory", () => {
 
     try {
       const { rerender } = renderHistory(0);
-      expect(scrollIntoView).toHaveBeenCalledWith({ behavior: "auto", block: "nearest" });
+      expect(scrollIntoView).not.toHaveBeenCalled();
       scrollIntoView.mockClear();
 
       rerender(
@@ -137,8 +137,9 @@ describe("MoveHistory", () => {
         />,
       );
       await waitFor(() =>
-        expect(scrollIntoView).toHaveBeenCalledWith({ behavior: "auto", block: "nearest" }),
+        expect(screen.getByRole("button", { name: "White, move 2, Nf3" })).toHaveFocus(),
       );
+      expect(scrollIntoView).not.toHaveBeenCalled();
     } finally {
       if (originalScrollIntoView) {
         Object.defineProperty(HTMLElement.prototype, "scrollIntoView", {

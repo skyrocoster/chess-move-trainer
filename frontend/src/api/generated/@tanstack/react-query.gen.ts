@@ -11,6 +11,7 @@ import {
   getOpeningByKey,
   getOpenings,
   getPositionInsight,
+  getPositionTrainingRequirements,
   getPreferredMoves,
   type Options,
 } from "../sdk.gen";
@@ -35,6 +36,9 @@ import type {
   GetPositionInsightData,
   GetPositionInsightError,
   GetPositionInsightResponse,
+  GetPositionTrainingRequirementsData,
+  GetPositionTrainingRequirementsError,
+  GetPositionTrainingRequirementsResponse,
   GetPreferredMovesData,
   GetPreferredMovesError,
   GetPreferredMovesResponse,
@@ -247,6 +251,34 @@ export const getPositionInsightOptions = (options: Options<GetPositionInsightDat
       return data;
     },
     queryKey: getPositionInsightQueryKey(options),
+  });
+
+export const getPositionTrainingRequirementsQueryKey = (
+  options: Options<GetPositionTrainingRequirementsData>,
+) => createQueryKey("getPositionTrainingRequirements", options);
+
+/**
+ * Get Position Training Requirements
+ */
+export const getPositionTrainingRequirementsOptions = (
+  options: Options<GetPositionTrainingRequirementsData>,
+) =>
+  queryOptions<
+    GetPositionTrainingRequirementsResponse,
+    GetPositionTrainingRequirementsError,
+    GetPositionTrainingRequirementsResponse,
+    ReturnType<typeof getPositionTrainingRequirementsQueryKey>
+  >({
+    queryFn: async ({ queryKey, signal }) => {
+      const { data } = await getPositionTrainingRequirements({
+        ...options,
+        ...queryKey[0],
+        signal,
+        throwOnError: true,
+      });
+      return data;
+    },
+    queryKey: getPositionTrainingRequirementsQueryKey(options),
   });
 
 export const getPreferredMovesQueryKey = (options: Options<GetPreferredMovesData>) =>

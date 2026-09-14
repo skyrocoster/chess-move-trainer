@@ -212,7 +212,6 @@ export const StoredPrefixBlackSubject: Story = {
         name: `Chess board: game ${GAME_UUID}, ply 2, Black at the bottom`,
       }),
     ).toBeVisible();
-    await expect(canvas.getByTestId("session-origin")).toHaveTextContent("Current Ply 2");
     await expectSessionHistory(canvasElement, [
       "Initial position",
       "White, move 1, e4",
@@ -244,7 +243,6 @@ export const StagedMy: Story = {
     await expectSingleStagedStatus(canvasElement);
     await expectPositionSquares(canvasElement, "e2", 0);
     await expectPositionSquares(canvasElement, "e4", 1);
-    await expect(canvas.getByTestId("session-origin")).toHaveTextContent("Current Ply 1");
     await expectSessionHistory(canvasElement, ["Initial position", "White, move 1, e4"]);
     await expectActiveSessionHistoryEntry(canvasElement, "White, move 1, e4");
     await expect(meter).toHaveAttribute("aria-valuetext", "Best-line evaluation +0.34.");
@@ -290,7 +288,7 @@ export const SelectedPositionAnalysisLifecycle: Story = {
     ).not.toBeInTheDocument();
 
     await userEvent.click(analysisQueries.getByRole("button", { name: "1. e4" }));
-    await expect(canvas.getByTestId("session-status")).toHaveTextContent(
+    await expect(canvas.getByTestId("branch-status")).toHaveTextContent(
       "Move played locally: e4.",
     );
     await expectSessionHistory(canvasElement, ["Initial position", "White, move 1, e4"]);
@@ -311,9 +309,6 @@ export const OpponentImmediate: Story = {
     await loadGame(canvas, GAME_UUID);
     await userEvent.click(await canvas.findByRole("button", { name: "Black, move 1, e5" }));
     await userEvent.click(await canvas.findByRole("button", { name: "2. Nf3" }));
-    await expect(canvas.getByTestId("session-status")).toHaveTextContent(
-      "Move played locally: Nf3.",
-    );
     await expectSessionHistory(canvasElement, [
       "Initial position",
       "White, move 1, e4",
@@ -346,7 +341,6 @@ export const ConstrainedStoredPrefixAndLocalLine: Story = {
       "White, move 2, Nf3",
     ]);
     await expectActiveSessionHistoryEntry(canvasElement, "White, move 2, Nf3");
-    await expect(canvas.getByTestId("session-origin")).toHaveTextContent("Current Ply 3");
     await expectPreferredMoveState(canvasElement, "empty");
     await expectPositionReachFrequency(canvasElement, "available", "Black", "2 / 10 games", "20%");
     await expectNoHorizontalOverflow(canvasElement);
@@ -367,7 +361,7 @@ export const CandidateActivation: Story = {
     await expectPositionSquares(canvasElement, "e4", 1);
     await expectSessionHistory(canvasElement, ["Initial position", "White, move 1, e4"]);
     await expectActiveSessionHistoryEntry(canvasElement, "White, move 1, e4");
-    await expect(canvas.getByTestId("session-status")).toHaveTextContent(
+    await expect(canvas.getByTestId("branch-status")).toHaveTextContent(
       "Move played locally: e4.",
     );
     await expectPreferredMoveState(canvasElement, "empty");
@@ -425,7 +419,7 @@ export const FlipCancellation: Story = {
     await expectPositionSquares(canvasElement, "e2", 0);
     await expectPositionSquares(canvasElement, "e4", 1);
     await userEvent.click(canvas.getByRole("button", { name: "Flip" }));
-    await expect(canvas.getByTestId("session-status")).toHaveTextContent(
+    await expect(canvas.getByTestId("branch-status")).toHaveTextContent(
       "Flipped to Black at the bottom.",
     );
     await expect(await sharedPositionSummary(canvasElement)).toHaveTextContent(
@@ -470,7 +464,6 @@ export const Promotion: Story = {
         '[data-position-side="w"] [data-position-piece="n"]',
       ),
     ).toBeTruthy();
-    await expect(canvas.getByTestId("session-origin")).toHaveTextContent("Current Ply 1");
     await expectSessionHistory(canvasElement, ["Initial position", "White, move 1, e8=N"]);
   },
 };
@@ -547,15 +540,12 @@ export const ResponseDistributionIntegration: Story = {
     ).toBeVisible();
     await expect(distributionQueries.queryByText("Queen's Pawn Game")).not.toBeInTheDocument();
 
-    const status = canvas.getByTestId("session-status");
-    const beforeDisclosure = status.textContent;
     const other = distributionQueries.getByRole("button", { name: /Show other replies/ });
     await userEvent.click(other);
     await expect(other).toHaveAttribute("aria-expanded", "true");
     await expect(
       distributionQueries.getByRole("button", { name: /Bc4, 1 occurrences, 8.3%/ }),
     ).toBeVisible();
-    await expect(status).toHaveTextContent(beforeDisclosure ?? "");
     await userEvent.click(other);
     await expect(other).toHaveAttribute("aria-expanded", "false");
     await userEvent.click(analysisTab);

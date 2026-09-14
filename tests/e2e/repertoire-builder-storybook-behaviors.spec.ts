@@ -36,10 +36,9 @@ test.describe("Repertoire Builder Storybook behaviors", () => {
 
     for (const entry of cases) {
       await openStory(page, STORY_IDS.responseDistribution, entry.width, entry.height);
-      await expect(page.getByTestId("session-origin")).toContainText(
-        "complete game loaded at Ply 0. Current Ply 2.",
-        { timeout: 30_000 },
-      );
+      await expect(
+        page.getByTestId("board-move-history").getByRole("button", { name: "Black, move 1, e5" }),
+      ).toBeVisible({ timeout: 30_000 });
       await expectResponsiveComposition(
         page,
         entry.mode,
@@ -95,9 +94,6 @@ test.describe("Repertoire Builder Storybook behaviors", () => {
       await expect(
         distribution.getByRole("button", { name: /Bc4, 1 occurrences, 8.3%/ }),
       ).toBeVisible();
-      await expect(page.getByTestId("session-status")).toContainText(
-        "Moved to the selected history position.",
-      );
       const panelDimensions = await distribution.evaluate((element) => ({
         clientWidth: element.clientWidth,
         scrollWidth: element.scrollWidth,
@@ -117,10 +113,10 @@ test.describe("Repertoire Builder Storybook behaviors", () => {
       const common = distribution.getByRole("button", { name: /Nf3, 4 occurrences, 33.3%/ });
       await common.focus();
       await page.keyboard.press("Enter");
-      await expect(page.getByTestId("session-status")).toContainText(
+      await expect(page.getByTestId("branch-status")).toContainText(
         "Move played locally: Nf3.",
       );
-      await expect(page.getByTestId("session-origin")).toContainText("Current Ply 3.");
+      await expectActiveSessionHistoryEntry(page, "White, move 2, Nf3");
       await analysisTab.click();
       await expect(engineLane.getByTestId("tabs-panel-move-responses")).toHaveAttribute(
         "hidden",
@@ -129,10 +125,9 @@ test.describe("Repertoire Builder Storybook behaviors", () => {
 
     await page.emulateMedia({ forcedColors: "active", reducedMotion: "reduce" });
     await openStory(page, STORY_IDS.responseDistribution, 800, 1000);
-    await expect(page.getByTestId("session-origin")).toContainText(
-      "complete game loaded at Ply 0. Current Ply 2.",
-      { timeout: 30_000 },
-    );
+    await expect(
+      page.getByTestId("board-move-history").getByRole("button", { name: "Black, move 1, e5" }),
+    ).toBeVisible({ timeout: 30_000 });
     await page
       .getByTestId("repertoire-engine-lane")
       .getByRole("tab", { name: "Move responses" })
@@ -352,7 +347,6 @@ test.describe("Repertoire Builder Storybook behaviors", () => {
     await expectSessionHistory(page, ["Initial position"]);
     await expectPositionSquares(page, "e7", 0);
     await expectPositionSquares(page, "e8", 1);
-    await expect(page.getByTestId("session-origin")).toHaveText(/Current Ply 0/);
     await checkA11y(page);
   });
 
@@ -367,9 +361,6 @@ test.describe("Repertoire Builder Storybook behaviors", () => {
 
     await page.getByLabel("Game UUID").fill(GAME_UUID);
     await page.getByRole("button", { name: "Load game" }).click();
-    await expect(page.getByTestId("session-origin")).toContainText(
-      "complete game loaded at Ply 0",
-    );
     await expectSessionHistory(page, [
       "Initial position",
       "White, move 1, e4",
@@ -385,13 +376,10 @@ test.describe("Repertoire Builder Storybook behaviors", () => {
 
     await next.click();
     await expectActiveSessionHistoryEntry(page, "White, move 1, e4");
-    await expect(page.getByTestId("session-origin")).toContainText("Current Ply 1.");
     await next.click();
     await expectActiveSessionHistoryEntry(page, "Black, move 1, e5");
-    await expect(page.getByTestId("session-origin")).toContainText("Current Ply 2.");
     await next.click();
     await expectActiveSessionHistoryEntry(page, "White, move 2, Nf3");
-    await expect(page.getByTestId("session-origin")).toContainText("Current Ply 3.");
     await expect(next).toBeDisabled();
 
     await history.getByRole("button", { name: "Initial position" }).click();
@@ -404,7 +392,6 @@ test.describe("Repertoire Builder Storybook behaviors", () => {
     await expect(distribution).toHaveAttribute("data-state", "available");
 
     await distribution.getByRole("button", { name: /^e4, 4 distinct games/ }).click();
-    await expect(page.getByTestId("session-origin")).toContainText("Current Ply 1.");
     await expectActiveSessionHistoryEntry(page, "White, move 1, e4");
     await expect(preferredPanel(page)).toHaveAttribute("data-state", "first-choice");
     await expect(preferredPanel(page).getByRole("button", { name: "Save e4", exact: true })).toBeVisible();
@@ -429,7 +416,6 @@ test.describe("Repertoire Builder Storybook behaviors", () => {
       .getByRole("button", { name: "Reset", exact: true })
       .click();
     await expect(page.getByLabel("Temporary branch", { exact: true })).toHaveCount(0);
-    await expect(page.getByTestId("session-status")).toContainText("Returned to the imported game.");
     await expectActiveSessionHistoryEntry(page, "White, move 1, e4");
     await expect(next).toBeEnabled();
     await expect(preferredPanel(page).getByRole("button", { name: "Save e4", exact: true })).toBeVisible();
@@ -469,10 +455,9 @@ test.describe("Repertoire Builder Storybook behaviors", () => {
 
     await expect(analysis.getByRole("button", { name: "Update analysis" })).toHaveCount(0);
     await expect(analysis.getByRole("button", { name: "Retry analysis" })).toHaveCount(0);
-    await expect(page.getByTestId("session-status")).toContainText(
+    await expect(page.getByTestId("branch-status")).toContainText(
       "Move played locally: e4.",
     );
-    await expect(page.getByTestId("session-origin")).toContainText("Current Ply 1.");
     await expectSessionHistory(page, ["Initial position", "White, move 1, e4"]);
     await expectActiveSessionHistoryEntry(page, "White, move 1, e4");
     await expect(page.getByTestId("selected-move")).toHaveText(/Selected\s*e4\s*e2e4/);
@@ -482,7 +467,6 @@ test.describe("Repertoire Builder Storybook behaviors", () => {
   test("follows trainer color in position context when the board flips", async ({ page }) => {
     await openStory(page, STORY_IDS.wide, 1280, 1000);
 
-    await expect(page.getByTestId("session-origin")).toContainText("Current Ply 0.");
     await expect(
       page.getByRole("group", {
         name: "Chess board: standard starting position, White at the bottom",
@@ -495,16 +479,12 @@ test.describe("Repertoire Builder Storybook behaviors", () => {
     await expect(session.getByText("Seen in 3 games as White")).toBeVisible();
 
     await page.getByRole("button", { name: "Flip" }).click();
-    await expect(page.getByTestId("session-status")).toContainText(
-      "Flipped to Black at the bottom.",
-    );
 
     await expect(
       page.getByRole("group", {
         name: "Chess board: standard starting position, Black at the bottom",
       }),
     ).toBeVisible();
-    await expect(page.getByTestId("session-origin")).toContainText("Current Ply 0.");
     await expect(session.getByText("Black repertoire colour", { exact: true })).toBeVisible();
     await expect(session.getByText("2 / 10 games", { exact: true })).toBeVisible();
     await expect(session.getByText("20%", { exact: true })).toBeVisible();

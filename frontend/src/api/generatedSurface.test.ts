@@ -2,9 +2,14 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
+import { getPositionTrainingRequirements } from "./client";
 import * as generatedSdk from "./generated/sdk.gen";
 
 const dirname = path.dirname(fileURLToPath(import.meta.url));
+type ContractOperation = {
+  operationId?: string;
+  responses?: Record<string, { content?: { "application/json"?: { schema?: unknown } } }>;
+};
 
 describe("generated SDK surface", () => {
   it("exports exactly the approved operation request functions", () => {
@@ -20,10 +25,12 @@ describe("generated SDK surface", () => {
       "getOpenings",
       "getOpeningByKey",
       "getPositionInsight",
+      "getPositionTrainingRequirements",
       "deletePreferredMoves",
       "getPreferredMoves",
       "putPreferredMoves",
     ]);
+    expect(getPositionTrainingRequirements).toBe(generatedSdk.getPositionTrainingRequirements);
   });
 
   it("checked-in contract contains only the approved clean operations", () => {
@@ -31,7 +38,7 @@ describe("generated SDK surface", () => {
     // JSON module resolution settings.
     const contractPath = path.resolve(dirname, "generated", "openapi.json");
     const contract = JSON.parse(readFileSync(contractPath, "utf8")) as {
-      paths: Record<string, Record<string, { operationId?: string }>>;
+      paths: Record<string, Record<string, ContractOperation>>;
       components: { schemas: Record<string, unknown> };
     };
 
@@ -44,6 +51,7 @@ describe("generated SDK surface", () => {
       "/api/openings",
       "/api/openings/{opening_key}",
       "/api/positions/insight",
+      "/api/positions/training-requirements",
       "/api/preferred-moves",
     ]);
     expect(Object.keys(contract.paths["/api/analysis"])).toEqual(["get"]);
@@ -62,6 +70,19 @@ describe("generated SDK surface", () => {
     expect(contract.paths["/api/openings/{opening_key}"].get?.operationId).toBe("getOpeningByKey");
     expect(Object.keys(contract.paths["/api/positions/insight"])).toEqual(["get"]);
     expect(contract.paths["/api/positions/insight"].get?.operationId).toBe("getPositionInsight");
+    expect(Object.keys(contract.paths["/api/positions/training-requirements"])).toEqual(["get"]);
+    expect(contract.paths["/api/positions/training-requirements"].get?.operationId).toBe(
+      "getPositionTrainingRequirements",
+    );
+    expect(
+      Object.keys(contract.paths["/api/positions/training-requirements"].get?.responses ?? {}),
+    ).toEqual(["200", "409", "422", "500", "503"]);
+    for (const status of ["422", "409", "500", "503"]) {
+      expect(
+        contract.paths["/api/positions/training-requirements"].get?.responses?.[status]
+          ?.content?.["application/json"]?.schema,
+      ).toEqual({ $ref: "#/components/schemas/TrainingRequirementErrorResponse" });
+    }
     expect(Object.keys(contract.paths["/api/preferred-moves"])).toEqual(["delete", "get", "put"]);
     expect(contract.paths["/api/preferred-moves"].get?.operationId).toBe("getPreferredMoves");
     expect(contract.paths["/api/preferred-moves"].put?.operationId).toBe("putPreferredMoves");
@@ -108,6 +129,10 @@ describe("generated SDK surface", () => {
       "PreferredMovesRemovalResponse",
       "PreferredMovesResponse",
       "PreferredMovesSegmentResponse",
+      "TrainingRequirementErrorResponse",
+      "TrainingRequirementItemResponse",
+      "TrainingRequirementPolicyResponse",
+      "TrainingRequirementResponse",
       "UnconfiguredPreferenceResponse",
       "ValidationError",
     ]);

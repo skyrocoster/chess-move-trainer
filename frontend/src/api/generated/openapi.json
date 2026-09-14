@@ -1514,6 +1514,198 @@
         "title": "PreferredMovesSegmentResponse",
         "type": "object"
       },
+      "TrainingRequirementErrorResponse": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "enum": [
+              "invalid_as_of",
+              "invalid_fen",
+              "invalid_opening_filter",
+              "invalid_played_move_uci",
+              "invalid_requirement_range",
+              "invalid_trainer_color",
+              "invalid_pagination",
+              "training_requirement_not_found",
+              "training_requirements_stale",
+              "position_training_requirements_unavailable",
+              "unexpected_failure"
+            ],
+            "title": "Code"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["code", "message"],
+        "title": "TrainingRequirementErrorResponse"
+      },
+      "TrainingRequirementItemResponse": {
+        "properties": {
+          "fen": {
+            "type": "string",
+            "title": "Fen"
+          },
+          "trainer_color": {
+            "type": "string",
+            "enum": ["white", "black"],
+            "title": "Trainer Color"
+          },
+          "preferred_move_uci": {
+            "type": "string",
+            "title": "Preferred Move Uci"
+          },
+          "encounters": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Encounters"
+          },
+          "hits": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Hits"
+          },
+          "misses": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Misses"
+          },
+          "observed_success_rate": {
+            "type": "number",
+            "title": "Observed Success Rate"
+          },
+          "game_balance": {
+            "type": "number",
+            "title": "Game Balance"
+          },
+          "effective_training_balance": {
+            "type": "number",
+            "title": "Effective Training Balance"
+          },
+          "training_adjustment": {
+            "type": "number",
+            "title": "Training Adjustment"
+          },
+          "training_updated_on": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Training Updated On"
+          },
+          "training_requirement": {
+            "type": "number",
+            "title": "Training Requirement"
+          },
+          "training_required": {
+            "type": "boolean",
+            "title": "Training Required"
+          },
+          "correct_answers_needed": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Correct Answers Needed"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "fen",
+          "trainer_color",
+          "preferred_move_uci",
+          "encounters",
+          "hits",
+          "misses",
+          "observed_success_rate",
+          "game_balance",
+          "effective_training_balance",
+          "training_adjustment",
+          "training_updated_on",
+          "training_requirement",
+          "training_required",
+          "correct_answers_needed"
+        ],
+        "title": "TrainingRequirementItemResponse"
+      },
+      "TrainingRequirementPolicyResponse": {
+        "properties": {
+          "target_success_rate": {
+            "type": "number",
+            "title": "Target Success Rate"
+          },
+          "game_hit_weight": {
+            "type": "number",
+            "title": "Game Hit Weight"
+          },
+          "game_miss_weight": {
+            "type": "number",
+            "title": "Game Miss Weight"
+          },
+          "training_curve": {
+            "type": "string",
+            "title": "Training Curve"
+          },
+          "training_credit_half_life_days": {
+            "type": "number",
+            "title": "Training Credit Half Life Days"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "target_success_rate",
+          "game_hit_weight",
+          "game_miss_weight",
+          "training_curve",
+          "training_credit_half_life_days"
+        ],
+        "title": "TrainingRequirementPolicyResponse"
+      },
+      "TrainingRequirementResponse": {
+        "properties": {
+          "as_of": {
+            "type": "string",
+            "title": "As Of"
+          },
+          "scoring_policy": {
+            "$ref": "#/components/schemas/TrainingRequirementPolicyResponse"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/TrainingRequirementItemResponse"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Page"
+          },
+          "page_size": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 1.0,
+            "title": "Page Size"
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Total"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["as_of", "scoring_policy", "items", "page", "page_size", "total"],
+        "title": "TrainingRequirementResponse"
+      },
       "UnconfiguredPreferenceResponse": {
         "additionalProperties": false,
         "properties": {
@@ -2507,6 +2699,208 @@
         },
         "summary": "Get Position Insight",
         "tags": ["position-insight"]
+      }
+    },
+    "/api/positions/training-requirements": {
+      "get": {
+        "tags": ["position-training-requirements"],
+        "summary": "Get Position Training Requirements",
+        "operationId": "getPositionTrainingRequirements",
+        "parameters": [
+          {
+            "name": "as_of",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "As Of"
+            }
+          },
+          {
+            "name": "training_requirement_gt",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Training Requirement Gt"
+            }
+          },
+          {
+            "name": "training_requirement_gte",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Training Requirement Gte"
+            }
+          },
+          {
+            "name": "training_requirement_lt",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Training Requirement Lt"
+            }
+          },
+          {
+            "name": "training_requirement_lte",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Training Requirement Lte"
+            }
+          },
+          {
+            "name": "trainer_color",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Trainer Color"
+            }
+          },
+          {
+            "name": "opening_key",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Opening Key"
+            }
+          },
+          {
+            "name": "opening_match",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Opening Match"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 1,
+              "title": "Page"
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 50,
+              "title": "Page Size"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrainingRequirementResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrainingRequirementErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrainingRequirementErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrainingRequirementErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrainingRequirementErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        }
       }
     },
     "/api/preferred-moves": {

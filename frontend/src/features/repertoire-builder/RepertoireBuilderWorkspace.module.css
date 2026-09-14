@@ -28,15 +28,6 @@
   min-inline-size: 0;
 }
 
-.origin {
-  min-inline-size: 0;
-  margin: 0;
-  color: var(--md-sys-color-on-surface-variant);
-  font: var(--md-sys-typescale-body-medium);
-  overflow-wrap: anywhere;
-  text-align: center;
-}
-
 .sessionLane,
 .engineLane,
 .positionDescription {

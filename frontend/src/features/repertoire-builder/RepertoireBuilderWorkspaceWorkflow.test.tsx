@@ -29,7 +29,11 @@ async function load(
   fireEvent.change(screen.getByLabelText("Game UUID"), { target: { value: GAME_UUID } });
   await user.click(screen.getByRole("button", { name: "Load game" }));
   await waitFor(() =>
-    expect(screen.getByTestId("session-origin")).toHaveTextContent("complete game loaded"),
+    expect(
+      within(screen.getByTestId("board-move-history")).getByRole("button", {
+        name: "White, move 1, e4",
+      }),
+    ).toBeVisible(),
   );
   return user;
 }
@@ -40,7 +44,6 @@ describe("RepertoireBuilderWorkspace workflow", () => {
     const user = await load(GAME_DETAIL, { preferredMoveClient: clients.preferredMoveClient });
 
     await user.click(screen.getByTestId("move-e2-e4"));
-    expect(screen.getByTestId("session-origin")).toHaveTextContent("Current Ply 1.");
     expect(screen.getByTestId("selected-move")).toHaveTextContent("e4");
     expect(clients.preferredMoveClient.put).not.toHaveBeenCalled();
 
@@ -56,7 +59,7 @@ describe("RepertoireBuilderWorkspace workflow", () => {
       }),
     );
     await waitFor(() =>
-      expect(screen.getByTestId("session-status")).toHaveTextContent("Preferred move saved."),
+      expect(screen.getByTestId("saved-move")).toHaveTextContent("e4"),
     );
     expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", AFTER_E4_FEN);
   });
@@ -68,7 +71,6 @@ describe("RepertoireBuilderWorkspace workflow", () => {
 
     await user.click(screen.getByTestId("move-e2-e4"));
     expect(screen.getByTestId("selected-move")).toHaveTextContent("e4");
-    expect(screen.getByTestId("session-origin")).toHaveTextContent("Current Ply 1.");
     expect(clients.preferredMoveClient.put).not.toHaveBeenCalled();
     await user.click(screen.getByRole("button", { name: "Save e4" }));
     await waitFor(() =>
@@ -87,7 +89,6 @@ describe("RepertoireBuilderWorkspace workflow", () => {
     );
 
     await user.click(screen.getByTestId("move-e2-e4"));
-    expect(screen.getByTestId("session-origin")).toHaveTextContent("Current Ply 1.");
     expect(screen.getByTestId("selected-move")).toHaveTextContent("No move selected");
     expect(screen.queryByRole("button", { name: /Save/ })).not.toBeInTheDocument();
     await waitFor(() =>
@@ -158,7 +159,6 @@ describe("RepertoireBuilderWorkspace workflow", () => {
       ),
     );
     expect(screen.getByTestId("selected-move")).toHaveTextContent("e4");
-    expect(screen.getByTestId("session-origin")).toHaveTextContent("Current Ply 1.");
   });
 
   it("saves a legal parent transition when corpus observation is absent", async () => {
@@ -190,7 +190,7 @@ describe("RepertoireBuilderWorkspace workflow", () => {
       ),
     );
     await waitFor(() =>
-      expect(screen.getByTestId("session-status")).toHaveTextContent("Preferred move saved."),
+      expect(screen.getByTestId("branch-status")).toHaveTextContent("Preferred move saved."),
     );
     expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", AFTER_E4_FEN);
   });

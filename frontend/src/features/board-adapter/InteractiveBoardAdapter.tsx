@@ -24,10 +24,17 @@ import {
 } from "./PromotionPicker";
 import styles from "./InteractiveBoardAdapter.module.css";
 import type { BoardOrientation } from "./BoardAdapter";
+import {
+  boardSquareStyles,
+  answerInteractionAllowed,
+  answerMessage,
+  type BoardAnswerPresentation,
+} from "./answerPresentation";
 import type { BranchMove, BranchSnapshot } from "./branchModel";
-import { lastMoveSquareStyles, type LastMove } from "./lastMove";
+import type { LastMove } from "./lastMove";
 
 export type { BranchMove, BranchSnapshot } from "./branchModel";
+export type { BoardAnswerPresentation, BoardAnswerStatus } from "./answerPresentation";
 
 export type InteractiveBoardAdapterProps = {
   branchSnapshot: BranchSnapshot;
@@ -36,6 +43,18 @@ export type InteractiveBoardAdapterProps = {
   notice: string;
   terminal: string | null;
   lastMove: LastMove | null;
+  /**
+   * The most recent directly rejected (illegal) drag/drop. Rendered with the
+   * illegal red highlight while keeping the board interactive, so the user
+   * can immediately try another move.
+   */
+  rejectedMove?: LastMove | null;
+  /**
+   * Optional caller-owned answer presentation (trainer verdict, revealed move,
+   * loading lock). While present, the board renders its highlights, announces
+   * its status, and allows interaction only in the "awaiting-input" state.
+   */
+  answer?: BoardAnswerPresentation | null;
   promotionPending: PendingPromotion | null;
   promotionColor: PromotionColor;
   promotionSourceElement: HTMLElement | null;
@@ -128,6 +147,8 @@ export function InteractiveBoardAdapter({
   notice,
   terminal,
   lastMove,
+  rejectedMove = null,
+  answer = null,
   promotionPending,
   promotionColor,
   promotionSourceElement,
@@ -142,6 +163,7 @@ export function InteractiveBoardAdapter({
   const boardRootRef = useRef<HTMLDivElement | null>(null);
   const copyFeedbackTimerRef = useRef<number | null>(null);
   const [copyFeedback, setCopyFeedback] = useState<string | null>(null);
+  const interactionAllowed = answerInteractionAllowed(answer);
 
   useEffect(
     () => () => {
@@ -157,6 +179,9 @@ export function InteractiveBoardAdapter({
       if (!targetSquare) {
         return false;
       }
+      if (!interactionAllowed) {
+        return false;
+      }
 
       const source = sourceSquare as Square;
       const target = targetSquare as Square;
@@ -167,10 +192,10 @@ export function InteractiveBoardAdapter({
         anchorElement: findSquareElement(boardRootRef.current, target),
       });
     },
-    [onMoveIntent],
+    [interactionAllowed, onMoveIntent],
   );
   const san = branchSan(branchSnapshot.originFen, branchSnapshot.moves);
-  const squareStyles = lastMoveSquareStyles(lastMove);
+  const squareStyles = boardSquareStyles(answer, lastMove, rejectedMove);
   const showCopyFeedback = useCallback((message: string) => {
     if (copyFeedbackTimerRef.current !== null) {
       window.clearTimeout(copyFeedbackTimerRef.current);
@@ -193,7 +218,7 @@ export function InteractiveBoardAdapter({
     [showCopyFeedback],
   );
   const options = {
-    allowDragging: true,
+    allowDragging: interactionAllowed || undefined,
     allowDrawingArrows: false,
     animationDurationInMs: 0,
     boardOrientation: orientation,
@@ -215,11 +240,24 @@ export function InteractiveBoardAdapter({
         className={styles.board}
         data-board-visual
         data-testid="interactive-board"
+        data-locked={!interactionAllowed}
+        aria-disabled={!interactionAllowed || undefined}
         role="group"
         aria-label={label}
       >
         <Chessboard options={options} />
       </div>
+      {answer ? (
+        <p
+          className={styles.answerStatus}
+          data-testid="board-answer-status"
+          role="status"
+          aria-live="polite"
+          data-answer-status={answer.status}
+        >
+          {answerMessage(answer)}
+        </p>
+      ) : null}
       {showBranchPanel ? (
         <div className={styles.branchPanel} aria-label="Temporary branch">
           <div className={styles.branchHeading}>

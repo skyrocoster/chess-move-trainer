@@ -11,8 +11,9 @@ import {
   type PromotionCommit,
   usePromotionController,
 } from "./PromotionPicker";
+import type { BoardAnswerPresentation } from "./answerPresentation";
 import type { BranchSnapshot } from "./branchModel";
-import { lastMoveFromSquares } from "./lastMove";
+import { lastMoveFromSquares, type LastMove } from "./lastMove";
 
 export type InteractiveBoardHarnessProps = {
   viewKey: string;
@@ -20,6 +21,7 @@ export type InteractiveBoardHarnessProps = {
   originPly: number;
   label: string;
   onBranchChange?: (snapshot: BranchSnapshot) => void;
+  answer?: BoardAnswerPresentation | null;
 };
 
 function terminalDescription(chess: Chess) {
@@ -44,6 +46,7 @@ export function InteractiveBoardHarness({
   originPly,
   label,
   onBranchChange,
+  answer,
 }: InteractiveBoardHarnessProps) {
   const chess = useMemo(() => new Chess(originFen), [originFen]);
   const [branchSnapshot, setBranchSnapshot] = useState<BranchSnapshot>(() => ({
@@ -56,7 +59,12 @@ export function InteractiveBoardHarness({
     active: false,
   }));
   const [notice, setNotice] = useState("Make a legal move to start a temporary branch.");
+  const [rejectedMove, setRejectedMove] = useState<LastMove | null>(null);
   const [promotionColor, setPromotionColor] = useState<PromotionColor>(chess.turn());
+
+  useEffect(() => {
+    setRejectedMove(null);
+  }, [originFen, viewKey]);
 
   const createSnapshot = useCallback(
     (active: boolean): BranchSnapshot => ({
@@ -85,6 +93,7 @@ export function InteractiveBoardHarness({
     (commit: PromotionCommit) => {
       setBranchSnapshot(createSnapshot(true));
       setPromotionColor(chess.turn());
+      setRejectedMove(null);
       setNotice(`Branch move committed: ${commit.move.san}.`);
     },
     [chess, createSnapshot],
@@ -130,6 +139,7 @@ export function InteractiveBoardHarness({
         if (opened) {
           setBranchSnapshot(createSnapshot(true));
           setPromotionColor(piece.color);
+          setRejectedMove(null);
           setNotice("Choose a promotion piece for the temporary branch.");
         }
         return false;
@@ -138,9 +148,11 @@ export function InteractiveBoardHarness({
       try {
         const move = chess.move({ from: intent.sourceSquare, to: intent.targetSquare });
         setBranchSnapshot(createSnapshot(true));
+        setRejectedMove(null);
         setNotice(`Branch move committed: ${move.san}.`);
         return true;
       } catch {
+        setRejectedMove(lastMoveFromSquares(intent.sourceSquare, intent.targetSquare));
         setNotice("Move rejected because it is illegal.");
         return false;
       }
@@ -152,6 +164,7 @@ export function InteractiveBoardHarness({
     cancelPromotion();
     setBranchSnapshot(createSnapshot(chess.history().length > 0));
     setPromotionColor(chess.turn());
+    setRejectedMove(null);
     setNotice("Promotion cancelled; the captured position is unchanged.");
   }, [cancelPromotion, chess, createSnapshot]);
 
@@ -162,6 +175,7 @@ export function InteractiveBoardHarness({
     }
     setBranchSnapshot(createSnapshot(chess.history().length > 0));
     setPromotionColor(chess.turn());
+    setRejectedMove(null);
     setNotice("Undid the latest temporary branch move.");
   }, [cancelPromotion, chess, createSnapshot]);
 
@@ -170,6 +184,7 @@ export function InteractiveBoardHarness({
     chess.load(originFen);
     setBranchSnapshot(createSnapshot(false));
     setPromotionColor(chess.turn());
+    setRejectedMove(null);
     setNotice("Temporary branch reset to its captured-game ply.");
   }, [cancelPromotion, chess, createSnapshot, originFen]);
 
@@ -181,8 +196,10 @@ export function InteractiveBoardHarness({
       lastMove={
         lastBranchMove ? lastMoveFromSquares(lastBranchMove.from, lastBranchMove.to) : null
       }
+      rejectedMove={rejectedMove}
       label={label}
       notice={notice}
+      answer={answer}
       terminal={terminalDescription(chess)}
       promotionPending={pending}
       promotionColor={promotionColor}

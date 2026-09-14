@@ -123,10 +123,18 @@ export function Tabs({
   }, [setScrollStateIfChanged]);
 
   const revealTab = useCallback((tabId: string) => {
+    const scroller = tabsScrollRef.current;
     const tab = tabRefs.current.get(tabId);
-    if (typeof tab?.scrollIntoView !== "function") return;
+    if (!scroller || !tab) return;
 
-    tab.scrollIntoView({ behavior: "auto", block: "nearest", inline: "nearest" });
+    // Adjust only the horizontal tab rail so the page never scrolls vertically.
+    const scrollerRect = scroller.getBoundingClientRect();
+    const tabRect = tab.getBoundingClientRect();
+    if (tabRect.left < scrollerRect.left) {
+      scroller.scrollLeft -= scrollerRect.left - tabRect.left;
+    } else if (tabRect.right > scrollerRect.right) {
+      scroller.scrollLeft += tabRect.right - scrollerRect.right;
+    }
   }, []);
 
   useEffect(() => {

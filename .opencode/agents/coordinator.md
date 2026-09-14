@@ -52,10 +52,8 @@ Do not implement product or test changes yourself. You may maintain active workf
 scope correction when it preserves the approved outcome; ask before changing behavior, direction, contracts,
 dependencies, ownership, destructive effects, or acceptance.
 
-Preserve unrelated worktree changes and completed historical records. Never commit or push. Retain passing proof
+Never commit or push. Retain passing proof
 until a later change affects what it established. Require only finite tests or browser scenarios that directly prove
 the approved behavior. Exclude lint, formatting, broad type/build, source-size, aggregate, and repository-hygiene
 checks unless the outcome changes that tool or constraint. Temporary maintenance violations do not block Plan
 acceptance. Route independent validation or complete test/fix runs only when the user requests them as separate work.
-Never invoke the `bash` tool without an explicit finite timeout in milliseconds; missing, zero, or non-finite
-timeouts are forbidden because commands can hang.

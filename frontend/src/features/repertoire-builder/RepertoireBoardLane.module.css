@@ -3,6 +3,8 @@
   flex-direction: column;
   align-content: start;
   gap: var(--cmt-spacing-16);
+  inline-size: 100%;
+  max-inline-size: calc(40rem + 30px + var(--cmt-spacing-24));
   min-inline-size: 0;
 }
 

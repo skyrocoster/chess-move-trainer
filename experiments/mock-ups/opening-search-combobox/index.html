@@ -1,0 +1,1616 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Opening search selector exploration</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --ink: #1b2a24;
+        --ink-soft: #56655e;
+        --ink-faint: #7f8b85;
+        --paper: #f3f4ef;
+        --paper-deep: #e7e9e1;
+        --card: #fffefa;
+        --line: #d8dcd2;
+        --line-strong: #bcc3b8;
+        --green: #2f6049;
+        --green-deep: #1d4132;
+        --green-pale: #e3ece6;
+        --focus: #b9752f;
+        --radius-lg: 20px;
+        --radius-md: 12px;
+        --radius-sm: 8px;
+        --shadow-lg: 0 26px 60px rgba(24, 40, 33, 0.13);
+        --shadow-sm: 0 8px 22px rgba(24, 40, 33, 0.07);
+        --font-display: "Palatino Linotype", "Iowan Old Style", "Book Antiqua", Georgia, serif;
+        --font-ui: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+        --font-mono: "Cascadia Mono", Consolas, ui-monospace, "SFMono-Regular", monospace;
+
+        /* ECO volumes: A flank, B semi-open, C open, D closed, E Indian */
+        --eco-a: #9a5a3d;
+        --eco-b: #46598d;
+        --eco-c: #2c6a4e;
+        --eco-d: #966f27;
+        --eco-e: #6f4a70;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        min-width: 320px;
+        background: var(--paper);
+      }
+
+      body {
+        min-width: 320px;
+        margin: 0;
+        color: var(--ink);
+        background:
+          radial-gradient(circle at 82% -6%, rgba(214, 226, 213, 0.85), transparent 30rem),
+          var(--paper);
+        font-family: var(--font-ui);
+        line-height: 1.45;
+      }
+
+      button,
+      input {
+        font: inherit;
+      }
+
+      button {
+        cursor: pointer;
+      }
+
+      button:focus-visible,
+      input:focus-visible,
+      summary:focus-visible {
+        outline: 3px solid var(--focus);
+        outline-offset: 3px;
+      }
+
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        white-space: nowrap;
+        border: 0;
+      }
+
+      .page {
+        width: min(1060px, calc(100% - 44px));
+        margin: 0 auto;
+        padding: 34px 0 64px;
+      }
+
+      .masthead {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+        padding-bottom: 18px;
+        border-bottom: 1px solid rgba(97, 117, 104, 0.24);
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 11px;
+      }
+
+      .brand-mark {
+        display: grid;
+        width: 36px;
+        height: 36px;
+        place-items: center;
+        color: var(--paper);
+        background: var(--green-deep);
+        border-radius: 10px 10px 10px 3px;
+        font-family: var(--font-display);
+        font-size: 22px;
+        line-height: 1;
+      }
+
+      .brand-text {
+        display: grid;
+      }
+
+      .brand-text b {
+        font-size: 0.76rem;
+        font-weight: 800;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+      }
+
+      .brand-text span {
+        color: var(--ink-soft);
+        font-size: 0.79rem;
+      }
+
+      .masthead-note {
+        margin: 0;
+        color: var(--ink-faint);
+        font-size: 0.76rem;
+        letter-spacing: 0.02em;
+      }
+
+      .hero {
+        padding: 36px 0 26px;
+      }
+
+      .eyebrow {
+        margin: 0 0 9px;
+        color: var(--green);
+        font-size: 0.7rem;
+        font-weight: 900;
+        letter-spacing: 0.19em;
+        text-transform: uppercase;
+      }
+
+      h1 {
+        max-width: 620px;
+        margin: 0;
+        font-family: var(--font-display);
+        font-size: clamp(1.75rem, 4vw, 2.6rem);
+        font-weight: 500;
+        letter-spacing: -0.035em;
+        line-height: 1.08;
+      }
+
+      .lede {
+        max-width: 560px;
+        margin: 13px 0 0;
+        color: var(--ink-soft);
+        font-size: 0.98rem;
+      }
+
+      .layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1.15fr) minmax(280px, 0.85fr);
+        gap: 22px;
+        align-items: start;
+      }
+
+      .panel {
+        padding: 20px;
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-sm);
+      }
+
+      .panel-head {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 14px;
+        margin-bottom: 16px;
+      }
+
+      .panel-head h2 {
+        margin: 0;
+        font-size: 0.82rem;
+        font-weight: 800;
+        letter-spacing: 0.11em;
+        text-transform: uppercase;
+      }
+
+      .panel-head .field-help {
+        color: var(--ink-faint);
+        font-size: 0.76rem;
+      }
+
+      /* ---- Filters ------------------------------------------------------- */
+
+      .filters {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px 26px;
+        margin-bottom: 16px;
+      }
+
+      .filter {
+        display: grid;
+        gap: 6px;
+      }
+
+      .filter-hint {
+        color: var(--ink-faint);
+        font-size: 0.71rem;
+      }
+
+      .limit-row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 14px;
+      }
+
+      .limit-input {
+        width: 78px;
+        min-height: 42px;
+        padding: 6px 10px;
+        color: var(--ink);
+        background: #fff;
+        border: 1.5px solid var(--line-strong);
+        border-radius: 10px;
+        font-family: var(--font-mono);
+        font-variant-numeric: tabular-nums;
+      }
+
+      .limit-input:focus {
+        border-color: var(--green);
+      }
+
+      .limit-input:disabled {
+        color: var(--ink-faint);
+        background: var(--paper-deep);
+      }
+
+      .unlimited-toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        color: var(--ink-soft);
+        font-size: 0.83rem;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .unlimited-toggle input {
+        width: 16px;
+        height: 16px;
+        accent-color: var(--green);
+        cursor: pointer;
+      }
+
+      .filter-label {
+        color: var(--ink-soft);
+        font-size: 0.69rem;
+        font-weight: 800;
+        letter-spacing: 0.09em;
+        text-transform: uppercase;
+      }
+
+      .segmented {
+        display: inline-flex;
+        gap: 3px;
+        padding: 3px;
+        background: var(--paper-deep);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+      }
+
+      .segmented label {
+        position: relative;
+        display: inline-flex;
+      }
+
+      .segmented input {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        margin: 0;
+        opacity: 0;
+      }
+
+      .segmented span {
+        padding: 6px 13px;
+        color: var(--ink-soft);
+        border-radius: 7px;
+        font-size: 0.83rem;
+        font-weight: 700;
+        white-space: nowrap;
+        cursor: pointer;
+        transition: background 140ms ease, color 140ms ease;
+      }
+
+      .segmented span:hover {
+        color: var(--ink);
+      }
+
+      .segmented input:checked + span {
+        color: #fffdf6;
+        background: var(--green);
+        box-shadow: 0 3px 8px rgba(47, 96, 73, 0.24);
+      }
+
+      .segmented input:focus-visible + span {
+        outline: 3px solid var(--focus);
+        outline-offset: 2px;
+      }
+
+      /* ---- Combobox ------------------------------------------------------ */
+
+      .combo {
+        position: relative;
+      }
+
+      .combo-field {
+        position: relative;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-height: 54px;
+        padding: 0 10px 0 42px;
+        background: #fff;
+        border: 1.5px solid var(--line-strong);
+        border-radius: var(--radius-md);
+        transition: border-color 150ms ease, box-shadow 150ms ease;
+      }
+
+      .combo-field:hover {
+        border-color: #a9b1a6;
+      }
+
+      .combo-field:focus-within {
+        border-color: var(--green);
+        box-shadow: 0 0 0 4px rgba(47, 96, 73, 0.16);
+      }
+
+      .combo-icon {
+        position: absolute;
+        left: 15px;
+        width: 17px;
+        height: 17px;
+        color: var(--ink-faint);
+        pointer-events: none;
+      }
+
+      .combo-field input {
+        width: 100%;
+        min-width: 0;
+        min-height: 51px;
+        padding: 0;
+        color: var(--ink);
+        background: transparent;
+        border: 0;
+        font-size: 1rem;
+      }
+
+      .combo-field input::placeholder {
+        color: var(--ink-faint);
+      }
+
+      .combo-field input:focus-visible {
+        outline: none;
+      }
+
+      .eco-chip {
+        flex: none;
+        padding: 3px 7px;
+        color: var(--tab, var(--green));
+        background: color-mix(in srgb, var(--tab, var(--green)) 11%, #fff);
+        border: 1px solid color-mix(in srgb, var(--tab, var(--green)) 30%, #fff);
+        border-radius: 6px;
+        font-family: var(--font-mono);
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+      }
+
+      .clear-button {
+        flex: none;
+        display: grid;
+        width: 26px;
+        height: 26px;
+        padding: 0;
+        place-items: center;
+        color: var(--ink-soft);
+        background: var(--paper-deep);
+        border: 0;
+        border-radius: 50%;
+        font-size: 0.95rem;
+        line-height: 1;
+        transition: background 140ms ease, color 140ms ease;
+      }
+
+      .clear-button:hover {
+        color: var(--ink);
+        background: #dfe3d8;
+      }
+
+      [role="listbox"] {
+        position: absolute;
+        z-index: 30;
+        top: calc(100% + 8px);
+        right: 0;
+        left: 0;
+        max-height: min(348px, 62vh);
+        margin: 0;
+        padding: 6px;
+        overflow-y: auto;
+        background: var(--card);
+        border: 1px solid var(--line-strong);
+        border-radius: var(--radius-md);
+        box-shadow: var(--shadow-lg);
+        list-style: none;
+        animation: dropdown 150ms ease both;
+      }
+
+      @keyframes dropdown {
+        from {
+          opacity: 0;
+          transform: translateY(-5px);
+        }
+      }
+
+      [role="option"] {
+        display: grid;
+        grid-template-columns: 30px minmax(0, 1fr) auto;
+        gap: 11px;
+        align-items: center;
+        padding: 9px 11px;
+        border-radius: 9px;
+        cursor: pointer;
+        scroll-margin: 6px;
+      }
+
+      [role="option"]:hover,
+      [role="option"][data-active="true"] {
+        background: var(--green-pale);
+      }
+
+      [role="option"][aria-selected="true"] {
+        box-shadow: inset 0 0 0 1.5px rgba(47, 96, 73, 0.4);
+      }
+
+      [role="option"]:focus {
+        outline: none;
+      }
+
+      .eco-tab {
+        display: grid;
+        width: 30px;
+        height: 34px;
+        place-items: center;
+        color: var(--tab, var(--green));
+        background: color-mix(in srgb, var(--tab, var(--green)) 10%, #fff);
+        border: 1px solid color-mix(in srgb, var(--tab, var(--green)) 26%, #fff);
+        border-radius: 7px 7px 4px 4px;
+        box-shadow: inset 0 -3px 0 color-mix(in srgb, var(--tab, var(--green)) 26%, #fff);
+        font-family: var(--font-mono);
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+      }
+
+      .option-main {
+        min-width: 0;
+      }
+
+      .option-name-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+      }
+
+      .option-name {
+        overflow: hidden;
+        font-family: var(--font-display);
+        font-size: 1rem;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .side-chip {
+        flex: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        padding: 1px 7px 1px 5px;
+        border-radius: 999px;
+        font-size: 0.67rem;
+        font-weight: 800;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+      }
+
+      .side-chip .side-glyph {
+        font-size: 0.82rem;
+        line-height: 1;
+      }
+
+      .side-chip[data-side="white"] {
+        color: #4c5a53;
+        background: #f1f3ee;
+        border: 1px solid var(--line);
+      }
+
+      .side-chip[data-side="black"] {
+        color: #f2efe6;
+        background: #33413a;
+        border: 1px solid #26332d;
+      }
+
+      .option-line {
+        display: block;
+        margin-top: 2px;
+        overflow: hidden;
+        color: var(--ink-soft);
+        font-family: var(--font-mono);
+        font-size: 0.75rem;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .option-line .ply-no {
+        color: var(--ink-faint);
+      }
+
+      .option-meta {
+        display: grid;
+        justify-items: end;
+        gap: 4px;
+        color: var(--ink-faint);
+        font-size: 0.7rem;
+        white-space: nowrap;
+      }
+
+      .option-meta strong {
+        color: var(--ink);
+        font-family: var(--font-mono);
+        font-size: 0.84rem;
+      }
+
+      .option-meta .side-chip {
+        font-size: 0.63rem;
+      }
+
+      [role="option"][aria-selected="true"] .eco-tab {
+        position: relative;
+      }
+
+      [role="option"][aria-selected="true"] .eco-tab::after {
+        position: absolute;
+        top: -5px;
+        right: -5px;
+        display: grid;
+        width: 14px;
+        height: 14px;
+        content: "✓";
+        color: #fffdf6;
+        background: var(--green);
+        border: 1.5px solid var(--card);
+        border-radius: 50%;
+        place-items: center;
+        font-size: 0.55rem;
+        line-height: 1;
+      }
+
+      .all-option {
+        grid-template-columns: 30px minmax(0, 1fr);
+        border: 1px dashed var(--line-strong);
+      }
+
+      .all-option .eco-tab {
+        color: var(--ink-soft);
+        background: var(--paper-deep);
+        border-color: var(--line);
+        box-shadow: inset 0 -3px 0 var(--line);
+        font-size: 0.6rem;
+        letter-spacing: 0.02em;
+      }
+
+      .all-option .option-name {
+        font-size: 0.95rem;
+      }
+
+      .all-option .option-line {
+        font-family: var(--font-ui);
+      }
+
+      .no-match {
+        padding: 20px 14px;
+        color: var(--ink-soft);
+        font-size: 0.88rem;
+        text-align: center;
+      }
+
+      .no-match strong {
+        display: block;
+        margin-bottom: 4px;
+        color: var(--ink);
+        font-family: var(--font-display);
+        font-size: 1rem;
+      }
+
+      .no-match kbd {
+        font-family: var(--font-mono);
+      }
+
+      /* ---- Status + legend ---------------------------------------------- */
+
+      .combo-status {
+        margin: 11px 2px 0;
+        color: var(--ink-faint);
+        font-size: 0.78rem;
+      }
+
+      .keyboard-legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 16px;
+        margin: 14px 2px 0;
+        padding-top: 13px;
+        color: var(--ink-faint);
+        border-top: 1px solid var(--line);
+        font-size: 0.75rem;
+      }
+
+      .keyboard-legend span {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+      }
+
+      kbd {
+        padding: 1px 6px;
+        color: var(--ink-soft);
+        background: var(--paper-deep);
+        border: 1px solid var(--line);
+        border-bottom-width: 2px;
+        border-radius: 5px;
+        font-family: var(--font-mono);
+        font-size: 0.7rem;
+      }
+
+      /* ---- Start panel --------------------------------------------------- */
+
+      .start-panel {
+        position: sticky;
+        top: 22px;
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+      }
+
+      .start-kicker {
+        margin: 0;
+        color: var(--ink-faint);
+        font-size: 0.69rem;
+        font-weight: 800;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+
+      .start-body {
+        min-height: 236px;
+      }
+
+      .record {
+        display: grid;
+        gap: 14px;
+        animation: record-in 180ms ease both;
+      }
+
+      @keyframes record-in {
+        from {
+          opacity: 0;
+          transform: translateY(4px);
+        }
+      }
+
+      .record-head {
+        display: grid;
+        grid-template-columns: 40px minmax(0, 1fr);
+        gap: 12px;
+        align-items: start;
+      }
+
+      .record-head .eco-tab {
+        width: 40px;
+        height: 46px;
+        font-size: 0.85rem;
+      }
+
+      .record-title {
+        margin: 0;
+        font-family: var(--font-display);
+        font-size: 1.16rem;
+        font-weight: 600;
+        letter-spacing: -0.02em;
+        line-height: 1.18;
+      }
+
+      .record-meta {
+        margin: 4px 0 0;
+        color: var(--ink-soft);
+        font-size: 0.78rem;
+      }
+
+      .record-meta .side-chip {
+        vertical-align: 1px;
+      }
+
+      .notation {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      .notation li {
+        display: inline-flex;
+        align-items: baseline;
+        gap: 4px;
+        padding: 3px 7px;
+        background: var(--paper);
+        border: 1px solid var(--line);
+        border-radius: 6px;
+      }
+
+      .notation .ply {
+        font-family: var(--font-mono);
+        font-size: 0.78rem;
+        font-weight: 600;
+      }
+
+      .notation .ply-no {
+        color: var(--ink-faint);
+        font-family: var(--font-mono);
+        font-size: 0.7rem;
+      }
+
+      .stats {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+        margin: 0;
+        padding: 13px 0 0;
+        border-top: 1px solid var(--line);
+      }
+
+      .stats div {
+        display: grid;
+        gap: 2px;
+      }
+
+      .stats dt {
+        color: var(--ink-faint);
+        font-size: 0.66rem;
+        font-weight: 800;
+        letter-spacing: 0.07em;
+        text-transform: uppercase;
+      }
+
+      .stats dd {
+        margin: 0;
+        font-family: var(--font-mono);
+        font-size: 1.02rem;
+        font-weight: 700;
+      }
+
+      .empty-record {
+        display: grid;
+        gap: 10px;
+        align-content: start;
+        padding: 22px 18px;
+        color: var(--ink-soft);
+        background: repeating-linear-gradient(
+          135deg,
+          rgba(231, 233, 225, 0.5) 0 10px,
+          transparent 10px 20px
+        );
+        border: 1px dashed var(--line-strong);
+        border-radius: var(--radius-md);
+        font-size: 0.85rem;
+      }
+
+      .empty-record strong {
+        color: var(--ink);
+        font-family: var(--font-display);
+        font-size: 1.05rem;
+        font-weight: 600;
+      }
+
+      .start-action {
+        display: grid;
+        gap: 8px;
+      }
+
+      .start-button {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        width: 100%;
+        padding: 14px 18px;
+        color: #fffdf6;
+        background: var(--green);
+        border: 1px solid transparent;
+        border-radius: var(--radius-md);
+        box-shadow: 0 10px 20px rgba(47, 96, 73, 0.2);
+        font-size: 0.98rem;
+        font-weight: 700;
+        transition: background 150ms ease, transform 150ms ease, box-shadow 150ms ease;
+      }
+
+      .start-button:hover:not(:disabled) {
+        background: var(--green-deep);
+        transform: translateY(-1px);
+        box-shadow: 0 14px 26px rgba(29, 65, 50, 0.24);
+      }
+
+      .start-button .arrow {
+        font-family: var(--font-mono);
+      }
+
+      .start-button:disabled {
+        color: var(--ink-faint);
+        background: var(--paper-deep);
+        border-color: var(--line);
+        box-shadow: none;
+        cursor: not-allowed;
+      }
+
+      .start-button:disabled .arrow {
+        opacity: 0.45;
+      }
+
+      .start-hint {
+        margin: 0;
+        color: var(--ink-faint);
+        font-size: 0.76rem;
+        text-align: center;
+      }
+
+      .start-hint b {
+        color: var(--ink-soft);
+        font-family: var(--font-mono);
+        font-weight: 700;
+      }
+
+      .interaction-note {
+        margin: 26px 4px 0;
+        color: var(--ink-faint);
+        font-size: 0.78rem;
+      }
+
+      .interaction-note strong {
+        color: var(--ink-soft);
+      }
+
+      [hidden] {
+        display: none !important;
+      }
+
+      @media (max-width: 900px) {
+        .layout {
+          grid-template-columns: minmax(0, 1fr);
+        }
+
+        .start-panel {
+          position: static;
+        }
+      }
+
+      @media (max-width: 560px) {
+        .page {
+          width: min(100% - 28px, 1060px);
+          padding-top: 22px;
+        }
+
+        .masthead {
+          display: block;
+        }
+
+        .masthead-note {
+          margin-top: 8px;
+        }
+
+        .panel {
+          padding: 16px;
+        }
+
+        .filters {
+          gap: 12px;
+        }
+
+        .segmented span {
+          padding: 6px 10px;
+        }
+
+        .stats {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .option-meta .side-label {
+          display: none;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          animation-duration: 0.01ms !important;
+          transition-duration: 0.01ms !important;
+          scroll-behavior: auto !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <header class="masthead">
+        <div class="brand">
+          <span class="brand-mark" aria-hidden="true">♞</span>
+          <span class="brand-text">
+            <b>Chess Move Trainer</b>
+            <span>Opening index</span>
+          </span>
+        </div>
+        <p class="masthead-note">Interaction exploration · local fixture data</p>
+      </header>
+
+      <section class="hero">
+        <p class="eyebrow">Opening search selector</p>
+        <h1>Find the line you want to train.</h1>
+        <p class="lede">
+          One field searches the catalogue by opening name, ECO code, or key. Highlight a result to read the line,
+          then start training.
+        </p>
+      </section>
+
+      <div class="layout">
+        <section class="panel" aria-labelledby="selector-title">
+          <div class="panel-head">
+            <h2 id="selector-title">Catalogue</h2>
+            <span class="field-help" id="search-help">Name, ECO, or key</span>
+          </div>
+
+          <div class="filters">
+            <div class="filter">
+              <span class="filter-label" id="side-label">Repertoire</span>
+              <div class="segmented" role="radiogroup" aria-labelledby="side-label">
+                <label>
+                  <input type="radio" name="side" value="all" checked />
+                  <span>Both</span>
+                </label>
+                <label>
+                  <input type="radio" name="side" value="white" />
+                  <span>White</span>
+                </label>
+                <label>
+                  <input type="radio" name="side" value="black" />
+                  <span>Black</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="filter">
+              <label class="filter-label" for="position-limit">Positions to train</label>
+              <div class="limit-row">
+                <input
+                  id="position-limit"
+                  class="limit-input"
+                  type="number"
+                  min="1"
+                  step="1"
+                  inputmode="numeric"
+                  value="5"
+                  aria-describedby="limit-help"
+                />
+                <label class="unlimited-toggle">
+                  <input id="position-unlimited" type="checkbox" />
+                  <span>Unlimited</span>
+                </label>
+              </div>
+              <span class="filter-hint" id="limit-help">Sent as the API response limit</span>
+            </div>
+          </div>
+
+          <div class="combo">
+            <label class="sr-only" for="opening-search">Opening</label>
+            <div class="combo-field">
+              <svg class="combo-icon" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                <circle cx="8.6" cy="8.6" r="5.4" stroke="currentColor" stroke-width="1.8" />
+                <path d="M12.8 12.8 17 17" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+              </svg>
+              <input
+                id="opening-search"
+                type="text"
+                role="combobox"
+                aria-autocomplete="list"
+                aria-controls="opening-options"
+                aria-expanded="false"
+                aria-activedescendant=""
+                aria-describedby="search-help"
+                autocomplete="off"
+                placeholder="Search openings — try “Caro” or “B12”"
+                spellcheck="false"
+              />
+              <span class="eco-chip" id="selected-eco" hidden></span>
+              <button class="clear-button" id="clear-search" type="button" aria-label="Clear search" hidden>×</button>
+            </div>
+            <ul id="opening-options" role="listbox" aria-label="Opening choices" hidden></ul>
+          </div>
+
+          <p class="combo-status" id="combo-status" aria-live="polite"></p>
+
+          <p class="keyboard-legend">
+            <span><kbd>↑</kbd><kbd>↓</kbd> Move</span>
+            <span><kbd>Enter</kbd> Choose</span>
+            <span><kbd>Esc</kbd> Dismiss</span>
+          </p>
+        </section>
+
+        <aside class="panel start-panel" aria-labelledby="start-title">
+          <p class="start-kicker" id="start-title">Your selection</p>
+          <div class="start-body" id="selection-body"></div>
+          <div class="start-action">
+            <button class="start-button" id="start-button" type="button" disabled>
+              <span id="start-label">Start training</span>
+              <span class="arrow" aria-hidden="true">→</span>
+            </button>
+            <p class="start-hint" id="start-hint">Choose a line to begin.</p>
+          </div>
+        </aside>
+      </div>
+
+      <p class="interaction-note">
+        <strong>Mock-up only:</strong> local fixture openings, no API calls. The board and training screen are handled
+        by other components; this explores only the search selector and its start action.
+      </p>
+    </div>
+
+    <script>
+      (() => {
+        const FILES = "abcdefgh";
+        const SIDE_LABELS = { all: "Both sides", white: "White", black: "Black" };
+        const VOLUMES = {
+          A: "Flank and irregular openings",
+          B: "Semi-open games",
+          C: "Open games",
+          D: "Closed and double-pawn games",
+          E: "Indian defenses",
+        };
+
+        const openings = [
+          {
+            key: "B10:Caro-Kann Defense",
+            eco: "B10",
+            name: "Caro-Kann Defense",
+            side: "black",
+            moves: ["e4", "c6"],
+            route_count: 18,
+            games_reached: 146,
+            games_deepest: 28,
+          },
+          {
+            key: "B12:Caro-Kann Defense: Advance Variation",
+            eco: "B12",
+            name: "Caro-Kann Defense: Advance Variation",
+            side: "white",
+            moves: ["e4", "c6", "d4", "d5", "e5"],
+            route_count: 11,
+            games_reached: 89,
+            games_deepest: 24,
+          },
+          {
+            key: "B15:Caro-Kann Defense: Gurgenidze Counterattack",
+            eco: "B15",
+            name: "Caro-Kann Defense: Gurgenidze Counterattack",
+            side: "black",
+            moves: ["e4", "c6", "d4", "d5", "Nc3", "g6"],
+            route_count: 4,
+            games_reached: 31,
+            games_deepest: 18,
+          },
+          {
+            key: "B18:Caro-Kann Defense: Classical Variation",
+            eco: "B18",
+            name: "Caro-Kann Defense: Classical Variation",
+            side: "black",
+            moves: ["e4", "c6", "d4", "d5", "Nc3", "dxe4", "Nxe4", "Bf5"],
+            route_count: 7,
+            games_reached: 54,
+            games_deepest: 22,
+          },
+          {
+            key: "C20:Italian Game",
+            eco: "C20",
+            name: "Italian Game",
+            side: "white",
+            moves: ["e4", "e5", "Bc4"],
+            route_count: 15,
+            games_reached: 117,
+            games_deepest: 26,
+          },
+          {
+            key: "D00:Queen's Pawn Game",
+            eco: "D00",
+            name: "Queen's Pawn Game",
+            side: "white",
+            moves: ["d4", "d5"],
+            route_count: 9,
+            games_reached: 73,
+            games_deepest: 21,
+          },
+          {
+            key: "E12:Queen's Indian Defense",
+            eco: "E12",
+            name: "Queen's Indian Defense",
+            side: "black",
+            moves: ["d4", "Nf6", "c4", "e6", "Nf3", "b6"],
+            route_count: 6,
+            games_reached: 48,
+            games_deepest: 19,
+          },
+          {
+            key: "A45:Indian Game",
+            eco: "A45",
+            name: "Indian Game",
+            side: "black",
+            moves: ["d4", "Nf6"],
+            route_count: 12,
+            games_reached: 96,
+            games_deepest: 25,
+          },
+        ];
+
+        const input = document.querySelector("#opening-search");
+        const listbox = document.querySelector("#opening-options");
+        const comboField = document.querySelector(".combo-field");
+        const panel = input.closest(".panel");
+        const sideRadios = [...document.querySelectorAll('input[name="side"]')];
+        const limitInput = document.querySelector("#position-limit");
+        const unlimitedCheckbox = document.querySelector("#position-unlimited");
+        const ecoChip = document.querySelector("#selected-eco");
+        const clearButton = document.querySelector("#clear-search");
+        const status = document.querySelector("#combo-status");
+        const selectionBody = document.querySelector("#selection-body");
+        const startButton = document.querySelector("#start-button");
+        const startLabel = document.querySelector("#start-label");
+        const startHint = document.querySelector("#start-hint");
+
+        let side = "all";
+        let activeIndex = -1;
+        let visibleOptions = [];
+        let chosen = null;
+        let scopeAll = false;
+
+        const family = (eco) => eco.slice(0, 1);
+        const familyVar = (eco) => `var(--eco-${family(eco).toLowerCase()})`;
+        const open = () => input.getAttribute("aria-expanded") === "true";
+
+        function allOption() {
+          return { key: null, isAll: true, name: side === "all" ? "All openings" : `All ${SIDE_LABELS[side]} openings` };
+        }
+
+        function sideMatches(opening) {
+          return side === "all" || opening.side === side;
+        }
+
+        function matchingOpenings() {
+          const inSide = openings.filter(sideMatches);
+          const term = searchTerm();
+          if (!term) return inSide;
+          return inSide.filter((opening) =>
+            [opening.name, opening.eco, opening.key].some((field) => field.toLowerCase().includes(term)),
+          );
+        }
+
+        function searchTerm() {
+          const raw = input.value.trim().toLowerCase();
+          if (!raw) return "";
+          if (scopeAll) return "";
+          if (chosen && raw === chosen.name.toLowerCase()) return "";
+          if (raw === allOption().name.toLowerCase()) return "";
+          return raw;
+        }
+
+        /* ---- Option rendering ------------------------------------------- */
+
+        function lineText(opening, maxPlies) {
+          const plies = opening.moves.slice(0, maxPlies);
+          const parts = [];
+          plies.forEach((move, index) => {
+            if (index % 2 === 0) parts.push(`${index / 2 + 1}.${move}`);
+            else parts[parts.length - 1] += ` ${move}`;
+          });
+          const el = document.createElement("span");
+          el.className = "option-line";
+          parts.forEach((part, index) => {
+            if (index > 0) el.append(" ");
+            const number = part.match(/^(\d+\.)(.*)$/);
+            const numberEl = document.createElement("span");
+            numberEl.className = "ply-no";
+            numberEl.textContent = number[1];
+            el.append(numberEl, number[2]);
+          });
+          if (opening.moves.length > maxPlies) el.append(" …");
+          return el;
+        }
+
+        function sideChip(opening) {
+          const chip = document.createElement("span");
+          chip.className = "side-chip";
+          chip.dataset.side = opening.side;
+          chip.setAttribute("aria-label", `${opening.side === "white" ? "White" : "Black"} repertoire`);
+          const glyph = document.createElement("span");
+          glyph.className = "side-glyph";
+          glyph.setAttribute("aria-hidden", "true");
+          glyph.textContent = opening.side === "white" ? "♙" : "♟";
+          const label = document.createElement("span");
+          label.className = "side-label";
+          label.textContent = opening.side === "white" ? "White" : "Black";
+          chip.append(glyph, label);
+          return chip;
+        }
+
+        function addChooseHandler(option, opening) {
+          option.addEventListener("mousedown", (event) => {
+            event.preventDefault();
+            choose(opening);
+          });
+        }
+
+        function renderOption(opening, index) {
+          const option = document.createElement("li");
+          option.id = `opening-option-${index}`;
+          option.setAttribute("role", "option");
+          option.setAttribute("aria-selected", opening.key && chosen && opening.key === chosen.key ? "true" : "false");
+          option.dataset.index = String(index);
+          if (index === activeIndex) option.dataset.active = "true";
+
+          const tab = document.createElement("span");
+          tab.className = "eco-tab";
+          tab.setAttribute("aria-hidden", "true");
+
+          if (opening.isAll) {
+            option.className = "all-option";
+            tab.textContent = "ALL";
+            option.append(tab);
+
+            const main = document.createElement("span");
+            main.className = "option-main";
+            const name = document.createElement("span");
+            name.className = "option-name";
+            name.textContent = opening.name;
+            const line = document.createElement("span");
+            line.className = "option-line";
+            line.textContent = `${opening.matchCount} ${opening.matchCount === 1 ? "line" : "lines"} in this repertoire`;
+            main.append(name, line);
+            option.append(main);
+            addChooseHandler(option, opening);
+            return option;
+          }
+
+          tab.textContent = family(opening.eco);
+          tab.style.setProperty("--tab", familyVar(opening.eco));
+          option.append(tab);
+
+          const main = document.createElement("span");
+          main.className = "option-main";
+          const nameRow = document.createElement("span");
+          nameRow.className = "option-name-row";
+          const name = document.createElement("span");
+          name.className = "option-name";
+          name.textContent = opening.name;
+          nameRow.append(name);
+          main.append(nameRow, lineText(opening, 6));
+          option.append(main);
+
+          const meta = document.createElement("span");
+          meta.className = "option-meta";
+          meta.append(sideChip(opening));
+          const count = document.createElement("span");
+          const countValue = document.createElement("strong");
+          countValue.textContent = String(opening.route_count);
+          count.append(countValue, document.createTextNode(" lines"));
+          meta.append(count);
+          option.append(meta);
+          addChooseHandler(option, opening);
+          return option;
+        }
+
+        function renderOptions() {
+          const matches = matchingOpenings();
+          const current = allOption();
+          current.matchCount = matches.length;
+          visibleOptions = [current, ...matches];
+
+          listbox.replaceChildren();
+          if (matches.length === 0 && searchTerm()) {
+            const empty = document.createElement("li");
+            empty.className = "no-match";
+            empty.setAttribute("role", "presentation");
+            const title = document.createElement("strong");
+            title.textContent = `Nothing matches “${input.value.trim()}”`;
+            const help = document.createElement("span");
+            help.textContent = "Try part of a name, or an ECO code like ";
+            const code = document.createElement("kbd");
+            code.textContent = "B12";
+            help.append(code, ".");
+            empty.append(title, help);
+            listbox.append(empty);
+          } else {
+            visibleOptions.forEach((opening, index) => listbox.append(renderOption(opening, index)));
+          }
+
+          const total = matches.length;
+          status.textContent = total === 0 ? "No matching openings." : `${total} opening${total === 1 ? "" : "s"} match.`;
+        }
+
+        /* ---- List open/close/navigation --------------------------------- */
+
+        function openList() {
+          activeIndex = -1;
+          renderOptions();
+          listbox.hidden = false;
+          input.setAttribute("aria-expanded", "true");
+          input.removeAttribute("aria-activedescendant");
+          renderSelection();
+        }
+
+        function closeList() {
+          listbox.hidden = true;
+          input.setAttribute("aria-expanded", "false");
+          input.removeAttribute("aria-activedescendant");
+          activeIndex = -1;
+          renderSelection();
+        }
+
+        function setActive(index) {
+          if (index === -1) {
+            activeIndex = -1;
+            renderOptions();
+            input.removeAttribute("aria-activedescendant");
+            renderSelection();
+            return;
+          }
+          if (!visibleOptions.length) return;
+          activeIndex = (index + visibleOptions.length) % visibleOptions.length;
+          renderOptions();
+          const activeOption = listbox.querySelector(`[data-index="${activeIndex}"]`);
+          input.setAttribute("aria-activedescendant", activeOption.id);
+          activeOption.scrollIntoView({ block: "nearest" });
+          renderSelection();
+        }
+
+        /* ---- Selection --------------------------------------------------- */
+
+        function choose(opening) {
+          chosen = opening.key ? opening : null;
+          scopeAll = Boolean(opening.isAll);
+          activeIndex = -1;
+          input.value = opening.name;
+          updateFieldExtras();
+          renderOptions();
+          closeList();
+          input.select();
+        }
+
+        function updateFieldExtras() {
+          const showChip = Boolean(chosen);
+          ecoChip.hidden = !showChip;
+          clearButton.hidden = !input.value;
+          if (showChip) {
+            ecoChip.textContent = chosen.eco;
+            ecoChip.style.setProperty("--tab", familyVar(chosen.eco));
+          }
+        }
+
+        function previewOpening() {
+          if (open() && activeIndex >= 0) return visibleOptions[activeIndex];
+          if (chosen) return chosen;
+          return null;
+        }
+
+        function limitText() {
+          if (unlimitedCheckbox.checked) return "all positions";
+          const value = Number.parseInt(limitInput.value, 10);
+          const count = Number.isFinite(value) && value >= 1 ? value : 1;
+          return `${count} position${count === 1 ? "" : "s"}`;
+        }
+
+        function notationList(opening) {
+          const list = document.createElement("ol");
+          list.className = "notation";
+          list.setAttribute("aria-label", "Move sequence");
+          for (let index = 0; index < opening.moves.length; index += 2) {
+            const item = document.createElement("li");
+            const number = document.createElement("span");
+            number.className = "ply-no";
+            number.textContent = `${index / 2 + 1}.`;
+            item.append(number);
+            const white = document.createElement("span");
+            white.className = "ply";
+            white.textContent = opening.moves[index];
+            item.append(white);
+            if (opening.moves[index + 1]) {
+              const black = document.createElement("span");
+              black.className = "ply";
+              black.textContent = opening.moves[index + 1];
+              item.append(black);
+            }
+            list.append(item);
+          }
+          return list;
+        }
+
+        function renderSelection() {
+          const opening = previewOpening();
+          selectionBody.replaceChildren();
+
+          if (!opening || opening.isAll) {
+            const empty = document.createElement("div");
+            empty.className = "empty-record";
+            const title = document.createElement("strong");
+            title.textContent = opening && opening.isAll ? opening.name : "No line chosen yet";
+            const copy = document.createElement("span");
+            copy.textContent =
+              opening && opening.isAll
+                ? `${opening.matchCount} matching lines. Search or highlight a specific opening to start training it.`
+                : "Highlight a result to read the line here, then press Enter to choose it.";
+            empty.append(title, copy);
+            selectionBody.append(empty);
+
+            startButton.disabled = true;
+            startLabel.textContent = "Start training";
+            startHint.textContent = "Choose a line to begin.";
+            return;
+          }
+
+          const record = document.createElement("div");
+          record.className = "record";
+
+          const head = document.createElement("div");
+          head.className = "record-head";
+          const tab = document.createElement("span");
+          tab.className = "eco-tab";
+          tab.style.setProperty("--tab", familyVar(opening.eco));
+          tab.setAttribute("aria-hidden", "true");
+          tab.textContent = family(opening.eco);
+          const headText = document.createElement("div");
+          const title = document.createElement("h3");
+          title.className = "record-title";
+          title.textContent = opening.name;
+          const meta = document.createElement("p");
+          meta.className = "record-meta";
+          meta.append(`${opening.eco} · Volume ${family(opening.eco)} — ${VOLUMES[family(opening.eco)]} · `);
+          meta.append(sideChip(opening), " repertoire");
+          headText.append(title, meta);
+          head.append(tab, headText);
+          record.append(head);
+
+          record.append(notationList(opening));
+
+          const stats = document.createElement("dl");
+          stats.className = "stats";
+          [
+            ["Saved lines", opening.route_count],
+            ["Games reached", opening.games_reached],
+            ["Deepest line", `${opening.games_deepest} moves`],
+          ].forEach(([label, value]) => {
+            const cell = document.createElement("div");
+            const dt = document.createElement("dt");
+            dt.textContent = label;
+            const dd = document.createElement("dd");
+            dd.textContent = String(value);
+            cell.append(dt, dd);
+            stats.append(cell);
+          });
+          record.append(stats);
+          selectionBody.append(record);
+
+          startButton.disabled = false;
+          startLabel.textContent = "Start training";
+          startHint.replaceChildren("Requests ");
+          const hintLimit = document.createElement("b");
+          hintLimit.textContent = limitText();
+          const hintCode = document.createElement("b");
+          hintCode.textContent = `${opening.eco} ${opening.name}`;
+          startHint.append(hintLimit, " · ", hintCode, ".");
+        }
+
+        /* ---- Events ------------------------------------------------------ */
+
+        input.addEventListener("focus", () => {
+          input.select();
+          openList();
+        });
+
+        input.addEventListener("mousedown", () => {
+          if (!open()) openList();
+        });
+
+        input.addEventListener("input", () => {
+          if (chosen && input.value.trim() !== chosen.name) chosen = null;
+          scopeAll = false;
+          updateFieldExtras();
+          openList();
+        });
+
+        input.addEventListener("keydown", (event) => {
+          if (event.key === "ArrowDown") {
+            event.preventDefault();
+            if (!open()) openList();
+            setActive(activeIndex + 1);
+          } else if (event.key === "ArrowUp") {
+            event.preventDefault();
+            if (!open()) openList();
+            setActive(activeIndex - 1);
+          } else if (event.key === "Home" && open()) {
+            event.preventDefault();
+            setActive(0);
+          } else if (event.key === "End" && open()) {
+            event.preventDefault();
+            setActive(visibleOptions.length - 1);
+          } else if (event.key === "Enter" && open() && activeIndex >= 0) {
+            event.preventDefault();
+            choose(visibleOptions[activeIndex]);
+          } else if (event.key === "Escape") {
+            if (open()) {
+              event.preventDefault();
+              closeList();
+            }
+          }
+        });
+
+        clearButton.addEventListener("mousedown", (event) => {
+          event.preventDefault();
+          chosen = null;
+          scopeAll = false;
+          input.value = "";
+          updateFieldExtras();
+          openList();
+          input.focus();
+        });
+
+        sideRadios.forEach((radio) => {
+          radio.addEventListener("change", () => {
+            if (!radio.checked) return;
+            side = radio.value;
+            const previousChosen = chosen;
+            if (chosen && !sideMatches(chosen)) chosen = null;
+            if (scopeAll) input.value = allOption().name;
+            else if (previousChosen && !chosen) input.value = "";
+            updateFieldExtras();
+            if (open()) openList();
+            else {
+              renderOptions();
+              renderSelection();
+            }
+          });
+        });
+
+        limitInput.addEventListener("input", renderSelection);
+
+        unlimitedCheckbox.addEventListener("change", () => {
+          limitInput.disabled = unlimitedCheckbox.checked;
+          renderSelection();
+        });
+
+        comboField.addEventListener("mousedown", (event) => {
+          if (event.target.closest(".clear-button")) return;
+          if (event.target === input) return;
+          event.preventDefault();
+          input.focus();
+        });
+
+        document.addEventListener("mousedown", (event) => {
+          if (!panel.contains(event.target)) closeList();
+        });
+
+        updateFieldExtras();
+        renderOptions();
+        renderSelection();
+      })();
+    </script>
+  </body>
+</html>

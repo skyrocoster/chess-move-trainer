@@ -70,19 +70,31 @@ export function MoveHistory({
   );
   const moveRows = createMoveHistoryRows(model.entries);
   const activeButtonRef = useRef<HTMLButtonElement | null>(null);
+  const listRef = useRef<HTMLDivElement | null>(null);
   const previousActivePlyRef = useRef<number | null>(null);
 
   useEffect(() => {
     const activeButton = activeButtonRef.current;
+    const list = listRef.current;
+    const didChange =
+      previousActivePlyRef.current !== null && previousActivePlyRef.current !== activePly;
+    previousActivePlyRef.current = activePly;
+
     if (!activeButton) return;
 
-    if (previousActivePlyRef.current !== null && previousActivePlyRef.current !== activePly) {
+    if (didChange) {
       activeButton.focus({ preventScroll: true });
     }
-    if (typeof activeButton.scrollIntoView === "function") {
-      activeButton.scrollIntoView({ behavior: "auto", block: "nearest" });
+    // Scroll only inside the history list so the page never jumps.
+    if (!list || !didChange) return;
+
+    const listRect = list.getBoundingClientRect();
+    const buttonRect = activeButton.getBoundingClientRect();
+    if (buttonRect.top < listRect.top) {
+      list.scrollTop -= listRect.top - buttonRect.top;
+    } else if (buttonRect.bottom > listRect.bottom) {
+      list.scrollTop += buttonRect.bottom - listRect.bottom;
     }
-    previousActivePlyRef.current = activePly;
   }, [activePly, model]);
 
   function handleKeyDown(event: KeyboardEvent<HTMLButtonElement>, entryPly: number) {
@@ -121,7 +133,7 @@ export function MoveHistory({
 
   return (
     <nav {...rest} className={historyClassName} aria-label={ariaLabel}>
-      <div className={styles.list}>
+      <div ref={listRef} className={styles.list}>
         <table className={styles.table}>
           <caption className={styles.visuallyHidden}>Move history by move number</caption>
           <colgroup>

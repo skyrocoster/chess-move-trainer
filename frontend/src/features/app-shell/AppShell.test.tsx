@@ -42,6 +42,10 @@ describe("AppShell", () => {
     expect(repertoireLinks).toHaveLength(1);
     expect(repertoireLinks[0]).toHaveAttribute("href", "/repertoire");
     expect(repertoireLinks[0]).not.toHaveAttribute("aria-current", "page");
+    const trainerLinks = screen.getAllByRole("link", { name: "Trainer Practice" });
+    expect(trainerLinks).toHaveLength(1);
+    expect(trainerLinks[0]).toHaveAttribute("href", "/trainer");
+    expect(trainerLinks[0]).not.toHaveAttribute("aria-current", "page");
     expect(
       screen.getByRole("button", { name: "Open navigation menu", hidden: true }),
     ).toBeInTheDocument();
@@ -97,6 +101,17 @@ describe("AppShell", () => {
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
+  it("closes the drawer when Trainer Practice is selected", async () => {
+    const user = userEvent.setup();
+    renderShell();
+
+    await user.click(screen.getByRole("button", { name: "Open navigation menu", hidden: true }));
+    const dialog = screen.getByRole("dialog");
+    await user.click(within(dialog).getByRole("link", { name: "Trainer Practice" }));
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
   it("renders no Viewer navigation entry for the /viewer path", () => {
     renderShell(["/viewer"]);
 
@@ -119,6 +134,23 @@ describe("AppShell", () => {
       "page",
     );
     expect(screen.getByRole("link", { name: "Status" })).not.toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+  });
+
+  it("marks Trainer Practice as the active navigation destination", () => {
+    renderShell(["/trainer"]);
+
+    expect(screen.getByRole("link", { name: "Trainer Practice" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+    expect(screen.getByRole("link", { name: "Status" })).not.toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+    expect(screen.getByRole("link", { name: "Repertoire Builder" })).not.toHaveAttribute(
       "aria-current",
       "page",
     );

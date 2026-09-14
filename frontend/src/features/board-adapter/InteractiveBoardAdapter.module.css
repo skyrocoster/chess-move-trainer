@@ -98,6 +98,26 @@
   gap: var(--cmt-spacing-8);
 }
 
+.answerStatus {
+  box-sizing: border-box;
+  margin: 0;
+  min-inline-size: 0;
+  padding: var(--cmt-spacing-8) var(--cmt-spacing-12);
+  background: var(--md-sys-color-surface-container);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: 0.25rem;
+  color: var(--md-sys-color-on-surface);
+  font: var(--md-sys-typescale-body-medium);
+  overflow-wrap: anywhere;
+}
+
+.board[data-locked="true"] {
+  opacity: 0.75;
+  cursor: not-allowed;
+  outline: 2px solid var(--md-sys-color-outline-variant);
+  outline-offset: -2px;
+}
+
 .notice {
   margin: 0;
 }
@@ -126,7 +146,9 @@
 
   .branchHeading,
   .san,
+  .answerStatus,
   .fenField,
+  .fenField code,
   .fenField code,
   .terminal,
   .branchHeading span,

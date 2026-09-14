@@ -110,7 +110,7 @@ export const CleanPreferredTimelineNovelParent: Story = {
     await expect(canvas.getByRole("button", { name: "Save e4" })).toBeEnabled();
     await userEvent.click(canvas.getByRole("button", { name: "Save e4" }));
     await waitFor(() =>
-      expect(canvas.getByTestId("session-status")).toHaveTextContent("Preferred move saved."),
+      expect(canvas.getByTestId("branch-status")).toHaveTextContent("Preferred move saved."),
     );
     await expectPreferredMoveState(canvasElement, "matching");
     await expect(canvas.getByTestId("saved-move")).toHaveTextContent(/^Saved\s*e4\s*e2e4$/);
@@ -218,12 +218,12 @@ export const SavedBoxKeyboard: Story = {
     await expectPositionSquares(canvasElement, "e4", 1);
     await expectSessionHistory(canvasElement, ["Initial position", "White, move 1, e4"]);
     await expectActiveSessionHistoryEntry(canvasElement, "White, move 1, e4");
-    await expect(canvas.getByTestId("session-status")).toHaveTextContent(
+    await expect(canvas.getByTestId("branch-status")).toHaveTextContent(
       "Move played locally: e4.",
     );
     await savedBox.focus();
     await userEvent.keyboard(" ");
-    await expect(canvas.getByTestId("session-status")).toHaveTextContent(
+    await expect(canvas.getByTestId("branch-status")).toHaveTextContent(
       "Saved move rejected because it is illegal in the current position.",
     );
   },
@@ -237,7 +237,7 @@ export const SaveReplacement: Story = {
     await userEvent.click(await canvas.findByRole("button", { name: "1. d4" }));
     await userEvent.click(canvas.getByRole("button", { name: "Save d4" }));
     await waitFor(() =>
-      expect(canvas.getByTestId("session-status")).toHaveTextContent("Preferred move saved."),
+      expect(canvas.getByTestId("branch-status")).toHaveTextContent("Preferred move saved."),
     );
     await expectPreferredMoveState(canvasElement, "matching");
     await expect(canvas.getByTestId("saved-move")).toHaveTextContent(/^Saved\s*d4\s*d2d4$/);
@@ -289,7 +289,7 @@ export const PendingSave: Story = {
     const canvas = within(canvasElement);
     await userEvent.click(await canvas.findByRole("button", { name: "1. d4" }));
     await userEvent.click(canvas.getByRole("button", { name: "Save d4" }));
-    await expect(canvas.getByTestId("session-status")).toHaveTextContent(
+    await expect(canvas.getByTestId("branch-status")).toHaveTextContent(
       "Move played locally: d4.",
     );
     await expect(canvas.getByText("Saving preferred move...")).toBeVisible();
@@ -427,14 +427,13 @@ export const FirstChoiceFromEmpty: Story = {
     await expect(canvas.getByRole("button", { name: "Save e4" })).toBeEnabled();
     await userEvent.click(canvas.getByRole("button", { name: "Save e4" }));
     await waitFor(() =>
-      expect(canvas.getByTestId("session-status")).toHaveTextContent("Preferred move saved."),
+      expect(canvas.getByTestId("branch-status")).toHaveTextContent("Preferred move saved."),
     );
     await expectPreferredMoveState(canvasElement, "matching");
     await expect(canvas.getByTestId("saved-move")).toHaveTextContent("e4");
     await expect(canvas.getByTestId("selected-move")).toHaveTextContent(/^Selected\s*e4\s*e2e4$/);
     await expectPositionSquares(canvasElement, "e2", 0);
     await expectPositionSquares(canvasElement, "e4", 1);
-    await expect(canvas.getByTestId("session-origin")).toHaveTextContent("Current Ply 1");
     await expectSessionHistory(canvasElement, ["Initial position", "White, move 1, e4"]);
     await expectPreferredActions(canvasElement, ["Matches saved", "Remove"]);
     await expectDateFreePreferredPanel(canvasElement);
@@ -523,7 +522,7 @@ export const SavedChoiceStagesMove: Story = {
     await expectPositionSquares(canvasElement, "e4", 1);
     await expectSessionHistory(canvasElement, ["Initial position", "White, move 1, e4"]);
     await expectActiveSessionHistoryEntry(canvasElement, "White, move 1, e4");
-    await expect(canvas.getByTestId("session-status")).toHaveTextContent(
+    await expect(canvas.getByTestId("branch-status")).toHaveTextContent(
       "Move played locally: e4.",
     );
     await expectPreferredMoveState(canvasElement, "matching");

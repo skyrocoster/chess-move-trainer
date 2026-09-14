@@ -26,6 +26,9 @@ import type {
   GetPositionInsightData,
   GetPositionInsightErrors,
   GetPositionInsightResponses,
+  GetPositionTrainingRequirementsData,
+  GetPositionTrainingRequirementsErrors,
+  GetPositionTrainingRequirementsResponses,
   GetPreferredMovesData,
   GetPreferredMovesErrors,
   GetPreferredMovesResponses,
@@ -147,6 +150,22 @@ export const getPositionInsight = <ThrowOnError extends boolean = false>(
     GetPositionInsightErrors,
     ThrowOnError
   >({ url: "/api/positions/insight", ...options });
+
+/**
+ * Get Position Training Requirements
+ */
+export const getPositionTrainingRequirements = <ThrowOnError extends boolean = false>(
+  options: Options<GetPositionTrainingRequirementsData, ThrowOnError>,
+): RequestResult<
+  GetPositionTrainingRequirementsResponses,
+  GetPositionTrainingRequirementsErrors,
+  ThrowOnError
+> =>
+  (options.client ?? client).get<
+    GetPositionTrainingRequirementsResponses,
+    GetPositionTrainingRequirementsErrors,
+    ThrowOnError
+  >({ url: "/api/positions/training-requirements", ...options });
 
 /**
  * Delete Preferred Moves

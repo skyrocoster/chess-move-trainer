@@ -6,7 +6,8 @@ export type LastMove = {
   targetSquare: Square;
 };
 
-const LAST_MOVE_SQUARE_STYLE: CSSProperties = {
+/** The board-level "most recent ply" treatment, kept distinct from answer states. */
+export const LAST_MOVE_SQUARE_STYLE: CSSProperties = {
   backgroundColor: "rgba(250, 204, 21, 0.42)",
   boxShadow: "inset 0 0 0 3px rgba(146, 94, 0, 0.42)",
 };

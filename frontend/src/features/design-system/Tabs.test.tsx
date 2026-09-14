@@ -495,12 +495,8 @@ describe("Tabs", () => {
     });
 
     await user.click(details);
-    expect(detailsScrollIntoView).toHaveBeenCalledWith({
-      behavior: "auto",
-      block: "nearest",
-      inline: "nearest",
-    });
     expect(details).toHaveAttribute("aria-selected", "true");
+    expect(detailsScrollIntoView).not.toHaveBeenCalled();
 
     const settings = screen.getByRole("tab", { name: "Settings" });
     const settingsScrollIntoView = vi.fn();
@@ -510,11 +506,7 @@ describe("Tabs", () => {
     });
     await settings.focus();
 
-    expect(settingsScrollIntoView).toHaveBeenCalledWith({
-      behavior: "auto",
-      block: "nearest",
-      inline: "nearest",
-    });
+    expect(settingsScrollIntoView).not.toHaveBeenCalled();
     expect(settings).toHaveAttribute("aria-selected", "false");
     expect(screen.getByTestId("tabs-selection-status")).toHaveTextContent("Active tab: Details");
   });

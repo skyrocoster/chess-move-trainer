@@ -37,7 +37,6 @@ function panelArgs(
   overrides: Partial<RepertoireSessionPanelProps> = {},
 ): RepertoireSessionPanelProps {
   return {
-    sessionStatus: "Move played locally: e4.",
     model: model(),
     positionContext: POSITION_CONTEXT,
     date: null,
@@ -82,15 +81,13 @@ export const LocalLineSession: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await expect(canvas.getByTestId("repertoire-session")).toBeVisible();
-    await expect(canvas.getByTestId("session-status")).toHaveTextContent(
-      "Move played locally: e4.",
-    );
+    await expect(canvas.queryByTestId("session-status")).not.toBeInTheDocument();
   },
 };
 
 export const SessionFactsOnly: Story = {
   name: "Session facts without move history",
-  args: panelArgs({ sessionStatus: "No local moves yet." }),
+  args: panelArgs(),
 };
 
 export const FrequencyZero: Story = {

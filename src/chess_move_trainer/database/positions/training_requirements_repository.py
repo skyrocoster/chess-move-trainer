@@ -182,6 +182,7 @@ class TrainingRequirementRepository:
             groups,
             preferences,
             as_of,
+            query.trainer_color,
             query.opening_key,
             query.opening_match,
             opening_matches,
@@ -399,6 +400,7 @@ def _current_scoped_groups(
     groups: dict[tuple[int, str], _EvidenceGroup],
     preferences: dict[int, tuple[_PreferencePeriod, ...]],
     as_of: date,
+    trainer_color: TrainerColor | None,
     opening_key: str | None,
     opening_match: str | None,
     opening_matches: dict[int, dict[str, int]],
@@ -415,6 +417,8 @@ def _current_scoped_groups(
         current_by_position[position_id] = group
 
     for group in current_by_position.values():
+        if trainer_color is not None and group.trainer_color != trainer_color:
+            continue
         if opening_key is not None and not _group_matches_opening(
             group,
             opening_key,

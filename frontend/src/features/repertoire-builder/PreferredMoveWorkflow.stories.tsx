@@ -109,9 +109,6 @@ export const OpponentLocalOnly: Story = {
     await userEvent.click(await canvas.findByRole("button", { name: "White, move 1, e4" }));
     await userEvent.click(await canvas.findByRole("button", { name: "Black, move 1, e5" }));
     await userEvent.click(await canvas.findByRole("button", { name: "2. Nf3" }));
-    await expect(canvas.getByTestId("session-status")).toHaveTextContent(
-      "Move played locally: Nf3.",
-    );
     await expectSessionHistory(canvasElement, [
       "Initial position",
       "White, move 1, e4",

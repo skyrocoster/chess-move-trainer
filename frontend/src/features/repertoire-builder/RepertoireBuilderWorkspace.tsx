@@ -4,7 +4,7 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import { getGame } from "../../api/client";
 import type { GameDetailResponse } from "../../api/client";
 import type { InteractiveBoardMoveIntent } from "../board-adapter/InteractiveBoardAdapter";
-import { deriveLastMove, lastMoveFromSquares } from "../board-adapter/lastMove";
+import { deriveLastMove, lastMoveFromSquares, type LastMove } from "../board-adapter/lastMove";
 import { PositionDescription } from "../board-adapter/PositionDescription";
 import { createPositionModel } from "../board-adapter/positionDescriptionModel";
 import {
@@ -24,7 +24,6 @@ import { RepertoireResponsiveStage } from "./RepertoireResponsiveStage";
 import {
   boardLabel,
   branchMoves,
-  originDescription,
   promotionPiece,
   sessionViewKey,
 } from "./repertoireBuilderWorkspaceModel";
@@ -68,6 +67,7 @@ export default function RepertoireBuilderWorkspace({
   const [sessionStatus, setSessionStatus] = useState(
     "Select a legal move to start the local line.",
   );
+  const [rejectedMove, setRejectedMove] = useState<LastMove | null>(null);
   const requestId = useRef(0);
   const controller = useRef<AbortController | null>(null);
 
@@ -99,10 +99,17 @@ export default function RepertoireBuilderWorkspace({
     (move: PositionPickerMove): boolean => {
       const sessionMove = moveToSessionMove(session, move);
       if (sessionMove === null) {
+        setRejectedMove(
+          lastMoveFromSquares(
+            move.sourceSquare as Square,
+            move.targetSquare as Square,
+          ),
+        );
         setSessionStatus("Move rejected because it is illegal.");
         return false;
       }
 
+      setRejectedMove(null);
       setSession(applySessionMove(session, sessionMove));
       resetWorkflow();
       setSessionStatus(`Move played locally: ${sessionMove.san}.`);
@@ -182,6 +189,7 @@ export default function RepertoireBuilderWorkspace({
     setSession(resetSession());
     setOrientation("white");
     clearSelectedResponse();
+    setRejectedMove(null);
     setSessionStatus("Select a legal move to start the local line.");
   }
 
@@ -221,6 +229,7 @@ export default function RepertoireBuilderWorkspace({
         const mainLine = mapGameDetailResponse(result.data as GameDetailResponse);
         setSession(loadImportedSession(mainLine));
         setOrientation(mainLine.trainerOrientation);
+        setRejectedMove(null);
         setSessionStatus("Select a legal move to continue the imported game.");
         setStatus("idle");
       } catch {
@@ -250,6 +259,7 @@ export default function RepertoireBuilderWorkspace({
           intent.anchorElement,
         );
         if (opened) {
+          setRejectedMove(null);
           setSessionStatus("Choose a promotion piece.");
         }
         return false;
@@ -268,6 +278,7 @@ export default function RepertoireBuilderWorkspace({
       const sourceElement =
         document.activeElement instanceof HTMLElement ? document.activeElement : null;
       if (move.length < 4 || move.length > 5) {
+        setRejectedMove(null);
         setSessionStatus("Move rejected because it is illegal.");
         return;
       }
@@ -291,6 +302,7 @@ export default function RepertoireBuilderWorkspace({
   const handlePromotionCancel = () => cancelPromotionWithStatus(cancelPromotion, setSessionStatus);
   const handlePlaySavedMove = useCallback(() => {
     clearSelectedResponse();
+    setRejectedMove(null);
     onPlaySavedMove();
   }, [clearSelectedResponse, onPlaySavedMove]);
 
@@ -309,6 +321,7 @@ export default function RepertoireBuilderWorkspace({
         return next ?? current;
       });
       clearSelectedResponse();
+      setRejectedMove(null);
       setSessionStatus(statusMessage);
     },
     [cancelPromotion, clearSelectedResponse, resetWorkflow],
@@ -320,6 +333,7 @@ export default function RepertoireBuilderWorkspace({
     cancelPromotion();
     resetWorkflow();
     clearSelectedResponse();
+    setRejectedMove(null);
     setSession((current) => returnToGame(current));
     setSessionStatus("Returned to the imported game.");
   }, [cancelPromotion, clearSelectedResponse, resetWorkflow]);
@@ -328,6 +342,7 @@ export default function RepertoireBuilderWorkspace({
     cancelPromotion();
     resetWorkflow();
     clearSelectedResponse();
+    setRejectedMove(null);
     setOrientation((current) => (current === "white" ? "black" : "white"));
     setSessionStatus(`Flipped to ${orientation === "white" ? "Black" : "White"} at the bottom.`);
   }, [cancelPromotion, clearSelectedResponse, orientation, resetWorkflow]);
@@ -349,9 +364,6 @@ export default function RepertoireBuilderWorkspace({
             onReset={resetWorkspace}
           />
         </div>
-        <p className={styles.origin} data-testid="session-origin">
-          {originDescription(session)} Current Ply {currentPosition.ply}.
-        </p>
         <RepertoireResponsiveStage
           board={
             <RepertoireBoardLane
@@ -372,6 +384,7 @@ export default function RepertoireBuilderWorkspace({
                 notice: sessionStatus,
                 terminal: null,
                 lastMove,
+                rejectedMove,
                 promotionPending,
                 promotionColor: chess.turn(),
                 promotionSourceElement,
@@ -407,7 +420,6 @@ export default function RepertoireBuilderWorkspace({
               aria-label="Session lane"
             >
               <RepertoireSessionPanel
-                sessionStatus={sessionStatus}
                 model={workflow.positionModel}
                 positionContext={workflow.positionContext}
                 date={workflow.date}

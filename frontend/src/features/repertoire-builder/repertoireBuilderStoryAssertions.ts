@@ -39,10 +39,7 @@ export async function expectSessionBoundary(canvasElement: HTMLElement): Promise
   await expect(within(boardLane).getByTestId("board-move-history")).toBeVisible();
   await expect(sessionContent.queryByTestId("board-move-history")).not.toBeInTheDocument();
   await expect(sessionContent.queryByTestId("session-san-history")).not.toBeInTheDocument();
-  const status = sessionContent.getByTestId("session-status");
-  await expect(status).toBeVisible();
-  await expect(status).toHaveAttribute("role", "status");
-  await expect(status).toHaveAttribute("aria-live", "polite");
+  await expect(sessionContent.queryByTestId("session-status")).not.toBeInTheDocument();
   await expect(sessionContent.getByRole("heading", { name: "Preferred move" })).toBeVisible();
 }
 
@@ -75,9 +72,8 @@ export async function expectSingleStagedStatus(canvasElement: HTMLElement): Prom
 
 export async function expectStagedStatus(canvasElement: HTMLElement, san: string): Promise<void> {
   const canvas = within(canvasElement);
-  const session = within(canvas.getByTestId("repertoire-session"));
   const status = `Move played locally: ${san}.`;
-  await expect(session.getByTestId("session-status")).toHaveTextContent(status);
+  await expect(canvas.getByTestId("branch-status")).toHaveTextContent(status);
 }
 
 export async function expectPreferredMoveState(

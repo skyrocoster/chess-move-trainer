@@ -4,6 +4,7 @@
   container-type: inline-size;
   display: flex;
   align-items: flex-start;
+  justify-content: flex-start;
   min-inline-size: 0;
   margin-inline-end: var(--cmt-spacing-24);
 }
@@ -11,6 +12,7 @@
 .board {
   flex: 1 1 0;
   min-inline-size: 0;
+  max-inline-size: 40rem;
 }
 
 .evalBar {

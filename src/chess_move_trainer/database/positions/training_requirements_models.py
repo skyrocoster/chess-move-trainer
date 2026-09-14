@@ -118,6 +118,7 @@ class TrainingRequirementQuery:
     opening_match: OpeningMatch | None = None
     page: int = 1
     page_size: int = 50
+    trainer_color: TrainerColor | None = None
 
     def __post_init__(self) -> None:
         parsed_as_of = _parse_date(self.as_of, "as_of")
@@ -168,6 +169,10 @@ class TrainingRequirementQuery:
         if self.opening_match not in (None, "reached", "deepest"):
             raise TrainingRequirementValidationError(
                 "opening_match must be 'reached' or 'deepest'"
+            )
+        if self.trainer_color not in (None, "white", "black"):
+            raise TrainingRequirementValidationError(
+                "trainer_color must be 'white' or 'black'"
             )
 
         if type(self.page) is not int or self.page < 1:

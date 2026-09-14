@@ -303,7 +303,7 @@ export function storyPositionContextClient(
 export async function loadGame(canvas: ReturnType<typeof within>, gameUuid: string) {
   await userEvent.type(canvas.getByLabelText("Game UUID"), gameUuid);
   await userEvent.click(canvas.getByRole("button", { name: "Load game" }));
-  await expect(canvas.getByTestId("session-origin")).toHaveTextContent("complete game loaded");
+  await expect(canvas.getByTestId("board-move-history")).toBeVisible();
 }
 
 export async function expectNoHorizontalOverflow(canvasElement: HTMLElement) {
