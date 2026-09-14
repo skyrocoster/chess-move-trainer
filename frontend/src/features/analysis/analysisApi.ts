@@ -1,7 +1,9 @@
 import { validateFen } from "chess.js";
 
 import { getAnalysis, requestAnalysis as generatedRequestAnalysis } from "../../api/client";
-import type { Fen } from "../chess/chessPrimitives";
+import { positionKeyFromFen, type Fen } from "../chess/chessPrimitives";
+
+export { positionKeyFromFen } from "../chess/chessPrimitives";
 
 export const MAX_FEN_LENGTH = 128;
 
@@ -81,10 +83,6 @@ function isCanonicalFen(value: unknown): value is Fen {
     return false;
   }
   return validateFen(value).ok;
-}
-
-export function positionKeyFromFen(fen: Fen): PositionKey {
-  return fen.split(" ").slice(0, 4).join(" ");
 }
 
 function samePositionFen(value: unknown, fen: Fen): value is Fen {

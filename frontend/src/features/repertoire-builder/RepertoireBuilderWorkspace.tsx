@@ -1,5 +1,5 @@
 import { Chess, type Square } from "chess.js";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { getGame } from "../../api/client";
 import type { GameDetailResponse } from "../../api/client";
@@ -19,6 +19,7 @@ import { evaluationDisplay } from "../analysis/evalBarDisplay";
 import { GameLoader, type GameLoaderStatus, type GameLoaderValues } from "../game/GameLoader";
 import { mapGameDetailResponse } from "../game/gameModel";
 import { usePreferredMoveWorkflow } from "./preferredMoveWorkflowState";
+import { GameDetailQueryError, useGameDetailQuery } from "./gameDetailQuery";
 import { RepertoireBoardLane } from "./RepertoireBoardLane";
 import { RepertoireResponsiveStage } from "./RepertoireResponsiveStage";
 import {
@@ -62,14 +63,15 @@ export default function RepertoireBuilderWorkspace({
 }: RepertoireBuilderWorkspaceProps) {
   const [gameUuidInput, setGameUuidInput] = useState("");
   const [status, setStatus] = useState<GameLoaderStatus>("idle");
+  const [submittedGameUuid, setSubmittedGameUuid] = useState<string | null>(null);
+  const [submissionVersion, setSubmissionVersion] = useState(0);
   const [session, setSession] = useState<PositionPickerSessionBoundary>(createFreshSession);
   const [orientation, setOrientation] = useState<ChessSide>("white");
   const [sessionStatus, setSessionStatus] = useState(
     "Select a legal move to start the local line.",
   );
   const [rejectedMove, setRejectedMove] = useState<LastMove | null>(null);
-  const requestId = useRef(0);
-  const controller = useRef<AbortController | null>(null);
+  const gameDetailQuery = useGameDetailQuery(submittedGameUuid, gameClient);
 
   const currentPosition = session.currentPosition;
   const viewKey = sessionViewKey(session);
@@ -174,17 +176,11 @@ export default function RepertoireBuilderWorkspace({
       )
     : deriveLastMove(undefined, null);
 
-  function invalidateRequest() {
-    requestId.current += 1;
-    controller.current?.abort();
-    controller.current = null;
-  }
-
   function resetWorkspace() {
     cancelPromotion();
-    invalidateRequest();
     resetWorkflow();
     setGameUuidInput("");
+    setSubmittedGameUuid(null);
     setStatus("idle");
     setSession(resetSession());
     setOrientation("white");
@@ -193,53 +189,54 @@ export default function RepertoireBuilderWorkspace({
     setSessionStatus("Select a legal move to start the local line.");
   }
 
-  async function handleSubmit(values: GameLoaderValues) {
+  function handleSubmit(values: GameLoaderValues) {
     cancelPromotion();
-    invalidateRequest();
     resetWorkflow();
     clearSelectedResponse();
-    const currentRequestId = requestId.current;
-    const nextController = new AbortController();
-    controller.current = nextController;
     setStatus("loading");
-
-    let result: Awaited<ReturnType<GameDetailClient>>;
-    try {
-      result = await gameClient({
-        path: { game_uuid: values.gameUuid },
-        signal: nextController.signal,
-      });
-    } catch {
-      if (nextController.signal.aborted || currentRequestId !== requestId.current) {
-        return;
-      }
-      setStatus("unexpected_failure");
-      return;
+    const nextGameUuid = values.gameUuid.trim();
+    if (submittedGameUuid === nextGameUuid && gameDetailQuery.isError) {
+      void gameDetailQuery.refetch();
     }
-
-    if (nextController.signal.aborted || currentRequestId !== requestId.current) {
-      return;
-    }
-    if (controller.current === nextController) {
-      controller.current = null;
-    }
-
-    if (result.data !== undefined) {
-      try {
-        const mainLine = mapGameDetailResponse(result.data as GameDetailResponse);
-        setSession(loadImportedSession(mainLine));
-        setOrientation(mainLine.trainerOrientation);
-        setRejectedMove(null);
-        setSessionStatus("Select a legal move to continue the imported game.");
-        setStatus("idle");
-      } catch {
-        setStatus("game_unavailable");
-      }
-      return;
-    }
-
-    setStatus(loadFailure(result));
+    setSubmissionVersion((value) => value + 1);
+    setSubmittedGameUuid(nextGameUuid);
   }
+
+  useEffect(() => {
+    if (submittedGameUuid === null || gameDetailQuery.isFetching) {
+      return;
+    }
+    if (gameDetailQuery.isError) {
+      setStatus(
+        gameDetailQuery.error instanceof GameDetailQueryError
+          ? loadFailure(gameDetailQuery.error.result)
+          : "unexpected_failure",
+      );
+      return;
+    }
+    if (!gameDetailQuery.isSuccess) {
+      return;
+    }
+
+    try {
+      const mainLine = mapGameDetailResponse(gameDetailQuery.data);
+      setSession(loadImportedSession(mainLine));
+      setOrientation(mainLine.trainerOrientation);
+      setRejectedMove(null);
+      setSessionStatus("Select a legal move to continue the imported game.");
+      setStatus("idle");
+    } catch {
+      setStatus("game_unavailable");
+    }
+  }, [
+    gameDetailQuery.data,
+    gameDetailQuery.error,
+    gameDetailQuery.isError,
+    gameDetailQuery.isFetching,
+    gameDetailQuery.isSuccess,
+    submittedGameUuid,
+    submissionVersion,
+  ]);
 
   const {
     clear: clearSelectedResponse,

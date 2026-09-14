@@ -20,6 +20,10 @@ import type {
   PreferredMoveMutationResult,
   PreferredMoveResponse,
 } from "./preferredMoveApi";
+import {
+  createTestQueryClient,
+  QueryClientTestProvider,
+} from "../../test-utils/QueryClientTestProvider";
 import RepertoireBuilderWorkspace, { type GameDetailClient } from "./RepertoireBuilderWorkspace";
 
 export { GAME_UUID } from "../game/gameFixtures";
@@ -203,17 +207,20 @@ export function gameClient(detail: GameDetailResponse = GAME_DETAIL): GameDetail
 
 export function renderWorkspace(
   props: ComponentProps<typeof RepertoireBuilderWorkspace> = {},
+  client: ReturnType<typeof createTestQueryClient> = createTestQueryClient(),
 ): ReturnType<typeof render> {
   const clients = testClients();
   return render(
-    <RepertoireBuilderWorkspace
-      analysisClient={noAnalysisClient()}
-      gameClient={gameClient()}
-      preferredMoveClient={clients.preferredMoveClient}
-      positionContextClient={clients.positionContextClient}
-      moveResponseDistributionClient={clients.moveResponseDistributionClient}
-      {...props}
-    />,
+    <QueryClientTestProvider client={client}>
+      <RepertoireBuilderWorkspace
+        analysisClient={noAnalysisClient()}
+        gameClient={gameClient()}
+        preferredMoveClient={clients.preferredMoveClient}
+        positionContextClient={clients.positionContextClient}
+        moveResponseDistributionClient={clients.moveResponseDistributionClient}
+        {...props}
+      />
+    </QueryClientTestProvider>,
   );
 }
 

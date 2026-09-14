@@ -1,4 +1,5 @@
 import { Chess, type Square } from "chess.js";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   useCallback,
   useEffect,
@@ -13,6 +14,7 @@ import {
 import { type CalendarDateValue } from "../design-system/CalendarDate";
 import { normalizeToUtcMidnight } from "../design-system/CalendarDateUtils";
 import { strictFen, type ChessSide } from "../chess/chessPrimitives";
+import { positionKeyFromFen } from "../chess/chessPrimitives";
 import type { PromotionPiece } from "../board-adapter/PromotionPicker";
 import {
   applySessionMove,
@@ -27,10 +29,16 @@ import {
 import { usePositionContextState } from "../position-context/positionContextState";
 import {
   defaultPreferredMoveClient,
+  getPreferredMoveDateWindow,
   type PreferredMoveClient,
   type PreferredMoveFailureCode,
 } from "./preferredMoveApi";
 import { usePreferredMoveState } from "./preferredMoveState";
+import {
+  invalidatePositionInsight,
+  invalidatePreferredMove,
+  invalidateTrainingRequirements,
+} from "../../api/queryInvalidation";
 import { deriveRepertoirePositionModel } from "./repertoireWorkflowModel";
 import type { PreferredMoveMutationKind } from "./PreferredMovePanel";
 
@@ -138,6 +146,7 @@ export function usePreferredMoveWorkflow({
   setSession,
   setSessionStatus,
 }: WorkflowArgs): PreferredMoveWorkflowState {
+  const queryClient = useQueryClient();
   const [refreshToken, setRefreshToken] = useState(0);
   const [contextRefreshToken, setContextRefreshToken] = useState(0);
   const [mutation, setMutation] = useState<PreferredMoveMutationKind | null>(null);
@@ -333,6 +342,13 @@ export function usePreferredMoveWorkflow({
         return;
       }
 
+      const dateWindow = getPreferredMoveDateWindow();
+      const positionKey = positionKeyFromFen(mutationFen);
+      void Promise.all([
+        invalidatePreferredMove(queryClient, { positionKey, ...dateWindow }),
+        invalidateTrainingRequirements(queryClient),
+        invalidatePositionInsight(queryClient, positionKey),
+      ]);
       const nextRefreshToken = refreshToken + 1;
       setPendingRefresh({
         id,
@@ -356,6 +372,7 @@ export function usePreferredMoveWorkflow({
       preferredMoveClient,
       preferredState.error,
       preferredState.loading,
+      queryClient,
       refreshToken,
     ],
   );

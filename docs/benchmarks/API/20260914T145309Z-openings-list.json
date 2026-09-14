@@ -1,0 +1,33 @@
+{
+  "name": "openings-list",
+  "measured_at_utc": "2026-09-14T14:53:09.969761+00:00",
+  "endpoint": "/api/openings",
+  "params": {
+    "page": 1,
+    "page_size": 50
+  },
+  "database": {
+    "kind": "synthetic",
+    "file_name": "api-benchmark.db",
+    "size_bytes": 102400
+  },
+  "repeats": 5,
+  "timeout_s": 30.0,
+  "samples_ms": [
+    52.532,
+    46.478,
+    45.245,
+    40.746,
+    40.517
+  ],
+  "stats": {
+    "count": 5,
+    "min_ms": 40.517,
+    "median_ms": 45.245,
+    "mean_ms": 45.104,
+    "max_ms": 52.532
+  },
+  "threshold_median_ms": 2000.0,
+  "items_returned": 2,
+  "total_reported": 2
+}

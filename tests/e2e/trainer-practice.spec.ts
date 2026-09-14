@@ -8,6 +8,18 @@ const REPRESENTATIVE_FEN =
 test.setTimeout(90_000);
 
 test("retrieves live Caro-Kann training positions from shell navigation", async ({ page }) => {
+  let matchingTrainingRequirementGets = 0;
+  page.on("request", (request) => {
+    const url = new URL(request.url());
+    if (
+      request.method() === "GET" &&
+      url.pathname === "/api/positions/training-requirements" &&
+      url.searchParams.get("opening_key") === OPENING_KEY
+    ) {
+      matchingTrainingRequirementGets += 1;
+    }
+  });
+
   await page.goto("/");
   await page.getByRole("link", { name: "Trainer Practice" }).click();
   await expect(page).toHaveURL(/\/trainer$/);
@@ -53,6 +65,12 @@ test("retrieves live Caro-Kann training positions from shell navigation", async 
     timeout: 75_000,
   });
   await expect(page.getByText("g8f6", { exact: true })).toBeVisible({ timeout: 75_000 });
+
+  const requestsAfterFirstRetrieval = matchingTrainingRequirementGets;
+  await page.getByRole("button", { name: "Retrieve training positions" }).click();
+  await expect(page.getByText(REPRESENTATIVE_FEN, { exact: true })).toBeVisible();
+  await page.waitForTimeout(250);
+  expect(matchingTrainingRequirementGets).toBe(requestsAfterFirstRetrieval);
 
   await expect(page.getByRole("heading", { name: /board|session/i })).toHaveCount(0);
   await expect(page.getByRole("button", { name: /board|session/i })).toHaveCount(0);

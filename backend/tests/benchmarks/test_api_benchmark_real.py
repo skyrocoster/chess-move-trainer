@@ -38,6 +38,7 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
+from backend.app.caching import clear_caches
 from backend.app.dependencies import REBUILT_DATABASE_PATH_ENV
 from backend.app.main import app
 from chess_move_trainer.database.lifecycle import DEFAULT_DATABASE_PATH
@@ -108,6 +109,8 @@ def test_real_database_practice_caro(monkeypatch: pytest.MonkeyPatch) -> None:
             threshold_ms=threshold_ms,
             database=database,
             db_kind="real",
+            cold=True,
+            warm_repeats=repeats,
         )
         assert payload["total_reported"] is not None
     finally:
@@ -130,6 +133,7 @@ def test_real_database_global_training_load(monkeypatch: pytest.MonkeyPatch) -> 
     try:
         _, timeout_s, _ = _real_settings()
         load_limit_ms = _float_env("CHESS_API_BENCH_MAX_MS_REAL_LOAD", 600000)
+        clear_caches()
         base = {"as_of": REAL_AS_OF, "training_requirement_lt": 0, "page_size": REAL_PAGE_SIZE}
         page_times: list[float] = []
         page = 1
@@ -156,6 +160,10 @@ def test_real_database_global_training_load(monkeypatch: pytest.MonkeyPatch) -> 
             loaded += len(body.get("items", []))
         total_ms = (time.perf_counter() - started_total) * 1000.0
         median_page = _stats(page_times)["median_ms"]
+        warm_status, warm_page1_ms, _ = _timed_get(
+            client, "/api/positions/training-requirements", {**base, "page": 1}, timeout_s
+        )
+        assert warm_status == 200
         payload: dict[str, object] = {
             "name": "real-global-training-load",
             "measured_at_utc": datetime.now(timezone.utc).isoformat(),
@@ -177,6 +185,8 @@ def test_real_database_global_training_load(monkeypatch: pytest.MonkeyPatch) -> 
             "partial": partial,
             "extrapolated_full_load_ms": round(median_page * total_pages, 3),
             "full_load_total_ms": round(total_ms, 3),
+            "cache_cleared_before_load": True,
+            "warm_page1_ms": round(warm_page1_ms, 3),
         }
         _write_report("real-global-training-load", payload)
         assert total_ms < load_limit_ms
@@ -217,9 +227,10 @@ def test_real_database_games_list(monkeypatch: pytest.MonkeyPatch) -> None:
     client = _open_real_client(monkeypatch, database)
     try:
         repeats, timeout_s, _ = _real_settings()
-        # Games search loads the whole corpus per page (12,710 games on the
-        # current database), so it gets its own tripwire, not the default.
-        threshold_ms = _float_env("CHESS_API_BENCH_MAX_MS_REAL_GAMES", 120000)
+        # The games search answers from SQL aggregation (12,710 games on the
+        # current database). This case proves COLD latency: the server cache
+        # is cleared between repeats, and warm repeats are reported separately.
+        threshold_ms = _float_env("CHESS_API_BENCH_MAX_MS_REAL_GAMES", 1500)
         payload = _run_case(
             client,
             name="real-games-list",
@@ -230,6 +241,8 @@ def test_real_database_games_list(monkeypatch: pytest.MonkeyPatch) -> None:
             threshold_ms=threshold_ms,
             database=database,
             db_kind="real",
+            cold=True,
+            warm_repeats=repeats,
         )
         assert payload["total_reported"] is not None
     finally:
@@ -255,6 +268,8 @@ def test_real_database_openings_list(monkeypatch: pytest.MonkeyPatch) -> None:
             threshold_ms=threshold_ms,
             database=database,
             db_kind="real",
+            cold=True,
+            warm_repeats=repeats,
         )
         assert payload["total_reported"] is not None
     finally:

@@ -71,23 +71,9 @@ try {
     if (-not (Test-Path (Join-Path $replaced ".git"))) { throw "Replacement Git repository was not created." }
     if ((Get-ProofGitHead $replaced) -eq $replacedHead) { throw "History replacement did not replace history." }
 
-    # Setup must recreate dependencies in a clean disposable copy.
-    $setup = New-ProofCopy
-    Remove-Item (Join-Path $setup ".venv"), (Join-Path $setup "node_modules"), (Join-Path $setup "frontend/node_modules") -Recurse -Force -ErrorAction SilentlyContinue
-    Push-Location $setup
-    try {
-        & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $setup "setup.ps1")
-        if ($LASTEXITCODE -ne 0) { throw "setup.ps1 failed." }
-    } finally {
-        Pop-Location
-    }
-    if (-not (Test-Path (Join-Path $setup ".venv/Scripts/python.exe"))) { throw "setup.ps1 did not recreate the Python environment." }
-    if (-not (Test-Path (Join-Path $setup "node_modules"))) { throw "setup.ps1 did not recreate root dependencies." }
-    if (-not (Test-Path (Join-Path $setup "frontend/node_modules"))) { throw "setup.ps1 did not recreate frontend dependencies." }
-
     $after = (& git -C $source rev-parse --is-inside-work-tree 2>$null)
     if ($before -ne $after) { throw "Source repository state changed." }
-    Write-Host "Disposable initializer proof passed: cleanup, branding, history, removal, setup, rerun, and temp cleanup."
+    Write-Host "Disposable initializer proof passed: cleanup, branding, history, removal, rerun, and temp cleanup."
 } finally {
     if ((Get-Location).Path -ne $source) { Set-Location $source }
     foreach ($temp in $temps) {

@@ -8,6 +8,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Query
 from fastapi.responses import JSONResponse
 
+from backend.app.caching import clear_caches
 from backend.app.dependencies import get_rebuilt_database_path
 from chess_move_trainer.database.preferred_moves import (
     NormalizedPeriod,
@@ -249,7 +250,9 @@ def put_preferred_moves(
             effective_until=payload.effective_until,
             preference=_mutation_preference(payload),
         )
-        return _mutation_response(put_preferred_move(database_path, request))
+        result = put_preferred_move(database_path, request)
+        clear_caches()
+        return _mutation_response(result)
     except PreferredMoveValidationError as error:
         return _mutation_validation_error(error)
     except (PreferredMoveSchemaError, PreferredMoveStorageError):
@@ -282,7 +285,9 @@ def delete_preferred_moves(
             effective_from=payload.effective_from,
             effective_until=payload.effective_until,
         )
-        return _removal_response(delete_preferred_move(database_path, request))
+        result = delete_preferred_move(database_path, request)
+        clear_caches()
+        return _removal_response(result)
     except PreferredMoveValidationError as error:
         return _removal_validation_error(error)
     except (PreferredMoveSchemaError, PreferredMoveStorageError):

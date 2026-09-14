@@ -1,0 +1,35 @@
+{
+  "name": "real-global-training-load",
+  "measured_at_utc": "2026-09-14T14:58:47.775488+00:00",
+  "endpoint": "/api/positions/training-requirements",
+  "params": {
+    "as_of": "2026-09-14",
+    "training_requirement_lt": 0,
+    "page_size": 100
+  },
+  "database": {
+    "kind": "real",
+    "file_name": "chess.db",
+    "size_bytes": 148500480
+  },
+  "repeats": 1,
+  "timeout_s": 60.0,
+  "samples_ms": [
+    5557.664
+  ],
+  "stats": {
+    "count": 1,
+    "min_ms": 5557.664,
+    "median_ms": 5557.664,
+    "mean_ms": 5557.664,
+    "max_ms": 5557.664
+  },
+  "threshold_median_ms": 600000.0,
+  "pages_read": 1,
+  "total_pages": 1,
+  "total_reported": 8,
+  "items_loaded": 8,
+  "partial": false,
+  "extrapolated_full_load_ms": 5557.664,
+  "full_load_total_ms": 5557.723
+}

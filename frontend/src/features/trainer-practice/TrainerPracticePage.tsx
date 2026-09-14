@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useCallback, useState } from "react";
 
 import type {
   OpeningCatalogueItemResponse,
@@ -8,6 +9,9 @@ import {
   currentUtcDate,
   defaultTrainerPracticeApi,
   isValidAsOf,
+  queryOpeningChoices,
+  queryTrainingRequirements,
+  TrainerPracticeQueryError,
   type OpeningChoicesResult,
   type TrainerColor,
   type TrainerPracticeFilters,
@@ -17,6 +21,8 @@ import {
   TrainerPracticePanel,
   type TrainerPracticeFormValues,
 } from "./TrainerPracticePanel";
+
+import { queryKeys } from "../../api/queryKeys";
 
 export type TrainerPracticeApi = {
   loadOpenings: (
@@ -39,14 +45,6 @@ type RetrievalState =
   | { status: "catalogue-error" | "retrieval-error" | "invalid-date" | "stale-date" }
   | { status: "empty" | "success"; data: TrainingRequirementResponse };
 
-const initialCatalogueState: CatalogueState = { status: "loading", openings: [] };
-
-function catalogueStateFromResult(result: OpeningChoicesResult): CatalogueState {
-  return result.status === "success"
-    ? { status: "ready", openings: result.data }
-    : { status: "error", openings: [] };
-}
-
 function retrievalStateFromResult(result: TrainingRequirementsResult): RetrievalState {
   if (result.status !== "success") {
     return { status: result.status.replace("_", "-") as Exclude<RetrievalState["status"], "idle" | "loading" | "empty" | "success"> };
@@ -62,112 +60,131 @@ export function TrainerPracticePage({
 }: {
   api?: TrainerPracticeApi;
 }) {
-  const [catalogueRetry, setCatalogueRetry] = useState(0);
-  const [catalogue, setCatalogue] = useState<CatalogueState>(initialCatalogueState);
   const [catalogueSearch, setCatalogueSearch] = useState("");
   const [catalogueQuery, setCatalogueQuery] = useState("");
   const [openingKey, setOpeningKey] = useState("");
   const [trainerColor, setTrainerColor] = useState<"" | TrainerColor>("");
   const [asOf, setAsOf] = useState(currentUtcDate);
-  const [retrieval, setRetrieval] = useState<RetrievalState>({ status: "idle" });
-  const requestId = useRef(0);
-  const retrievalController = useRef<AbortController | null>(null);
+  const [submittedFilters, setSubmittedFilters] = useState<TrainerPracticeFilters | null>(null);
+  const [invalidDateSubmitted, setInvalidDateSubmitted] = useState(false);
 
-  useEffect(() => {
-    const controller = new AbortController();
-    let active = true;
-    setCatalogue(initialCatalogueState);
+  const normalizedCatalogueSearch = catalogueQuery.trim() || null;
+  const catalogueResult = useQuery({
+    queryKey: queryKeys.openingsCatalogue({
+      search: catalogueQuery,
+      pageSize: 100,
+      sort: "name_asc",
+    }),
+    queryFn: ({ signal }) =>
+      queryOpeningChoices(api.loadOpenings, signal, normalizedCatalogueSearch),
+    retry: false,
+    staleTime: 15 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+  });
 
-    void api.loadOpenings(controller.signal, catalogueQuery).then(
-      (result) => {
-        if (active && !controller.signal.aborted) {
-          setCatalogue(catalogueStateFromResult(result));
-        }
-      },
-      () => {
-        if (active && !controller.signal.aborted) {
-          setCatalogue({ status: "error", openings: [] });
-        }
-      },
-    );
+  const queryFilters = submittedFilters ?? {
+    asOf: "",
+    openingKey: null,
+    trainerColor: null,
+  };
+  const requirementsResult = useQuery({
+    queryKey: queryKeys.trainingRequirements({
+      asOf: queryFilters.asOf,
+      trainerColor: queryFilters.trainerColor,
+      openingKey: queryFilters.openingKey,
+      openingMatch: queryFilters.openingKey === null ? null : "reached",
+      trainingRequirementLt: 0,
+      pageSize: 100,
+    }),
+    queryFn: ({ signal }) =>
+      queryTrainingRequirements(api.loadRequirements, submittedFilters!, signal),
+    enabled: submittedFilters !== null,
+    retry: false,
+    staleTime: 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+  });
 
-    return () => {
-      active = false;
-      controller.abort();
-    };
-  }, [api, catalogueQuery, catalogueRetry]);
+  const catalogueStatus: CatalogueState["status"] = catalogueResult.isError
+    ? "error"
+    : catalogueResult.isSuccess
+      ? "ready"
+      : "loading";
+  const openings = catalogueResult.data ?? [];
 
-  useEffect(
-    () => () => {
-      requestId.current += 1;
-      retrievalController.current?.abort();
-    },
-    [],
-  );
+  const retrieval: RetrievalState =
+    submittedFilters === null
+      ? invalidDateSubmitted
+        ? { status: "invalid-date" }
+        : { status: "idle" }
+      : requirementsResult.isPending
+        ? { status: "loading" }
+        : requirementsResult.isError
+          ? {
+              status: (
+                requirementsResult.error instanceof TrainerPracticeQueryError
+                  ? requirementsResult.error.status
+                  : "retrieval_error"
+              ).replace("_", "-") as Exclude<
+                RetrievalState["status"],
+                "idle" | "loading" | "empty" | "success"
+              >,
+            }
+          : requirementsResult.data === undefined
+            ? { status: "loading" }
+            : retrievalStateFromResult({ status: "success", data: requirementsResult.data });
 
   const handleSubmit = useCallback(
     (values: TrainerPracticeFormValues) => {
-      const currentRequest = ++requestId.current;
-      retrievalController.current?.abort();
-
       if (!isValidAsOf(values.asOf)) {
-        setRetrieval({ status: "invalid-date" });
-        retrievalController.current = null;
+        setSubmittedFilters(null);
+        setInvalidDateSubmitted(true);
         return;
       }
-
-      const controller = new AbortController();
-      retrievalController.current = controller;
-      setRetrieval({ status: "loading" });
 
       const filters: TrainerPracticeFilters = {
         asOf: values.asOf,
         openingKey: values.openingKey === "" ? null : values.openingKey,
         trainerColor: values.trainerColor === "" ? null : values.trainerColor,
       };
-
-      void api.loadRequirements(filters, controller.signal).then(
-        (result) => {
-          if (
-            currentRequest === requestId.current &&
-            !controller.signal.aborted
-          ) {
-            setRetrieval(retrievalStateFromResult(result));
-          }
-        },
-        () => {
-          if (
-            currentRequest === requestId.current &&
-            !controller.signal.aborted
-          ) {
-            setRetrieval({ status: "retrieval-error" });
-          }
-        },
-      );
+      setInvalidDateSubmitted(false);
+      if (
+        submittedFilters !== null &&
+        submittedFilters.asOf === filters.asOf &&
+        submittedFilters.openingKey === filters.openingKey &&
+        submittedFilters.trainerColor === filters.trainerColor
+      ) {
+        if (requirementsResult.isError) {
+          void requirementsResult.refetch();
+        }
+        return;
+      }
+      setSubmittedFilters(filters);
     },
-    [api],
+    [requirementsResult, submittedFilters],
   );
 
   const handleRetryCatalogue = useCallback(() => {
-    setCatalogueRetry((value) => value + 1);
-  }, []);
+    void catalogueResult.refetch();
+  }, [catalogueResult]);
 
   const handleSearchCatalogue = useCallback(() => {
-    requestId.current += 1;
-    retrievalController.current?.abort();
-    retrievalController.current = null;
-    setRetrieval({ status: "idle" });
+    setSubmittedFilters(null);
+    setInvalidDateSubmitted(false);
     setOpeningKey("");
-    setCatalogueQuery(catalogueSearch);
-    setCatalogueRetry((value) => value + 1);
-  }, [catalogueSearch]);
+    const normalizedSearch = catalogueSearch.trim() || null;
+    if (normalizedSearch === normalizedCatalogueSearch && catalogueResult.isError) {
+      void catalogueResult.refetch();
+    } else {
+      setCatalogueQuery(catalogueSearch);
+    }
+  }, [catalogueQuery, catalogueResult, catalogueSearch, normalizedCatalogueSearch]);
 
   return (
       <TrainerPracticePanel
         values={{ openingKey, trainerColor, asOf }}
         catalogueSearch={catalogueSearch}
-        openings={catalogue.openings}
-      catalogueStatus={catalogue.status}
+        openings={openings}
+        catalogueStatus={catalogueStatus}
       retrieval={retrieval}
         onOpeningKeyChange={setOpeningKey}
         onCatalogueSearchChange={setCatalogueSearch}

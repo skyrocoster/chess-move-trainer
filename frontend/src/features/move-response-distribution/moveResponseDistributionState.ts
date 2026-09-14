@@ -3,10 +3,16 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { ChessSide, Fen } from "../chess/chessPrimitives";
 import {
   fetchMoveResponseDistribution,
+  failureFromInsight,
+  narrowInsightResponse,
   type MoveResponseDistributionClient,
   type MoveResponseDistributionFailureCode,
   type MoveResponseDistributionResponse,
 } from "./moveResponseDistributionApi";
+import {
+  PositionInsightQueryError,
+  usePositionInsightQuery,
+} from "../position-insight/positionInsightQuery";
 
 export type MoveResponseDistributionState = {
   status: "idle" | "loading" | "available" | "no-games" | "unavailable";
@@ -25,10 +31,49 @@ function isEmptyResponse(data: MoveResponseDistributionResponse): boolean {
   return data.matching_game_count === 0 || data.outgoing_occurrence_count === 0;
 }
 
-export function useMoveResponseDistributionState(
+function useDefaultMoveResponseDistributionState(
   fen: Fen | null,
   color: ChessSide | null,
-  client: MoveResponseDistributionClient = fetchMoveResponseDistribution,
+): MoveResponseDistributionState {
+  const query = usePositionInsightQuery(fen, color);
+  const selected =
+    query.data === undefined || fen === null || color === null
+      ? null
+      : narrowInsightResponse(query.data, fen, color);
+  const loading =
+    fen !== null && color !== null && (query.isPending || query.isFetching);
+  const error = query.isError
+    ? query.error instanceof PositionInsightQueryError
+      ? failureFromInsight(query.error.insightError, query.error.httpStatus).status
+      : "unexpected_failure"
+    : selected !== null && selected.status !== "success"
+      ? selected.status
+      : null;
+  const data = !loading && !query.isError && selected?.status === "success" ? selected.data : null;
+
+  return {
+    status:
+      fen === null || color === null
+        ? "idle"
+        : loading
+          ? "loading"
+          : error !== null
+            ? "unavailable"
+            : data === null
+              ? "unavailable"
+              : isEmptyResponse(data)
+                ? "no-games"
+                : "available",
+    data,
+    error,
+    retry: () => void query.refetch(),
+  };
+}
+
+function useInjectedMoveResponseDistributionState(
+  fen: Fen | null,
+  color: ChessSide | null,
+  client: MoveResponseDistributionClient,
 ): MoveResponseDistributionState {
   const key = requestKey(fen, color);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -104,4 +149,14 @@ export function useMoveResponseDistributionState(
     error: stateForKey.error,
     retry,
   };
+}
+
+export function useMoveResponseDistributionState(
+  fen: Fen | null,
+  color: ChessSide | null,
+  client: MoveResponseDistributionClient = fetchMoveResponseDistribution,
+): MoveResponseDistributionState {
+  return client === fetchMoveResponseDistribution
+    ? useDefaultMoveResponseDistributionState(fen, color)
+    : useInjectedMoveResponseDistributionState(fen, color, client);
 }

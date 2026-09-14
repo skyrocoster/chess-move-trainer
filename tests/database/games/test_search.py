@@ -319,6 +319,151 @@ def test_coverage_states_pagination_and_deterministic_repeated_reads(tmp_path: P
     assert repository.search(GameSearchQuery()) == repository.search(GameSearchQuery())
 
 
+def test_timestamp_bounds_use_fractional_seconds_and_exact_bound_equality(
+    tmp_path: Path,
+) -> None:
+    raw = _raw_game(
+        "dddddddd-dddd-4ddd-8ddd-dddddddddd41",
+        "1. e4 e5",
+        date="2026.08.01",
+        time="12:00:00",
+        end_date="2026.08.01",
+        end_time="12:30:00",
+    )
+    database, _game_ids = _database(tmp_path, [raw])
+    repository = GameSearchRepository(database)
+
+    # The stored timestamp has no fractional seconds; an exact upper bound still matches
+    # because _stored_timestamp normalizes "…Z" to "….000000Z" before comparison.
+    assert repository.search(
+        GameSearchQuery(
+            started_at_from="2026-08-01T12:00:00Z",
+            started_at_to="2026-08-01T12:00:00Z",
+        )
+    ).total == 1
+    assert repository.search(
+        GameSearchQuery(started_at_to="2026-08-01T12:00:00+00:00")
+    ).total == 1
+
+    # A lower bound one microsecond after the stored instant excludes the game.
+    assert repository.search(
+        GameSearchQuery(started_at_from="2026-08-01T12:00:00.000001Z")
+    ).total == 0
+    # An upper bound one microsecond before the stored instant excludes the game.
+    assert repository.search(
+        GameSearchQuery(started_at_to="2026-08-01T11:59:59.999999Z")
+    ).total == 0
+    # A fractional lower bound at exactly the stored instant still matches.
+    assert repository.search(
+        GameSearchQuery(started_at_from="2026-08-01T12:00:00.000000Z")
+    ).total == 1
+
+
+def test_deepest_opening_tie_break_selects_lexicographically_smallest_key(
+    tmp_path: Path,
+) -> None:
+    raw = _raw_game("dddddddd-dddd-4ddd-8ddd-dddddddddd42", "1. e4 e5")
+    database, _game_ids = _database(tmp_path, [raw])
+    shared_moves = ("e2e4", "e7e5")
+    OpeningCatalogueRepository(database).replace(
+        (
+            _route("B10", "Second Deep Label", shared_moves),
+            _route("A10", "First Deep Label", shared_moves),
+        )
+    )
+
+    page = GameSearchRepository(database).search()
+
+    assert page.total == 1
+    deepest = page.items[0].deepest_opening
+    assert deepest is not None
+    assert deepest.key == "A10:First Deep Label"
+    assert deepest.ply == 2
+
+
+def test_zero_occurrence_game_summarizes_with_empty_coverage(tmp_path: Path) -> None:
+    raw = _raw_game("dddddddd-dddd-4ddd-8ddd-dddddddddd43", "1. e4 e5")
+    database, game_ids = _database(tmp_path, [raw])
+    with sqlite3.connect(database) as connection:
+        connection.execute(
+            "DELETE FROM derived_game_position WHERE datasource_game_id = ?",
+            (game_ids[0],),
+        )
+        connection.commit()
+
+    page = GameSearchRepository(database).search()
+
+    assert page.total == 1
+    summary = page.items[0]
+    assert summary.game_uuid == raw["uuid"]
+    assert summary.occurrence_count == 0
+    assert summary.length_plies == 0
+    assert summary.deepest_opening is None
+    assert summary.coverage.distinct_position_count == 0
+    assert summary.coverage.analyzed_position_count == 0
+    assert summary.coverage.preferred_position_count == 0
+    assert summary.coverage.analysis_coverage == "none"
+    assert summary.coverage.preferred_coverage == "none"
+
+
+def test_started_at_desc_places_games_without_timestamp_last(tmp_path: Path) -> None:
+    dated = _raw_game(
+        "dddddddd-dddd-4ddd-8ddd-dddddddddd44",
+        "1. e4 e5",
+        date="2026.08.01",
+        time="12:00:00",
+        end_date="2026.08.01",
+        end_time="12:30:00",
+    )
+    undated = _raw_game(
+        "dddddddd-dddd-4ddd-8ddd-dddddddddd45",
+        "1. d4 Nf6",
+        date=None,
+        time=None,
+        end_date=None,
+        end_time=None,
+    )
+    database, _game_ids = _database(tmp_path, [dated, undated])
+
+    page = GameSearchRepository(database).search(
+        GameSearchQuery(sort="started_at_desc")
+    )
+
+    # _compare_nullable returns 1 when the left timestamp is None, so undated
+    # games sort after dated games for both started_at_desc and started_at_asc.
+    assert _uuids(page) == [dated["uuid"], undated["uuid"]]
+    ascending = GameSearchRepository(database).search(
+        GameSearchQuery(sort="started_at_asc")
+    )
+    assert _uuids(ascending) == [dated["uuid"], undated["uuid"]]
+
+
+def test_pagination_is_deterministic_across_repeated_searches(tmp_path: Path) -> None:
+    raw_games = [
+        _raw_game(f"dddddddd-dddd-4ddd-8ddd-dddddddddd5{i}", "1. e4 e5")
+        for i in range(3)
+    ]
+    database, _game_ids = _database(tmp_path, raw_games)
+    repository = GameSearchRepository(database)
+    query_first = GameSearchQuery(page_size=1, page=1, sort="game_uuid_asc")
+    query_second = GameSearchQuery(page_size=1, page=2, sort="game_uuid_asc")
+
+    first = repository.search(query_first)
+    first_repeat = repository.search(
+        GameSearchQuery(page_size=1, page=1, sort="game_uuid_asc")
+    )
+    second = repository.search(query_second)
+
+    assert first == first_repeat
+    assert first.total == 3
+    assert first.total_pages == 3
+    assert second.total == 3
+    assert _uuids(first) != _uuids(second)
+    combined = _uuids(first) + _uuids(second)
+    third = repository.search(GameSearchQuery(page_size=1, page=3, sort="game_uuid_asc"))
+    assert combined + _uuids(third) == sorted(raw["uuid"] for raw in raw_games)
+
+
 def test_search_is_read_only_and_rejects_incompatible_schema(tmp_path: Path) -> None:
     raw = _raw_game("dddddddd-dddd-4ddd-8ddd-dddddddddd31", "1. e4")
     database, _game_ids = _database(tmp_path, [raw])

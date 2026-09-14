@@ -9,6 +9,13 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Query
 from fastapi.responses import JSONResponse
 
+from backend.app.caching import (
+    games_key,
+    games_namespace,
+    get_or_compute,
+    json_response,
+    serialize_response_body,
+)
 from backend.app.dependencies import get_rebuilt_database_path
 from backend.app.features.games.api_schemas import (
     GameCoverageResponse,
@@ -164,44 +171,52 @@ def get_games(
     sort: Annotated[str, Query()] = "started_at_desc",
 ) -> GamesResponse | JSONResponse:
     try:
-        page_result = search_games(
-            database_path,
-            GameSearchQuery(
-                page=page,
-                page_size=page_size,
-                started_at_from=started_at_from,
-                started_at_to=started_at_to,
-                ended_at_from=ended_at_from,
-                ended_at_to=ended_at_to,
-                trainer_color=trainer_color,
-                trainer_outcome=trainer_outcome,
-                termination_reason=termination_reason,
-                trainer_rating_min=trainer_rating_min,
-                trainer_rating_max=trainer_rating_max,
-                opponent_rating_min=opponent_rating_min,
-                opponent_rating_max=opponent_rating_max,
-                opponent_chesscom_uuid=opponent_chesscom_uuid,
-                time_class=time_class,
-                time_control=time_control,
-                opening_key=opening_key,
-                opening_match=opening_match,
-                contains_fen=contains_fen,
-                move_fen=move_fen,
-                move_uci=move_uci,
-                min_length_plies=min_length_plies,
-                max_length_plies=max_length_plies,
-                analysis_coverage=analysis_coverage,
-                preferred_coverage=preferred_coverage,
-                sort=sort,
-            ),
+        query = GameSearchQuery(
+            page=page,
+            page_size=page_size,
+            started_at_from=started_at_from,
+            started_at_to=started_at_to,
+            ended_at_from=ended_at_from,
+            ended_at_to=ended_at_to,
+            trainer_color=trainer_color,
+            trainer_outcome=trainer_outcome,
+            termination_reason=termination_reason,
+            trainer_rating_min=trainer_rating_min,
+            trainer_rating_max=trainer_rating_max,
+            opponent_rating_min=opponent_rating_min,
+            opponent_rating_max=opponent_rating_max,
+            opponent_chesscom_uuid=opponent_chesscom_uuid,
+            time_class=time_class,
+            time_control=time_control,
+            opening_key=opening_key,
+            opening_match=opening_match,
+            contains_fen=contains_fen,
+            move_fen=move_fen,
+            move_uci=move_uci,
+            min_length_plies=min_length_plies,
+            max_length_plies=max_length_plies,
+            analysis_coverage=analysis_coverage,
+            preferred_coverage=preferred_coverage,
+            sort=sort,
         )
     except GameSearchValidationError:
         return _games_error(422, "invalid_filter", "Invalid game filter")
+    key = games_key(database_path, query)
+    try:
+        payload = get_or_compute(
+            games_namespace,
+            key,
+            database_path,
+            lambda: serialize_response_body(
+                _page_response(search_games(database_path, query))
+            ),
+        )
     except (GameSearchSchemaError, GameSearchStorageError):
         return _games_error(503, "games_unavailable", "Games unavailable")
     except Exception:
         return _games_error(500, "unexpected_failure", "Unable to load games")
-    return _page_response(page_result)
+    assert payload is not None
+    return json_response(payload)
 
 
 @router.get(

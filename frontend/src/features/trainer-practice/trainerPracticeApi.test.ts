@@ -12,6 +12,9 @@ import {
   fetchOpeningChoices,
   fetchTrainingRequirements,
   isValidAsOf,
+  queryOpeningChoices,
+  queryTrainingRequirements,
+  TrainerPracticeQueryError,
   type TrainerPracticeFilters,
 } from "./trainerPracticeApi";
 
@@ -286,5 +289,20 @@ describe("fetchTrainingRequirements", () => {
     controller.abort();
     resolveRequest({ data: page(1, 1, [item("aborted")]) });
     await expect(request).rejects.toMatchObject({ name: "AbortError" });
+  });
+});
+
+describe("query adapters", () => {
+  it("turn unsuccessful unions into typed query errors", async () => {
+    const signal = new AbortController().signal;
+    const loadOpenings = vi.fn().mockResolvedValue({ status: "catalogue_error" });
+    const loadRequirements = vi.fn().mockResolvedValue({ status: "stale_date" });
+
+    await expect(queryOpeningChoices(loadOpenings, signal, null)).rejects.toEqual(
+      new TrainerPracticeQueryError("catalogue_error"),
+    );
+    await expect(
+      queryTrainingRequirements(loadRequirements, selectedFilters, signal),
+    ).rejects.toEqual(new TrainerPracticeQueryError("stale_date"));
   });
 });

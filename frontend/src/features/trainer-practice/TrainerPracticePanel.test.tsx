@@ -7,6 +7,10 @@ import type {
   TrainingRequirementItemResponse,
   TrainingRequirementResponse,
 } from "../../api/client";
+import {
+  createTestQueryClient,
+  QueryClientTestProvider,
+} from "../../test-utils/QueryClientTestProvider";
 import { TrainerPracticePage, type TrainerPracticeApi } from "./TrainerPracticePage";
 import {
   currentUtcDate,
@@ -81,9 +85,23 @@ function createApi(
   };
 }
 
-async function renderReady(api = createApi()) {
+function renderPage(
+  api: TrainerPracticeApi,
+  client: ReturnType<typeof createTestQueryClient> = createTestQueryClient(),
+) {
+  return render(
+    <QueryClientTestProvider client={client}>
+      <TrainerPracticePage api={api} />
+    </QueryClientTestProvider>,
+  );
+}
+
+async function renderReady(
+  api = createApi(),
+  client?: ReturnType<typeof createTestQueryClient>,
+) {
   const user = userEvent.setup();
-  render(<TrainerPracticePage api={api} />);
+  renderPage(api, client);
   await screen.findByRole("option", { name: "Caro-Kann Defense (B10)" });
   return user;
 }
@@ -101,7 +119,7 @@ describe("TrainerPracticePage", () => {
       loadRequirements: vi.fn().mockResolvedValue(successfulRequirements()),
     };
 
-    render(<TrainerPracticePage api={api} />);
+    renderPage(api);
     expect(screen.getByRole("status")).toHaveTextContent("Loading opening catalogue");
     expect(screen.getByRole("button", { name: "Retrieve training positions" })).toBeDisabled();
 
@@ -146,6 +164,108 @@ describe("TrainerPracticePage", () => {
     await user.click(screen.getByRole("button", { name: "Search opening catalogue" }));
     await waitFor(() => expect(loadOpenings).toHaveBeenCalledTimes(2));
     expect(loadOpenings.mock.calls[1]).toEqual([expect.any(AbortSignal), "Caro-Kann Defense"]);
+  });
+
+  it("normalizes submitted search values so concurrent identical reads share one result", async () => {
+    const loadOpenings = vi.fn().mockResolvedValue(successfulOpenings());
+    const api: TrainerPracticeApi = {
+      loadOpenings,
+      loadRequirements: vi.fn().mockResolvedValue(successfulRequirements()),
+    };
+    const client = createTestQueryClient();
+    const user = userEvent.setup();
+    render(
+      <QueryClientTestProvider client={client}>
+        <TrainerPracticePage api={api} />
+        <TrainerPracticePage api={api} />
+      </QueryClientTestProvider>,
+    );
+
+    await screen.findAllByRole("option", { name: "Caro-Kann Defense (B10)" });
+    expect(loadOpenings).toHaveBeenCalledTimes(1);
+
+    const searches = screen.getAllByRole("searchbox");
+    await user.type(searches[0]!, " Caro-Kann Defense ");
+    await user.type(searches[1]!, "Caro-Kann Defense");
+    const searchButtons = screen.getAllByRole("button", { name: "Search opening catalogue" });
+    await user.click(searchButtons[0]!);
+    await user.click(searchButtons[1]!);
+
+    await waitFor(() => expect(loadOpenings).toHaveBeenCalledTimes(2));
+    expect(loadOpenings.mock.calls[1]).toEqual([
+      expect.any(AbortSignal),
+      "Caro-Kann Defense",
+    ]);
+  });
+
+  it("deduplicates concurrent catalogue and complete training reads", async () => {
+    const api = createApi();
+    const client = createTestQueryClient();
+    const user = userEvent.setup();
+    render(
+      <QueryClientTestProvider client={client}>
+        <TrainerPracticePage api={api} />
+        <TrainerPracticePage api={api} />
+      </QueryClientTestProvider>,
+    );
+
+    await screen.findAllByRole("option", { name: "Caro-Kann Defense (B10)" });
+    const retrieveButtons = screen.getAllByRole("button", {
+      name: "Retrieve training positions",
+    });
+    await user.click(retrieveButtons[0]!);
+    await user.click(retrieveButtons[1]!);
+
+    await screen.findAllByText("fen-one");
+    expect(api.loadOpenings).toHaveBeenCalledTimes(1);
+    expect(api.loadRequirements).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps complete training results distinct when a filter changes", async () => {
+    const api = createApi();
+    const client = createTestQueryClient();
+    const user = userEvent.setup();
+    render(
+      <QueryClientTestProvider client={client}>
+        <TrainerPracticePage api={api} />
+        <TrainerPracticePage api={api} />
+      </QueryClientTestProvider>,
+    );
+
+    await screen.findAllByRole("option", { name: "Caro-Kann Defense (B10)" });
+    const colours = screen
+      .getAllByRole("combobox")
+      .filter((element) => element.id === "trainer-practice-color");
+    await user.selectOptions(colours[0]!, "white");
+    await user.selectOptions(colours[1]!, "black");
+    const retrieveButtons = screen.getAllByRole("button", {
+      name: "Retrieve training positions",
+    });
+    await user.click(retrieveButtons[0]!);
+    await user.click(retrieveButtons[1]!);
+
+    await waitFor(() => expect(api.loadRequirements).toHaveBeenCalledTimes(2));
+  });
+
+  it("reuses fresh assembled catalogue and training results after remounting", async () => {
+    const api = createApi();
+    const client = createTestQueryClient();
+    const firstUser = userEvent.setup();
+    const firstRender = renderPage(api, client);
+
+    await screen.findByRole("option", { name: "Caro-Kann Defense (B10)" });
+    await firstUser.click(screen.getByRole("button", { name: "Retrieve training positions" }));
+    await screen.findByText("fen-one");
+    firstRender.unmount();
+
+    const secondUser = userEvent.setup();
+    renderPage(api, client);
+    await screen.findByRole("option", { name: "Caro-Kann Defense (B10)" });
+    await secondUser.click(screen.getByRole("button", { name: "Retrieve training positions" }));
+    await screen.findByText("fen-one");
+
+    expect(api.loadOpenings).toHaveBeenCalledTimes(1);
+    expect(api.loadRequirements).toHaveBeenCalledTimes(1);
   });
 
   it("shows retrieval loading and the complete minimal response fields", async () => {
@@ -230,7 +350,7 @@ describe("TrainerPracticePage", () => {
       loadRequirements: vi.fn().mockResolvedValue(successfulRequirements()),
     };
     const user = userEvent.setup();
-    render(<TrainerPracticePage api={api} />);
+    renderPage(api);
 
     expect(await screen.findByRole("alert")).toHaveTextContent("Opening catalogue could not be loaded");
     await user.click(screen.getByRole("button", { name: "Retry opening catalogue" }));
@@ -247,6 +367,25 @@ describe("TrainerPracticePage", () => {
 
     await user.click(screen.getByRole("button", { name: "Retrieve training positions" }));
     expect(await screen.findByRole("alert")).toHaveTextContent(message);
+  });
+
+  it("can retry a failed training query without caching the error as data", async () => {
+    const loadRequirements = vi
+      .fn()
+      .mockResolvedValueOnce({ status: "retrieval_error" } as TrainingRequirementsResult)
+      .mockResolvedValueOnce(successfulRequirements());
+    const api: TrainerPracticeApi = {
+      loadOpenings: vi.fn().mockResolvedValue(successfulOpenings()),
+      loadRequirements,
+    };
+    const user = await renderReady(api);
+
+    await user.click(screen.getByRole("button", { name: "Retrieve training positions" }));
+    await screen.findByText("Training-required positions could not be loaded.");
+    await user.click(screen.getByRole("button", { name: "Retrieve training positions" }));
+    await screen.findByText("fen-one");
+
+    expect(loadRequirements).toHaveBeenCalledTimes(2);
   });
 
   it("aborts the old request and ignores its late result after a newer submit", async () => {
@@ -293,7 +432,7 @@ describe("TrainerPracticePage", () => {
       loadRequirements,
     };
     const user = userEvent.setup();
-    const rendered = render(<TrainerPracticePage api={api} />);
+    const rendered = renderPage(api);
     await screen.findByRole("option", { name: "Caro-Kann Defense (B10)" });
     await user.click(screen.getByRole("button", { name: "Retrieve training positions" }));
     const signal = loadRequirements.mock.calls[0]?.[1] as AbortSignal;

@@ -8,6 +8,14 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Query
 from fastapi.responses import JSONResponse
 
+from backend.app.caching import (
+    clear_caches,
+    get_or_compute,
+    json_response,
+    serialize_response_body,
+    training_namespace,
+    training_requirements_key,
+)
 from backend.app.dependencies import (
     get_rebuilt_database_path,
     get_training_requirement_policy,
@@ -164,9 +172,20 @@ def get_position_training_requirements(
             page=page,
             page_size=page_size,
         )
-        return _page_response(discover_training_requirements(database_path, query, policy))
     except TrainingRequirementValidationError as error:
         return _validation_error(error)
+    key = training_requirements_key(database_path, query, policy)
+    try:
+        payload = get_or_compute(
+            training_namespace,
+            key,
+            database_path,
+            lambda: serialize_response_body(
+                _page_response(
+                    discover_training_requirements(database_path, query, policy)
+                )
+            ),
+        )
     except TrainingRequirementStaleError:
         return _error(
             409,
@@ -181,6 +200,8 @@ def get_position_training_requirements(
             "unexpected_failure",
             "Unable to serve position training requirements",
         )
+    assert payload is not None
+    return json_response(payload)
 
 
 @router.post(
@@ -210,6 +231,7 @@ def submit_position_training_answer(
             played_move_uci=payload.played_move_uci,
         )
         result = TrainingAnswerRepository(database_path).submit(request, policy)
+        clear_caches()
         return _answer_response(result)
     except TrainingRequirementValidationError as error:
         return _validation_error(error)

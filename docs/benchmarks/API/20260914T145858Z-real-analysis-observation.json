@@ -1,0 +1,30 @@
+{
+  "name": "real-analysis-observation",
+  "measured_at_utc": "2026-09-14T14:58:58.937448+00:00",
+  "endpoint": "/api/analysis",
+  "params": {
+    "fen": "rnbqkb1r/pppppppp/5n2/8/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 1"
+  },
+  "database": {
+    "kind": "real",
+    "file_name": "chess.db",
+    "size_bytes": 148500480
+  },
+  "repeats": 3,
+  "timeout_s": 60.0,
+  "samples_ms": [
+    44.323,
+    49.508,
+    53.415
+  ],
+  "stats": {
+    "count": 3,
+    "min_ms": 44.323,
+    "median_ms": 49.508,
+    "mean_ms": 49.082,
+    "max_ms": 53.415
+  },
+  "threshold_median_ms": 60000.0,
+  "items_returned": null,
+  "total_reported": null
+}

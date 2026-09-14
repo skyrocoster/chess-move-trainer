@@ -6,7 +6,7 @@ search_repository, search_filters, and search_validation.
 
 from __future__ import annotations
 
-from .search_filters import _compare_games, _compare_nullable, _coverage_state, _matches
+from .search_filters import _compare_games, _compare_nullable, _coverage_state
 from .search_models import (
     CoverageState,
     DeepestOpening,
@@ -25,11 +25,12 @@ from .search_models import (
 )
 from .search_repository import (
     GameSearchRepository,
+    _aggregate_games,
+    _load_deepest_openings,
     _load_games,
-    _load_occurrences,
-    _load_openings,
-    _load_position_ids,
-    _summarize,
+    _matches_aggregates,
+    _select_deepest,
+    _summarize_aggregates,
     search_games,
 )
 from .search_validation import (

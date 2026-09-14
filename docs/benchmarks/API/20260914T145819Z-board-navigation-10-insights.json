@@ -1,0 +1,37 @@
+{
+  "name": "board-navigation-10-insights",
+  "measured_at_utc": "2026-09-14T14:58:19.709315+00:00",
+  "endpoint": "/api/positions/insight",
+  "params": {
+    "moves": 10,
+    "pattern": "alternate-two-positions"
+  },
+  "database": {
+    "kind": "synthetic",
+    "file_name": "api-benchmark.db",
+    "size_bytes": 102400
+  },
+  "repeats": 10,
+  "timeout_s": 30.0,
+  "samples_ms": [
+    145.22,
+    130.387,
+    132.243,
+    122.305,
+    137.905,
+    130.192,
+    155.826,
+    163.16,
+    135.814,
+    138.614
+  ],
+  "stats": {
+    "count": 10,
+    "min_ms": 122.305,
+    "median_ms": 136.859,
+    "mean_ms": 139.166,
+    "max_ms": 163.16
+  },
+  "threshold_median_ms": 10000.0,
+  "full_load_total_ms": 1392.042
+}

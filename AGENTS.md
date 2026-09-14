@@ -25,7 +25,6 @@ command fails, report the exact command and failure.
 
 ## Application commands
 
-- `powershell -ExecutionPolicy Bypass -File ./setup.ps1` installs pinned Python, npm, and Playwright dependencies.
 - `powershell -ExecutionPolicy Bypass -File ./dev.ps1 start` starts the backend, frontend, and Storybook in
   detached Docker containers. Replace `start` with `stop`, `restart`, `rebuild`, `status`, or `logs`; append one
   of `backend`, `frontend`, or `storybook` to target a single service.

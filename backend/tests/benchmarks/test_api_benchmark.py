@@ -38,6 +38,7 @@ from urllib.parse import quote
 import pytest
 from fastapi.testclient import TestClient
 
+from backend.app.caching import clear_caches
 from backend.app.dependencies import REBUILT_DATABASE_PATH_ENV
 from backend.app.main import app
 from chess_move_trainer.database import create_schema
@@ -273,11 +274,15 @@ def _run_case(
     database: Path,
     db_kind: str,
     extra: dict[str, object] | None = None,
+    cold: bool = False,
+    warm_repeats: int = 0,
 ) -> dict[str, object]:
     samples: list[float] = []
     status_code = 0
     last_body: dict[str, object] = {}
     for _ in range(repeats):
+        if cold:
+            clear_caches()
         status_code, elapsed_ms, last_body = _timed_get(client, path, params, timeout_s)
         assert status_code == 200, f"{name} returned {status_code}: {last_body}"
         samples.append(elapsed_ms)
@@ -296,6 +301,20 @@ def _run_case(
         "items_returned": len(last_body.get("items", [])) if isinstance(last_body.get("items"), list) else None,
         "total_reported": last_body.get("total"),
     }
+    if cold:
+        payload["cache_cleared_between_samples"] = True
+    if warm_repeats:
+        warm_samples: list[float] = []
+        for _ in range(warm_repeats):
+            status_code, elapsed_ms, _ = _timed_get(client, path, params, timeout_s)
+            assert status_code == 200, f"{name} warm repeat returned {status_code}"
+            warm_samples.append(elapsed_ms)
+        payload["warm_repeats"] = warm_repeats
+        payload["warm_samples_ms"] = [round(value, 3) for value in warm_samples]
+        payload["warm_stats"] = {
+            key: round(value, 3) if isinstance(value, float) else value
+            for key, value in _stats(warm_samples).items()
+        }
     if extra:
         payload.update(extra)
     _write_report(name, payload)
@@ -341,6 +360,8 @@ def test_openings_catalogue_benchmark(
         threshold_ms=threshold_ms,
         database=benchmark_database,
         db_kind="synthetic",
+        cold=True,
+        warm_repeats=repeats,
     )
     status_code, _, body = _timed_get(
         benchmark_client, "/api/openings", {"page": 1, "page_size": 50}, timeout_s
@@ -357,6 +378,8 @@ def test_openings_catalogue_benchmark(
         threshold_ms=threshold_ms,
         database=benchmark_database,
         db_kind="synthetic",
+        cold=True,
+        warm_repeats=repeats,
     )
 
 
@@ -379,6 +402,8 @@ def test_games_search_benchmark(
         threshold_ms=threshold_ms,
         database=benchmark_database,
         db_kind="synthetic",
+        cold=True,
+        warm_repeats=repeats,
     )
     status_code, _, body = _timed_get(
         benchmark_client, "/api/games", {"page": 1, "page_size": 50}, timeout_s
@@ -405,16 +430,19 @@ def test_training_requirements_page_benchmark(
 ) -> None:
     _use_database(monkeypatch, benchmark_database)
     before = benchmark_database.read_bytes()
+    repeats = _int_env("CHESS_API_BENCH_REPEATS", 5)
     _run_case(
         benchmark_client,
         name="training-requirements-page",
         path="/api/positions/training-requirements",
         params={"as_of": AS_OF, "training_requirement_gte": -100, "page": 1, "page_size": 50},
-        repeats=_int_env("CHESS_API_BENCH_REPEATS", 5),
+        repeats=repeats,
         timeout_s=_float_env("CHESS_API_BENCH_TIMEOUT_S", 30),
         threshold_ms=_float_env("CHESS_API_BENCH_MAX_MS", 2000),
         database=benchmark_database,
         db_kind="synthetic",
+        cold=True,
+        warm_repeats=repeats,
     )
     assert benchmark_database.read_bytes() == before
 
@@ -483,6 +511,7 @@ def test_trainer_practice_full_load_benchmark(
 ) -> None:
     """Mirror the frontend Practice loader: read pages 1..N until total is reached."""
     _use_database(monkeypatch, benchmark_database)
+    clear_caches()
     timeout_s = _float_env("CHESS_API_BENCH_TIMEOUT_S", 30)
     threshold_ms = _float_env("CHESS_API_BENCH_MAX_MS", 10000)
     page_times: list[float] = []
@@ -506,6 +535,13 @@ def test_trainer_practice_full_load_benchmark(
         page += 1
         assert page <= 20, "practice loader paged past 20 pages on a 3-game database"
     total_ms = (time.perf_counter() - started_total) * 1000.0
+    warm_status, warm_page1_ms, _ = _timed_get(
+        benchmark_client,
+        "/api/positions/training-requirements",
+        {"as_of": AS_OF, "training_requirement_gte": -100, "page": 1, "page_size": 50},
+        timeout_s,
+    )
+    assert warm_status == 200
     payload: dict[str, object] = {
         "name": "trainer-practice-full-load",
         "measured_at_utc": datetime.now(timezone.utc).isoformat(),
@@ -520,6 +556,8 @@ def test_trainer_practice_full_load_benchmark(
         "pages_read": page,
         "total_reported": total,
         "full_load_total_ms": round(total_ms, 3),
+        "cache_cleared_before_load": True,
+        "warm_page1_ms": round(warm_page1_ms, 3),
     }
     _write_report("trainer-practice-full-load", payload)
     assert total_ms < threshold_ms

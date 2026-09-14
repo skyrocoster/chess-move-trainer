@@ -2,6 +2,7 @@ import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
 import { createElement } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { createTestQueryClient, QueryClientTestProvider } from "../../test-utils/QueryClientTestProvider";
 import type {
   PreferredMoveReader,
   PreferredMoveResponse,
@@ -11,6 +12,8 @@ import { usePreferredMoveState } from "./preferredMoveState";
 import type { Fen } from "../chess/chessPrimitives";
 
 const FEN: Fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+const COUNTER_VARIANT_FEN: Fen =
+  "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 17 42";
 const NEXT_FEN: Fen = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1";
 
 function response(fen: Fen): PreferredMoveResponse {
@@ -26,7 +29,7 @@ function success(fen: Fen): PreferredMoveResult {
   return { status: "success", data: response(fen) };
 }
 
-function Probe({
+function PreferredMoveOutput({
   fen,
   client,
   refreshKey = 0,
@@ -45,6 +48,24 @@ function Probe({
       loading: state.loading,
       error: state.error,
     }),
+  );
+}
+
+function Probe({
+  fen,
+  client,
+  refreshKey = 0,
+  queryClient,
+}: {
+  fen: Fen | null;
+  client: PreferredMoveReader;
+  refreshKey?: number;
+  queryClient?: ReturnType<typeof createTestQueryClient>;
+}) {
+  return createElement(
+    QueryClientTestProvider,
+    { client: queryClient },
+    createElement(PreferredMoveOutput, { fen, client, refreshKey }),
   );
 }
 
@@ -69,6 +90,21 @@ describe("usePreferredMoveState", () => {
 
     await waitFor(() => expect(screen.getByTestId("state")).toHaveTextContent(FEN));
     expect(client).toHaveBeenCalledWith(FEN, { signal: expect.any(AbortSignal) });
+  });
+
+  it("deduplicates fresh reads for canonical positions across counter fields and remounts", async () => {
+    const client = vi.fn<PreferredMoveReader>(async (fen) => success(fen));
+    const queryClient = createTestQueryClient();
+    const view = render(createElement(Probe, { fen: FEN, client, queryClient }));
+
+    await waitFor(() => expect(client).toHaveBeenCalledOnce());
+    view.rerender(createElement(Probe, { fen: COUNTER_VARIANT_FEN, client, queryClient }));
+    await waitFor(() => expect(screen.getByTestId("state")).toHaveTextContent(FEN));
+    view.unmount();
+
+    render(createElement(Probe, { fen: FEN, client, queryClient }));
+    await waitFor(() => expect(screen.getByTestId("state")).toHaveTextContent(FEN));
+    expect(client).toHaveBeenCalledOnce();
   });
 
   it("discards a stale response and aborts the replaced request", async () => {

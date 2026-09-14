@@ -3,6 +3,7 @@ import "./RepertoireBuilderWorkspace.testSetup";
 import { cleanup, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { createTestQueryClient } from "../../test-utils/QueryClientTestProvider";
 import {
   GAME_DETAIL,
   GAME_UUID,
@@ -22,10 +23,14 @@ function successfulGameClient(detail = GAME_DETAIL) {
 
 async function load(
   detail = GAME_DETAIL,
-  options: { preferredMoveClient?: ReturnType<typeof testClients>["preferredMoveClient"] } = {},
+  options: {
+    preferredMoveClient?: ReturnType<typeof testClients>["preferredMoveClient"];
+    queryClient?: ReturnType<typeof createTestQueryClient>;
+  } = {},
 ) {
   const user = userEvent.setup();
-  renderWorkspace({ gameClient: successfulGameClient(detail), ...options });
+  const { queryClient, ...workspaceOptions } = options;
+  renderWorkspace({ gameClient: successfulGameClient(detail), ...workspaceOptions }, queryClient);
   fireEvent.change(screen.getByLabelText("Game UUID"), { target: { value: GAME_UUID } });
   await user.click(screen.getByRole("button", { name: "Load game" }));
   await waitFor(() =>
@@ -62,6 +67,27 @@ describe("RepertoireBuilderWorkspace workflow", () => {
       expect(screen.getByTestId("saved-move")).toHaveTextContent("e4"),
     );
     expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", AFTER_E4_FEN);
+  });
+
+  it("invalidates only the preferred and related read families after a successful save", async () => {
+    const clients = testClients();
+    const queryClient = createTestQueryClient();
+    const invalidateQueries = vi.spyOn(queryClient, "invalidateQueries");
+    const user = userEvent.setup();
+    renderWorkspace({ preferredMoveClient: clients.preferredMoveClient }, queryClient);
+
+    await user.click(screen.getByTestId("move-e2-e4"));
+    await user.click(screen.getByRole("button", { name: "Save e4" }));
+    await waitFor(() =>
+      expect(screen.getByTestId("branch-status")).toHaveTextContent("Preferred move saved."),
+    );
+
+    expect(invalidateQueries).toHaveBeenCalledTimes(3);
+    expect(invalidateQueries.mock.calls.map(([filters]) => filters.queryKey[0])).toEqual([
+      "preferredMove",
+      "trainingRequirements",
+      "positionInsight",
+    ]);
   });
 
   it("uses the same parent transition for a manually played trainer move", async () => {

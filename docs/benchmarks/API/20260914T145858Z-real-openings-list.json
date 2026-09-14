@@ -1,0 +1,31 @@
+{
+  "name": "real-openings-list",
+  "measured_at_utc": "2026-09-14T14:58:58.656614+00:00",
+  "endpoint": "/api/openings",
+  "params": {
+    "page": 1,
+    "page_size": 50
+  },
+  "database": {
+    "kind": "real",
+    "file_name": "chess.db",
+    "size_bytes": 148500480
+  },
+  "repeats": 3,
+  "timeout_s": 60.0,
+  "samples_ms": [
+    360.273,
+    413.236,
+    380.131
+  ],
+  "stats": {
+    "count": 3,
+    "min_ms": 360.273,
+    "median_ms": 380.131,
+    "mean_ms": 384.546,
+    "max_ms": 413.236
+  },
+  "threshold_median_ms": 60000.0,
+  "items_returned": 50,
+  "total_reported": 3329
+}

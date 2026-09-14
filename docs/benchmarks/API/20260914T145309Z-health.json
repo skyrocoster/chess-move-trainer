@@ -1,0 +1,30 @@
+{
+  "name": "health",
+  "measured_at_utc": "2026-09-14T14:53:09.603854+00:00",
+  "endpoint": "/api/health",
+  "params": {},
+  "database": {
+    "kind": "synthetic",
+    "file_name": "api-benchmark.db",
+    "size_bytes": 102400
+  },
+  "repeats": 5,
+  "timeout_s": 30.0,
+  "samples_ms": [
+    36.225,
+    2.629,
+    2.252,
+    2.114,
+    2.264
+  ],
+  "stats": {
+    "count": 5,
+    "min_ms": 2.114,
+    "median_ms": 2.264,
+    "mean_ms": 9.097,
+    "max_ms": 36.225
+  },
+  "threshold_median_ms": 2000.0,
+  "items_returned": null,
+  "total_reported": null
+}

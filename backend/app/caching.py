@@ -1,0 +1,325 @@
+"""Process-local cache for safe repeated backend reads.
+
+Two bounded ``cachetools.TTLCache`` namespaces (training requirements and the
+opening catalogue) sit behind one lock with per-key single-flight: concurrent
+identical misses invoke the underlying reader once. Only immutable serialized
+payloads from successful (``200``) reads are stored; validation, stale,
+missing, and failure responses are never cached. A database-file signature
+(main file plus ``-wal``/``-shm``/journal sidecars) is checked before serving
+a hit and before publishing a miss; any change advances the cache generation,
+clears every namespace, and forces recomputation. Successful training-answer
+and preferred-move writes clear the whole cache explicitly. No ``Cache-Control``
+or other browser caching headers are emitted.
+"""
+
+from __future__ import annotations
+
+import json
+import threading
+from collections.abc import Callable, Hashable
+from dataclasses import dataclass, field
+from pathlib import Path
+
+from cachetools import TTLCache
+from fastapi.responses import Response
+
+from chess_move_trainer.database.games import GameSearchQuery
+from chess_move_trainer.database.openings import OpeningCatalogueQuery
+from chess_move_trainer.database.positions import (
+    TrainingRequirementPolicy,
+    TrainingRequirementQuery,
+)
+
+TRAINING_TTL_SECONDS = 60.0
+TRAINING_MAX_ENTRIES = 128
+OPENINGS_TTL_SECONDS = 900.0
+OPENINGS_MAX_ENTRIES = 128
+GAMES_TTL_SECONDS = 60.0
+GAMES_MAX_ENTRIES = 64
+
+_SIDECAR_SUFFIXES = ("-wal", "-shm", "-journal")
+
+
+class _Inflight:
+    """Single-flight state for one cache key being computed."""
+
+    __slots__ = ("condition", "done", "error", "generation")
+
+    def __init__(self, generation: int) -> None:
+        self.condition = threading.Condition()
+        self.done = False
+        self.error: BaseException | None = None
+        self.generation = generation
+
+
+@dataclass
+class ResponseCacheNamespace:
+    """One bounded TTL namespace with its own single-flight table."""
+
+    name: str
+    ttl_seconds: float
+    max_entries: int
+    cache: TTLCache = field(init=False)
+    inflight: dict[Hashable, _Inflight] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        self.cache = TTLCache(maxsize=self.max_entries, ttl=self.ttl_seconds)
+        _REGISTRY.append(self)
+
+
+_REGISTRY: list[ResponseCacheNamespace] = []
+
+training_namespace = ResponseCacheNamespace(
+    name="training", ttl_seconds=TRAINING_TTL_SECONDS, max_entries=TRAINING_MAX_ENTRIES
+)
+openings_namespace = ResponseCacheNamespace(
+    name="openings", ttl_seconds=OPENINGS_TTL_SECONDS, max_entries=OPENINGS_MAX_ENTRIES
+)
+games_namespace = ResponseCacheNamespace(
+    name="games", ttl_seconds=GAMES_TTL_SECONDS, max_entries=GAMES_MAX_ENTRIES
+)
+
+_lock = threading.RLock()
+_generation = 0
+_last_signatures: dict[str, tuple] = {}
+
+
+def _current_signature(resolved: str) -> tuple:
+    """Fingerprint the database main file and SQLite sidecars without creating anything."""
+
+    base = Path(resolved)
+    entries: list[tuple | None] = []
+    for candidate in (base, *(Path(str(base) + suffix) for suffix in _SIDECAR_SUFFIXES)):
+        try:
+            stat = candidate.stat()
+        except OSError:
+            entries.append(None)
+        else:
+            entries.append(
+                (
+                    stat.st_size,
+                    stat.st_mtime_ns,
+                    getattr(stat, "st_dev", None),
+                    getattr(stat, "st_ino", None),
+                )
+            )
+    return (resolved, tuple(entries))
+
+
+def _refresh_signature_locked(resolved: str) -> bool:
+    """Record the current signature; on change for a known path, clear all and return True."""
+
+    global _generation
+    signature = _current_signature(resolved)
+    previous = _last_signatures.get(resolved)
+    _last_signatures[resolved] = signature
+    if previous is None or previous == signature:
+        return False
+    _generation += 1
+    for namespace in _REGISTRY:
+        namespace.cache.clear()
+    return True
+
+
+def clear_caches() -> None:
+    """Drop every cached payload and advance the generation.
+
+    This is the sanctioned seam for write invalidation, tests, and benchmarks.
+    In-flight computations that started before the clear never publish stale data.
+    """
+
+    global _generation
+    with _lock:
+        _generation += 1
+        for namespace in _REGISTRY:
+            namespace.cache.clear()
+
+
+def serialize_response_body(body: object) -> bytes:
+    """Serialize one response model exactly like Starlette's JSONResponse."""
+
+    payload = body.model_dump(mode="json") if hasattr(body, "model_dump") else body
+    return json.dumps(
+        payload,
+        ensure_ascii=False,
+        allow_nan=False,
+        indent=None,
+        separators=(",", ":"),
+    ).encode("utf-8")
+
+
+def training_requirements_key(
+    database_path: Path | str,
+    query: TrainingRequirementQuery,
+    policy: TrainingRequirementPolicy,
+) -> tuple:
+    """Canonical key from the validated query, resolved database, and policy."""
+
+    return (
+        "training-requirements",
+        str(Path(database_path).resolve()),
+        query.as_of,
+        query.training_requirement_gt,
+        query.training_requirement_gte,
+        query.training_requirement_lt,
+        query.training_requirement_lte,
+        query.trainer_color,
+        query.opening_key,
+        query.opening_match,
+        query.page,
+        query.page_size,
+        policy.target_success_rate,
+        policy.credit_half_life_days,
+    )
+
+
+def openings_key(database_path: Path | str, query: OpeningCatalogueQuery) -> tuple:
+    """Canonical key from the validated catalogue query and resolved database."""
+
+    return (
+        "openings",
+        str(Path(database_path).resolve()),
+        query.page,
+        query.page_size,
+        query.search,
+        query.eco_from,
+        query.eco_to,
+        query.sort,
+    )
+
+
+def opening_detail_key(database_path: Path | str, opening_key: str) -> tuple:
+    """Canonical key for one opening detail read."""
+
+    return ("opening", str(Path(database_path).resolve()), opening_key)
+
+
+def games_key(database_path: Path | str, query: GameSearchQuery) -> tuple:
+    """Canonical key from the validated games query and resolved database."""
+
+    return (
+        "games",
+        str(Path(database_path).resolve()),
+        query.page,
+        query.page_size,
+        query.started_at_from,
+        query.started_at_to,
+        query.ended_at_from,
+        query.ended_at_to,
+        query.trainer_color,
+        query.trainer_outcome,
+        query.termination_reason,
+        query.trainer_rating_min,
+        query.trainer_rating_max,
+        query.opponent_rating_min,
+        query.opponent_rating_max,
+        query.opponent_chesscom_uuid,
+        query.time_class,
+        query.time_control,
+        query.opening_key,
+        query.opening_match,
+        query.contains_fen,
+        query.move_fen,
+        query.move_uci,
+        query.min_length_plies,
+        query.max_length_plies,
+        query.analysis_coverage,
+        query.preferred_coverage,
+        query.sort,
+    )
+
+
+def get_or_compute(
+    namespace: ResponseCacheNamespace,
+    key: Hashable,
+    database_path: Path | str,
+    compute: Callable[[], bytes | None],
+) -> bytes | None:
+    """Return the cached payload or compute it once per key.
+
+    ``compute`` runs outside the global lock and returns the serialized
+    ``200`` payload, or ``None`` for a successful but uncacheable read (such
+    as a ``404``). Exceptions propagate to every waiter and are never stored.
+    A payload is published only when the generation captured at lookup time
+    still matches and the database signature is unchanged after computing.
+    """
+
+    resolved = str(Path(database_path).resolve())
+    while True:
+        with _lock:
+            _refresh_signature_locked(resolved)
+            generation = _generation
+            payload = namespace.cache.get(key)
+            if payload is not None:
+                return payload
+            inflight = namespace.inflight.get(key)
+            if inflight is None:
+                inflight = _Inflight(generation)
+                namespace.inflight[key] = inflight
+                leader = True
+            else:
+                leader = False
+        if leader:
+            break
+        with inflight.condition:
+            while not inflight.done:
+                inflight.condition.wait()
+        with _lock:
+            if inflight.error is not None:
+                raise inflight.error
+            if inflight.generation != _generation:
+                continue
+            payload = namespace.cache.get(key)
+            if payload is not None:
+                return payload
+        # The leader finished without publishing (a concurrent invalidation or
+        # signature change won); retry as a fresh lookup.
+    try:
+        payload = compute()
+    except BaseException as error:
+        with _lock:
+            with inflight.condition:
+                inflight.error = error
+                inflight.done = True
+                inflight.condition.notify_all()
+            namespace.inflight.pop(key, None)
+        raise
+    with _lock:
+        if (
+            payload is not None
+            and inflight.generation == _generation
+            and not _refresh_signature_locked(resolved)
+        ):
+            namespace.cache[key] = payload
+        with inflight.condition:
+            inflight.done = True
+            inflight.condition.notify_all()
+        namespace.inflight.pop(key, None)
+    return payload
+
+
+def json_response(payload: bytes) -> Response:
+    """Wrap one cached or freshly computed payload in a fresh response."""
+
+    return Response(content=payload, media_type="application/json")
+
+
+__all__ = [
+    "GAMES_MAX_ENTRIES",
+    "GAMES_TTL_SECONDS",
+    "OPENINGS_MAX_ENTRIES",
+    "OPENINGS_TTL_SECONDS",
+    "TRAINING_MAX_ENTRIES",
+    "TRAINING_TTL_SECONDS",
+    "clear_caches",
+    "games_key",
+    "games_namespace",
+    "get_or_compute",
+    "json_response",
+    "opening_detail_key",
+    "openings_key",
+    "openings_namespace",
+    "serialize_response_body",
+    "training_namespace",
+    "training_requirements_key",
+]

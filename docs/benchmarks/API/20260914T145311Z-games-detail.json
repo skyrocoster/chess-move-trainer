@@ -1,0 +1,30 @@
+{
+  "name": "games-detail",
+  "measured_at_utc": "2026-09-14T14:53:11.207017+00:00",
+  "endpoint": "/api/games/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa3",
+  "params": {},
+  "database": {
+    "kind": "synthetic",
+    "file_name": "api-benchmark.db",
+    "size_bytes": 102400
+  },
+  "repeats": 5,
+  "timeout_s": 30.0,
+  "samples_ms": [
+    44.333,
+    43.299,
+    59.347,
+    67.265,
+    53.79
+  ],
+  "stats": {
+    "count": 5,
+    "min_ms": 43.299,
+    "median_ms": 53.79,
+    "mean_ms": 53.607,
+    "max_ms": 67.265
+  },
+  "threshold_median_ms": 2000.0,
+  "items_returned": null,
+  "total_reported": null
+}

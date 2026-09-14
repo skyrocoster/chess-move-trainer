@@ -1,7 +1,7 @@
 import { Chess, validateFen } from "chess.js";
 
-import { getPositionInsight } from "../../api/client";
 import type { ChessSide, Fen } from "../chess/chessPrimitives";
+import { requestPositionInsight } from "../position-context/positionContextApi";
 
 type JsonRecord = Record<string, unknown>;
 
@@ -87,7 +87,7 @@ function legalMoveFromUci(fen: Fen, uci: string) {
   }
 }
 
-function narrowInsightResponse(
+export function narrowInsightResponse(
   value: unknown,
   requestedFen: Fen,
   requestedColor: ChessSide,
@@ -152,7 +152,7 @@ function narrowInsightResponse(
   };
 }
 
-function failureFromInsight(
+export function failureFromInsight(
   error: unknown,
   status: number | null,
 ): MoveResponseDistributionFailure {
@@ -202,14 +202,7 @@ export const fetchMoveResponseDistribution: MoveResponseDistributionClient = asy
 
   let result;
   try {
-    result = await getPositionInsight({
-      query: {
-        as_of: requestAsOf(),
-        fen,
-        trainer_color: color,
-      },
-      signal,
-    });
+    result = await requestPositionInsight(fen, color, requestAsOf(), signal);
   } catch (error) {
     if (signal?.aborted) throw error;
     return { status: "unexpected_failure" };

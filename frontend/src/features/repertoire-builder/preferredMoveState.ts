@@ -1,12 +1,15 @@
+import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 
+import { queryKeys } from "../../api/queryKeys";
 import {
   fetchPreferredMove,
+  getPreferredMoveDateWindow,
   type PreferredMoveFailureCode,
   type PreferredMoveReader,
   type PreferredMoveResponse,
 } from "./preferredMoveApi";
-import type { Fen } from "../chess/chessPrimitives";
+import { positionKeyFromFen, type Fen } from "../chess/chessPrimitives";
 
 export type PreferredMoveReadState = {
   preferredMove: PreferredMoveResponse | null;
@@ -15,76 +18,80 @@ export type PreferredMoveReadState = {
   completedRefreshKey: number;
 };
 
+export class PreferredMoveQueryError extends Error {
+  constructor(readonly status: PreferredMoveFailureCode) {
+    super(status);
+    this.name = "PreferredMoveQueryError";
+  }
+}
+
+async function queryPreferredMove(
+  client: PreferredMoveReader,
+  fen: Fen,
+  signal: AbortSignal,
+): Promise<PreferredMoveResponse> {
+  const result = await client(fen, { signal });
+  if (result.status !== "success") {
+    throw new PreferredMoveQueryError(result.status);
+  }
+  return result.data;
+}
+
 export function usePreferredMoveState(
   fen: Fen | null,
   client: PreferredMoveReader = fetchPreferredMove,
   refreshKey = 0,
 ): PreferredMoveReadState {
-  const [preferredMove, setPreferredMove] = useState<PreferredMoveResponse | null>(null);
-  const [loading, setLoading] = useState(fen !== null);
-  const [error, setError] = useState<PreferredMoveFailureCode | null>(null);
   const [completedRefreshKey, setCompletedRefreshKey] = useState(refreshKey);
-  const lastFen = useRef<Fen | null>(null);
+  const [refreshPending, setRefreshPending] = useState(false);
+  const lastRefreshKey = useRef(refreshKey);
+  const window = getPreferredMoveDateWindow();
+  const positionKey = fen === null ? "" : positionKeyFromFen(fen);
+  const result = useQuery({
+    queryKey: queryKeys.preferredMove({
+      positionKey,
+      today: window.today,
+      tomorrow: window.tomorrow,
+    }),
+    queryFn: ({ signal }) => queryPreferredMove(client, fen!, signal),
+    enabled: fen !== null,
+    retry: false,
+    staleTime: 30 * 1000,
+    gcTime: 10 * 60 * 1000,
+  });
 
   useEffect(() => {
-    const controller = new AbortController();
-    let active = true;
-
-    const isRefreshForSameFen = fen !== null && lastFen.current === fen;
-    lastFen.current = fen;
-    if (!isRefreshForSameFen) {
-      setPreferredMove(null);
+    if (lastRefreshKey.current === refreshKey) {
+      return;
     }
-    setError(null);
+    lastRefreshKey.current = refreshKey;
 
     if (fen === null) {
-      setLoading(false);
       setCompletedRefreshKey(refreshKey);
-      return () => {
-        active = false;
-        controller.abort();
-      };
+      return;
     }
 
-    const requestedFen = fen;
-    setLoading(true);
+    setRefreshPending(true);
+    void result.refetch();
+  }, [fen, refreshKey, result]);
 
-    async function loadPreferredMove() {
-      let result;
-      try {
-        result = await client(requestedFen, { signal: controller.signal });
-      } catch {
-        if (active && !controller.signal.aborted) {
-          setLoading(false);
-          setError("unexpected_failure");
-          setCompletedRefreshKey(refreshKey);
-        }
-        return;
-      }
-
-      if (!active || controller.signal.aborted) {
-        return;
-      }
-      if (result.status !== "success") {
-        setLoading(false);
-        setError(result.status);
-        setCompletedRefreshKey(refreshKey);
-        return;
-      }
-
-      setPreferredMove(result.data);
-      setLoading(false);
-      setError(null);
-      setCompletedRefreshKey(refreshKey);
+  useEffect(() => {
+    if (!refreshPending || result.isPending || result.isFetching) {
+      return;
     }
+    setRefreshPending(false);
+    setCompletedRefreshKey(refreshKey);
+  }, [refreshKey, refreshPending, result.isFetching, result.isPending]);
 
-    void loadPreferredMove();
-
-    return () => {
-      active = false;
-      controller.abort();
-    };
-  }, [client, fen, refreshKey]);
-
-  return { preferredMove, loading, error, completedRefreshKey };
+  const error = result.isError
+    ? result.error instanceof PreferredMoveQueryError
+      ? result.error.status
+      : "unexpected_failure"
+    : null;
+  return {
+    preferredMove: result.data ?? null,
+    loading: fen !== null && (result.isPending || result.isFetching),
+    error,
+    completedRefreshKey,
+  };
 }

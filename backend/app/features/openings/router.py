@@ -9,6 +9,14 @@ from fastapi import APIRouter, Depends, Query
 from fastapi import Path as FastAPIPath
 from fastapi.responses import JSONResponse
 
+from backend.app.caching import (
+    get_or_compute,
+    json_response,
+    opening_detail_key,
+    openings_key,
+    openings_namespace,
+    serialize_response_body,
+)
 from backend.app.dependencies import get_rebuilt_database_path
 from chess_move_trainer.database.openings import (
     OpeningCatalogueQuery,
@@ -50,6 +58,13 @@ def _catalogue_item_response(item: object) -> OpeningCatalogueItemResponse:
     )
 
 
+def _detail_payload(database_path: Path, opening_key: str) -> bytes | None:
+    result = read_opening(database_path, opening_key)
+    if result is None:
+        return None
+    return serialize_response_body(_catalogue_item_response(result))
+
+
 def _catalogue_page_response(page: object) -> OpeningCatalogueResponse:
     return OpeningCatalogueResponse(
         items=[
@@ -84,24 +99,32 @@ def get_openings(
     sort: Annotated[str, Query()] = "eco_asc",
 ) -> OpeningCatalogueResponse | JSONResponse:
     try:
-        result = read_openings(
-            database_path,
-            OpeningCatalogueQuery(
-                page=page,
-                page_size=page_size,
-                search=search,
-                eco_from=eco_from,
-                eco_to=eco_to,
-                sort=sort,
-            ),
+        query = OpeningCatalogueQuery(
+            page=page,
+            page_size=page_size,
+            search=search,
+            eco_from=eco_from,
+            eco_to=eco_to,
+            sort=sort,
         )
-        return _catalogue_page_response(result)
     except OpeningCatalogueValidationError:
         return _catalogue_error(422, "invalid_filter", "Invalid opening filter")
+    key = openings_key(database_path, query)
+    try:
+        payload = get_or_compute(
+            openings_namespace,
+            key,
+            database_path,
+            lambda: serialize_response_body(
+                _catalogue_page_response(read_openings(database_path, query))
+            ),
+        )
     except (OpeningCatalogueSchemaError, OpeningCatalogueStorageError):
         return _catalogue_error(503, "openings_unavailable", "Openings unavailable")
     except Exception:
         return _catalogue_error(500, "unexpected_failure", "Unable to load openings")
+    assert payload is not None
+    return json_response(payload)
 
 
 @router.get(
@@ -119,13 +142,14 @@ def get_opening_by_key(
     database_path: Annotated[Path, Depends(get_rebuilt_database_path)],
     opening_key: Annotated[str, FastAPIPath()],
 ) -> OpeningCatalogueItemResponse | JSONResponse:
+    key = opening_detail_key(database_path, opening_key)
     try:
-        result = read_opening(database_path, opening_key)
-        if result is None:
-            return _opening_detail_error(
-                404, "opening_not_found", "Opening not found"
-            )
-        return _catalogue_item_response(result)
+        payload = get_or_compute(
+            openings_namespace,
+            key,
+            database_path,
+            lambda: _detail_payload(database_path, opening_key),
+        )
     except OpeningCatalogueValidationError:
         return _opening_detail_error(
             422, "invalid_opening_key", "Invalid opening key"
@@ -138,3 +162,8 @@ def get_opening_by_key(
         return _opening_detail_error(
             500, "unexpected_failure", "Unable to load opening"
         )
+    if payload is None:
+        return _opening_detail_error(
+            404, "opening_not_found", "Opening not found"
+        )
+    return json_response(payload)

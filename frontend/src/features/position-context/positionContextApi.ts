@@ -29,6 +29,27 @@ export type PositionContextClient = (
   signal?: AbortSignal,
 ) => Promise<PositionContextResult>;
 
+export async function requestPositionInsight(
+  fen: Fen,
+  trainerColor: ChessSide,
+  asOf: string,
+  signal?: AbortSignal,
+) {
+  const result = await getPositionInsight({
+    query: {
+      as_of: asOf,
+      fen,
+      trainer_color: trainerColor,
+    },
+    signal,
+  });
+
+  if (signal?.aborted && result.error !== undefined) {
+    throw result.error;
+  }
+  return result;
+}
+
 function isRecord(value: unknown): value is JsonRecord {
   return typeof value === "object" && value !== null;
 }
@@ -60,7 +81,7 @@ export function validatePositionContextFen(value: unknown): PositionContextFailu
   return isCanonicalFen(value) ? null : "invalid_fen";
 }
 
-function narrowInsightResponse(
+export function narrowInsightResponse(
   response: unknown,
   requestedFen: Fen,
   trainerColor: ChessSide,
@@ -92,7 +113,7 @@ function narrowInsightResponse(
   };
 }
 
-function failureFromInsight(error: unknown, status: number | null): PositionContextFailure {
+export function failureFromInsight(error: unknown, status: number | null): PositionContextFailure {
   const code = isRecord(error) && typeof error.code === "string" ? error.code : null;
   if (status === 422 && code === "invalid_fen") {
     return { status: "invalid_fen" };
@@ -112,14 +133,7 @@ export const fetchPositionContext: PositionContextClient = async (fen, trainerCo
     return { status: validationFailure };
   }
 
-  const result = await getPositionInsight({
-    query: {
-      as_of: requestAsOf(),
-      fen,
-      trainer_color: trainerColor,
-    },
-    signal,
-  });
+  const result = await requestPositionInsight(fen, trainerColor, requestAsOf(), signal);
 
   if (result.data === undefined || result.error !== undefined) {
     return failureFromInsight(result.error, result.response?.status ?? null);

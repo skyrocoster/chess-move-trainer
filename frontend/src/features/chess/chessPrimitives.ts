@@ -8,6 +8,14 @@ export type Ply = number;
 
 export type San = string | null;
 
+/**
+ * The part of a FEN that identifies a position for server reads.
+ * Halfmove and fullmove counters are intentionally excluded.
+ */
+export function positionKeyFromFen(fen: Fen): string {
+  return fen.split(" ").slice(0, 4).join(" ");
+}
+
 export function strictFen(chess: Chess): Fen {
   const fen = chess.fen({ forceEnpassantSquare: true });
   const lastMove = chess.history({ verbose: true }).at(-1);

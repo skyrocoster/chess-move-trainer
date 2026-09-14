@@ -8,6 +8,7 @@ import type {
   AnalysisObservation,
   AnalysisOperationResult,
 } from "../analysis/analysisApi";
+import { createTestQueryClient } from "../../test-utils/QueryClientTestProvider";
 import {
   GAME_DETAIL,
   GAME_UUID,
@@ -141,6 +142,32 @@ describe("RepertoireBuilderWorkspace", () => {
     expect(historyEntry("White, move 2, Nf3")).toBeVisible();
     expect(screen.getByRole("button", { name: "Next" })).toBeEnabled();
     expect(screen.queryByLabelText("Ply", { exact: true })).not.toBeInTheDocument();
+  });
+
+  it("deduplicates fresh explicitly submitted game details by trimmed UUID", async () => {
+    const gameClient = successfulGameClient();
+    const queryClient = createTestQueryClient();
+    const firstUser = userEvent.setup();
+    const firstRender = renderWorkspace({ gameClient }, queryClient);
+
+    fireEvent.change(screen.getByLabelText("Game UUID"), {
+      target: { value: ` ${GAME_UUID} ` },
+    });
+    await firstUser.click(screen.getByRole("button", { name: "Load game" }));
+    await waitFor(() => expect(historyEntry("White, move 1, e4")).toBeVisible());
+    firstRender.unmount();
+
+    const secondUser = userEvent.setup();
+    renderWorkspace({ gameClient }, queryClient);
+    fireEvent.change(screen.getByLabelText("Game UUID"), { target: { value: GAME_UUID } });
+    await secondUser.click(screen.getByRole("button", { name: "Load game" }));
+    await waitFor(() => expect(historyEntry("White, move 1, e4")).toBeVisible());
+
+    expect(gameClient).toHaveBeenCalledOnce();
+    expect(gameClient).toHaveBeenCalledWith({
+      path: { game_uuid: GAME_UUID },
+      signal: expect.any(AbortSignal),
+    });
   });
 
   it("navigates the complete imported line and keeps every surface on one current FEN", async () => {

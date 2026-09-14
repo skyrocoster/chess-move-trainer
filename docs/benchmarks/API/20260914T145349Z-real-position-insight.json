@@ -1,0 +1,32 @@
+{
+  "name": "real-position-insight",
+  "measured_at_utc": "2026-09-14T14:53:49.058513+00:00",
+  "endpoint": "/api/positions/insight",
+  "params": {
+    "fen": "rnbqkb1r/pppppppp/5n2/8/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 1",
+    "trainer_color": "white",
+    "as_of": "2026-09-14"
+  },
+  "database": {
+    "kind": "real",
+    "file_name": "chess.db",
+    "size_bytes": 148500480
+  },
+  "repeats": 3,
+  "timeout_s": 60.0,
+  "samples_ms": [
+    2029.921,
+    1899.481,
+    1819.592
+  ],
+  "stats": {
+    "count": 3,
+    "min_ms": 1819.592,
+    "median_ms": 1899.481,
+    "mean_ms": 1916.331,
+    "max_ms": 2029.921
+  },
+  "threshold_median_ms": 60000.0,
+  "items_returned": null,
+  "total_reported": null
+}

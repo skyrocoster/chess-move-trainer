@@ -35,6 +35,13 @@ export type TrainingRequirementsResult =
   | { status: "success"; data: TrainingRequirementResponse }
   | { status: Exclude<TrainerPracticeFailureCode, "catalogue_error"> };
 
+export class TrainerPracticeQueryError extends Error {
+  constructor(readonly status: TrainerPracticeFailureCode) {
+    super(status);
+    this.name = "TrainerPracticeQueryError";
+  }
+}
+
 type Query = NonNullable<GetPositionTrainingRequirementsData["query"]>;
 type JsonRecord = Record<string, unknown>;
 
@@ -258,6 +265,33 @@ export async function fetchTrainingRequirements(
       items: loadedItems,
     },
   };
+}
+
+export async function queryOpeningChoices(
+  loadOpenings: (signal?: AbortSignal, search?: string) => Promise<OpeningChoicesResult>,
+  signal: AbortSignal,
+  search: string | null,
+): Promise<OpeningCatalogueItemResponse[]> {
+  const result = await loadOpenings(signal, search ?? undefined);
+  if (result.status !== "success") {
+    throw new TrainerPracticeQueryError(result.status);
+  }
+  return result.data;
+}
+
+export async function queryTrainingRequirements(
+  loadRequirements: (
+    filters: TrainerPracticeFilters,
+    signal?: AbortSignal,
+  ) => Promise<TrainingRequirementsResult>,
+  filters: TrainerPracticeFilters,
+  signal: AbortSignal,
+): Promise<TrainingRequirementResponse> {
+  const result = await loadRequirements(filters, signal);
+  if (result.status !== "success") {
+    throw new TrainerPracticeQueryError(result.status);
+  }
+  return result.data;
 }
 
 export const defaultTrainerPracticeApi = {
