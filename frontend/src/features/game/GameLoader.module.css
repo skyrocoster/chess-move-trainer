@@ -10,50 +10,17 @@
   gap: var(--cmt-spacing-12);
 }
 
-.field {
-  display: grid;
-  gap: var(--cmt-spacing-4);
-  min-inline-size: 0;
-  color: var(--md-sys-color-on-surface);
-  font: var(--md-sys-typescale-body-medium);
-}
-
-.field input {
-  box-sizing: border-box;
-  inline-size: 100%;
-  min-block-size: calc(
-    var(--cmt-spacing-8) * 2 + var(--md-sys-typescale-body-medium-line-height) + 0.125rem
-  );
-  padding: var(--cmt-spacing-8) var(--cmt-spacing-12);
-  border: 1px solid var(--md-sys-color-outline);
-  border-radius: var(--cmt-radius-default);
-  background: var(--md-sys-color-surface);
-  color: var(--md-sys-color-on-surface);
-  font: inherit;
-}
-
-.field input:focus-visible {
-  outline: var(--cmt-focus-ring-width) solid var(--cmt-focus-ring-color);
-  outline-offset: var(--cmt-focus-ring-separation);
-}
-
-.field input[aria-invalid="true"] {
-  border-color: var(--md-sys-color-error);
-}
-
 .optional {
   color: var(--md-sys-color-on-surface-variant);
   font: var(--md-sys-typescale-label-medium);
 }
 
-.validationError,
 .loading,
 .failure {
   margin: 0;
   font: var(--md-sys-typescale-body-medium);
 }
 
-.validationError,
 .failure h2 {
   color: var(--md-sys-color-error);
 }
@@ -98,18 +65,11 @@
 }
 
 @media (forced-colors: active) {
-  .field,
   .optional,
   .loading,
   .failure,
   .failure h2 {
     color: CanvasText;
-  }
-
-  .field input {
-    background: Canvas;
-    color: CanvasText;
-    border-color: CanvasText;
   }
 
   .failure {

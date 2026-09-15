@@ -2,6 +2,8 @@ import { useState, type FormEvent } from "react";
 
 import { Button } from "../design-system/Button";
 import { Disclosure } from "../design-system/Disclosure";
+import { Field } from "../design-system/form-controls/Field";
+import { TextInput } from "../design-system/form-controls/TextInput";
 import { GAME_FAILURE_COPY, type GameFailureKind } from "./gameModel";
 import styles from "./GameLoader.module.css";
 
@@ -65,23 +67,22 @@ export function GameLoader({
     <Disclosure summary="Game Loader" defaultOpen>
       <form className={styles.form} onSubmit={handleSubmit} noValidate>
         <div className={styles.fields}>
-          <label className={styles.field}>
-            <span>Game UUID</span>
-            <input
+          <Field
+            label="Game UUID"
+            invalid={validationError !== null && !UUID_PATTERN.test(gameUuid.trim())}
+            error={
+              validationError ? <span role="alert">{validationError}</span> : undefined
+            }
+          >
+            <TextInput
               value={gameUuid}
               onChange={(event) => updateGameUuid(event.target.value)}
-              aria-invalid={validationError !== null && !UUID_PATTERN.test(gameUuid.trim())}
+              invalid={validationError !== null && !UUID_PATTERN.test(gameUuid.trim())}
               autoComplete="off"
               spellCheck={false}
             />
-          </label>
+          </Field>
         </div>
-
-        {validationError ? (
-          <p className={styles.validationError} role="alert">
-            {validationError}
-          </p>
-        ) : null}
 
         {failure ? (
           <div className={styles.failure} role="alert" aria-live="assertive">

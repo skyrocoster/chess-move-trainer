@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import math
 import sys
+import time
 from collections.abc import Callable
 from pathlib import Path
 
@@ -53,6 +54,7 @@ from .stockfish import (
     INITIAL_TECHNICAL_CATEGORIES,
     TargetInputError,
     WorkerInputError,
+    WorkerOutcome,
     WorkerRunner,
     run_benchmark,
 )
@@ -215,16 +217,28 @@ def worker_stockfish(
         "--lock-timeout",
         help="Finite positive SQLite lock wait in seconds.",
     ),
+    poll_interval: float = typer.Option(
+        0.0,
+        "--poll-interval",
+        help=(
+            "Idle seconds between queue polls; 0 drains the current queue and exits, "
+            "a positive value keeps listening quietly until interrupted."
+        ),
+    ),
 ) -> None:
-    """Drain current queued analysis requests and exit."""
+    """Drain current queued analysis requests and exit, or keep listening."""
 
     try:
         _validate_stockfish_lock_timeout(lock_timeout)
-        outcome = WorkerRunner(
-            database,
-            executable,
-            lock_timeout=lock_timeout,
-        ).run()
+        _validate_stockfish_poll_interval(poll_interval)
+        if poll_interval <= 0:
+            outcome = WorkerRunner(
+                database,
+                executable,
+                lock_timeout=lock_timeout,
+            ).run()
+        else:
+            outcome = _run_worker_loop(database, executable, lock_timeout, poll_interval)
     except KeyboardInterrupt:
         _interrupted()
     except (WorkerInputError, ValueError) as error:
@@ -237,5 +251,68 @@ def worker_stockfish(
             f"{outcome.claimed_count} claimed",
             outcome,
         )
+
+
+def _validate_stockfish_poll_interval(value: float) -> None:
+    if isinstance(value, bool) or not math.isfinite(float(value)) or float(value) < 0:
+        raise ValueError("poll-interval must be finite and non-negative")
+
+
+def _run_worker_loop(
+    database: Path,
+    executable: Path,
+    lock_timeout: float,
+    poll_interval: float,
+) -> WorkerOutcome:
+    """Poll quietly and spin the engine up only while work is claimed.
+
+    Resting usage is one sleeping Python process: the Stockfish child is
+    created lazily inside each drain and closed before the next idle sleep.
+    """
+
+    completed_total = 0
+    claimed_total = 0
+    was_idle = False
+    while True:
+        outcome = WorkerRunner(
+            database,
+            executable,
+            lock_timeout=lock_timeout,
+        ).run()
+        completed_total += outcome.completed_count
+        claimed_total += outcome.claimed_count
+        if outcome.interrupted:
+            return WorkerOutcome(
+                claimed_count=claimed_total,
+                completed_count=completed_total,
+                not_saved_count=outcome.not_saved_count,
+                failures=outcome.failures,
+                interrupted=True,
+                drained=outcome.drained,
+                recovery_polls=outcome.recovery_polls,
+            )
+        for failure in outcome.failures:
+            subject = (
+                "database" if failure.position_id is None else f"position {failure.position_id}"
+            )
+            typer.echo(f"Error: {subject}: {failure.message}", err=True)
+        if outcome.completed_count:
+            typer.echo(
+                f"Worker: {outcome.completed_count} completed "
+                f"({completed_total} total, {claimed_total} claimed)."
+            )
+        if outcome.claimed_count == 0 or outcome.failures:
+            if not was_idle:
+                typer.echo(
+                    f"Worker idle: listening quietly "
+                    f"(poll every {poll_interval:g}s)."
+                )
+                was_idle = True
+            try:
+                time.sleep(poll_interval)
+            except KeyboardInterrupt:
+                _interrupted()
+        else:
+            was_idle = False
 
 

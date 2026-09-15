@@ -6,34 +6,74 @@
     <title>Opening search selector exploration</title>
     <style>
       :root {
-        color-scheme: light;
-        --ink: #1b2a24;
-        --ink-soft: #56655e;
-        --ink-faint: #7f8b85;
-        --paper: #f3f4ef;
-        --paper-deep: #e7e9e1;
-        --card: #fffefa;
-        --line: #d8dcd2;
-        --line-strong: #bcc3b8;
-        --green: #2f6049;
-        --green-deep: #1d4132;
-        --green-pale: #e3ece6;
-        --focus: #b9752f;
-        --radius-lg: 20px;
-        --radius-md: 12px;
-        --radius-sm: 8px;
-        --shadow-lg: 0 26px 60px rgba(24, 40, 33, 0.13);
-        --shadow-sm: 0 8px 22px rgba(24, 40, 33, 0.07);
-        --font-display: "Palatino Linotype", "Iowan Old Style", "Book Antiqua", Georgia, serif;
-        --font-ui: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-        --font-mono: "Cascadia Mono", Consolas, ui-monospace, "SFMono-Regular", monospace;
+        color-scheme: dark;
+        /* Production roles from frontend/src/styles/material/material-theme-builder-css-export/css/dark.css */
+        --md-sys-color-primary: #bac3ff;
+        --md-sys-color-on-primary: #222c61;
+        --md-sys-color-primary-container: #394379;
+        --md-sys-color-on-primary-container: #dee0ff;
+        --md-sys-color-secondary: #c3c5dd;
+        --md-sys-color-on-secondary: #2d2f42;
+        --md-sys-color-secondary-container: #434659;
+        --md-sys-color-on-secondary-container: #e0e1f9;
+        --md-sys-color-tertiary: #e6bad7;
+        --md-sys-color-on-tertiary: #44263d;
+        --md-sys-color-tertiary-container: #5d3c55;
+        --md-sys-color-on-tertiary-container: #ffd7f1;
+        --md-sys-color-background: #121318;
+        --md-sys-color-on-background: #e4e1e9;
+        --md-sys-color-surface: #121318;
+        --md-sys-color-on-surface: #e4e1e9;
+        --md-sys-color-surface-variant: #46464f;
+        --md-sys-color-on-surface-variant: #c7c5d0;
+        --md-sys-color-surface-container-lowest: #0d0e13;
+        --md-sys-color-surface-container-low: #1b1b21;
+        --md-sys-color-surface-container: #1f1f25;
+        --md-sys-color-surface-container-high: #29292f;
+        --md-sys-color-surface-container-highest: #34343a;
+        --md-sys-color-outline: #90909a;
+        --md-sys-color-outline-variant: #46464f;
+        /* Production feedback tokens from frontend/src/styles/cmt-tokens.css */
+        --cmt-info-container: #00497a;
+        --cmt-success-container: #005229;
+        --cmt-warning-container: #603f00;
+        /* Production foundation from cmt-tokens.css */
+        --cmt-focus-ring-color: var(--md-sys-color-primary);
+        --cmt-focus-ring-width: 2px;
+        --cmt-focus-ring-separation: 2px;
+        --cmt-radius-4: 4px;
+        --cmt-radius-8: 8px;
+        --cmt-radius-12: 12px;
+        --cmt-elevation-e2: 0 1px 2px rgba(0, 0, 0, 0.3), 0 2px 6px 2px rgba(0, 0, 0, 0.15);
 
-        /* ECO volumes: A flank, B semi-open, C open, D closed, E Indian */
-        --eco-a: #9a5a3d;
-        --eco-b: #46598d;
-        --eco-c: #2c6a4e;
-        --eco-d: #966f27;
-        --eco-e: #6f4a70;
+        /* Mock-up aliases mapped onto production roles */
+        --ink: var(--md-sys-color-on-surface);
+        --ink-soft: var(--md-sys-color-on-surface-variant);
+        --ink-faint: var(--md-sys-color-outline);
+        --paper: var(--md-sys-color-background);
+        --paper-deep: var(--md-sys-color-surface-container);
+        --card: var(--md-sys-color-surface-container-low);
+        --line: var(--md-sys-color-outline-variant);
+        --line-strong: var(--md-sys-color-outline);
+        --green: var(--md-sys-color-primary);
+        --green-deep: var(--md-sys-color-primary);
+        --green-pale: var(--md-sys-color-primary-container);
+        --focus: var(--cmt-focus-ring-color);
+        --radius-lg: var(--cmt-radius-12);
+        --radius-md: var(--cmt-radius-8);
+        --radius-sm: var(--cmt-radius-4);
+        --shadow-lg: var(--cmt-elevation-e2);
+        --shadow-sm: none;
+        --font-display: system-ui, sans-serif;
+        --font-ui: system-ui, sans-serif;
+        --font-mono: system-ui, sans-serif;
+
+        /* ECO volumes mapped onto production containers */
+        --eco-a: var(--cmt-info-container);
+        --eco-b: var(--md-sys-color-primary-container);
+        --eco-c: var(--cmt-success-container);
+        --eco-d: var(--cmt-warning-container);
+        --eco-e: var(--md-sys-color-tertiary-container);
       }
 
       * {
@@ -49,9 +89,7 @@
         min-width: 320px;
         margin: 0;
         color: var(--ink);
-        background:
-          radial-gradient(circle at 82% -6%, rgba(214, 226, 213, 0.85), transparent 30rem),
-          var(--paper);
+        background: var(--paper);
         font-family: var(--font-ui);
         line-height: 1.45;
       }
@@ -68,8 +106,8 @@
       button:focus-visible,
       input:focus-visible,
       summary:focus-visible {
-        outline: 3px solid var(--focus);
-        outline-offset: 3px;
+        outline: var(--cmt-focus-ring-width) solid var(--cmt-focus-ring-color);
+        outline-offset: var(--cmt-focus-ring-separation);
       }
 
       .sr-only {
@@ -87,7 +125,7 @@
       .page {
         width: min(1060px, calc(100% - 44px));
         margin: 0 auto;
-        padding: 34px 0 64px;
+        padding: 32px 0 48px;
       }
 
       .masthead {
@@ -96,7 +134,7 @@
         justify-content: space-between;
         gap: 20px;
         padding-bottom: 18px;
-        border-bottom: 1px solid rgba(97, 117, 104, 0.24);
+        border-bottom: 1px solid var(--md-sys-color-outline-variant);
       }
 
       .brand {
@@ -110,9 +148,9 @@
         width: 36px;
         height: 36px;
         place-items: center;
-        color: var(--paper);
-        background: var(--green-deep);
-        border-radius: 10px 10px 10px 3px;
+        color: var(--md-sys-color-on-primary);
+        background: var(--md-sys-color-primary);
+        border-radius: var(--cmt-radius-8);
         font-family: var(--font-display);
         font-size: 22px;
         line-height: 1;
@@ -173,13 +211,13 @@
 
       .layout {
         display: grid;
-        grid-template-columns: minmax(0, 1.15fr) minmax(280px, 0.85fr);
-        gap: 22px;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 24px;
         align-items: start;
       }
 
       .panel {
-        padding: 20px;
+        padding: 24px;
         background: var(--card);
         border: 1px solid var(--line);
         border-radius: var(--radius-lg);
@@ -190,7 +228,7 @@
         display: flex;
         align-items: baseline;
         justify-content: space-between;
-        gap: 14px;
+        gap: 16px;
         margin-bottom: 16px;
       }
 
@@ -207,68 +245,20 @@
         font-size: 0.76rem;
       }
 
-      /* ---- Filters ------------------------------------------------------- */
+      /* Component: RepertoireToggle
+         Reusable: Both / White / Black segmented filter.
+         Needs: checked value, change handler. No search logic inside. */
 
       .filters {
         display: flex;
         flex-wrap: wrap;
-        gap: 10px 26px;
+        gap: 12px 24px;
         margin-bottom: 16px;
       }
 
       .filter {
         display: grid;
-        gap: 6px;
-      }
-
-      .filter-hint {
-        color: var(--ink-faint);
-        font-size: 0.71rem;
-      }
-
-      .limit-row {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        gap: 14px;
-      }
-
-      .limit-input {
-        width: 78px;
-        min-height: 42px;
-        padding: 6px 10px;
-        color: var(--ink);
-        background: #fff;
-        border: 1.5px solid var(--line-strong);
-        border-radius: 10px;
-        font-family: var(--font-mono);
-        font-variant-numeric: tabular-nums;
-      }
-
-      .limit-input:focus {
-        border-color: var(--green);
-      }
-
-      .limit-input:disabled {
-        color: var(--ink-faint);
-        background: var(--paper-deep);
-      }
-
-      .unlimited-toggle {
-        display: inline-flex;
-        align-items: center;
-        gap: 7px;
-        color: var(--ink-soft);
-        font-size: 0.83rem;
-        font-weight: 700;
-        cursor: pointer;
-      }
-
-      .unlimited-toggle input {
-        width: 16px;
-        height: 16px;
-        accent-color: var(--green);
-        cursor: pointer;
+        gap: 8px;
       }
 
       .filter-label {
@@ -317,17 +307,18 @@
       }
 
       .segmented input:checked + span {
-        color: #fffdf6;
+        color: var(--md-sys-color-on-primary);
         background: var(--green);
-        box-shadow: 0 3px 8px rgba(47, 96, 73, 0.24);
       }
 
       .segmented input:focus-visible + span {
-        outline: 3px solid var(--focus);
-        outline-offset: 2px;
+        outline: var(--cmt-focus-ring-width) solid var(--cmt-focus-ring-color);
+        outline-offset: var(--cmt-focus-ring-separation);
       }
 
-      /* ---- Combobox ------------------------------------------------------ */
+      /* Component: SearchBar
+         Reusable: icon, text input, ECO chip, clear button.
+         Needs: value, placeholder, selected ECO, clear handler. */
 
       .combo {
         position: relative;
@@ -340,19 +331,17 @@
         gap: 8px;
         min-height: 54px;
         padding: 0 10px 0 42px;
-        background: #fff;
-        border: 1.5px solid var(--line-strong);
+        background: var(--md-sys-color-surface-container-highest);
+        border: 1px solid var(--line-strong);
         border-radius: var(--radius-md);
-        transition: border-color 150ms ease, box-shadow 150ms ease;
       }
 
       .combo-field:hover {
-        border-color: #a9b1a6;
+        border-color: var(--md-sys-color-on-surface-variant);
       }
 
       .combo-field:focus-within {
-        border-color: var(--green);
-        box-shadow: 0 0 0 4px rgba(47, 96, 73, 0.16);
+        border-color: var(--md-sys-color-primary);
       }
 
       .combo-icon {
@@ -386,10 +375,10 @@
       .eco-chip {
         flex: none;
         padding: 3px 7px;
-        color: var(--tab, var(--green));
-        background: color-mix(in srgb, var(--tab, var(--green)) 11%, #fff);
-        border: 1px solid color-mix(in srgb, var(--tab, var(--green)) 30%, #fff);
-        border-radius: 6px;
+        color: var(--md-sys-color-on-secondary-container);
+        background: var(--md-sys-color-secondary-container);
+        border: 1px solid var(--line);
+        border-radius: var(--cmt-radius-4);
         font-family: var(--font-mono);
         font-size: 0.72rem;
         font-weight: 700;
@@ -409,13 +398,16 @@
         border-radius: 50%;
         font-size: 0.95rem;
         line-height: 1;
-        transition: background 140ms ease, color 140ms ease;
       }
 
       .clear-button:hover {
         color: var(--ink);
-        background: #dfe3d8;
+        background: var(--md-sys-color-surface-container-highest);
       }
+
+      /* Component: ResultsList
+         Reusable: dropdown with All row, opening rows, and empty state.
+         Needs: visible items, active index, chosen key, pick handler. */
 
       [role="listbox"] {
         position: absolute;
@@ -455,11 +447,11 @@
 
       [role="option"]:hover,
       [role="option"][data-active="true"] {
-        background: var(--green-pale);
+        background: var(--md-sys-color-secondary-container);
       }
 
       [role="option"][aria-selected="true"] {
-        box-shadow: inset 0 0 0 1.5px rgba(47, 96, 73, 0.4);
+        box-shadow: inset 0 0 0 1px var(--md-sys-color-primary);
       }
 
       [role="option"]:focus {
@@ -471,11 +463,10 @@
         width: 30px;
         height: 34px;
         place-items: center;
-        color: var(--tab, var(--green));
-        background: color-mix(in srgb, var(--tab, var(--green)) 10%, #fff);
-        border: 1px solid color-mix(in srgb, var(--tab, var(--green)) 26%, #fff);
-        border-radius: 7px 7px 4px 4px;
-        box-shadow: inset 0 -3px 0 color-mix(in srgb, var(--tab, var(--green)) 26%, #fff);
+        color: var(--md-sys-color-on-secondary-container);
+        background: var(--md-sys-color-secondary-container);
+        border: 1px solid var(--line);
+        border-radius: var(--cmt-radius-4);
         font-family: var(--font-mono);
         font-size: 0.72rem;
         font-weight: 700;
@@ -522,15 +513,15 @@
       }
 
       .side-chip[data-side="white"] {
-        color: #4c5a53;
-        background: #f1f3ee;
+        color: var(--md-sys-color-on-primary-container);
+        background: var(--md-sys-color-primary-container);
         border: 1px solid var(--line);
       }
 
       .side-chip[data-side="black"] {
-        color: #f2efe6;
-        background: #33413a;
-        border: 1px solid #26332d;
+        color: var(--md-sys-color-on-secondary-container);
+        background: var(--md-sys-color-secondary-container);
+        border: 1px solid var(--line);
       }
 
       .option-line {
@@ -579,9 +570,9 @@
         width: 14px;
         height: 14px;
         content: "✓";
-        color: #fffdf6;
-        background: var(--green);
-        border: 1.5px solid var(--card);
+        color: var(--md-sys-color-on-primary);
+        background: var(--md-sys-color-primary);
+        border: 1px solid var(--card);
         border-radius: 50%;
         place-items: center;
         font-size: 0.55rem;
@@ -597,7 +588,6 @@
         color: var(--ink-soft);
         background: var(--paper-deep);
         border-color: var(--line);
-        box-shadow: inset 0 -3px 0 var(--line);
         font-size: 0.6rem;
         letter-spacing: 0.02em;
       }
@@ -629,7 +619,9 @@
         font-family: var(--font-mono);
       }
 
-      /* ---- Status + legend ---------------------------------------------- */
+      /* Component: MatchStatus
+         Reusable: polite live-region count line.
+         Needs: match count text. */
 
       .combo-status {
         margin: 11px 2px 0;
@@ -637,21 +629,48 @@
         font-size: 0.78rem;
       }
 
-      .keyboard-legend {
+      /* Component: InlineStartBar
+         Reusable: chosen ECO plus move preview with a start button.
+         Needs: selected opening or hidden state, start handler. */
+
+      .start-bar {
         display: flex;
-        flex-wrap: wrap;
-        gap: 8px 16px;
-        margin: 14px 2px 0;
-        padding-top: 13px;
-        color: var(--ink-faint);
-        border-top: 1px solid var(--line);
-        font-size: 0.75rem;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin: 12px 0 0;
+        padding: 10px 10px 10px 14px;
+        color: var(--md-sys-color-on-primary-container);
+        background: var(--md-sys-color-primary-container);
+        border: 1px solid var(--line);
+        border-radius: var(--radius-md);
+        font-size: 0.86rem;
       }
 
-      .keyboard-legend span {
-        display: inline-flex;
-        align-items: center;
-        gap: 5px;
+      .start-text {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .start-text strong {
+        font-family: var(--font-mono);
+        font-weight: 700;
+      }
+
+      .start-button {
+        flex: none;
+        padding: 10px 16px;
+        color: var(--md-sys-color-on-primary);
+        background: var(--md-sys-color-primary);
+        border: 1px solid transparent;
+        border-radius: var(--cmt-radius-8);
+        font-weight: 700;
+      }
+
+      .start-button:hover {
+        background: var(--md-sys-color-primary);
       }
 
       kbd {
@@ -663,214 +682,6 @@
         border-radius: 5px;
         font-family: var(--font-mono);
         font-size: 0.7rem;
-      }
-
-      /* ---- Start panel --------------------------------------------------- */
-
-      .start-panel {
-        position: sticky;
-        top: 22px;
-        display: flex;
-        flex-direction: column;
-        gap: 15px;
-      }
-
-      .start-kicker {
-        margin: 0;
-        color: var(--ink-faint);
-        font-size: 0.69rem;
-        font-weight: 800;
-        letter-spacing: 0.12em;
-        text-transform: uppercase;
-      }
-
-      .start-body {
-        min-height: 236px;
-      }
-
-      .record {
-        display: grid;
-        gap: 14px;
-        animation: record-in 180ms ease both;
-      }
-
-      @keyframes record-in {
-        from {
-          opacity: 0;
-          transform: translateY(4px);
-        }
-      }
-
-      .record-head {
-        display: grid;
-        grid-template-columns: 40px minmax(0, 1fr);
-        gap: 12px;
-        align-items: start;
-      }
-
-      .record-head .eco-tab {
-        width: 40px;
-        height: 46px;
-        font-size: 0.85rem;
-      }
-
-      .record-title {
-        margin: 0;
-        font-family: var(--font-display);
-        font-size: 1.16rem;
-        font-weight: 600;
-        letter-spacing: -0.02em;
-        line-height: 1.18;
-      }
-
-      .record-meta {
-        margin: 4px 0 0;
-        color: var(--ink-soft);
-        font-size: 0.78rem;
-      }
-
-      .record-meta .side-chip {
-        vertical-align: 1px;
-      }
-
-      .notation {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 5px;
-        margin: 0;
-        padding: 0;
-        list-style: none;
-      }
-
-      .notation li {
-        display: inline-flex;
-        align-items: baseline;
-        gap: 4px;
-        padding: 3px 7px;
-        background: var(--paper);
-        border: 1px solid var(--line);
-        border-radius: 6px;
-      }
-
-      .notation .ply {
-        font-family: var(--font-mono);
-        font-size: 0.78rem;
-        font-weight: 600;
-      }
-
-      .notation .ply-no {
-        color: var(--ink-faint);
-        font-family: var(--font-mono);
-        font-size: 0.7rem;
-      }
-
-      .stats {
-        display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 8px;
-        margin: 0;
-        padding: 13px 0 0;
-        border-top: 1px solid var(--line);
-      }
-
-      .stats div {
-        display: grid;
-        gap: 2px;
-      }
-
-      .stats dt {
-        color: var(--ink-faint);
-        font-size: 0.66rem;
-        font-weight: 800;
-        letter-spacing: 0.07em;
-        text-transform: uppercase;
-      }
-
-      .stats dd {
-        margin: 0;
-        font-family: var(--font-mono);
-        font-size: 1.02rem;
-        font-weight: 700;
-      }
-
-      .empty-record {
-        display: grid;
-        gap: 10px;
-        align-content: start;
-        padding: 22px 18px;
-        color: var(--ink-soft);
-        background: repeating-linear-gradient(
-          135deg,
-          rgba(231, 233, 225, 0.5) 0 10px,
-          transparent 10px 20px
-        );
-        border: 1px dashed var(--line-strong);
-        border-radius: var(--radius-md);
-        font-size: 0.85rem;
-      }
-
-      .empty-record strong {
-        color: var(--ink);
-        font-family: var(--font-display);
-        font-size: 1.05rem;
-        font-weight: 600;
-      }
-
-      .start-action {
-        display: grid;
-        gap: 8px;
-      }
-
-      .start-button {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 12px;
-        width: 100%;
-        padding: 14px 18px;
-        color: #fffdf6;
-        background: var(--green);
-        border: 1px solid transparent;
-        border-radius: var(--radius-md);
-        box-shadow: 0 10px 20px rgba(47, 96, 73, 0.2);
-        font-size: 0.98rem;
-        font-weight: 700;
-        transition: background 150ms ease, transform 150ms ease, box-shadow 150ms ease;
-      }
-
-      .start-button:hover:not(:disabled) {
-        background: var(--green-deep);
-        transform: translateY(-1px);
-        box-shadow: 0 14px 26px rgba(29, 65, 50, 0.24);
-      }
-
-      .start-button .arrow {
-        font-family: var(--font-mono);
-      }
-
-      .start-button:disabled {
-        color: var(--ink-faint);
-        background: var(--paper-deep);
-        border-color: var(--line);
-        box-shadow: none;
-        cursor: not-allowed;
-      }
-
-      .start-button:disabled .arrow {
-        opacity: 0.45;
-      }
-
-      .start-hint {
-        margin: 0;
-        color: var(--ink-faint);
-        font-size: 0.76rem;
-        text-align: center;
-      }
-
-      .start-hint b {
-        color: var(--ink-soft);
-        font-family: var(--font-mono);
-        font-weight: 700;
       }
 
       .interaction-note {
@@ -885,16 +696,6 @@
 
       [hidden] {
         display: none !important;
-      }
-
-      @media (max-width: 900px) {
-        .layout {
-          grid-template-columns: minmax(0, 1fr);
-        }
-
-        .start-panel {
-          position: static;
-        }
       }
 
       @media (max-width: 560px) {
@@ -921,10 +722,6 @@
 
         .segmented span {
           padding: 6px 10px;
-        }
-
-        .stats {
-          grid-template-columns: repeat(2, minmax(0, 1fr));
         }
 
         .option-meta .side-label {
@@ -960,20 +757,22 @@
         <p class="eyebrow">Opening search selector</p>
         <h1>Find the line you want to train.</h1>
         <p class="lede">
-          One field searches the catalogue by opening name, ECO code, or key. Highlight a result to read the line,
-          then start training.
+          One field searches the catalogue by opening name, ECO code, or key. Choosing a line reveals an inline
+          start bar.
         </p>
       </section>
 
       <div class="layout">
-        <section class="panel" aria-labelledby="selector-title">
+        <!-- Reusable parts in context: RepertoireToggle, SearchBar, ResultsList, MatchStatus, InlineStartBar -->
+        <section class="panel" aria-labelledby="selector-title" data-component="catalogue-panel">
           <div class="panel-head">
             <h2 id="selector-title">Catalogue</h2>
             <span class="field-help" id="search-help">Name, ECO, or key</span>
           </div>
 
+          <!-- Component: RepertoireToggle — Both / White / Black filter -->
           <div class="filters">
-            <div class="filter">
+            <div class="filter" data-component="repertoire-toggle">
               <span class="filter-label" id="side-label">Repertoire</span>
               <div class="segmented" role="radiogroup" aria-labelledby="side-label">
                 <label>
@@ -990,32 +789,12 @@
                 </label>
               </div>
             </div>
-
-            <div class="filter">
-              <label class="filter-label" for="position-limit">Positions to train</label>
-              <div class="limit-row">
-                <input
-                  id="position-limit"
-                  class="limit-input"
-                  type="number"
-                  min="1"
-                  step="1"
-                  inputmode="numeric"
-                  value="5"
-                  aria-describedby="limit-help"
-                />
-                <label class="unlimited-toggle">
-                  <input id="position-unlimited" type="checkbox" />
-                  <span>Unlimited</span>
-                </label>
-              </div>
-              <span class="filter-hint" id="limit-help">Sent as the API response limit</span>
-            </div>
           </div>
 
-          <div class="combo">
+          <!-- Component: SearchBar + ResultsList — combobox field and dropdown -->
+          <div class="combo" data-component="opening-search">
             <label class="sr-only" for="opening-search">Opening</label>
-            <div class="combo-field">
+            <div class="combo-field" data-component="search-bar">
               <svg class="combo-icon" viewBox="0 0 20 20" fill="none" aria-hidden="true">
                 <circle cx="8.6" cy="8.6" r="5.4" stroke="currentColor" stroke-width="1.8" />
                 <path d="M12.8 12.8 17 17" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
@@ -1036,48 +815,29 @@
               <span class="eco-chip" id="selected-eco" hidden></span>
               <button class="clear-button" id="clear-search" type="button" aria-label="Clear search" hidden>×</button>
             </div>
-            <ul id="opening-options" role="listbox" aria-label="Opening choices" hidden></ul>
+            <ul id="opening-options" role="listbox" aria-label="Opening choices" data-component="results-list" hidden></ul>
           </div>
 
-          <p class="combo-status" id="combo-status" aria-live="polite"></p>
+          <!-- Component: MatchStatus — live match count -->
+          <p class="combo-status" id="combo-status" data-component="match-status" aria-live="polite"></p>
 
-          <p class="keyboard-legend">
-            <span><kbd>↑</kbd><kbd>↓</kbd> Move</span>
-            <span><kbd>Enter</kbd> Choose</span>
-            <span><kbd>Esc</kbd> Dismiss</span>
-          </p>
+          <!-- Component: InlineStartBar — selection plus start action -->
+          <div class="start-bar" id="start-bar" data-component="inline-start-bar" hidden>
+            <span class="start-text" id="start-text"></span>
+            <button class="start-button" id="start-button" type="button">Start training →</button>
+          </div>
         </section>
-
-        <aside class="panel start-panel" aria-labelledby="start-title">
-          <p class="start-kicker" id="start-title">Your selection</p>
-          <div class="start-body" id="selection-body"></div>
-          <div class="start-action">
-            <button class="start-button" id="start-button" type="button" disabled>
-              <span id="start-label">Start training</span>
-              <span class="arrow" aria-hidden="true">→</span>
-            </button>
-            <p class="start-hint" id="start-hint">Choose a line to begin.</p>
-          </div>
-        </aside>
       </div>
 
       <p class="interaction-note">
-        <strong>Mock-up only:</strong> local fixture openings, no API calls. The board and training screen are handled
-        by other components; this explores only the search selector and its start action.
+        <strong>Mock-up only:</strong> local fixture openings, no API calls. Reusable parts in this file:
+        RepertoireToggle, SearchBar, ResultsList, MatchStatus, InlineStartBar.
       </p>
     </div>
 
     <script>
       (() => {
-        const FILES = "abcdefgh";
         const SIDE_LABELS = { all: "Both sides", white: "White", black: "Black" };
-        const VOLUMES = {
-          A: "Flank and irregular openings",
-          B: "Semi-open games",
-          C: "Open games",
-          D: "Closed and double-pawn games",
-          E: "Indian defenses",
-        };
 
         const openings = [
           {
@@ -1162,20 +922,24 @@
           },
         ];
 
+        /* Shared fixture data for all parts below. */
         const input = document.querySelector("#opening-search");
+        /* Component: ResultsList elements */
         const listbox = document.querySelector("#opening-options");
+        /* Component: SearchBar elements */
         const comboField = document.querySelector(".combo-field");
         const panel = input.closest(".panel");
+        /* Component: RepertoireToggle elements */
         const sideRadios = [...document.querySelectorAll('input[name="side"]')];
-        const limitInput = document.querySelector("#position-limit");
-        const unlimitedCheckbox = document.querySelector("#position-unlimited");
+        /* Component: SearchBar extras */
         const ecoChip = document.querySelector("#selected-eco");
         const clearButton = document.querySelector("#clear-search");
+        /* Component: MatchStatus element */
         const status = document.querySelector("#combo-status");
-        const selectionBody = document.querySelector("#selection-body");
+        /* Component: InlineStartBar elements */
+        const startBar = document.querySelector("#start-bar");
+        const startText = document.querySelector("#start-text");
         const startButton = document.querySelector("#start-button");
-        const startLabel = document.querySelector("#start-label");
-        const startHint = document.querySelector("#start-hint");
 
         let side = "all";
         let activeIndex = -1;
@@ -1212,6 +976,8 @@
           if (raw === allOption().name.toLowerCase()) return "";
           return raw;
         }
+
+        /* Component: ResultsList — filtering plus row text. */
 
         /* ---- Option rendering ------------------------------------------- */
 
@@ -1318,6 +1084,7 @@
           return option;
         }
 
+        /* Component: ResultsList plus MatchStatus update. */
         function renderOptions() {
           const matches = matchingOpenings();
           const current = allOption();
@@ -1346,15 +1113,13 @@
           status.textContent = total === 0 ? "No matching openings." : `${total} opening${total === 1 ? "" : "s"} match.`;
         }
 
-        /* ---- List open/close/navigation --------------------------------- */
-
+        /* Component: ResultsList open/close plus keyboard highlight. */
         function openList() {
           activeIndex = -1;
           renderOptions();
           listbox.hidden = false;
           input.setAttribute("aria-expanded", "true");
           input.removeAttribute("aria-activedescendant");
-          renderSelection();
         }
 
         function closeList() {
@@ -1362,7 +1127,6 @@
           input.setAttribute("aria-expanded", "false");
           input.removeAttribute("aria-activedescendant");
           activeIndex = -1;
-          renderSelection();
         }
 
         function setActive(index) {
@@ -1370,7 +1134,6 @@
             activeIndex = -1;
             renderOptions();
             input.removeAttribute("aria-activedescendant");
-            renderSelection();
             return;
           }
           if (!visibleOptions.length) return;
@@ -1379,17 +1142,16 @@
           const activeOption = listbox.querySelector(`[data-index="${activeIndex}"]`);
           input.setAttribute("aria-activedescendant", activeOption.id);
           activeOption.scrollIntoView({ block: "nearest" });
-          renderSelection();
         }
 
-        /* ---- Selection --------------------------------------------------- */
-
+        /* Component: SearchBar selection state plus InlineStartBar refresh. */
         function choose(opening) {
           chosen = opening.key ? opening : null;
           scopeAll = Boolean(opening.isAll);
           activeIndex = -1;
           input.value = opening.name;
           updateFieldExtras();
+          renderStartBar();
           renderOptions();
           closeList();
           input.select();
@@ -1405,121 +1167,31 @@
           }
         }
 
-        function previewOpening() {
-          if (open() && activeIndex >= 0) return visibleOptions[activeIndex];
-          if (chosen) return chosen;
-          return null;
+        /* Component: InlineStartBar text. */
+        function movesPreview(opening) {
+          const parts = [];
+          opening.moves.forEach((move, index) => {
+            if (index % 2 === 0) parts.push(`${index / 2 + 1}.${move}`);
+            else parts[parts.length - 1] += ` ${move}`;
+          });
+          return parts.join(" ");
         }
 
-        function limitText() {
-          if (unlimitedCheckbox.checked) return "all positions";
-          const value = Number.parseInt(limitInput.value, 10);
-          const count = Number.isFinite(value) && value >= 1 ? value : 1;
-          return `${count} position${count === 1 ? "" : "s"}`;
-        }
-
-        function notationList(opening) {
-          const list = document.createElement("ol");
-          list.className = "notation";
-          list.setAttribute("aria-label", "Move sequence");
-          for (let index = 0; index < opening.moves.length; index += 2) {
-            const item = document.createElement("li");
-            const number = document.createElement("span");
-            number.className = "ply-no";
-            number.textContent = `${index / 2 + 1}.`;
-            item.append(number);
-            const white = document.createElement("span");
-            white.className = "ply";
-            white.textContent = opening.moves[index];
-            item.append(white);
-            if (opening.moves[index + 1]) {
-              const black = document.createElement("span");
-              black.className = "ply";
-              black.textContent = opening.moves[index + 1];
-              item.append(black);
-            }
-            list.append(item);
-          }
-          return list;
-        }
-
-        function renderSelection() {
-          const opening = previewOpening();
-          selectionBody.replaceChildren();
-
-          if (!opening || opening.isAll) {
-            const empty = document.createElement("div");
-            empty.className = "empty-record";
-            const title = document.createElement("strong");
-            title.textContent = opening && opening.isAll ? opening.name : "No line chosen yet";
-            const copy = document.createElement("span");
-            copy.textContent =
-              opening && opening.isAll
-                ? `${opening.matchCount} matching lines. Search or highlight a specific opening to start training it.`
-                : "Highlight a result to read the line here, then press Enter to choose it.";
-            empty.append(title, copy);
-            selectionBody.append(empty);
-
-            startButton.disabled = true;
-            startLabel.textContent = "Start training";
-            startHint.textContent = "Choose a line to begin.";
+        function renderStartBar() {
+          if (!chosen) {
+            startBar.hidden = true;
+            startText.textContent = "";
             return;
           }
-
-          const record = document.createElement("div");
-          record.className = "record";
-
-          const head = document.createElement("div");
-          head.className = "record-head";
-          const tab = document.createElement("span");
-          tab.className = "eco-tab";
-          tab.style.setProperty("--tab", familyVar(opening.eco));
-          tab.setAttribute("aria-hidden", "true");
-          tab.textContent = family(opening.eco);
-          const headText = document.createElement("div");
-          const title = document.createElement("h3");
-          title.className = "record-title";
-          title.textContent = opening.name;
-          const meta = document.createElement("p");
-          meta.className = "record-meta";
-          meta.append(`${opening.eco} · Volume ${family(opening.eco)} — ${VOLUMES[family(opening.eco)]} · `);
-          meta.append(sideChip(opening), " repertoire");
-          headText.append(title, meta);
-          head.append(tab, headText);
-          record.append(head);
-
-          record.append(notationList(opening));
-
-          const stats = document.createElement("dl");
-          stats.className = "stats";
-          [
-            ["Saved lines", opening.route_count],
-            ["Games reached", opening.games_reached],
-            ["Deepest line", `${opening.games_deepest} moves`],
-          ].forEach(([label, value]) => {
-            const cell = document.createElement("div");
-            const dt = document.createElement("dt");
-            dt.textContent = label;
-            const dd = document.createElement("dd");
-            dd.textContent = String(value);
-            cell.append(dt, dd);
-            stats.append(cell);
-          });
-          record.append(stats);
-          selectionBody.append(record);
-
-          startButton.disabled = false;
-          startLabel.textContent = "Start training";
-          startHint.replaceChildren("Requests ");
-          const hintLimit = document.createElement("b");
-          hintLimit.textContent = limitText();
-          const hintCode = document.createElement("b");
-          hintCode.textContent = `${opening.eco} ${opening.name}`;
-          startHint.append(hintLimit, " · ", hintCode, ".");
+          startBar.hidden = false;
+          startText.replaceChildren();
+          const code = document.createElement("strong");
+          code.textContent = chosen.eco;
+          startText.append(code, ` ${chosen.name} · ${movesPreview(chosen)}`);
         }
 
-        /* ---- Events ------------------------------------------------------ */
-
+        /* Events by part: SearchBar input and keys, ResultsList pick,
+           RepertoireToggle change, InlineStartBar click. */
         input.addEventListener("focus", () => {
           input.select();
           openList();
@@ -1533,6 +1205,7 @@
           if (chosen && input.value.trim() !== chosen.name) chosen = null;
           scopeAll = false;
           updateFieldExtras();
+          renderStartBar();
           openList();
         });
 
@@ -1568,6 +1241,7 @@
           scopeAll = false;
           input.value = "";
           updateFieldExtras();
+          renderStartBar();
           openList();
           input.focus();
         });
@@ -1581,19 +1255,12 @@
             if (scopeAll) input.value = allOption().name;
             else if (previousChosen && !chosen) input.value = "";
             updateFieldExtras();
+            renderStartBar();
             if (open()) openList();
             else {
               renderOptions();
-              renderSelection();
             }
           });
-        });
-
-        limitInput.addEventListener("input", renderSelection);
-
-        unlimitedCheckbox.addEventListener("change", () => {
-          limitInput.disabled = unlimitedCheckbox.checked;
-          renderSelection();
         });
 
         comboField.addEventListener("mousedown", (event) => {
@@ -1607,9 +1274,14 @@
           if (!panel.contains(event.target)) closeList();
         });
 
+        startButton.addEventListener("click", () => {
+          if (!chosen) return;
+          status.textContent = `Starting training: ${chosen.eco} ${chosen.name}.`;
+        });
+
         updateFieldExtras();
+        renderStartBar();
         renderOptions();
-        renderSelection();
       })();
     </script>
   </body>

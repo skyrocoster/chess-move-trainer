@@ -5,30 +5,28 @@ import type {
   OpeningCatalogueItemResponse,
   TrainingRequirementResponse,
 } from "../../api/client";
+import { queryKeys } from "../../api/queryKeys";
+import { readOpeningCatalogueSnapshot } from "./openingCatalogueStorage";
 import {
   currentUtcDate,
   defaultTrainerPracticeApi,
+  queryOpeningCatalogueSnapshot,
   isValidAsOf,
-  queryOpeningChoices,
   queryTrainingRequirements,
   TrainerPracticeQueryError,
-  type OpeningChoicesResult,
+  type OpeningCatalogueSnapshotResult,
   type TrainerColor,
   type TrainerPracticeFilters,
   type TrainingRequirementsResult,
 } from "./trainerPracticeApi";
+import type { OpeningSelection } from "./OpeningSearchCombobox";
 import {
   TrainerPracticePanel,
   type TrainerPracticeFormValues,
 } from "./TrainerPracticePanel";
 
-import { queryKeys } from "../../api/queryKeys";
-
 export type TrainerPracticeApi = {
-  loadOpenings: (
-    signal?: AbortSignal,
-    search?: string,
-  ) => Promise<OpeningChoicesResult>;
+  loadCatalogue: (signal?: AbortSignal) => Promise<OpeningCatalogueSnapshotResult>;
   loadRequirements: (
     filters: TrainerPracticeFilters,
     signal?: AbortSignal,
@@ -61,22 +59,18 @@ export function TrainerPracticePage({
   api?: TrainerPracticeApi;
 }) {
   const [catalogueSearch, setCatalogueSearch] = useState("");
-  const [catalogueQuery, setCatalogueQuery] = useState("");
-  const [openingKey, setOpeningKey] = useState("");
+  const [openingSelection, setOpeningSelection] = useState<OpeningSelection>(null);
   const [trainerColor, setTrainerColor] = useState<"" | TrainerColor>("");
   const [asOf, setAsOf] = useState(currentUtcDate);
   const [submittedFilters, setSubmittedFilters] = useState<TrainerPracticeFilters | null>(null);
   const [invalidDateSubmitted, setInvalidDateSubmitted] = useState(false);
+  const [storedCatalogue] = useState(readOpeningCatalogueSnapshot);
 
-  const normalizedCatalogueSearch = catalogueQuery.trim() || null;
   const catalogueResult = useQuery({
-    queryKey: queryKeys.openingsCatalogue({
-      search: catalogueQuery,
-      pageSize: 100,
-      sort: "name_asc",
-    }),
-    queryFn: ({ signal }) =>
-      queryOpeningChoices(api.loadOpenings, signal, normalizedCatalogueSearch),
+    queryKey: queryKeys.openingsCatalogueSnapshot(),
+    queryFn: ({ signal }) => queryOpeningCatalogueSnapshot(api.loadCatalogue, signal),
+    initialData: storedCatalogue?.items,
+    initialDataUpdatedAt: storedCatalogue === null ? undefined : 0,
     retry: false,
     staleTime: 15 * 60 * 1000,
     gcTime: 30 * 60 * 1000,
@@ -106,10 +100,10 @@ export function TrainerPracticePage({
 
   const catalogueStatus: CatalogueState["status"] = catalogueResult.isError
     ? "error"
-    : catalogueResult.isSuccess
-      ? "ready"
-      : "loading";
-  const openings = catalogueResult.data ?? [];
+    : catalogueResult.isFetching || !catalogueResult.isSuccess
+      ? "loading"
+      : "ready";
+  const openings = catalogueResult.data ?? storedCatalogue?.items ?? [];
 
   const retrieval: RetrievalState =
     submittedFilters === null
@@ -135,6 +129,11 @@ export function TrainerPracticePage({
 
   const handleSubmit = useCallback(
     (values: TrainerPracticeFormValues) => {
+      if (values.openingSelection === null) {
+        setSubmittedFilters(null);
+        setInvalidDateSubmitted(false);
+        return;
+      }
       if (!isValidAsOf(values.asOf)) {
         setSubmittedFilters(null);
         setInvalidDateSubmitted(true);
@@ -143,7 +142,10 @@ export function TrainerPracticePage({
 
       const filters: TrainerPracticeFilters = {
         asOf: values.asOf,
-        openingKey: values.openingKey === "" ? null : values.openingKey,
+        openingKey:
+          values.openingSelection?.kind === "specific"
+            ? values.openingSelection.key
+            : null,
         trainerColor: values.trainerColor === "" ? null : values.trainerColor,
       };
       setInvalidDateSubmitted(false);
@@ -167,31 +169,24 @@ export function TrainerPracticePage({
     void catalogueResult.refetch();
   }, [catalogueResult]);
 
-  const handleSearchCatalogue = useCallback(() => {
-    setSubmittedFilters(null);
-    setInvalidDateSubmitted(false);
-    setOpeningKey("");
-    const normalizedSearch = catalogueSearch.trim() || null;
-    if (normalizedSearch === normalizedCatalogueSearch && catalogueResult.isError) {
-      void catalogueResult.refetch();
-    } else {
-      setCatalogueQuery(catalogueSearch);
-    }
-  }, [catalogueQuery, catalogueResult, catalogueSearch, normalizedCatalogueSearch]);
+  const handleMissingOpeningSelection = useCallback(() => {
+    setOpeningSelection(null);
+    setCatalogueSearch("");
+  }, []);
 
   return (
       <TrainerPracticePanel
-        values={{ openingKey, trainerColor, asOf }}
+        values={{ openingSelection, trainerColor, asOf }}
         catalogueSearch={catalogueSearch}
         openings={openings}
         catalogueStatus={catalogueStatus}
       retrieval={retrieval}
-        onOpeningKeyChange={setOpeningKey}
+        onOpeningSelectionChange={setOpeningSelection}
         onCatalogueSearchChange={setCatalogueSearch}
+        onMissingOpeningSelection={handleMissingOpeningSelection}
         onTrainerColorChange={setTrainerColor}
-      onAsOfChange={setAsOf}
+        onAsOfChange={setAsOf}
         onSubmit={handleSubmit}
-        onSearchCatalogue={handleSearchCatalogue}
         onRetryCatalogue={handleRetryCatalogue}
     />
   );

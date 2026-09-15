@@ -120,6 +120,33 @@ services:
       retries: 30
       start_period: 30s
 
+  worker:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    command:
+      - python
+      - -m
+      - chess_move_trainer.database
+      - stockfish
+      - worker
+      - --database
+      - data/database/chess.db
+      - --executable
+      - /usr/local/bin/stockfish
+      - --poll-interval
+      - "5"
+    init: true
+    working_dir: /workspace
+    environment:
+      PYTHONUNBUFFERED: "1"
+    volumes:
+      - type: bind
+        source: .
+        target: /workspace
+    restart: "no"
+    stop_grace_period: 30s
+
 volumes:
   frontend-node-modules:
   storybook-node-modules:

@@ -1,7 +1,8 @@
 import { Checkbox } from "@base-ui/react/checkbox";
-import { Input } from "@base-ui/react/input";
-import { Select } from "@base-ui/react/select";
 import { Button } from "../Button";
+import { Field } from "../form-controls/Field";
+import { Select } from "../form-controls/Select";
+import { TextInput } from "../form-controls/TextInput";
 import styles from "./LineLibrary.module.css";
 import type {
   LineLibraryFilterApplyMode,
@@ -42,7 +43,13 @@ export function LineLibraryFilters({
 
         if (kind === "boolean") {
           return (
-            <label className={styles.booleanFilter} key={definition.id} htmlFor={controlId}>
+            <Field
+              className={styles.booleanFilter}
+              disabled={disabled}
+              htmlFor={controlId}
+              key={definition.id}
+              label={definition.label}
+            >
               <Checkbox.Root
                 id={controlId}
                 className={styles.checkbox}
@@ -52,58 +59,49 @@ export function LineLibraryFilters({
               >
                 <Checkbox.Indicator className={styles.checkboxIndicator}>✓</Checkbox.Indicator>
               </Checkbox.Root>
-              <span>{definition.label}</span>
-            </label>
+            </Field>
           );
         }
 
         if (kind === "select") {
           return (
-            <label className={styles.filterField} key={definition.id} htmlFor={controlId}>
-              <span className={styles.filterLabel}>{definition.label}</span>
-              <Select.Root
-                value={filterValueAsString(value)}
+            <Field
+              className={styles.filterField}
+              disabled={disabled}
+              key={definition.id}
+              label={definition.label}
+            >
+              <Select
+                ariaLabel={definition.label}
                 disabled={disabled}
+                options={(definition.options ?? []).map((option) => ({
+                  value: option.value,
+                  label: option.label,
+                }))}
+                value={filterValueAsString(value)}
+                placeholder={definition.placeholder ?? "Choose"}
                 onValueChange={(nextValue) => onChange(definition.id, nextValue ?? "")}
-              >
-                <Select.Trigger id={controlId} className={styles.selectTrigger}>
-                  <Select.Value placeholder={definition.placeholder ?? "Choose"} />
-                </Select.Trigger>
-                <Select.Portal>
-                  <Select.Positioner className={styles.selectPositioner} sideOffset={4}>
-                    <Select.Popup className={styles.selectPopup}>
-                      <Select.List>
-                        {(definition.options ?? []).map((option) => (
-                          <Select.Item
-                            className={styles.selectItem}
-                            key={option.value}
-                            value={option.value}
-                          >
-                            <Select.ItemText>{option.label}</Select.ItemText>
-                          </Select.Item>
-                        ))}
-                      </Select.List>
-                    </Select.Popup>
-                  </Select.Positioner>
-                </Select.Portal>
-              </Select.Root>
-            </label>
+              />
+            </Field>
           );
         }
 
         return (
-          <label className={styles.filterField} key={definition.id} htmlFor={controlId}>
-            <span className={styles.filterLabel}>{definition.label}</span>
-            <Input
+          <Field
+            className={styles.filterField}
+            disabled={disabled}
+            key={definition.id}
+            label={definition.label}
+          >
+            <TextInput
               id={controlId}
-              className={styles.input}
               type={kind === "search" ? "search" : "text"}
               value={filterValueAsString(value)}
               placeholder={definition.placeholder}
               disabled={disabled}
-              onValueChange={(nextValue) => onChange(definition.id, nextValue)}
+              onChange={(event) => onChange(definition.id, event.currentTarget.value)}
             />
-          </label>
+          </Field>
         );
       })}
       {mode === "explicit" ? (

@@ -73,6 +73,10 @@ export const queryKeys = {
     ] as const;
   },
 
+  openingsCatalogueSnapshot() {
+    return ["openingsCatalogueSnapshot"] as const;
+  },
+
   trainingRequirements(input: TrainingRequirementsKeyInput) {
     const openingKey = normalizeOptionalText(input.openingKey);
     return [

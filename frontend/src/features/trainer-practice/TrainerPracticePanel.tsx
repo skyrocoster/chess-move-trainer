@@ -4,10 +4,17 @@ import type {
   OpeningCatalogueItemResponse,
   TrainingRequirementResponse,
 } from "../../api/client";
+import { Button } from "../design-system/Button";
+import { Field } from "../design-system/form-controls/Field";
+import { RadioGroup } from "../design-system/form-controls/RadioGroup";
+import {
+  OpeningSearchCombobox,
+  type OpeningSelection,
+} from "./OpeningSearchCombobox";
 import type { TrainerColor } from "./trainerPracticeApi";
 
 export type TrainerPracticeFormValues = {
-  openingKey: string;
+  openingSelection: OpeningSelection;
   trainerColor: "" | TrainerColor;
   asOf: string;
 };
@@ -21,12 +28,12 @@ export type TrainerPracticePanelProps = {
     | { status: "idle" | "loading" }
     | { status: "catalogue-error" | "retrieval-error" | "invalid-date" | "stale-date" }
     | { status: "empty" | "success"; data: TrainingRequirementResponse };
-  onOpeningKeyChange: (value: string) => void;
+  onOpeningSelectionChange: (selection: OpeningSelection) => void;
   onCatalogueSearchChange: (value: string) => void;
+  onMissingOpeningSelection: () => void;
   onTrainerColorChange: (value: "" | TrainerColor) => void;
   onAsOfChange: (value: string) => void;
   onSubmit: (values: TrainerPracticeFormValues) => void;
-  onSearchCatalogue: () => void;
   onRetryCatalogue: () => void;
 };
 
@@ -191,8 +198,9 @@ export function TrainerPracticePanel({
   onTrainerColorChange,
   onAsOfChange,
   onSubmit,
-  onSearchCatalogue,
   onRetryCatalogue,
+  onOpeningSelectionChange,
+  onMissingOpeningSelection,
 }: TrainerPracticePanelProps) {
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -205,69 +213,65 @@ export function TrainerPracticePanel({
 
       {catalogueStatus === "loading" ? (
         <p role="status" aria-live="polite">
-          Loading opening catalogue...
+          {openings.length > 0
+            ? "Checking opening catalogue..."
+            : "Loading opening catalogue..."}
         </p>
       ) : null}
       {catalogueStatus === "error" ? (
         <div role="alert" aria-live="assertive">
-          <p>Opening catalogue could not be loaded.</p>
-          <button type="button" onClick={onRetryCatalogue}>
+          <p>
+            {openings.length > 0
+              ? "Opening catalogue could not be refreshed."
+              : "Opening catalogue could not be loaded."}
+          </p>
+          <Button type="button" variant="secondary" onClick={onRetryCatalogue}>
             Retry opening catalogue
-          </button>
+          </Button>
         </div>
       ) : null}
 
       <form onSubmit={handleSubmit} noValidate>
-        <label htmlFor="trainer-practice-catalogue-search">Search openings</label>
-        <input
-          id="trainer-practice-catalogue-search"
-          type="search"
-          value={catalogueSearch}
-          onChange={(event) => onCatalogueSearchChange(event.target.value)}
-        />
-        <button type="button" onClick={onSearchCatalogue}>
-          Search opening catalogue
-        </button>
+        <Field label="Opening" description="Search by opening name, ECO, or stable key.">
+          <OpeningSearchCombobox
+            onMissingSelection={onMissingOpeningSelection}
+            onQueryChange={onCatalogueSearchChange}
+            onSelectionChange={onOpeningSelectionChange}
+            openings={openings}
+            query={catalogueSearch}
+            selection={values.openingSelection}
+          />
+        </Field>
 
-        <label htmlFor="trainer-practice-opening">Opening</label>
-        <select
-          id="trainer-practice-opening"
-          value={values.openingKey}
-          onChange={(event) => onOpeningKeyChange(event.target.value)}
+        <Field label="Learner colour">
+          <RadioGroup
+            ariaLabel="Learner colour"
+            options={[
+              { value: "", label: "All colours" },
+              { value: "white", label: "White" },
+              { value: "black", label: "Black" },
+            ]}
+            value={values.trainerColor}
+            onValueChange={(value) => onTrainerColorChange(value as "" | TrainerColor)}
+          />
+        </Field>
+
+        <Field htmlFor="trainer-practice-as-of" label="as_of" required>
+          <input
+            id="trainer-practice-as-of"
+            type="date"
+            value={values.asOf}
+            onChange={(event) => onAsOfChange(event.target.value)}
+            required
+          />
+        </Field>
+
+        <Button
+          type="submit"
+          disabled={catalogueStatus !== "ready" || values.openingSelection === null}
         >
-          <option value="">All openings</option>
-          {openings.map((opening) => (
-            <option key={opening.key} value={opening.key}>
-              {opening.name} ({opening.eco})
-            </option>
-          ))}
-        </select>
-
-        <label htmlFor="trainer-practice-color">Learner colour</label>
-        <select
-          id="trainer-practice-color"
-          value={values.trainerColor}
-          onChange={(event) =>
-            onTrainerColorChange(event.target.value as "" | TrainerColor)
-          }
-        >
-          <option value="">All colours</option>
-          <option value="white">White</option>
-          <option value="black">Black</option>
-        </select>
-
-        <label htmlFor="trainer-practice-as-of">as_of</label>
-        <input
-          id="trainer-practice-as-of"
-          type="date"
-          value={values.asOf}
-          onChange={(event) => onAsOfChange(event.target.value)}
-          required
-        />
-
-        <button type="submit" disabled={catalogueStatus !== "ready"}>
-          Retrieve training positions
-        </button>
+          Find training positions
+        </Button>
       </form>
 
       {retrieval.status === "loading" ? (

@@ -178,7 +178,6 @@ describe("GameLoader", () => {
     expect(rawStyles).toMatch(/@container\s*\(max-width:\s*40rem\)/);
     expect(rawStyles).not.toMatch(/@media\s*\(\s*(?:max-width|min-width)\s*:/);
     expect(rawStyles).toMatch(/@media\s*\(forced-colors:\s*active\)/);
-    expect(rawStyles).toMatch(/--cmt-focus-ring-width/);
     expect(rawStyles).toMatch(/--md-sys-color-error-container/);
   });
 

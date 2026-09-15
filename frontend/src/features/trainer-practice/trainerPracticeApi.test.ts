@@ -9,14 +9,17 @@ import type {
 import {
   buildTrainingRequirementsQuery,
   currentUtcDate,
+  fetchOpeningCatalogueSnapshot,
   fetchOpeningChoices,
   fetchTrainingRequirements,
   isValidAsOf,
   queryOpeningChoices,
+  queryOpeningCatalogueSnapshot,
   queryTrainingRequirements,
   TrainerPracticeQueryError,
   type TrainerPracticeFilters,
 } from "./trainerPracticeApi";
+import type { OpeningCatalogueStorage } from "./openingCatalogueStorage";
 
 vi.mock("../../api/client", () => ({
   getOpenings: vi.fn(),
@@ -71,6 +74,38 @@ function page(pageNumber: number, total: number, items: TrainingRequirementItemR
   } satisfies TrainingRequirementResponse;
 }
 
+function cataloguePage(
+  pageNumber: number,
+  total: number,
+  items: OpeningCatalogueItemResponse[],
+  version = "opaque-v1",
+) {
+  return {
+    data: {
+      has_next: pageNumber < Math.ceil(total / 1),
+      items,
+      page: pageNumber,
+      page_size: 100,
+      total,
+      total_pages: Math.ceil(total / 1),
+    },
+    response: { headers: new Headers({ "X-Openings-Catalogue-Version": version }) },
+  } as never;
+}
+
+function browserStorage(initial: string | null = null): OpeningCatalogueStorage {
+  let value = initial;
+  return {
+    getItem: () => value,
+    removeItem: () => {
+      value = null;
+    },
+    setItem: (_key, next) => {
+      value = next;
+    },
+  };
+}
+
 const selectedFilters: TrainerPracticeFilters = {
   asOf: TODAY,
   openingKey: OPENING_KEY,
@@ -100,6 +135,26 @@ describe("fetchOpeningChoices", () => {
     expect(getOpenings).toHaveBeenCalledWith({
       query: { page: 1, page_size: 100, sort: "name_asc" },
       signal: controller.signal,
+    });
+  });
+
+  it("keeps the opaque catalogue version at the handwritten API boundary", async () => {
+    vi.mocked(getOpenings).mockResolvedValueOnce({
+      data: {
+        has_next: false,
+        items: [OPENING],
+        page: 1,
+        page_size: 100,
+        total: 1,
+        total_pages: 1,
+      },
+      response: { headers: new Headers({ "X-Openings-Catalogue-Version": "opaque-v1" }) },
+    } as never);
+
+    await expect(fetchOpeningChoices()).resolves.toEqual({
+      status: "success",
+      data: [OPENING],
+      catalogueVersion: "opaque-v1",
     });
   });
 
@@ -152,6 +207,60 @@ describe("fetchOpeningChoices", () => {
       response: { status: 503 },
     } as never);
     await expect(fetchOpeningChoices()).resolves.toEqual({ status: "catalogue_error" });
+  });
+});
+
+describe("fetchOpeningCatalogueSnapshot", () => {
+  it("reads the opaque response header and persists a complete replacement", async () => {
+    const secondOpening = { ...OPENING, key: "B11:Caro-Kann Defense: Main Line" };
+    const browser = browserStorage();
+    vi.mocked(getOpenings)
+      .mockResolvedValueOnce(cataloguePage(1, 2, [OPENING]))
+      .mockResolvedValueOnce(cataloguePage(2, 2, [secondOpening]));
+
+    await expect(fetchOpeningCatalogueSnapshot(undefined, browser)).resolves.toEqual({
+      status: "success",
+      data: [OPENING, secondOpening],
+      catalogueVersion: "opaque-v1",
+    });
+    expect(vi.mocked(getOpenings).mock.calls.map(([request]) => request)).toEqual([
+      { query: { page: 1, page_size: 100, sort: "name_asc" }, signal: undefined },
+      { query: { page: 2, page_size: 100, sort: "name_asc" }, signal: undefined },
+    ]);
+    expect(browser.getItem("cmt.openings.catalogue.v1")).toContain('"storage_schema":1');
+  });
+
+  it("reuses a matching complete snapshot without requesting later pages", async () => {
+    const browser = browserStorage(
+      JSON.stringify({ storage_schema: 1, catalogue_version: "opaque-v1", items: [OPENING] }),
+    );
+    vi.mocked(getOpenings).mockResolvedValueOnce(cataloguePage(1, 99, [], "opaque-v1"));
+
+    await expect(fetchOpeningCatalogueSnapshot(undefined, browser)).resolves.toEqual({
+      status: "success",
+      data: [OPENING],
+      catalogueVersion: "opaque-v1",
+    });
+    expect(getOpenings).toHaveBeenCalledTimes(1);
+  });
+
+  it("rejects an inconsistent version without overwriting the previous snapshot", async () => {
+    const previous = JSON.stringify({
+      storage_schema: 1,
+      catalogue_version: "opaque-old",
+      items: [OPENING],
+    });
+    const browser = browserStorage(previous);
+    vi.mocked(getOpenings)
+      .mockResolvedValueOnce(cataloguePage(1, 2, [OPENING], "opaque-new"))
+      .mockResolvedValueOnce(
+        cataloguePage(2, 2, [{ ...OPENING, key: "B11:Other" }], "opaque-other"),
+      );
+
+    await expect(fetchOpeningCatalogueSnapshot(undefined, browser)).resolves.toEqual({
+      status: "catalogue_error",
+    });
+    expect(browser.getItem("cmt.openings.catalogue.v1")).toBe(previous);
   });
 });
 
@@ -304,5 +413,10 @@ describe("query adapters", () => {
     await expect(
       queryTrainingRequirements(loadRequirements, selectedFilters, signal),
     ).rejects.toEqual(new TrainerPracticeQueryError("stale_date"));
+
+    const loadSnapshot = vi.fn().mockResolvedValue({ status: "catalogue_error" });
+    await expect(queryOpeningCatalogueSnapshot(loadSnapshot, signal)).rejects.toEqual(
+      new TrainerPracticeQueryError("catalogue_error"),
+    );
   });
 });

@@ -42,6 +42,7 @@
 
 .header {
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-start;
   justify-content: space-between;
   gap: var(--cmt-spacing-12);
@@ -49,7 +50,7 @@
 }
 
 .header > div {
-  flex: 1 1 auto;
+  flex: 1 1 12rem;
   min-inline-size: 0;
 }
 
@@ -72,12 +73,12 @@
   margin-block-start: var(--cmt-spacing-4);
   color: var(--md-sys-color-on-surface-variant);
   font: var(--md-sys-typescale-body-small);
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .status {
   display: inline-flex;
-  flex: 0 0 auto;
+  flex: 0 1 auto;
   align-items: center;
   max-inline-size: 100%;
   padding: var(--cmt-spacing-4) var(--cmt-spacing-12);
@@ -85,7 +86,7 @@
   background: var(--md-sys-color-surface-container-high);
   color: var(--md-sys-color-on-surface-variant);
   font: var(--md-sys-typescale-label-medium);
-  white-space: nowrap;
+  overflow-wrap: break-word;
 }
 
 .toneReady .status {
@@ -103,7 +104,7 @@
 .gate {
   color: var(--md-sys-color-on-surface-variant);
   font: var(--md-sys-typescale-body-small);
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .gate {
@@ -141,7 +142,7 @@
   display: flex;
   flex-direction: column;
   min-inline-size: 0;
-  block-size: 88px;
+  min-block-size: 88px;
   box-sizing: border-box;
   padding: var(--cmt-spacing-12) var(--cmt-spacing-16);
   border: 1px solid var(--md-sys-color-outline-variant);
@@ -149,7 +150,7 @@
   background: var(--md-sys-color-surface-container);
   color: var(--md-sys-color-on-surface);
   text-align: start;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 button.choiceBox {

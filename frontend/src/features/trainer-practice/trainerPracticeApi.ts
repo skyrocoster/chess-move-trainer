@@ -3,14 +3,24 @@ import {
   getPositionTrainingRequirements,
 } from "../../api/client";
 import type {
+  GetOpeningsData,
   GetPositionTrainingRequirementsData,
   OpeningCatalogueItemResponse,
+  OpeningCatalogueResponse,
   TrainingRequirementItemResponse,
   TrainingRequirementResponse,
 } from "../../api/client";
+import {
+  isOpeningCatalogueSnapshot,
+  readOpeningCatalogueSnapshot,
+  writeOpeningCatalogueSnapshot,
+  type OpeningCatalogueSnapshot,
+  type OpeningCatalogueStorage,
+} from "./openingCatalogueStorage";
 
 export const TRAINING_REQUIREMENTS_PAGE_SIZE = 100;
 export const OPENING_CATALOGUE_PAGE_SIZE = 100;
+export const OPENINGS_CATALOGUE_VERSION_HEADER = "X-Openings-Catalogue-Version";
 const OPENING_CATALOGUE_REQUEST_CONCURRENCY = 4;
 
 export type TrainerColor = "white" | "black";
@@ -28,7 +38,11 @@ export type TrainerPracticeFailureCode =
   | "retrieval_error";
 
 export type OpeningChoicesResult =
-  | { status: "success"; data: OpeningCatalogueItemResponse[] }
+  | {
+      status: "success";
+      data: OpeningCatalogueItemResponse[];
+      catalogueVersion?: string;
+    }
   | { status: "catalogue_error" };
 
 export type TrainingRequirementsResult =
@@ -42,7 +56,8 @@ export class TrainerPracticeQueryError extends Error {
   }
 }
 
-type Query = NonNullable<GetPositionTrainingRequirementsData["query"]>;
+type OpeningQuery = NonNullable<GetOpeningsData["query"]>;
+type TrainingQuery = NonNullable<GetPositionTrainingRequirementsData["query"]>;
 type JsonRecord = Record<string, unknown>;
 
 function isRecord(value: unknown): value is JsonRecord {
@@ -80,7 +95,13 @@ export function isValidAsOf(value: string): boolean {
   return !Number.isNaN(date.getTime()) && currentUtcDate(date) === value;
 }
 
-type OpeningPageResult = Awaited<ReturnType<typeof getOpenings>>;
+type OpeningPageResult =
+  | {
+      status: "success";
+      data: OpeningCatalogueResponse;
+      catalogueVersion: string | null;
+    }
+  | { status: "catalogue_error" };
 
 function normalizedSearch(search?: string): string | null {
   const value = search?.trim();
@@ -91,11 +112,11 @@ async function fetchOpeningPage(
   page: number,
   search: string | null,
   signal?: AbortSignal,
-): Promise<OpeningPageResult | null> {
+): Promise<OpeningPageResult> {
   throwIfAborted(signal);
 
   try {
-    const query: Query = {
+    const query: OpeningQuery = {
       page,
       page_size: OPENING_CATALOGUE_PAGE_SIZE,
       sort: "name_asc",
@@ -108,20 +129,30 @@ async function fetchOpeningPage(
       signal,
     });
     throwIfAborted(signal);
-    return result;
+    if (result.data === undefined || result.error !== undefined) {
+      return { status: "catalogue_error" };
+    }
+    const catalogueVersion = result.response?.headers
+      .get(OPENINGS_CATALOGUE_VERSION_HEADER)
+      ?.trim();
+    return {
+      status: "success",
+      data: result.data,
+      catalogueVersion: catalogueVersion || null,
+    };
   } catch (error) {
     if (signal?.aborted || isAbortError(error)) {
       throw error;
     }
-    return null;
+    return { status: "catalogue_error" };
   }
 }
 
 export function buildTrainingRequirementsQuery(
   filters: TrainerPracticeFilters,
   page: number,
-): Query {
-  const query: Query = {
+): TrainingQuery {
+  const query: TrainingQuery = {
     as_of: filters.asOf,
     training_requirement_lt: 0,
     page,
@@ -145,13 +176,19 @@ export async function fetchOpeningChoices(
 ): Promise<OpeningChoicesResult> {
   const normalized = normalizedSearch(search);
   const firstPage = await fetchOpeningPage(1, normalized, signal);
-  if (firstPage === null || firstPage.data === undefined || firstPage.error !== undefined) {
+  if (firstPage.status !== "success") {
     return { status: "catalogue_error" };
   }
 
   const firstPageData = firstPage.data;
   if (normalized === null || !firstPageData.has_next || firstPageData.total_pages <= 1) {
-    return { status: "success", data: firstPageData.items };
+    return {
+      status: "success",
+      data: firstPageData.items,
+      ...(firstPage.catalogueVersion === null
+        ? {}
+        : { catalogueVersion: firstPage.catalogueVersion }),
+    };
   }
 
   const openings: OpeningCatalogueItemResponse[] = [...firstPageData.items];
@@ -170,13 +207,128 @@ export async function fetchOpeningChoices(
         .map((page) => fetchOpeningPage(page, normalized, signal)),
     );
     for (const page of pages) {
-      if (page === null || page.data === undefined || page.error !== undefined) {
+      if (page.status !== "success") {
         return { status: "catalogue_error" };
       }
       openings.push(...page.data.items);
     }
   }
-  return { status: "success", data: openings };
+  return {
+    status: "success",
+    data: openings,
+    ...(firstPage.catalogueVersion === null
+      ? {}
+      : { catalogueVersion: firstPage.catalogueVersion }),
+  };
+}
+
+export type OpeningCatalogueSnapshotResult =
+  | {
+      status: "success";
+      data: OpeningCatalogueItemResponse[];
+      catalogueVersion: string;
+    }
+  | { status: "catalogue_error" };
+
+function hasValidCataloguePage(
+  page: OpeningCatalogueResponse,
+  expectedPage: number,
+): boolean {
+  return (
+    Number.isInteger(page.page) &&
+    page.page === expectedPage &&
+    Number.isInteger(page.page_size) &&
+    page.page_size === OPENING_CATALOGUE_PAGE_SIZE &&
+    Number.isInteger(page.total) &&
+    page.total >= 0 &&
+    Number.isInteger(page.total_pages) &&
+    page.total_pages >= 0 &&
+    Array.isArray(page.items)
+  );
+}
+
+export async function fetchOpeningCatalogueSnapshot(
+  signal?: AbortSignal,
+  storage?: OpeningCatalogueStorage | null,
+): Promise<OpeningCatalogueSnapshotResult> {
+  const stored = readOpeningCatalogueSnapshot(storage);
+  const firstPage = await fetchOpeningPage(1, null, signal);
+  if (
+    firstPage.status !== "success" ||
+    firstPage.catalogueVersion === null ||
+    !hasValidCataloguePage(firstPage.data, 1)
+  ) {
+    return { status: "catalogue_error" };
+  }
+
+  const version = firstPage.catalogueVersion;
+  if (stored !== null && stored.catalogue_version === version) {
+    return {
+      status: "success",
+      data: stored.items,
+      catalogueVersion: version,
+    };
+  }
+
+  const firstPageData = firstPage.data;
+  const remainingPageNumbers = Array.from(
+    { length: Math.max(0, firstPageData.total_pages - 1) },
+    (_, index) => index + 2,
+  );
+  const openings: OpeningCatalogueItemResponse[] = [...firstPageData.items];
+
+  for (
+    let offset = 0;
+    offset < remainingPageNumbers.length;
+    offset += OPENING_CATALOGUE_REQUEST_CONCURRENCY
+  ) {
+    const pages = await Promise.all(
+      remainingPageNumbers
+        .slice(offset, offset + OPENING_CATALOGUE_REQUEST_CONCURRENCY)
+        .map((page) => fetchOpeningPage(page, null, signal)),
+    );
+    for (const [index, page] of pages.entries()) {
+      const expectedPage = remainingPageNumbers[offset + index];
+      if (
+        page.status !== "success" ||
+        page.catalogueVersion !== version ||
+        !hasValidCataloguePage(page.data, expectedPage) ||
+        page.data.total !== firstPageData.total ||
+        page.data.total_pages !== firstPageData.total_pages
+      ) {
+        return { status: "catalogue_error" };
+      }
+      openings.push(...page.data.items);
+    }
+  }
+
+  if (openings.length !== firstPageData.total) {
+    return { status: "catalogue_error" };
+  }
+
+  const replacement: OpeningCatalogueSnapshot = {
+    storage_schema: 1,
+    catalogue_version: version,
+    items: openings,
+  };
+  if (!isOpeningCatalogueSnapshot(replacement)) {
+    return { status: "catalogue_error" };
+  }
+  writeOpeningCatalogueSnapshot(replacement, storage);
+  return { status: "success", data: openings, catalogueVersion: version };
+}
+
+export async function queryOpeningCatalogueSnapshot(
+  loadSnapshot: (
+    signal?: AbortSignal,
+  ) => Promise<OpeningCatalogueSnapshotResult>,
+  signal: AbortSignal,
+): Promise<OpeningCatalogueItemResponse[]> {
+  const result = await loadSnapshot(signal);
+  if (result.status !== "success") {
+    throw new TrainerPracticeQueryError(result.status);
+  }
+  return result.data;
 }
 
 function mapRequirementsFailure(error: unknown, status: number | null): TrainingRequirementsResult {
@@ -295,6 +447,6 @@ export async function queryTrainingRequirements(
 }
 
 export const defaultTrainerPracticeApi = {
-  loadOpenings: fetchOpeningChoices,
+  loadCatalogue: fetchOpeningCatalogueSnapshot,
   loadRequirements: fetchTrainingRequirements,
 };

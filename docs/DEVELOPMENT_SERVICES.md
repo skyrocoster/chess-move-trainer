@@ -1,7 +1,9 @@
 # Persistent development services
 
-The backend, frontend, and Storybook run as detached Docker Compose services. They keep running after the
-PowerShell window closes, and ordinary source changes reload automatically without restarting containers.
+The backend, frontend, Storybook, and analysis worker run as detached Docker Compose services. They keep
+running after the PowerShell window closes, and ordinary source changes reload automatically without
+restarting containers. The worker sleeps quietly and only starts the Stockfish engine while queued analysis
+work exists.
 
 ## Commands
 
@@ -22,21 +24,23 @@ powershell -ExecutionPolicy Bypass -File ./dev.ps1 stop
 powershell -ExecutionPolicy Bypass -File ./dev.ps1 restart
 ```
 
-Add `backend`, `frontend`, or `storybook` after the action to affect only one service:
+Add `backend`, `frontend`, `storybook`, or `worker` after the action to affect only one service:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File ./dev.ps1 restart backend
-powershell -ExecutionPolicy Bypass -File ./dev.ps1 logs storybook
+powershell -ExecutionPolicy Bypass -File ./dev.ps1 logs worker
 ```
 
 Use `rebuild` instead of `restart` after changing a Dockerfile, Compose configuration, `requirements.txt`, or
-the npm package manifests and lockfile. Target `backend` for Python dependencies; rebuild all services after npm
+the npm package manifests and lockfile. Target `backend` for Python dependencies, then `worker` separately
+(the worker shares the backend image); rebuild all services after npm
 dependency changes because the frontend and Storybook share them. Storybook is the exception to manual rebuilds:
 it has `pull_policy: build`, so an ordinary `start` already rebuilds its image (fast from Docker layer cache when
 dependencies are unchanged).
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File ./dev.ps1 rebuild backend
+powershell -ExecutionPolicy Bypass -File ./dev.ps1 rebuild worker
 powershell -ExecutionPolicy Bypass -File ./dev.ps1 rebuild
 ```
 
@@ -50,6 +54,7 @@ not available.
 | Backend | <http://localhost:5666> |
 | Frontend | <http://localhost:8444> |
 | Storybook | <http://localhost:6006> |
+| Worker | No port; drains the Stockfish analysis queue every 5 seconds |
 
 All three ports are published only on the local machine. Startup fails rather than selecting a different port when
 one is already occupied. The containers have no automatic restart policy: `restart` remains an explicit command.
@@ -60,7 +65,8 @@ one is already occupied. The containers have no automatic restart policy: `resta
 - Frontend source changes use Vite hot module replacement.
 - Story and component changes use Storybook hot module replacement.
 - `stop` preserves the containers so a later `start` is quick.
-- `start` always rebuilds the Storybook image; backend and frontend reuse their existing images unless you run `rebuild`.
+- `start` always rebuilds the Storybook image; backend, frontend, and worker reuse their existing images
+  unless you run `rebuild`.
 - Avoid `docker compose down`; it removes the persistent containers and is unnecessary for normal development.
 
 ## AI agent behavior

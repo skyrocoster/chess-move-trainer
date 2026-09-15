@@ -49,6 +49,11 @@ const data: LineLibraryData = {
   },
 };
 
+const booleanFilterData: LineLibraryData = {
+  ...data,
+  filters: [...(data.filters ?? []), { id: "required", label: "Required", kind: "boolean" }],
+};
+
 const renderLibrary = (props: Partial<React.ComponentProps<typeof LineLibrary>> = {}) =>
   render(
     <LineLibrary
@@ -203,6 +208,22 @@ describe("LineLibrary", () => {
       ["line-1"],
       expect.objectContaining({ resolvedConcreteIds: ["line-1"] }),
     );
+  });
+
+  it("keeps shared select and binary checkbox filter values behind explicit apply", async () => {
+    const user = userEvent.setup();
+    const onFiltersChange = vi.fn();
+    renderLibrary({ data: booleanFilterData, onFiltersChange });
+
+    await user.click(screen.getByRole("combobox", { name: "Scope" }));
+    await user.click(screen.getByRole("option", { name: "Recent" }));
+
+    const required = screen.getByRole("checkbox", { name: "Required" });
+    await user.click(screen.getByText("Required"));
+    expect(required).toBeChecked();
+
+    await user.click(screen.getByRole("button", { name: "Apply filters" }));
+    expect(onFiltersChange).toHaveBeenLastCalledWith({ query: "", scope: "recent", required: true });
   });
 
   it("provides initial loading and empty states and keeps tree keyboard focus", async () => {

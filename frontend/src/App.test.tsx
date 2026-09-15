@@ -63,8 +63,8 @@ describe("App routes", () => {
         { timeout: 15000 },
       ),
     ).toBeInTheDocument();
-    expect(screen.getByLabelText("Opening")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Retrieve training positions" })).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "Opening" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Find training positions" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /board|session/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: /board|session/i })).not.toBeInTheDocument();
   }, 20_000);

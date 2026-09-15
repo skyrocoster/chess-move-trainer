@@ -140,6 +140,7 @@ def test_list_openings_returns_public_summary(
     response = CLIENT.get("/api/openings", params={"future_filter": "ignored"})
 
     assert response.status_code == 200
+    assert response.headers["X-Openings-Catalogue-Version"]
     assert response.json() == {
         "items": [
             {
@@ -184,6 +185,20 @@ def test_list_openings_returns_public_summary(
     assert not {"game_id", "position_id", "opening_id", "route_id"} & set(
         json.dumps(response.json()).split('"')
     )
+
+
+def test_openings_catalogue_version_is_exposed_cross_origin(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _use_database(monkeypatch, _create_rebuilt_database(tmp_path / "rebuilt.db"))
+
+    response = CLIENT.get("/api/openings", headers={"Origin": "http://localhost:8444"})
+
+    assert response.status_code == 200
+    assert response.headers["access-control-expose-headers"] == (
+        "X-Openings-Catalogue-Version"
+    )
+    assert response.headers["x-openings-catalogue-version"]
 
 
 @pytest.mark.parametrize(

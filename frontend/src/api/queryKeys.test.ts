@@ -9,6 +9,10 @@ const DISTINCT_POSITION_FEN =
   "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1";
 
 describe("queryKeys", () => {
+  it("uses one key for the complete sorted openings snapshot", () => {
+    expect(queryKeys.openingsCatalogueSnapshot()).toEqual(["openingsCatalogueSnapshot"]);
+  });
+
   it("normalizes the opening catalogue without losing fixed response inputs", () => {
     expect(
       queryKeys.openingsCatalogue({ search: "  sicilian ", pageSize: 100, sort: "name_asc" }),

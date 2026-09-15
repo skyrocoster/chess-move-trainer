@@ -244,6 +244,22 @@ describe("PreferredMovePanel selected-transition composition", () => {
     expect(within(panel).getByRole("button", { name: "Remove" })).toBeDisabled();
   });
 
+  it("announces context loading once when the status already covers it", () => {
+    render(
+      <PreferredMovePanel
+        {...panelArgs({
+          model: savedModel({ saveability: "unknown", contextMessage: null }),
+          contextLoading: true,
+        })}
+      />,
+    );
+
+    expect(screen.getByTestId("preferred-status")).toHaveTextContent(
+      "Loading position context...",
+    );
+    expect(screen.queryByTestId("preferred-context")).not.toBeInTheDocument();
+  });
+
   it("retains responsive relationship order and accessibility styles", () => {
     render(
       <PreferredMovePanel
@@ -266,6 +282,8 @@ describe("PreferredMovePanel selected-transition composition", () => {
     expect(panelCss).toContain("container-name: preferred-move-panel;");
     expect(panelCss).toContain("@container preferred-move-panel (max-width: 40rem)");
     expect(panelCss).toContain("@media (forced-colors: active)");
-    expect(panelCss).toContain("overflow-wrap: anywhere;");
+    expect(panelCss).toContain("overflow-wrap: break-word;");
+    expect(panelCss).not.toContain("overflow-wrap: anywhere;");
+    expect(panelCss).toContain("flex-wrap: wrap;");
   });
 });

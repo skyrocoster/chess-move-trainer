@@ -14,9 +14,10 @@ or other browser caching headers are emitted.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import threading
-from collections.abc import Callable, Hashable
+from collections.abc import Callable, Hashable, Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -104,6 +105,17 @@ def _current_signature(resolved: str) -> tuple:
                 )
             )
     return (resolved, tuple(entries))
+
+
+def openings_catalogue_version(database_path: Path | str) -> str:
+    """Return a bounded opaque version for the database and SQLite sidecars."""
+
+    resolved = str(Path(database_path).resolve())
+    signature = _current_signature(resolved)
+    material = json.dumps(signature, separators=(",", ":"), ensure_ascii=True).encode(
+        "utf-8"
+    )
+    return hashlib.sha256(material).hexdigest()
 
 
 def _refresh_signature_locked(resolved: str) -> bool:
@@ -298,10 +310,10 @@ def get_or_compute(
     return payload
 
 
-def json_response(payload: bytes) -> Response:
+def json_response(payload: bytes, headers: Mapping[str, str] | None = None) -> Response:
     """Wrap one cached or freshly computed payload in a fresh response."""
 
-    return Response(content=payload, media_type="application/json")
+    return Response(content=payload, media_type="application/json", headers=headers)
 
 
 __all__ = [
@@ -317,6 +329,7 @@ __all__ = [
     "get_or_compute",
     "json_response",
     "opening_detail_key",
+    "openings_catalogue_version",
     "openings_key",
     "openings_namespace",
     "serialize_response_body",

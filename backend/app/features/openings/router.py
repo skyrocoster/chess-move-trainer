@@ -13,6 +13,7 @@ from backend.app.caching import (
     get_or_compute,
     json_response,
     opening_detail_key,
+    openings_catalogue_version,
     openings_key,
     openings_namespace,
     serialize_response_body,
@@ -124,7 +125,12 @@ def get_openings(
     except Exception:
         return _catalogue_error(500, "unexpected_failure", "Unable to load openings")
     assert payload is not None
-    return json_response(payload)
+    return json_response(
+        payload,
+        headers={
+            "X-Openings-Catalogue-Version": openings_catalogue_version(database_path),
+        },
+    )
 
 
 @router.get(

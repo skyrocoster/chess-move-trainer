@@ -180,14 +180,25 @@ export function PreferredMovePanel({
       : preferredLoading
         ? "Loading saved choice..."
         : "Saved choice is unavailable.";
-  const contextLabel =
+  const emptyDescription = selectedEmptyDescription(model, contextLoading, contextError);
+  const statusText = statusLabel({
+    model,
+    mutation,
+    preferredLoading,
+    preferredError,
+    contextLoading,
+    contextError,
+  });
+  const rawContextLabel =
     model.contextMessage ??
     (contextLoading
       ? "Loading position context..."
       : contextError
         ? contextFailureMessage(contextError)
         : null);
-  const emptyDescription = selectedEmptyDescription(model, contextLoading, contextError);
+  // The status pill already announces loading/unavailability, so skip a
+  // duplicate meta line that would squeeze the header in narrow panels.
+  const contextLabel = rawContextLabel === statusText ? null : rawContextLabel;
   const selectedEmptyTitle =
     model.relationship === "saved" && model.saved
       ? `Select a move to propose replacing ${model.saved.move.san}`
@@ -231,14 +242,7 @@ export function PreferredMovePanel({
             ) : null}
           </div>
           <span className={styles.status} role="status" data-testid="preferred-status">
-            {statusLabel({
-              model,
-              mutation,
-              preferredLoading,
-              preferredError,
-              contextLoading,
-              contextError,
-            })}
+            {statusText}
           </span>
         </header>
 

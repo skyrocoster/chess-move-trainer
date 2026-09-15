@@ -1,4 +1,9 @@
-"""Windows kernel-owned mutex for database Stockfish work."""
+"""Database Stockfish work mutex.
+
+Windows uses a kernel-owned named mutex. Other platforms use a filesystem
+lock file next to the database so the Docker worker gets the same
+one-worker-at-a-time guarantee on Linux.
+"""
 
 from __future__ import annotations
 
@@ -48,7 +53,14 @@ def mutex_name_for_database(database_path: str | Path) -> str:
 
 
 class DatabaseMutex:
-    """Acquire and release one database-specific Windows named mutex."""
+    """Acquire and release one database-specific Stockfish mutex.
+
+    Windows keeps the existing named kernel mutex (including abandoned-owner
+    reporting). Linux and other POSIX systems use an ``flock``-guarded sidecar
+    file next to the database; the kernel releases it if the holder dies, so
+    a crashed worker simply leaves reclaimable ``running`` queue rows for the
+    normal stale-claim logic.
+    """
 
     def __init__(
         self,
@@ -60,6 +72,7 @@ class DatabaseMutex:
         self.name = mutex_name_for_database(database_path)
         self.acquire_timeout = _finite_wait(acquire_timeout)
         self._handle: Any | None = None
+        self._lock_file: Any | None = None
         self._owned = False
         self._abandoned = False
 
@@ -83,28 +96,16 @@ class DatabaseMutex:
         if timeout is None:
             timeout = self.acquire_timeout
         wait_seconds = _finite_wait(timeout)
-        api = _windows_api()
-        handle = api.CreateMutexW(None, False, self.name)
-        if not handle:
-            raise _windows_error("CreateMutexW")
-        wait_ms = max(0, math.ceil(wait_seconds * 1000))
-        result = int(api.WaitForSingleObject(handle, wait_ms))
-        if result in (WAIT_OBJECT_0, WAIT_ABANDONED):
-            self._handle = handle
-            self._owned = True
-            self._abandoned = result == WAIT_ABANDONED
-            return True
-
-        _close_handle(api, handle)
-        if result == WAIT_TIMEOUT:
-            return False
-        if result == WAIT_FAILED:
-            raise _windows_error("WaitForSingleObject")
-        raise DatabaseMutexError(f"unexpected Windows mutex wait result: {result}")
+        if os.name == "nt":
+            return self._acquire_windows(wait_seconds)
+        return self._acquire_file(wait_seconds)
 
     def release(self) -> None:
         """Release ownership and close the kernel handle whenever possible."""
 
+        if self._lock_file is not None:
+            self._release_file()
+            return
         handle = self._handle
         self._handle = None
         was_owned = self._owned
@@ -140,6 +141,85 @@ class DatabaseMutex:
             self.release()
         except BaseException:
             pass
+
+
+    def _acquire_windows(self, wait_seconds: float) -> bool:
+        api = _windows_api()
+        handle = api.CreateMutexW(None, False, self.name)
+        if not handle:
+            raise _windows_error("CreateMutexW")
+        wait_ms = max(0, math.ceil(wait_seconds * 1000))
+        result = int(api.WaitForSingleObject(handle, wait_ms))
+        if result in (WAIT_OBJECT_0, WAIT_ABANDONED):
+            self._handle = handle
+            self._owned = True
+            self._abandoned = result == WAIT_ABANDONED
+            return True
+
+        _close_handle(api, handle)
+        if result == WAIT_TIMEOUT:
+            return False
+        if result == WAIT_FAILED:
+            raise _windows_error("WaitForSingleObject")
+        raise DatabaseMutexError(f"unexpected Windows mutex wait result: {result}")
+
+    def _acquire_file(self, wait_seconds: float) -> bool:
+        import errno
+        import time
+
+        try:
+            import fcntl
+        except ImportError as error:
+            raise MutexUnavailableError(
+                "database Stockfish mutexes require Windows or fcntl"
+            ) from error
+
+        lock_path = _lock_file_for_database(self.database_path)
+        lock_path.parent.mkdir(parents=True, exist_ok=True)
+        handle = open(lock_path, "a+b")  # noqa: PTH123 - sidecar lock path is intentional
+        try:
+            deadline = time.monotonic() + wait_seconds
+            while True:
+                try:
+                    fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+                except OSError as error:
+                    if error.errno not in (errno.EACCES, errno.EAGAIN):
+                        raise DatabaseMutexError(
+                            f"file mutex wait failed for {lock_path}"
+                        ) from error
+                    if time.monotonic() >= deadline:
+                        handle.close()
+                        return False
+                    time.sleep(0.05)
+                    continue
+                self._lock_file = handle
+                self._owned = True
+                self._abandoned = False
+                return True
+        except BaseException:
+            handle.close()
+            raise
+
+    def _release_file(self) -> None:
+        import fcntl
+
+        handle = self._lock_file
+        self._lock_file = None
+        self._owned = False
+        self._abandoned = False
+        if handle is None:
+            return
+        try:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+        finally:
+            handle.close()
+
+
+def _lock_file_for_database(database_path: str | Path) -> Path:
+    """Return the sidecar lock file used on non-Windows platforms."""
+
+    path = Path(database_path).expanduser()
+    return path.with_name(f"{path.name}.stockfish.lock")
 
 
 class _WindowsApi:

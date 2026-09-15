@@ -39,6 +39,10 @@ def test_openings_repeat_reads_underlying_reader_once(
     assert first.status_code == second.status_code == 200
     assert len(calls) == 1
     assert first.content == second.content
+    assert first.headers["x-openings-catalogue-version"]
+    assert second.headers["x-openings-catalogue-version"] == first.headers[
+        "x-openings-catalogue-version"
+    ]
 
 
 def test_opening_detail_repeat_and_missing_key_behavior(

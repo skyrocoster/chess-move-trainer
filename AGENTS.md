@@ -25,9 +25,9 @@ command fails, report the exact command and failure.
 
 ## Application commands
 
-- `powershell -ExecutionPolicy Bypass -File ./dev.ps1 start` starts the backend, frontend, and Storybook in
+- `powershell -ExecutionPolicy Bypass -File ./dev.ps1 start` starts the backend, frontend, worker, and Storybook in
   detached Docker containers. Replace `start` with `stop`, `restart`, `rebuild`, `status`, or `logs`; append one
-  of `backend`, `frontend`, or `storybook` to target a single service.
+  of `backend`, `frontend`, `worker`, or `storybook` to target a single service.
 - `.venv/Scripts/python.exe -m pytest backend/tests tests` runs the Python suites.
 - Python dependencies are pinned in `requirements.txt` and configured in `pyproject.toml`. The repository-root
   `package-lock.json` is authoritative for the npm workspaces.
@@ -39,7 +39,7 @@ All checks are local; do not add application CI.
 
 ## Persistent development services
 
-The backend, frontend, and Storybook run as shared, long-lived Docker Compose services. Manage them only through
+The backend, frontend, worker, and Storybook run as shared, long-lived Docker Compose services. Manage them only through
 `dev.ps1`: before any lifecycle action or browser/E2E check, run `dev.ps1 status` and reuse healthy services
 as-is. Commands, ports, day-to-day behavior, and the full agent rules are in `docs/DEVELOPMENT_SERVICES.md`.
 
@@ -96,3 +96,10 @@ user requests an interview or when material decisions must be settled before wor
 
 `.opencode/` contains the Coordinator agent and its subagents and skills. Those assets belong to the
 Coordinator workflow; God sessions use them only where `.opencode/agents/god.md` names them directly.
+
+## Development rules
+- Prefer modifying, reusing, and composing existing frontend components over replacing them or creating new implementations.
+- When similar UI already exists, adapt or extract the existing implementation into a reusable component instead of rebuilding the same UI from scratch.
+- Preserve existing component APIs, behavior, styling, and structure unless the requested change requires altering them.
+- Create a new component from scratch only when no existing component can reasonably be reused, composed, adapted, or extracted.
+- Do not rewrite an existing component merely to make it cleaner, more idiomatic, or more consistent unless that refactor is part of the requested work.

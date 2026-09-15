@@ -1,6 +1,6 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type {
   OpeningCatalogueItemResponse,
@@ -14,7 +14,7 @@ import {
 import { TrainerPracticePage, type TrainerPracticeApi } from "./TrainerPracticePage";
 import {
   currentUtcDate,
-  type OpeningChoicesResult,
+  type OpeningCatalogueSnapshotResult,
   type TrainingRequirementsResult,
 } from "./trainerPracticeApi";
 
@@ -66,8 +66,8 @@ function page(items: TrainingRequirementItemResponse[], total = items.length) {
   } satisfies TrainingRequirementResponse;
 }
 
-function successfulOpenings(): OpeningChoicesResult {
-  return { status: "success", data: [OPENING] };
+function successfulCatalogue(): OpeningCatalogueSnapshotResult {
+  return { status: "success", data: [OPENING], catalogueVersion: "opaque-v1" };
 }
 
 function successfulRequirements(
@@ -80,7 +80,7 @@ function createApi(
   requirements: TrainingRequirementsResult = successfulRequirements(),
 ): TrainerPracticeApi {
   return {
-    loadOpenings: vi.fn().mockResolvedValue(successfulOpenings()),
+    loadCatalogue: vi.fn().mockResolvedValue(successfulCatalogue()),
     loadRequirements: vi.fn().mockResolvedValue(requirements),
   };
 }
@@ -102,47 +102,58 @@ async function renderReady(
 ) {
   const user = userEvent.setup();
   renderPage(api, client);
-  await screen.findByRole("option", { name: "Caro-Kann Defense (B10)" });
+  await screen.findByRole("combobox", { name: "Opening" });
+  await waitFor(() => expect(api.loadCatalogue).toHaveBeenCalledTimes(1));
   return user;
 }
 
-afterEach(() => cleanup());
+async function chooseOpening(user: ReturnType<typeof userEvent.setup>, name: RegExp | string) {
+  await user.click(screen.getByRole("combobox", { name: "Opening" }));
+  await user.click(await screen.findByRole("option", { name }));
+}
+
+beforeEach(() => {
+  vi.stubGlobal("PointerEvent", MouseEvent);
+});
+
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
+});
 
 describe("TrainerPracticePage", () => {
   it("shows catalogue loading and then exposes native labelled controls", async () => {
-    let resolveOpenings!: (value: OpeningChoicesResult) => void;
-    const openings = new Promise<OpeningChoicesResult>((resolve) => {
-      resolveOpenings = resolve;
+    let resolveCatalogue!: (value: OpeningCatalogueSnapshotResult) => void;
+    const catalogue = new Promise<OpeningCatalogueSnapshotResult>((resolve) => {
+      resolveCatalogue = resolve;
     });
     const api: TrainerPracticeApi = {
-      loadOpenings: vi.fn(() => openings),
+      loadCatalogue: vi.fn(() => catalogue),
       loadRequirements: vi.fn().mockResolvedValue(successfulRequirements()),
     };
 
     renderPage(api);
     expect(screen.getByRole("status")).toHaveTextContent("Loading opening catalogue");
-    expect(screen.getByRole("button", { name: "Retrieve training positions" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Find training positions" })).toBeDisabled();
 
-    resolveOpenings(successfulOpenings());
-    await screen.findByRole("option", { name: "Caro-Kann Defense (B10)" });
-    expect(screen.getByLabelText("Opening")).toBeVisible();
-    expect(screen.getByLabelText("Learner colour")).toBeVisible();
-    expect(screen.getByLabelText("as_of")).toHaveValue(currentUtcDate());
+    resolveCatalogue(successfulCatalogue());
+    await screen.findByRole("combobox", { name: "Opening" });
+    expect(screen.getByRole("combobox", { name: "Opening" })).toBeVisible();
+    expect(screen.getByRole("radio", { name: "All colours" })).toBeVisible();
+    expect(screen.getByLabelText(/^as_of/)).toHaveValue(currentUtcDate());
   });
 
   it("waits for explicit submit and sends the selected catalogue key", async () => {
     const api = createApi();
     const user = await renderReady(api);
-    const opening = screen.getByLabelText("Opening");
-    const color = screen.getByLabelText("Learner colour");
-    const asOf = screen.getByLabelText("as_of");
+    const asOf = screen.getByLabelText(/^as_of/);
 
-    await user.selectOptions(opening, OPENING_KEY);
-    await user.selectOptions(color, "black");
+    await chooseOpening(user, /B10 Caro-Kann Defense/);
+    await user.click(screen.getByRole("radio", { name: "Black" }));
     fireEvent.change(asOf, { target: { value: TODAY } });
     expect(api.loadRequirements).not.toHaveBeenCalled();
 
-    await user.click(screen.getByRole("button", { name: "Retrieve training positions" }));
+    await user.click(screen.getByRole("button", { name: "Find training positions" }));
     await waitFor(() => expect(api.loadRequirements).toHaveBeenCalledTimes(1));
     expect(api.loadRequirements).toHaveBeenCalledWith(
       { asOf: TODAY, openingKey: OPENING_KEY, trainerColor: "black" },
@@ -150,26 +161,49 @@ describe("TrainerPracticePage", () => {
     );
   });
 
-  it("reloads the catalogue only when its search is submitted", async () => {
-    const loadOpenings = vi.fn().mockResolvedValue(successfulOpenings());
-    const api: TrainerPracticeApi = {
-      loadOpenings,
-      loadRequirements: vi.fn().mockResolvedValue(successfulRequirements()),
-    };
+  it("filters the complete catalogue locally without a request per keystroke", async () => {
+    const loadCatalogue = vi.fn().mockResolvedValue(successfulCatalogue());
+    const api: TrainerPracticeApi = { loadCatalogue, loadRequirements: vi.fn() };
     const user = await renderReady(api);
 
-    await user.type(screen.getByLabelText("Search openings"), "Caro-Kann Defense");
-    expect(loadOpenings).toHaveBeenCalledTimes(1);
+    const opening = screen.getByRole("combobox", { name: "Opening" });
+    await user.click(opening);
+    await user.type(opening, "Caro-Kann");
 
-    await user.click(screen.getByRole("button", { name: "Search opening catalogue" }));
-    await waitFor(() => expect(loadOpenings).toHaveBeenCalledTimes(2));
-    expect(loadOpenings.mock.calls[1]).toEqual([expect.any(AbortSignal), "Caro-Kann Defense"]);
+    expect(await screen.findByRole("option", { name: /B10 Caro-Kann Defense/ })).toBeVisible();
+    expect(loadCatalogue).toHaveBeenCalledTimes(1);
+    expect(api.loadRequirements).not.toHaveBeenCalled();
   });
 
-  it("normalizes submitted search values so concurrent identical reads share one result", async () => {
-    const loadOpenings = vi.fn().mockResolvedValue(successfulOpenings());
+  it("preserves committed focus and Escape semantics while clear and typing uncommit", async () => {
+    const user = await renderReady();
+    await chooseOpening(user, /B10 Caro-Kann Defense/);
+    const opening = screen.getByRole("combobox", { name: "Opening" });
+    const findButton = screen.getByRole("button", { name: "Find training positions" });
+
+    await user.click(opening);
+    expect(opening).toHaveValue("Caro-Kann Defense");
+    expect((opening as HTMLInputElement).selectionStart).toBe(0);
+    expect((opening as HTMLInputElement).selectionEnd).toBe("Caro-Kann Defense".length);
+    await user.keyboard("{Escape}");
+    expect(opening).toHaveValue("Caro-Kann Defense");
+    expect(findButton).toBeEnabled();
+
+    await user.click(screen.getByRole("button", { name: "Clear selection" }));
+    expect(opening).toHaveValue("");
+    expect(findButton).toBeDisabled();
+
+    await chooseOpening(user, /B10 Caro-Kann Defense/);
+    await user.click(opening);
+    await user.type(opening, "Italian");
+    expect(opening).toHaveValue("Italian");
+    expect(findButton).toBeDisabled();
+  });
+
+  it("deduplicates concurrent complete catalogue and training reads", async () => {
+    const loadCatalogue = vi.fn().mockResolvedValue(successfulCatalogue());
     const api: TrainerPracticeApi = {
-      loadOpenings,
+      loadCatalogue,
       loadRequirements: vi.fn().mockResolvedValue(successfulRequirements()),
     };
     const client = createTestQueryClient();
@@ -181,44 +215,39 @@ describe("TrainerPracticePage", () => {
       </QueryClientTestProvider>,
     );
 
-    await screen.findAllByRole("option", { name: "Caro-Kann Defense (B10)" });
-    expect(loadOpenings).toHaveBeenCalledTimes(1);
+    await screen.findAllByRole("combobox", { name: "Opening" });
+    expect(loadCatalogue).toHaveBeenCalledTimes(1);
 
-    const searches = screen.getAllByRole("searchbox");
-    await user.type(searches[0]!, " Caro-Kann Defense ");
-    await user.type(searches[1]!, "Caro-Kann Defense");
-    const searchButtons = screen.getAllByRole("button", { name: "Search opening catalogue" });
-    await user.click(searchButtons[0]!);
-    await user.click(searchButtons[1]!);
+    const openingComboboxes = screen.getAllByRole("combobox", { name: "Opening" });
+    await user.click(openingComboboxes[0]!);
+    await user.click(screen.getByRole("option", { name: "All openings" }));
+    await user.click(openingComboboxes[1]!);
+    await user.click(screen.getByRole("option", { name: "All openings" }));
 
-    await waitFor(() => expect(loadOpenings).toHaveBeenCalledTimes(2));
-    expect(loadOpenings.mock.calls[1]).toEqual([
-      expect.any(AbortSignal),
-      "Caro-Kann Defense",
-    ]);
-  });
-
-  it("deduplicates concurrent catalogue and complete training reads", async () => {
-    const api = createApi();
-    const client = createTestQueryClient();
-    const user = userEvent.setup();
-    render(
-      <QueryClientTestProvider client={client}>
-        <TrainerPracticePage api={api} />
-        <TrainerPracticePage api={api} />
-      </QueryClientTestProvider>,
-    );
-
-    await screen.findAllByRole("option", { name: "Caro-Kann Defense (B10)" });
     const retrieveButtons = screen.getAllByRole("button", {
-      name: "Retrieve training positions",
+      name: "Find training positions",
     });
     await user.click(retrieveButtons[0]!);
     await user.click(retrieveButtons[1]!);
-
     await screen.findAllByText("fen-one");
-    expect(api.loadOpenings).toHaveBeenCalledTimes(1);
+    expect(loadCatalogue).toHaveBeenCalledTimes(1);
     expect(api.loadRequirements).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps All openings explicit and omits opening filters from the request", async () => {
+    const api = createApi();
+    const client = createTestQueryClient();
+    const user = userEvent.setup();
+    renderPage(api, client);
+    await screen.findByRole("combobox", { name: "Opening" });
+    await chooseOpening(user, "All openings");
+    expect(screen.getByRole("combobox", { name: "Opening" })).toHaveValue("All openings");
+    await user.click(screen.getByRole("button", { name: "Find training positions" }));
+    await screen.findByText("fen-one");
+    expect(api.loadRequirements).toHaveBeenCalledWith(
+      { asOf: currentUtcDate(), openingKey: null, trainerColor: null },
+      expect.any(AbortSignal),
+    );
   });
 
   it("keeps complete training results distinct when a filter changes", async () => {
@@ -232,15 +261,17 @@ describe("TrainerPracticePage", () => {
       </QueryClientTestProvider>,
     );
 
-    await screen.findAllByRole("option", { name: "Caro-Kann Defense (B10)" });
-    const colours = screen
-      .getAllByRole("combobox")
-      .filter((element) => element.id === "trainer-practice-color");
-    await user.selectOptions(colours[0]!, "white");
-    await user.selectOptions(colours[1]!, "black");
-    const retrieveButtons = screen.getAllByRole("button", {
-      name: "Retrieve training positions",
-    });
+    await screen.findAllByRole("combobox", { name: "Opening" });
+    const whiteColours = screen.getAllByRole("radio", { name: "White" });
+    const blackColours = screen.getAllByRole("radio", { name: "Black" });
+    await user.click(whiteColours[0]!);
+    await user.click(blackColours[1]!);
+    const openingComboboxes = screen.getAllByRole("combobox", { name: "Opening" });
+    await user.click(openingComboboxes[0]!);
+    await user.click(screen.getByRole("option", { name: "All openings" }));
+    await user.click(openingComboboxes[1]!);
+    await user.click(screen.getByRole("option", { name: "All openings" }));
+    const retrieveButtons = screen.getAllByRole("button", { name: "Find training positions" });
     await user.click(retrieveButtons[0]!);
     await user.click(retrieveButtons[1]!);
 
@@ -253,18 +284,20 @@ describe("TrainerPracticePage", () => {
     const firstUser = userEvent.setup();
     const firstRender = renderPage(api, client);
 
-    await screen.findByRole("option", { name: "Caro-Kann Defense (B10)" });
-    await firstUser.click(screen.getByRole("button", { name: "Retrieve training positions" }));
+    await screen.findByRole("combobox", { name: "Opening" });
+    await chooseOpening(firstUser, /B10 Caro-Kann Defense/);
+    await firstUser.click(screen.getByRole("button", { name: "Find training positions" }));
     await screen.findByText("fen-one");
     firstRender.unmount();
 
     const secondUser = userEvent.setup();
     renderPage(api, client);
-    await screen.findByRole("option", { name: "Caro-Kann Defense (B10)" });
-    await secondUser.click(screen.getByRole("button", { name: "Retrieve training positions" }));
+    await screen.findByRole("combobox", { name: "Opening" });
+    await chooseOpening(secondUser, /B10 Caro-Kann Defense/);
+    await secondUser.click(screen.getByRole("button", { name: "Find training positions" }));
     await screen.findByText("fen-one");
 
-    expect(api.loadOpenings).toHaveBeenCalledTimes(1);
+    expect(api.loadCatalogue).toHaveBeenCalledTimes(1);
     expect(api.loadRequirements).toHaveBeenCalledTimes(1);
   });
 
@@ -274,12 +307,13 @@ describe("TrainerPracticePage", () => {
       resolveRequirements = resolve;
     });
     const api: TrainerPracticeApi = {
-      loadOpenings: vi.fn().mockResolvedValue(successfulOpenings()),
+      loadCatalogue: vi.fn().mockResolvedValue(successfulCatalogue()),
       loadRequirements: vi.fn(() => requirements),
     };
     const user = await renderReady(api);
 
-    await user.click(screen.getByRole("button", { name: "Retrieve training positions" }));
+    await chooseOpening(user, /B10 Caro-Kann Defense/);
+    await user.click(screen.getByRole("button", { name: "Find training positions" }));
     expect(screen.getByRole("status")).toHaveTextContent("Loading training-required positions");
 
     resolveRequirements(
@@ -330,9 +364,11 @@ describe("TrainerPracticePage", () => {
   });
 
   it("shows a valid empty response with its metadata", async () => {
-    const user = await renderReady(createApi(successfulRequirements([])));
+    const api = createApi(successfulRequirements([]));
+    const user = await renderReady(api);
 
-    await user.click(screen.getByRole("button", { name: "Retrieve training positions" }));
+    await chooseOpening(user, /B10 Caro-Kann Defense/);
+    await user.click(screen.getByRole("button", { name: "Find training positions" }));
     expect(
       await screen.findByText("No positions currently require training for these filters."),
     ).toBeVisible();
@@ -341,12 +377,12 @@ describe("TrainerPracticePage", () => {
   });
 
   it("shows a catalogue error and can retry the catalogue request", async () => {
-    const loadOpenings = vi
+    const loadCatalogue = vi
       .fn()
-      .mockResolvedValueOnce({ status: "catalogue_error" } as OpeningChoicesResult)
-      .mockResolvedValueOnce(successfulOpenings());
+      .mockResolvedValueOnce({ status: "catalogue_error" } as OpeningCatalogueSnapshotResult)
+      .mockResolvedValueOnce(successfulCatalogue());
     const api: TrainerPracticeApi = {
-      loadOpenings,
+      loadCatalogue,
       loadRequirements: vi.fn().mockResolvedValue(successfulRequirements()),
     };
     const user = userEvent.setup();
@@ -354,8 +390,8 @@ describe("TrainerPracticePage", () => {
 
     expect(await screen.findByRole("alert")).toHaveTextContent("Opening catalogue could not be loaded");
     await user.click(screen.getByRole("button", { name: "Retry opening catalogue" }));
-    await screen.findByRole("option", { name: "Caro-Kann Defense (B10)" });
-    expect(loadOpenings).toHaveBeenCalledTimes(2);
+    await screen.findByRole("combobox", { name: "Opening" });
+    expect(loadCatalogue).toHaveBeenCalledTimes(2);
   });
 
   it.each([
@@ -363,9 +399,11 @@ describe("TrainerPracticePage", () => {
     ["stale_date", "Training requirements changed after this date."],
     ["retrieval_error", "Training-required positions could not be loaded."],
   ] as const)("shows the safe %s response state", async (status, message) => {
-    const user = await renderReady(createApi({ status }));
+    const api = createApi({ status });
+    const user = await renderReady(api);
+    await chooseOpening(user, /B10 Caro-Kann Defense/);
 
-    await user.click(screen.getByRole("button", { name: "Retrieve training positions" }));
+    await user.click(screen.getByRole("button", { name: "Find training positions" }));
     expect(await screen.findByRole("alert")).toHaveTextContent(message);
   });
 
@@ -375,14 +413,15 @@ describe("TrainerPracticePage", () => {
       .mockResolvedValueOnce({ status: "retrieval_error" } as TrainingRequirementsResult)
       .mockResolvedValueOnce(successfulRequirements());
     const api: TrainerPracticeApi = {
-      loadOpenings: vi.fn().mockResolvedValue(successfulOpenings()),
+      loadCatalogue: vi.fn().mockResolvedValue(successfulCatalogue()),
       loadRequirements,
     };
     const user = await renderReady(api);
 
-    await user.click(screen.getByRole("button", { name: "Retrieve training positions" }));
+    await chooseOpening(user, /B10 Caro-Kann Defense/);
+    await user.click(screen.getByRole("button", { name: "Find training positions" }));
     await screen.findByText("Training-required positions could not be loaded.");
-    await user.click(screen.getByRole("button", { name: "Retrieve training positions" }));
+    await user.click(screen.getByRole("button", { name: "Find training positions" }));
     await screen.findByText("fen-one");
 
     expect(loadRequirements).toHaveBeenCalledTimes(2);
@@ -402,15 +441,16 @@ describe("TrainerPracticePage", () => {
       .mockImplementationOnce(() => first)
       .mockImplementationOnce(() => second);
     const api: TrainerPracticeApi = {
-      loadOpenings: vi.fn().mockResolvedValue(successfulOpenings()),
+      loadCatalogue: vi.fn().mockResolvedValue(successfulCatalogue()),
       loadRequirements,
     };
     const user = await renderReady(api);
 
-    await user.click(screen.getByRole("button", { name: "Retrieve training positions" }));
-    const asOf = screen.getByLabelText("as_of");
+    await chooseOpening(user, /B10 Caro-Kann Defense/);
+    await user.click(screen.getByRole("button", { name: "Find training positions" }));
+    const asOf = screen.getByLabelText(/^as_of/);
     fireEvent.change(asOf, { target: { value: "2026-09-13" } });
-    await user.click(screen.getByRole("button", { name: "Retrieve training positions" }));
+    await user.click(screen.getByRole("button", { name: "Find training positions" }));
     const firstSignal = loadRequirements.mock.calls[0]?.[1] as AbortSignal;
     expect(firstSignal.aborted).toBe(true);
 
@@ -428,13 +468,14 @@ describe("TrainerPracticePage", () => {
     });
     const loadRequirements = vi.fn(() => pending);
     const api: TrainerPracticeApi = {
-      loadOpenings: vi.fn().mockResolvedValue(successfulOpenings()),
+      loadCatalogue: vi.fn().mockResolvedValue(successfulCatalogue()),
       loadRequirements,
     };
     const user = userEvent.setup();
     const rendered = renderPage(api);
-    await screen.findByRole("option", { name: "Caro-Kann Defense (B10)" });
-    await user.click(screen.getByRole("button", { name: "Retrieve training positions" }));
+    await screen.findByRole("combobox", { name: "Opening" });
+    await chooseOpening(user, /B10 Caro-Kann Defense/);
+    await user.click(screen.getByRole("button", { name: "Find training positions" }));
     const signal = loadRequirements.mock.calls[0]?.[1] as AbortSignal;
 
     rendered.unmount();

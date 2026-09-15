@@ -1,0 +1,16 @@
+.ecoBadge {
+  inline-size: 34px;
+  block-size: 36px;
+  display: grid;
+  place-items: center;
+  flex: none;
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--cmt-radius-4);
+  background: var(--md-sys-color-primary-container);
+  color: var(--md-sys-color-on-primary-container);
+  font-weight: 800;
+}
+
+.routeCount {
+  white-space: nowrap;
+}

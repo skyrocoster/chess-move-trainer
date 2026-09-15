@@ -21,6 +21,7 @@ def create_app() -> FastAPI:
         allow_credentials=False,
         allow_methods=["GET", "POST", "PUT", "DELETE"],
         allow_headers=["Content-Type"],
+        expose_headers=["X-Openings-Catalogue-Version"],
     )
     app.include_router(health_router)
     app.include_router(games_router)
