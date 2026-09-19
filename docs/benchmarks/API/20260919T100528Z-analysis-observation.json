@@ -1,0 +1,32 @@
+{
+  "name": "analysis-observation",
+  "measured_at_utc": "2026-09-19T10:05:28.769907+00:00",
+  "endpoint": "/api/analysis",
+  "params": {
+    "fen": "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2"
+  },
+  "database": {
+    "kind": "synthetic",
+    "file_name": "api-benchmark.db",
+    "size_bytes": 102400
+  },
+  "repeats": 5,
+  "timeout_s": 30.0,
+  "samples_ms": [
+    8.596,
+    6.152,
+    6.782,
+    6.22,
+    5.195
+  ],
+  "stats": {
+    "count": 5,
+    "min_ms": 5.195,
+    "median_ms": 6.22,
+    "mean_ms": 6.589,
+    "max_ms": 8.596
+  },
+  "threshold_median_ms": 2000.0,
+  "items_returned": null,
+  "total_reported": null
+}

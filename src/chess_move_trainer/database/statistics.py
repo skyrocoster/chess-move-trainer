@@ -138,7 +138,11 @@ class MoveResponseDistributionReader:
                 rows = connection.execute(
                     text(
                         """
-                        SELECT o.dgp_move_uci, p.dp_side_to_move, g.dg_trainer_color
+                        SELECT
+                            o.dgp_move_uci,
+                            p.dp_side_to_move,
+                            g.dg_trainer_color,
+                            COUNT(*) AS occurrence_count
                         FROM derived_game_position AS o
                         JOIN datasource_game AS g
                           ON g.dg_game_id = o.datasource_game_id
@@ -149,7 +153,10 @@ class MoveResponseDistributionReader:
                               :trainer_color IS NULL
                               OR g.dg_trainer_color = :trainer_color
                           )
-                        ORDER BY o.datasource_game_id, o.dgp_ply
+                        GROUP BY
+                            o.dgp_move_uci,
+                            p.dp_side_to_move,
+                            g.dg_trainer_color
                         """
                     ),
                     {"position_id": position_id, "trainer_color": trainer_color},
@@ -162,30 +169,35 @@ class MoveResponseDistributionReader:
         outgoing_moves: dict[str, int] = {}
         my_choices: dict[str, int] = {}
         opponent_responses: dict[str, int] = {}
+        occurrences = 0
         final_occurrences = 0
         for row in rows:
             try:
                 move_uci = row[0]
                 side_to_move = row[1]
                 game_trainer_color = row[2]
+                count = row[3]
             except IndexError as error:
                 raise StatisticsReadError("move response row is malformed") from error
+            if type(count) is not int or count < 1:
+                raise StatisticsReadError("move response row is malformed")
+            occurrences += count
             if move_uci is None:
-                final_occurrences += 1
+                final_occurrences += count
                 continue
             if not isinstance(move_uci, str) or side_to_move not in ("w", "b"):
                 raise StatisticsReadError("move response row is malformed")
             if game_trainer_color not in ("white", "black"):
                 raise StatisticsReadError("move response row has an invalid trainer color")
-            outgoing_moves[move_uci] = outgoing_moves.get(move_uci, 0) + 1
+            outgoing_moves[move_uci] = outgoing_moves.get(move_uci, 0) + count
             trainer_side = "w" if game_trainer_color == "white" else "b"
             actor_counts = my_choices if side_to_move == trainer_side else opponent_responses
-            actor_counts[move_uci] = actor_counts.get(move_uci, 0) + 1
+            actor_counts[move_uci] = actor_counts.get(move_uci, 0) + count
 
         return MoveResponseDistribution(
             position_id=position_id,
             trainer_color=trainer_color,
-            occurrence_count=len(rows),
+            occurrence_count=occurrences,
             final_occurrence_count=final_occurrences,
             outgoing_moves=outgoing_moves,
             my_choices=my_choices,

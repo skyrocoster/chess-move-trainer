@@ -127,7 +127,12 @@ export function usePositionContextState(
   client: PositionContextClient = fetchPositionContext,
   refreshKey = 0,
 ): PositionContextState {
-  return client === fetchPositionContext
-    ? useDefaultPositionContextState(fen, trainerColor, refreshKey)
-    : useInjectedPositionContextState(fen, trainerColor, client, refreshKey);
+  // The client is a construction-time dependency: switching it remounts this
+  // feature. Keeping the implementations separate avoids unused queries for test clients.
+  if (client === fetchPositionContext) {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    return useDefaultPositionContextState(fen, trainerColor, refreshKey);
+  }
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  return useInjectedPositionContextState(fen, trainerColor, client, refreshKey);
 }

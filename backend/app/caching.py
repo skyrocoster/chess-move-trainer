@@ -1,15 +1,19 @@
 """Process-local cache for safe repeated backend reads.
 
-Two bounded ``cachetools.TTLCache`` namespaces (training requirements and the
-opening catalogue) sit behind one lock with per-key single-flight: concurrent
-identical misses invoke the underlying reader once. Only immutable serialized
-payloads from successful (``200``) reads are stored; validation, stale,
-missing, and failure responses are never cached. A database-file signature
-(main file plus ``-wal``/``-shm``/journal sidecars) is checked before serving
-a hit and before publishing a miss; any change advances the cache generation,
-clears every namespace, and forces recomputation. Successful training-answer
-and preferred-move writes clear the whole cache explicitly. No ``Cache-Control``
-or other browser caching headers are emitted.
+Bounded ``cachetools.TTLCache`` namespaces sit behind one lock with per-key
+single-flight: concurrent identical misses invoke the underlying reader once.
+Only immutable serialized payloads from successful (``200``) reads are stored;
+validation, stale, missing, and failure responses are never cached. A
+database-file signature (main file plus ``-wal``/``-shm``/journal sidecars) is
+checked before serving a hit and before publishing a miss; any change advances
+the cache generation, clears every namespace, and forces recomputation.
+Successful writes clear the whole cache explicitly. No ``Cache-Control`` or
+other browser caching headers are emitted.
+
+Single-flight waits are bounded: a waiter whose leader does not finish within
+``SINGLE_FLIGHT_TIMEOUT_SECONDS`` discards the registered in-flight entry (so
+a later request can become leader) and raises ``SingleFlightTimeoutError``.
+Timeout failures are never cached.
 """
 
 from __future__ import annotations
@@ -17,6 +21,7 @@ from __future__ import annotations
 import hashlib
 import json
 import threading
+import time
 from collections.abc import Callable, Hashable, Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -37,8 +42,15 @@ OPENINGS_TTL_SECONDS = 900.0
 OPENINGS_MAX_ENTRIES = 128
 GAMES_TTL_SECONDS = 60.0
 GAMES_MAX_ENTRIES = 64
+READ_TTL_SECONDS = 300.0
+READ_MAX_ENTRIES = 512
+SINGLE_FLIGHT_TIMEOUT_SECONDS = 30.0
 
 _SIDECAR_SUFFIXES = ("-wal", "-shm", "-journal")
+
+
+class SingleFlightTimeoutError(TimeoutError):
+    """A single-flight leader did not finish within the bounded wait."""
 
 
 class _Inflight:
@@ -78,6 +90,9 @@ openings_namespace = ResponseCacheNamespace(
 )
 games_namespace = ResponseCacheNamespace(
     name="games", ttl_seconds=GAMES_TTL_SECONDS, max_entries=GAMES_MAX_ENTRIES
+)
+read_namespace = ResponseCacheNamespace(
+    name="read", ttl_seconds=READ_TTL_SECONDS, max_entries=READ_MAX_ENTRIES
 )
 
 _lock = threading.RLock()
@@ -150,7 +165,11 @@ def clear_caches() -> None:
 def serialize_response_body(body: object) -> bytes:
     """Serialize one response model exactly like Starlette's JSONResponse."""
 
-    payload = body.model_dump(mode="json") if hasattr(body, "model_dump") else body
+    payload = (
+        body.model_dump(mode="json", by_alias=True)
+        if hasattr(body, "model_dump")
+        else body
+    )
     return json.dumps(
         payload,
         ensure_ascii=False,
@@ -241,11 +260,73 @@ def games_key(database_path: Path | str, query: GameSearchQuery) -> tuple:
     )
 
 
+def game_detail_key(database_path: Path | str, game_uuid: str) -> tuple:
+    """Canonical key for one immutable game-detail read."""
+
+    return ("game-detail", str(Path(database_path).resolve()), game_uuid)
+
+
+def analysis_key(database_path: Path | str, fen: str) -> tuple:
+    """Canonical key for one validated analysis observation."""
+
+    return ("analysis", str(Path(database_path).resolve()), fen)
+
+
+def position_insight_key(
+    database_path: Path | str,
+    fen: str,
+    trainer_color: str,
+    as_of: str,
+) -> tuple:
+    """Canonical key for one validated position insight."""
+
+    return (
+        "position-insight",
+        str(Path(database_path).resolve()),
+        fen,
+        trainer_color,
+        as_of,
+    )
+
+
+def preferred_moves_key(
+    database_path: Path | str,
+    fen: str,
+    from_date: str,
+    until: str,
+) -> tuple:
+    """Canonical key for one validated preferred-move timeline."""
+
+    return (
+        "preferred-moves",
+        str(Path(database_path).resolve()),
+        fen,
+        from_date,
+        until,
+    )
+
+
+def _discard_inflight(
+    namespace: ResponseCacheNamespace, key: Hashable, inflight: _Inflight
+) -> None:
+    """Remove ``inflight`` only while it is still the registered entry for ``key``.
+
+    A timed-out waiter can orphan a still-running leader, after which a new
+    in-flight entry may be registered for the same key. The identity check
+    keeps every removal from deleting another caller's entry. Call with
+    ``_lock`` held.
+    """
+
+    if namespace.inflight.get(key) is inflight:
+        del namespace.inflight[key]
+
+
 def get_or_compute(
     namespace: ResponseCacheNamespace,
     key: Hashable,
     database_path: Path | str,
     compute: Callable[[], bytes | None],
+    wait_timeout_seconds: float = SINGLE_FLIGHT_TIMEOUT_SECONDS,
 ) -> bytes | None:
     """Return the cached payload or compute it once per key.
 
@@ -254,6 +335,13 @@ def get_or_compute(
     as a ``404``). Exceptions propagate to every waiter and are never stored.
     A payload is published only when the generation captured at lookup time
     still matches and the database signature is unchanged after computing.
+
+    Waiters bound their wait to ``wait_timeout_seconds``. A waiter whose
+    leader never finishes discards the registered in-flight entry — so a
+    later request can become leader instead of piling onto the stuck one —
+    and raises ``SingleFlightTimeoutError``. Timeout failures are never
+    cached. A slow leader that eventually completes still returns (and may
+    publish) its own result under the usual generation and signature checks.
     """
 
     resolved = str(Path(database_path).resolve())
@@ -273,9 +361,22 @@ def get_or_compute(
                 leader = False
         if leader:
             break
+        deadline = time.monotonic() + wait_timeout_seconds
+        timed_out = False
         with inflight.condition:
             while not inflight.done:
-                inflight.condition.wait()
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    timed_out = True
+                    break
+                inflight.condition.wait(remaining)
+        if timed_out:
+            with _lock:
+                _discard_inflight(namespace, key, inflight)
+            raise SingleFlightTimeoutError(
+                f"single-flight leader for namespace {namespace.name!r} did not "
+                f"finish within {wait_timeout_seconds:.1f}s"
+            )
         with _lock:
             if inflight.error is not None:
                 raise inflight.error
@@ -294,7 +395,7 @@ def get_or_compute(
                 inflight.error = error
                 inflight.done = True
                 inflight.condition.notify_all()
-            namespace.inflight.pop(key, None)
+            _discard_inflight(namespace, key, inflight)
         raise
     with _lock:
         if (
@@ -306,7 +407,7 @@ def get_or_compute(
         with inflight.condition:
             inflight.done = True
             inflight.condition.notify_all()
-        namespace.inflight.pop(key, None)
+        _discard_inflight(namespace, key, inflight)
     return payload
 
 
@@ -321,9 +422,15 @@ __all__ = [
     "GAMES_TTL_SECONDS",
     "OPENINGS_MAX_ENTRIES",
     "OPENINGS_TTL_SECONDS",
+    "READ_MAX_ENTRIES",
+    "READ_TTL_SECONDS",
+    "SINGLE_FLIGHT_TIMEOUT_SECONDS",
     "TRAINING_MAX_ENTRIES",
     "TRAINING_TTL_SECONDS",
+    "SingleFlightTimeoutError",
+    "analysis_key",
     "clear_caches",
+    "game_detail_key",
     "games_key",
     "games_namespace",
     "get_or_compute",
@@ -332,6 +439,9 @@ __all__ = [
     "openings_catalogue_version",
     "openings_key",
     "openings_namespace",
+    "position_insight_key",
+    "preferred_moves_key",
+    "read_namespace",
     "serialize_response_body",
     "training_namespace",
     "training_requirements_key",

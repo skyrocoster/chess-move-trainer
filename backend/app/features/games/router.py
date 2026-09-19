@@ -10,10 +10,12 @@ from fastapi import APIRouter, Depends, Query
 from fastapi.responses import JSONResponse
 
 from backend.app.caching import (
+    game_detail_key,
     games_key,
     games_namespace,
     get_or_compute,
     json_response,
+    read_namespace,
     serialize_response_body,
 )
 from backend.app.dependencies import get_rebuilt_database_path
@@ -131,6 +133,13 @@ def _detail_response(detail: object) -> GameDetailResponse:
     )
 
 
+def _detail_payload(database_path: Path, game_uuid: str) -> bytes | None:
+    """Return the serialized detail body when the game still exists."""
+
+    detail = read_game(database_path, game_uuid)
+    return None if detail is None else serialize_response_body(_detail_response(detail))
+
+
 @router.get(
     "/games",
     response_model=GamesResponse,
@@ -233,15 +242,21 @@ def get_game(
     game_uuid: UUID,
     database_path: Annotated[Path, Depends(get_rebuilt_database_path)],
 ) -> GameDetailResponse | JSONResponse:
+    key = game_detail_key(database_path, str(game_uuid))
     try:
-        detail = read_game(database_path, str(game_uuid))
-        if detail is None:
-            return _games_error(404, "game_not_found", "Game not found")
-        return _detail_response(detail)
+        payload = get_or_compute(
+            read_namespace,
+            key,
+            database_path,
+            lambda: _detail_payload(database_path, str(game_uuid)),
+        )
     except (GameReadError, SchemaIncompatibleError):
         return _games_error(503, "games_unavailable", "Games unavailable")
     except Exception:
         return _games_error(500, "unexpected_failure", "Unable to load game")
+    if payload is None:
+        return _games_error(404, "game_not_found", "Game not found")
+    return json_response(payload)
 
 
 __all__ = ["get_game", "get_games", "router"]

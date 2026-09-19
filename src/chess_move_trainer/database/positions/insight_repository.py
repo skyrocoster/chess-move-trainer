@@ -84,6 +84,7 @@ class PositionInsightRepository:
                 statistics, queue_state, preference = _read_position_data(
                     connection, position_id, request
                 )
+                result = _read_analysis_result(connection, position_id)
         except SchemaIncompatibleError as error:
             raise PositionInsightSchemaError(str(error)) from error
         except PositionInsightError:
@@ -92,7 +93,6 @@ class PositionInsightRepository:
             raise PositionInsightStorageError("position insight could not be read") from error
 
         opening = _read_opening(self._database_path, request.fen)
-        result = _read_analysis_result(self._database_path, position_id)
         state = _analysis_state(queue_state, result)
         return PositionInsight(
             fen=request.fen,

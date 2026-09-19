@@ -1,0 +1,49 @@
+{
+  "name": "games-list",
+  "measured_at_utc": "2026-09-19T10:05:28.343437+00:00",
+  "endpoint": "/api/games",
+  "params": {
+    "page": 1,
+    "page_size": 50
+  },
+  "database": {
+    "kind": "synthetic",
+    "file_name": "api-benchmark.db",
+    "size_bytes": 102400
+  },
+  "repeats": 5,
+  "timeout_s": 30.0,
+  "samples_ms": [
+    9.05,
+    8.374,
+    7.101,
+    7.545,
+    8.365
+  ],
+  "stats": {
+    "count": 5,
+    "min_ms": 7.101,
+    "median_ms": 8.365,
+    "mean_ms": 8.087,
+    "max_ms": 9.05
+  },
+  "threshold_median_ms": 2000.0,
+  "items_returned": 3,
+  "total_reported": 3,
+  "cache_cleared_between_samples": true,
+  "warm_repeats": 5,
+  "warm_samples_ms": [
+    3.576,
+    2.902,
+    3.163,
+    2.804,
+    2.87
+  ],
+  "warm_stats": {
+    "count": 5,
+    "min_ms": 2.804,
+    "median_ms": 2.902,
+    "mean_ms": 3.063,
+    "max_ms": 3.576
+  }
+}

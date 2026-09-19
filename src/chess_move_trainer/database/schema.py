@@ -5,6 +5,7 @@ from __future__ import annotations
 import sqlite3
 import tempfile
 from dataclasses import dataclass
+from functools import lru_cache
 from importlib import resources
 from pathlib import Path
 
@@ -139,7 +140,16 @@ def upgrade_schema(
     return SchemaUpgradeResult(database_path=path, upgraded=True)
 
 
+@lru_cache(maxsize=None)
 def _reference_snapshot(lock_timeout: float, resource_name: str) -> _SchemaSnapshot:
+    """Build each immutable bundled-schema snapshot once per process.
+
+    Compatibility checks run on every read connection.  Constructing the
+    reference database for every one of those checks dominated otherwise small
+    API reads, even though a bundled SQL resource cannot change during the
+    process lifetime.  The returned snapshot is immutable, so it is safe to
+    share across callers.
+    """
     with tempfile.TemporaryDirectory(prefix="chess-move-trainer-schema-") as directory:
         reference_path = Path(directory) / "reference.db"
         with _open_connection(reference_path, "read-write", lock_timeout) as connection:

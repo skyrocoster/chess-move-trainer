@@ -8,6 +8,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
 
+from backend.app.caching import clear_caches
 from backend.app.dependencies import get_rebuilt_database_path
 from backend.app.features.analysis_observation.router import observation_response
 from chess_move_trainer.database.analysis import (
@@ -54,6 +55,7 @@ def post_analysis_request(
 ) -> JSONResponse:
     try:
         outcome = request_analysis(database_path, body.fen, body.quality)
+        clear_caches()
         status_code = (
             200
             if outcome.disposition is AnalysisRequestDisposition.RESULT_REUSED

@@ -8,9 +8,17 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Query
 from fastapi.responses import JSONResponse
 
+from backend.app.caching import (
+    analysis_key,
+    get_or_compute,
+    json_response,
+    read_namespace,
+    serialize_response_body,
+)
 from backend.app.dependencies import get_rebuilt_database_path
 from chess_move_trainer.database.analysis import (
     AnalysisObservation,
+    AnalysisObservationRequest,
     AnalysisObservationResult,
     AnalysisObservationSchemaError,
     AnalysisObservationStorageError,
@@ -99,13 +107,25 @@ def get_analysis(
     fen: Annotated[str, Query()],
 ) -> AnalysisObservationResponse | JSONResponse:
     try:
-        return _response(read_analysis_observation(database_path, fen))
+        request = AnalysisObservationRequest(fen)
     except AnalysisObservationValidationError:
         return _error(422, "invalid_fen", "FEN is invalid")
+    key = analysis_key(database_path, request.fen)
+    try:
+        payload = get_or_compute(
+            read_namespace,
+            key,
+            database_path,
+            lambda: serialize_response_body(
+                _response(read_analysis_observation(database_path, request))
+            ),
+        )
     except (AnalysisObservationSchemaError, AnalysisObservationStorageError):
         return _error(503, "analysis_unavailable", "Analysis data unavailable")
     except Exception:
         return _error(500, "unexpected_failure", "Unable to observe analysis")
+    assert payload is not None
+    return json_response(payload)
 
 
 __all__ = ["get_analysis", "observation_response", "router"]

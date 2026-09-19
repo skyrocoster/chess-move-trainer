@@ -425,7 +425,12 @@ export function useAnalysisState(
   client: AnalysisClient = defaultAnalysisClient,
   pollIntervalMs = DEFAULT_ANALYSIS_POLL_INTERVAL_MS,
 ): AnalysisState {
-  return client === defaultAnalysisClient
-    ? useDefaultAnalysisState(fen, pollIntervalMs)
-    : useInjectedAnalysisState(fen, client, pollIntervalMs);
+  // The client is a construction-time dependency: switching it remounts this
+  // feature. Keeping the implementations separate avoids unused queries for test clients.
+  if (client === defaultAnalysisClient) {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    return useDefaultAnalysisState(fen, pollIntervalMs);
+  }
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  return useInjectedAnalysisState(fen, client, pollIntervalMs);
 }

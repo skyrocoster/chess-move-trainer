@@ -199,6 +199,19 @@ def test_corrupt_persisted_route_fails_as_operational_error(tmp_path: Path) -> N
         lookup_fen(database_path, routes[0].endpoint_fen)
 
 
+def test_route_cache_reloads_after_database_change(tmp_path: Path) -> None:
+    database_path, routes = _publish(tmp_path, [("A00", "Only", "1. e4 e5")])
+    assert lookup_fen(database_path, routes[0].endpoint_fen).current is not None
+
+    with sqlite3.connect(database_path) as connection:
+        connection.execute(
+            "UPDATE derived_opening_route_move SET dorm_ply = 3 WHERE dorm_ply = 1"
+        )
+
+    with pytest.raises(OpeningRecognitionError):
+        lookup_fen(database_path, routes[0].endpoint_fen)
+
+
 def test_missing_and_incompatible_databases_are_operational_failures_with_schema_distinct(
     tmp_path: Path,
 ) -> None:

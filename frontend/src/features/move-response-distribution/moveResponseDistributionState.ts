@@ -156,7 +156,12 @@ export function useMoveResponseDistributionState(
   color: ChessSide | null,
   client: MoveResponseDistributionClient = fetchMoveResponseDistribution,
 ): MoveResponseDistributionState {
-  return client === fetchMoveResponseDistribution
-    ? useDefaultMoveResponseDistributionState(fen, color)
-    : useInjectedMoveResponseDistributionState(fen, color, client);
+  // The client is a construction-time dependency: switching it remounts this
+  // feature. Keeping the implementations separate avoids unused queries for test clients.
+  if (client === fetchMoveResponseDistribution) {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    return useDefaultMoveResponseDistributionState(fen, color);
+  }
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  return useInjectedMoveResponseDistributionState(fen, color, client);
 }

@@ -22,3 +22,9 @@ It has a Python API, a React browser interface, and automated tests for both.
 - `experiments/` — isolated prototypes and design experiments
 
 Dependency versions are pinned in `requirements.txt`, `pyproject.toml`, and the root `package-lock.json`.
+
+## Code-review inventory
+
+An implementation-focused review, including prioritized improvement candidates
+and suggested local tools, is in [docs/code-review/](docs/code-review/README.md).
+It excludes `experiments/` and does not cover visual design.

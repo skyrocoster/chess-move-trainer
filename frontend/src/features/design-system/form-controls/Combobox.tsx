@@ -11,7 +11,6 @@ import { useCallback, useMemo } from "react";
 import styles from "./FormControls.module.css";
 import {
   DropdownItemBody,
-  DropdownMessage,
   dropdownPositionerProps,
   type DropdownOptionDefinition,
 } from "./private/DropdownParts";

@@ -10,6 +10,7 @@ import pytest
 
 from backend.app.caching import (
     ResponseCacheNamespace,
+    SingleFlightTimeoutError,
     clear_caches,
     get_or_compute,
 )
@@ -141,6 +142,65 @@ def test_failed_leader_wakes_waiters_without_caching(tmp_path: Path) -> None:
     assert calls == 1
     assert all(isinstance(result, RuntimeError) for result in results)
     assert get_or_compute(namespace, ("fragile",), database, lambda: b"recovered") == b"recovered"
+    assert calls == 1
+
+
+def test_stuck_leader_releases_waiters_and_later_request_becomes_leader(
+    tmp_path: Path,
+) -> None:
+    namespace, database = _namespace(tmp_path)
+    calls = 0
+    entered = threading.Event()
+    release = threading.Event()
+    leader_outcomes: list[bytes | None] = []
+
+    def stuck() -> bytes | None:
+        nonlocal calls
+        calls += 1
+        entered.set()
+        assert release.wait(timeout=30)
+        return b'{"slow":true}'
+
+    def leader() -> None:
+        leader_outcomes.append(get_or_compute(namespace, ("stuck",), database, stuck))
+
+    def waiter() -> object:
+        assert entered.wait(timeout=10)
+        try:
+            return get_or_compute(namespace, ("stuck",), database, stuck, wait_timeout_seconds=0.1)
+        except SingleFlightTimeoutError as error:
+            return error
+
+    leader_thread = threading.Thread(target=leader)
+    leader_thread.start()
+    assert entered.wait(timeout=10)
+
+    with ThreadPoolExecutor(max_workers=3) as pool:
+        futures = [pool.submit(waiter) for _ in range(3)]
+        results = [future.result(timeout=30) for future in futures]
+
+    # Every waiter is released with a typed, finite timeout failure.
+    assert all(isinstance(result, SingleFlightTimeoutError) for result in results)
+    assert all(isinstance(result, TimeoutError) for result in results)
+    # The waiters never computed, nothing was cached, and the stuck entry is gone
+    # so a later request can become leader instead of piling onto the stuck one.
+    assert calls == 1
+    assert namespace.inflight == {}
+    assert namespace.cache.get(("stuck",)) is None
+
+    # A later request becomes leader and serves fresh data while the original
+    # leader is still stuck. The clear also guarantees the stuck leader's late
+    # completion cannot publish over the recovered value.
+    clear_caches()
+    assert (
+        get_or_compute(namespace, ("stuck",), database, lambda: b'{"recovered":true}')
+        == b'{"recovered":true}'
+    )
+
+    release.set()
+    leader_thread.join(timeout=10)
+    assert leader_outcomes == [b'{"slow":true}']
+    assert get_or_compute(namespace, ("stuck",), database, stuck) == b'{"recovered":true}'
     assert calls == 1
 
 

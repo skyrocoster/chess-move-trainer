@@ -239,7 +239,7 @@ describe("analysisQuery", () => {
 describe("default analysis state", () => {
   it("retains results during active polling, invalidates only real transitions, and retries", async () => {
     vi.useFakeTimers();
-    const observe = vi
+    vi
       .spyOn(defaultAnalysisClient, "observe")
       .mockResolvedValueOnce(success(observation(FEN, "ready", RESULT)))
       .mockResolvedValueOnce(success(observation(FEN, "running")))

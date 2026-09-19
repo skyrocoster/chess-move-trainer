@@ -2,7 +2,6 @@ import { Chess, type Square } from "chess.js";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { getGame } from "../../api/client";
-import type { GameDetailResponse } from "../../api/client";
 import type { InteractiveBoardMoveIntent } from "../board-adapter/InteractiveBoardAdapter";
 import { deriveLastMove, lastMoveFromSquares, type LastMove } from "../board-adapter/lastMove";
 import { PositionDescription } from "../board-adapter/PositionDescription";
@@ -50,7 +49,7 @@ import {
 } from "./repertoireBuilderWorkspaceHandlers";
 import { useMoveResponseSelection } from "./moveResponseSelection";
 
-import type { GameDetailClient, PositionPickerMove, RepertoireBuilderWorkspaceProps } from "./RepertoireBuilderWorkspaceTypes";
+import type { PositionPickerMove, RepertoireBuilderWorkspaceProps } from "./RepertoireBuilderWorkspaceTypes";
 import { loadFailure, moveToSessionMove } from "./RepertoireBuilderWorkspaceTypes";
 
 export default function RepertoireBuilderWorkspace({

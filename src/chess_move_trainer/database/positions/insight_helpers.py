@@ -17,7 +17,7 @@ from ..analysis.models import (
     AnalysisScoreKind,
     AnalysisTerminalKind,
 )
-from ..analysis.reading import AnalysisReadError, AnalysisReadRepository
+from ..analysis.reading import AnalysisReadError, _read_current_result
 from ..analysis.validation import validate_settings_object
 from ..connection import DEFAULT_LOCK_TIMEOUT_SECONDS, _open_connection
 from ..openings.keys import opening_api_key
@@ -134,13 +134,12 @@ def _read_opening(database_path: str | Path, fen: str) -> PositionInsightOpening
         raise PositionInsightStorageError("opening recognition is malformed") from error
 
 
-def _read_analysis_result(
-    database_path: str | Path,
-    position_id: int,
-) -> PositionInsightResult | None:
+def _read_analysis_result(connection: object, position_id: int) -> PositionInsightResult | None:
+    """Read analysis through the caller's already validated connection."""
+
     try:
-        result = AnalysisReadRepository(database_path).read(position_id)
-    except (AnalysisReadError, SchemaIncompatibleError) as error:
+        result = _read_current_result(connection, position_id)
+    except AnalysisReadError as error:
         raise PositionInsightStorageError("analysis result could not be read") from error
     except PositionInsightError:
         raise

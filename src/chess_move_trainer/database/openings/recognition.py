@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from dataclasses import dataclass
+from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
@@ -71,8 +72,7 @@ def lookup_fen(
     """Recognize a valid full FEN without writing or exposing database state."""
 
     position = _parse_fen_input(fen)
-    routes = _load_routes(database_path)
-    endpoint_map = _endpoint_map(routes)
+    _routes, endpoint_map = _load_catalogue(database_path)
     direct_routes = endpoint_map.get(position, ())
     if not direct_routes:
         return OpeningRecognition(recognized=(), current=None)
@@ -100,8 +100,7 @@ def replay_pgn(
     """Replay one standard-start PGN and recognize reached opening endpoints."""
 
     game = _parse_pgn_input(pgn)
-    routes = _load_routes(database_path)
-    endpoint_map = _endpoint_map(routes)
+    _routes, endpoint_map = _load_catalogue(database_path)
 
     board = game.board()
     if board.fen(en_passant="fen") != chess.STARTING_FEN:
@@ -147,6 +146,72 @@ def _parse_pgn_input(pgn: str) -> chess.pgn.Game:
 
 
 def _load_routes(database_path: str | Path) -> tuple[_StoredRoute, ...]:
+    """Load validated routes once for each on-disk database version."""
+
+    path = Path(database_path).resolve()
+    return _load_routes_cached(str(path), _database_signature(path))
+
+
+def _load_catalogue(
+    database_path: str | Path,
+) -> tuple[
+    tuple[_StoredRoute, ...],
+    dict[CanonicalPosition, tuple[_StoredRoute, ...]],
+]:
+    """Return the immutable routes and indexed endpoints for one DB version."""
+
+    path = Path(database_path).resolve()
+    signature = _database_signature(path)
+    resolved = str(path)
+    return (
+        _load_routes_cached(resolved, signature),
+        _load_endpoint_map_cached(resolved, signature),
+    )
+
+
+@lru_cache(maxsize=32)
+def _load_routes_cached(
+    resolved_database_path: str, database_signature: tuple[tuple[int, int, int | None, int | None] | None, ...]
+) -> tuple[_StoredRoute, ...]:
+    """Reuse immutable route materialization while retaining write freshness."""
+
+    del database_signature
+    return _load_routes_uncached(resolved_database_path)
+
+
+@lru_cache(maxsize=32)
+def _load_endpoint_map_cached(
+    resolved_database_path: str,
+    database_signature: tuple[
+        tuple[int, int, int | None, int | None] | None, ...
+    ],
+) -> dict[CanonicalPosition, tuple[_StoredRoute, ...]]:
+    """Build the route endpoint index once for each on-disk DB version."""
+
+    return _endpoint_map(
+        _load_routes_cached(resolved_database_path, database_signature)
+    )
+
+
+def _database_signature(
+    path: Path,
+) -> tuple[tuple[int, int, int | None, int | None] | None, ...]:
+    """Fingerprint the main SQLite file and its write-ahead-log sidecars."""
+
+    entries: list[tuple[int, int, int | None, int | None] | None] = []
+    for candidate in (path, *(Path(str(path) + suffix) for suffix in ("-wal", "-shm", "-journal"))):
+        try:
+            stat = candidate.stat()
+        except OSError:
+            entries.append(None)
+        else:
+            entries.append(
+                (stat.st_size, stat.st_mtime_ns, getattr(stat, "st_dev", None), getattr(stat, "st_ino", None))
+            )
+    return tuple(entries)
+
+
+def _load_routes_uncached(database_path: str | Path) -> tuple[_StoredRoute, ...]:
     try:
         with _open_existing_connection(database_path) as connection:
             _assert_compatible_schema(connection, DEFAULT_LOCK_TIMEOUT_SECONDS)

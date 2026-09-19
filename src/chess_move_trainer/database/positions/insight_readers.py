@@ -69,7 +69,7 @@ def _read_position_statistics(
     position_id: int | None,
     request: PositionInsightRequest,
 ) -> _PositionInsightStatistics:
-    rows = connection.execute(
+    statistics = connection.execute(
         text(
             """
             WITH corpus_stats AS (
@@ -85,174 +85,129 @@ def _read_position_statistics(
                               OR g.dg_trainer_color NOT IN ('white', 'black')
                             THEN 1
                         END
-                    ) AS malformed_game_color_count,
-                    CASE
-                        WHEN EXISTS (
-                            SELECT 1
-                            FROM derived_game_position AS observed
-                            JOIN datasource_game AS observed_game
-                              ON observed_game.dg_game_id = observed.datasource_game_id
-                            WHERE observed.derived_position_id = :position_id
-                        ) THEN 1
-                        ELSE 0
-                    END AS observed_in_games
+                    ) AS malformed_game_color_count
                 FROM datasource_game AS g
-            ),
-            position_rows AS (
-                SELECT
-                    1 AS row_marker,
-                    o.datasource_game_id AS game_id,
-                    o.dgp_ply AS ply,
-                    o.dgp_move_uci AS move_uci,
-                    g.dg_trainer_color AS trainer_color
-                FROM derived_game_position AS o
-                JOIN datasource_game AS g
-                  ON g.dg_game_id = o.datasource_game_id
-                WHERE o.derived_position_id = :position_id
             ),
             position_totals AS (
                 SELECT
+                    COUNT(*) AS position_occurrence_count,
                     COUNT(
                         DISTINCT CASE
-                            WHEN trainer_color = :trainer_color THEN game_id
+                            WHEN g.dg_trainer_color = :trainer_color
+                            THEN o.datasource_game_id
                         END
                     ) AS experience_distinct_game_count,
                     COUNT(
-                        CASE
-                            WHEN trainer_color = :trainer_color THEN 1
-                        END
+                        CASE WHEN g.dg_trainer_color = :trainer_color THEN 1 END
                     ) AS experience_occurrence_count,
                     COUNT(
                         DISTINCT CASE
-                            WHEN trainer_color = :trainer_color
-                              AND move_uci IS NOT NULL
-                            THEN game_id
+                            WHEN g.dg_trainer_color = :trainer_color
+                              AND o.dgp_move_uci IS NOT NULL
+                            THEN o.datasource_game_id
                         END
                     ) AS outgoing_distinct_game_count,
                     COUNT(
                         CASE
-                            WHEN trainer_color = :trainer_color
-                              AND move_uci IS NOT NULL
+                            WHEN g.dg_trainer_color = :trainer_color
+                              AND o.dgp_move_uci IS NOT NULL
                             THEN 1
                         END
                     ) AS outgoing_occurrence_count,
                     COUNT(
                         DISTINCT CASE
-                            WHEN trainer_color = :trainer_color
-                              AND move_uci IS NULL
-                            THEN game_id
+                            WHEN g.dg_trainer_color = :trainer_color
+                              AND o.dgp_move_uci IS NULL
+                            THEN o.datasource_game_id
                         END
                     ) AS terminal_distinct_game_count,
                     COUNT(
                         CASE
-                            WHEN trainer_color = :trainer_color
-                              AND move_uci IS NULL
+                            WHEN g.dg_trainer_color = :trainer_color
+                              AND o.dgp_move_uci IS NULL
                             THEN 1
                         END
                     ) AS terminal_occurrence_count
-                FROM position_rows
-            ),
-            move_totals AS (
-                SELECT
-                    move_uci,
-                    COUNT(DISTINCT game_id) AS move_distinct_game_count,
-                    COUNT(*) AS move_occurrence_count
-                FROM position_rows
-                WHERE trainer_color = :trainer_color
-                  AND move_uci IS NOT NULL
-                GROUP BY move_uci
+                FROM derived_game_position AS o
+                JOIN datasource_game AS g
+                  ON g.dg_game_id = o.datasource_game_id
+                WHERE o.derived_position_id = :position_id
             )
             SELECT
-                c.observed_in_games,
                 c.total_game_count,
                 c.malformed_game_color_count,
+                t.position_occurrence_count,
                 t.experience_distinct_game_count,
                 t.experience_occurrence_count,
                 t.outgoing_distinct_game_count,
                 t.outgoing_occurrence_count,
                 t.terminal_distinct_game_count,
-                t.terminal_occurrence_count,
-                r.row_marker,
-                r.game_id,
-                r.ply,
-                r.move_uci,
-                r.trainer_color,
-                m.move_distinct_game_count,
-                m.move_occurrence_count
+                t.terminal_occurrence_count
             FROM corpus_stats AS c
             CROSS JOIN position_totals AS t
-            LEFT JOIN position_rows AS r ON 1 = 1
-            LEFT JOIN move_totals AS m
-              ON m.move_uci = r.move_uci
-             AND r.trainer_color = :trainer_color
-            ORDER BY r.game_id, r.ply
             """
         ),
         {"position_id": position_id, "trainer_color": request.trainer_color},
-    ).all()
-
-    if not rows:
-        raise PositionInsightStorageError("position statistics are malformed")
-
-    first = rows[0]
-    observed_in_games = _read_statistics_flag(first[0])
-    total_game_count = _read_statistics_count(first[1], "total game count")
+    ).one()
+    observed_in_games = bool(
+        _read_statistics_count(statistics[2], "position occurrence count")
+    )
+    total_game_count = _read_statistics_count(statistics[0], "total game count")
     malformed_game_color_count = _read_statistics_count(
-        first[2], "malformed trainer color count"
+        statistics[1], "malformed trainer color count"
     )
     if malformed_game_color_count:
         raise PositionInsightStorageError("stored trainer color is malformed")
     experience_distinct_game_count = _read_statistics_count(
-        first[3], "experience distinct game count"
+        statistics[3], "experience distinct game count"
     )
     experience_occurrence_count = _read_statistics_count(
-        first[4], "experience occurrence count"
+        statistics[4], "experience occurrence count"
     )
     outgoing_distinct_game_count = _read_statistics_count(
-        first[5], "outgoing distinct game count"
+        statistics[5], "outgoing distinct game count"
     )
     outgoing_occurrence_count = _read_statistics_count(
-        first[6], "outgoing occurrence count"
+        statistics[6], "outgoing occurrence count"
     )
     terminal_distinct_game_count = _read_statistics_count(
-        first[7], "terminal distinct game count"
+        statistics[7], "terminal distinct game count"
     )
     terminal_occurrence_count = _read_statistics_count(
-        first[8], "terminal occurrence count"
+        statistics[8], "terminal occurrence count"
     )
+    move_rows = connection.execute(
+        text(
+            """
+            SELECT
+                o.dgp_move_uci,
+                COUNT(DISTINCT o.datasource_game_id) AS move_distinct_game_count,
+                COUNT(*) AS move_occurrence_count
+            FROM derived_game_position AS o
+            JOIN datasource_game AS g
+              ON g.dg_game_id = o.datasource_game_id
+            WHERE o.derived_position_id = :position_id
+              AND g.dg_trainer_color = :trainer_color
+              AND o.dgp_move_uci IS NOT NULL
+            GROUP BY o.dgp_move_uci
+            """
+        ),
+        {"position_id": position_id, "trainer_color": request.trainer_color},
+    ).all()
     moves: dict[str, tuple[int, int]] = {}
-    for row in rows:
-        if row[0] != (1 if observed_in_games else 0):
-            raise PositionInsightStorageError("position observation statistics are malformed")
-        if any(row[index] != first[index] for index in range(1, 9)):
-            raise PositionInsightStorageError("position statistics are inconsistent")
-        if row[9] is None:
-            if any(row[index] is not None for index in range(10, 16)):
-                raise PositionInsightStorageError("position row statistics are malformed")
-            continue
-        game_id = row[10]
-        move_uci = row[12]
-        color = row[13]
-        if type(game_id) is not int or game_id < 1:
-            raise PositionInsightStorageError("stored game identifier is malformed")
-        if color not in ("white", "black"):
-            raise PositionInsightStorageError("stored trainer color is malformed")
-        if move_uci is not None:
-            _validate_stored_move(move_uci)
-        if color != request.trainer_color:
-            continue
-        if move_uci is not None:
+    for row in move_rows:
+        try:
+            move_uci = row[0]
             move_distinct_game_count = _read_statistics_count(
-                row[14], "observed move distinct game count"
+                row[1], "observed move distinct game count"
             )
             move_occurrence_count = _read_statistics_count(
-                row[15], "observed move occurrence count"
+                row[2], "observed move occurrence count"
             )
-            existing = moves.setdefault(
-                move_uci, (move_distinct_game_count, move_occurrence_count)
-            )
-            if existing != (move_distinct_game_count, move_occurrence_count):
-                raise PositionInsightStorageError("observed move statistics are inconsistent")
+        except IndexError as error:
+            raise PositionInsightStorageError("position move statistics are malformed") from error
+        _validate_stored_move(move_uci)
+        moves[move_uci] = (move_distinct_game_count, move_occurrence_count)
 
     observed = tuple(
         PositionInsightObservedMove(

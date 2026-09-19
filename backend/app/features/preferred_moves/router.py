@@ -8,7 +8,14 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Query
 from fastapi.responses import JSONResponse
 
-from backend.app.caching import clear_caches
+from backend.app.caching import (
+    clear_caches,
+    get_or_compute,
+    json_response,
+    preferred_moves_key,
+    read_namespace,
+    serialize_response_body,
+)
 from backend.app.dependencies import get_rebuilt_database_path
 from chess_move_trainer.database.preferred_moves import (
     NormalizedPeriod,
@@ -21,6 +28,7 @@ from chess_move_trainer.database.preferred_moves import (
     PreferredMoveSchemaError,
     PreferredMoveStorageError,
     PreferredMoveTimeline,
+    PreferredMoveTimelineRequest,
     PreferredMoveTimelinePreference,
     PreferredMoveTimelineSegment,
     PreferredMoveValidationError,
@@ -215,10 +223,21 @@ def get_preferred_moves(
     until: Annotated[str, Query(alias="until")],
 ) -> PreferredMovesResponse | JSONResponse:
     try:
-        timeline = read_preferred_moves(database_path, fen, from_date, until)
-        return _response(timeline)
+        request = PreferredMoveTimelineRequest(fen, from_date, until)
     except PreferredMoveValidationError as error:
         return _validation_error(error)
+    key = preferred_moves_key(
+        database_path, request.fen, request.from_date, request.until
+    )
+    try:
+        payload = get_or_compute(
+            read_namespace,
+            key,
+            database_path,
+            lambda: serialize_response_body(
+                _response(read_preferred_moves(database_path, request))
+            ),
+        )
     except (PreferredMoveSchemaError, PreferredMoveStorageError):
         return _error(
             503,
@@ -227,6 +246,8 @@ def get_preferred_moves(
         )
     except Exception:
         return _error(500, "unexpected_failure", "Unable to serve preferred moves")
+    assert payload is not None
+    return json_response(payload)
 
 
 @router.put(

@@ -8,9 +8,17 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Query
 from fastapi.responses import JSONResponse
 
+from backend.app.caching import (
+    get_or_compute,
+    json_response,
+    position_insight_key,
+    read_namespace,
+    serialize_response_body,
+)
 from backend.app.dependencies import get_rebuilt_database_path
 from chess_move_trainer.database.positions import (
     PositionInsight,
+    PositionInsightRequest,
     PositionInsightResult,
     PositionInsightSchemaError,
     PositionInsightStorageError,
@@ -151,10 +159,21 @@ def get_position_insight(
     as_of: Annotated[str, Query()],
 ) -> PositionInsightResponse | JSONResponse:
     try:
-        insight = read_position_insight(database_path, fen, trainer_color, as_of)
-        return _response(insight)
+        request = PositionInsightRequest(fen, trainer_color, as_of)
     except PositionInsightValidationError as error:
         return _validation_error(error)
+    key = position_insight_key(
+        database_path, request.fen, request.trainer_color, request.as_of
+    )
+    try:
+        payload = get_or_compute(
+            read_namespace,
+            key,
+            database_path,
+            lambda: serialize_response_body(
+                _response(read_position_insight(database_path, request))
+            ),
+        )
     except (PositionInsightSchemaError, PositionInsightStorageError):
         return _error(
             503,
@@ -163,6 +182,8 @@ def get_position_insight(
         )
     except Exception:
         return _error(500, "unexpected_failure", "Unable to serve position insight")
+    assert payload is not None
+    return json_response(payload)
 
 
 __all__ = ["get_position_insight", "router"]
