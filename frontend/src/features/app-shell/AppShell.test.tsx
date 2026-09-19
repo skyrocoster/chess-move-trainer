@@ -31,7 +31,8 @@ describe("AppShell", () => {
       "href",
       "#main-content",
     );
-    expect(screen.getByText("Chess Move Trainer")).toBeInTheDocument();
+    expect(screen.getByTestId("shell-identity-rail")).toHaveTextContent("Chess Move Trainer");
+    expect(screen.getByTestId("shell-identity-header")).toHaveTextContent("Chess Move Trainer");
 
     const statusLinks = screen.getAllByRole("link", { name: "Status" });
     expect(statusLinks).toHaveLength(1);

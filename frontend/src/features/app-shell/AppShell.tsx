@@ -1,5 +1,5 @@
 import { Drawer, type DrawerRoot } from "@base-ui/react/drawer";
-import { Activity, BookOpen, Dumbbell, Menu, X } from "lucide-react";
+import { Activity, BookOpen, Crown, Dumbbell, Menu, X } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { useRef } from "react";
 
@@ -42,7 +42,6 @@ export function AppShell({ children }: AppShellProps) {
         </a>
 
         <header className={styles.header}>
-          <div className={styles.identity}>Chess Move Trainer</div>
           <Drawer.Trigger
             ref={triggerRef}
             className={styles.menuTrigger}
@@ -50,10 +49,19 @@ export function AppShell({ children }: AppShellProps) {
           >
             <Menu aria-hidden="true" size={24} />
           </Drawer.Trigger>
+          <div className={styles.identity} data-testid="shell-identity-header">
+            Chess Move Trainer
+          </div>
         </header>
 
-        <aside className={styles.sidebar} aria-label="Primary navigation">
-          <nav aria-label="Desktop navigation">
+        <aside className={styles.rail} aria-label="Primary navigation">
+          <div className={styles.railIdentity} data-testid="shell-identity-rail">
+            <span className={styles.identityMark} aria-hidden="true">
+              <Crown size={20} />
+            </span>
+            <span className={styles.identityWordmark}>Chess Move Trainer</span>
+          </div>
+          <nav className={styles.railNav} aria-label="Desktop navigation">
             <NavigationItems />
           </nav>
         </aside>

@@ -4,7 +4,7 @@
   align-content: start;
   gap: var(--cmt-spacing-16);
   inline-size: 100%;
-  max-inline-size: calc(40rem + 30px + var(--cmt-spacing-24));
+  max-inline-size: calc(var(--cmt-board-max-inline-size) + 30px + var(--cmt-spacing-8));
   min-inline-size: 0;
 }
 

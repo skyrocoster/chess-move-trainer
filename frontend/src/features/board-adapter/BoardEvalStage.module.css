@@ -5,14 +5,14 @@
   display: flex;
   align-items: flex-start;
   justify-content: flex-start;
+  gap: var(--cmt-spacing-8);
   min-inline-size: 0;
-  margin-inline-end: var(--cmt-spacing-24);
 }
 
 .board {
   flex: 1 1 0;
   min-inline-size: 0;
-  max-inline-size: 40rem;
+  max-inline-size: var(--cmt-board-max-inline-size);
 }
 
 .evalBar {
@@ -28,10 +28,4 @@
   flex: 0 0 30px;
   inline-size: 30px;
   min-inline-size: 30px;
-}
-
-@container (max-width: 40rem) {
-  .stage {
-    margin-inline-end: 0;
-  }
 }

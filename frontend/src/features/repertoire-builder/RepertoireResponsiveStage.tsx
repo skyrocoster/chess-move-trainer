@@ -28,9 +28,8 @@ const BOARD_MIN = 320;
 const SESSION_MIN = 280;
 const ENGINE_MIN = 360;
 
-const WIDE_BOARD_DEFAULT = 390;
-const WIDE_SESSION_DEFAULT = 325;
-const MEDIUM_SESSION_DEFAULT = 350;
+const BOARD_DEFAULT_MAX = 640;
+const SESSION_DEFAULT = 340;
 
 export type RepertoireResponsiveStageProps = {
   board: ReactNode;
@@ -71,24 +70,11 @@ function useStageWidth(stageRef: RefObject<HTMLDivElement | null>) {
       return;
     }
 
-    let updateTimer: ReturnType<typeof setTimeout> | null = null;
     const observer = new ResizeObserver(([entry]) => {
-      const nextWidth = entry?.contentRect.width ?? stage.getBoundingClientRect().width;
-      if (updateTimer !== null) {
-        clearTimeout(updateTimer);
-      }
-      updateTimer = setTimeout(() => {
-        updateTimer = null;
-        updateWidth(nextWidth);
-      });
+      updateWidth(entry?.contentRect.width ?? stage.getBoundingClientRect().width);
     });
     observer.observe(stage);
-    return () => {
-      observer.disconnect();
-      if (updateTimer !== null) {
-        clearTimeout(updateTimer);
-      }
-    };
+    return () => observer.disconnect();
   }, [stageRef]);
 
   return width;
@@ -96,27 +82,6 @@ function useStageWidth(stageRef: RefObject<HTMLDivElement | null>) {
 
 function panelSpaceForStage(width: number, separatorCount: number) {
   return Math.max(0, width - separatorCount * SEPARATOR_SLOT);
-}
-
-function panelSpaceForGroup(
-  groupElement: HTMLDivElement | null,
-  stageWidth: number,
-  separatorCount: number,
-) {
-  if (groupElement) {
-    const separators = Array.from(groupElement.querySelectorAll<HTMLElement>("[data-separator]"));
-    const measuredSeparatorWidth = separators.reduce(
-      (total, separator) => total + separator.getBoundingClientRect().width,
-      0,
-    );
-    const separatorWidth = measuredSeparatorWidth || separators.length * SEPARATOR_SLOT;
-    const groupWidth = groupElement.getBoundingClientRect().width;
-    if (groupWidth > 0) {
-      return Math.max(0, groupWidth - separatorWidth);
-    }
-  }
-
-  return panelSpaceForStage(stageWidth, separatorCount);
 }
 
 function layoutFromPixels(sizes: Record<string, number>, panelSpace: number): Layout | undefined {
@@ -138,8 +103,12 @@ function defaultLayout(mode: ResizableMode, panelSpace: number): Layout | undefi
       return undefined;
     }
 
-    const board = clamp(WIDE_BOARD_DEFAULT, BOARD_MIN, panelSpace - SESSION_MIN - ENGINE_MIN);
-    const session = clamp(WIDE_SESSION_DEFAULT, SESSION_MIN, panelSpace - board - ENGINE_MIN);
+    const board = clamp(
+      panelSpace * 0.42,
+      BOARD_MIN,
+      Math.min(BOARD_DEFAULT_MAX, panelSpace - SESSION_MIN - ENGINE_MIN),
+    );
+    const session = clamp(SESSION_DEFAULT, SESSION_MIN, panelSpace - board - ENGINE_MIN);
     return layoutFromPixels({ board, session, engine: panelSpace - board - session }, panelSpace);
   }
 
@@ -147,7 +116,7 @@ function defaultLayout(mode: ResizableMode, panelSpace: number): Layout | undefi
     return undefined;
   }
 
-  const session = clamp(MEDIUM_SESSION_DEFAULT, SESSION_MIN, panelSpace - ENGINE_MIN);
+  const session = clamp(SESSION_DEFAULT, SESSION_MIN, panelSpace - ENGINE_MIN);
   return layoutFromPixels({ session, engine: panelSpace - session }, panelSpace);
 }
 
@@ -192,9 +161,7 @@ export function RepertoireResponsiveStage({
   const stageWidth = useStageWidth(stageRef);
   const mode = modeForWidth(stageWidth);
   const wideGroupRef = useRef<GroupImperativeHandle | null>(null);
-  const wideGroupElementRef = useRef<HTMLDivElement | null>(null);
   const mediumGroupRef = useRef<GroupImperativeHandle | null>(null);
-  const mediumGroupElementRef = useRef<HTMLDivElement | null>(null);
 
   const wideDefaultLayout = useMemo(
     () => defaultLayout("wide", panelSpaceForStage(stageWidth, 2)),
@@ -210,15 +177,12 @@ export function RepertoireResponsiveStage({
       return;
     }
 
-    const groupRef = mode === "wide" ? wideGroupRef : mediumGroupRef;
-    const groupElementRef = mode === "wide" ? wideGroupElementRef : mediumGroupElementRef;
-    const separatorCount = mode === "wide" ? 2 : 1;
     const layout = defaultLayout(
       mode,
-      panelSpaceForGroup(groupElementRef.current, stageWidth, separatorCount),
+      panelSpaceForStage(stageWidth, mode === "wide" ? 2 : 1),
     );
     if (layout) {
-      groupRef.current?.setLayout(layout);
+      (mode === "wide" ? wideGroupRef : mediumGroupRef).current?.setLayout(layout);
     }
   }, [mode, stageWidth]);
 
@@ -229,17 +193,19 @@ export function RepertoireResponsiveStage({
       data-testid="repertoire-workspace-stage"
       data-layout-mode={mode}
     >
-      <div className={styles.stageActions}>
-        <button
-          type="button"
-          className={styles.reset}
-          onClick={resetLayout}
-          aria-label="Reset panel layout"
-          data-testid="repertoire-responsive-reset"
-        >
-          Reset layout
-        </button>
-      </div>
+      {mode !== "narrow" ? (
+        <div className={styles.stageActions}>
+          <button
+            type="button"
+            className={styles.reset}
+            onClick={resetLayout}
+            aria-label="Reset panel layout"
+            data-testid="repertoire-responsive-reset"
+          >
+            Reset layout
+          </button>
+        </div>
+      ) : null}
 
       {mode === "wide" ? (
         <Group
@@ -247,21 +213,20 @@ export function RepertoireResponsiveStage({
           className={styles.group}
           orientation="horizontal"
           defaultLayout={wideDefaultLayout}
-          elementRef={wideGroupElementRef}
           groupRef={wideGroupRef}
           resizeTargetMinimumSize={{ coarse: 28, fine: 18 }}
-          style={{ inlineSize: "100%", blockSize: "auto", minInlineSize: 0 }}
+          style={{ inlineSize: "100%", minInlineSize: 0 }}
         >
-          <RepertoirePanel id="board" minimum={BOARD_MIN} defaultSize={WIDE_BOARD_DEFAULT}>
-            {board}
+          <RepertoirePanel id="board" minimum={BOARD_MIN} defaultSize={BOARD_DEFAULT_MAX}>
+            <div className={styles.laneFill}>{board}</div>
           </RepertoirePanel>
           <PillSeparator id="board-session-wide" label="Board and Session boundary" />
-          <RepertoirePanel id="session" minimum={SESSION_MIN} defaultSize={WIDE_SESSION_DEFAULT}>
-            {session}
+          <RepertoirePanel id="session" minimum={SESSION_MIN} defaultSize={SESSION_DEFAULT}>
+            <div className={styles.laneFill}>{session}</div>
           </RepertoirePanel>
           <PillSeparator id="session-engine-wide" label="Session and Engine boundary" />
-          <RepertoirePanel id="engine" minimum={ENGINE_MIN} defaultSize={420}>
-            {engine}
+          <RepertoirePanel id="engine" minimum={ENGINE_MIN} defaultSize={ENGINE_MIN}>
+            <div className={styles.laneFill}>{engine}</div>
           </RepertoirePanel>
         </Group>
       ) : null}
@@ -277,20 +242,15 @@ export function RepertoireResponsiveStage({
               className={styles.group}
               orientation="horizontal"
               defaultLayout={mediumDefaultLayout}
-              elementRef={mediumGroupElementRef}
               groupRef={mediumGroupRef}
               resizeTargetMinimumSize={{ coarse: 28, fine: 18 }}
-              style={{ inlineSize: "100%", blockSize: "auto", minInlineSize: 0 }}
+              style={{ inlineSize: "100%", minInlineSize: 0 }}
             >
-              <RepertoirePanel
-                id="session"
-                minimum={SESSION_MIN}
-                defaultSize={MEDIUM_SESSION_DEFAULT}
-              >
+              <RepertoirePanel id="session" minimum={SESSION_MIN} defaultSize={SESSION_DEFAULT}>
                 {session}
               </RepertoirePanel>
               <PillSeparator id="session-engine-medium" label="Session and Engine boundary" />
-              <RepertoirePanel id="engine" minimum={ENGINE_MIN} defaultSize={380}>
+              <RepertoirePanel id="engine" minimum={ENGINE_MIN} defaultSize={ENGINE_MIN}>
                 {engine}
               </RepertoirePanel>
             </Group>

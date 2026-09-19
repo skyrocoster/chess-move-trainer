@@ -1,13 +1,16 @@
 .form {
-  display: grid;
+  container-type: inline-size;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
   gap: var(--cmt-spacing-12);
-  padding: var(--cmt-spacing-16);
+  padding: var(--cmt-spacing-12) var(--cmt-spacing-16);
 }
 
 .fields {
   display: grid;
-  grid-template-columns: minmax(12rem, 1fr) minmax(8rem, 0.5fr);
-  gap: var(--cmt-spacing-12);
+  flex: 1 1 16rem;
+  min-inline-size: 0;
 }
 
 .optional {
@@ -17,6 +20,7 @@
 
 .loading,
 .failure {
+  flex: 1 0 100%;
   margin: 0;
   font: var(--md-sys-typescale-body-medium);
 }
@@ -51,16 +55,18 @@
   display: flex;
   flex-wrap: wrap;
   gap: var(--cmt-spacing-12);
+  margin-inline-start: auto;
 }
 
 @container (max-width: 40rem) {
   .fields {
-    grid-template-columns: 1fr;
+    flex-basis: 100%;
   }
 
   .actions {
-    flex-direction: column;
-    align-items: stretch;
+    justify-content: flex-end;
+    inline-size: 100%;
+    margin-inline-start: 0;
   }
 }
 

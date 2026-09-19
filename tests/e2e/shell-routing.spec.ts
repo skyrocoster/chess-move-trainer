@@ -12,7 +12,7 @@ test("shows an in-shell Not Found page for the retired /viewer route", async ({
     page.getByText("The page you requested could not be found."),
   ).toBeVisible();
 
-  await expect(page.getByText("Chess Move Trainer", { exact: true })).toBeVisible();
+  await expect(page.getByTestId("shell-identity-rail")).toHaveText("Chess Move Trainer");
   await expect(page.getByRole("complementary", { name: "Primary navigation" })).toBeVisible();
   await expect(page.getByRole("main")).toBeVisible();
 

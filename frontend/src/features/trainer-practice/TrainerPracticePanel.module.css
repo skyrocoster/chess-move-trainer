@@ -1,0 +1,172 @@
+.page {
+  display: grid;
+  align-content: start;
+  gap: var(--cmt-spacing-24);
+  inline-size: 100%;
+  max-inline-size: 64rem;
+  min-inline-size: 0;
+}
+
+.heading {
+  margin: 0;
+  color: var(--md-sys-color-on-surface);
+  font-family: var(--md-sys-typescale-headline-medium-font);
+  font-size: var(--md-sys-typescale-headline-medium-size);
+  font-weight: var(--md-sys-typescale-headline-medium-weight);
+  letter-spacing: var(--md-sys-typescale-headline-medium-letter-spacing);
+  line-height: var(--md-sys-typescale-headline-medium-line-height);
+}
+
+.form {
+  display: grid;
+  gap: var(--cmt-spacing-16);
+  inline-size: 100%;
+  max-inline-size: 56rem;
+  min-inline-size: 0;
+  padding: var(--cmt-spacing-24);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--cmt-radius-12);
+  background: var(--md-sys-color-surface-container);
+}
+
+.openingField,
+.filterFields {
+  min-inline-size: 0;
+}
+
+.form > button {
+  justify-self: start;
+}
+
+.filterFields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(12rem, 0.7fr);
+  gap: var(--cmt-spacing-16);
+}
+
+.results {
+  display: grid;
+  gap: var(--cmt-spacing-16);
+  max-inline-size: 64rem;
+  min-inline-size: 0;
+}
+
+.results h2,
+.results h3 {
+  margin: 0;
+  color: var(--md-sys-color-on-surface);
+  font-family: var(--md-sys-typescale-title-medium-font);
+  font-size: var(--md-sys-typescale-title-medium-size);
+  font-weight: var(--md-sys-typescale-title-medium-weight);
+  letter-spacing: var(--md-sys-typescale-title-medium-letter-spacing);
+  line-height: var(--md-sys-typescale-title-medium-line-height);
+}
+
+.metadata {
+  display: grid;
+  gap: var(--cmt-spacing-16);
+  padding: var(--cmt-spacing-16);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--cmt-radius-default);
+  background: var(--md-sys-color-surface-container-low);
+}
+
+.metadata h3 {
+  font-family: var(--md-sys-typescale-label-large-font);
+  font-size: var(--md-sys-typescale-label-large-size);
+  font-weight: var(--md-sys-typescale-label-large-weight);
+  letter-spacing: var(--md-sys-typescale-label-large-letter-spacing);
+  line-height: var(--md-sys-typescale-label-large-line-height);
+}
+
+.metadata dl,
+.positionList dl {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: var(--cmt-spacing-12);
+  margin: 0;
+}
+
+.metadata dl > div,
+.positionList dl > div {
+  min-inline-size: 0;
+}
+
+.metadata dt,
+.positionList dt {
+  color: var(--md-sys-color-on-surface-variant);
+  font-family: var(--md-sys-typescale-label-medium-font);
+  font-size: var(--md-sys-typescale-label-medium-size);
+  font-weight: var(--md-sys-typescale-label-medium-weight);
+  letter-spacing: var(--md-sys-typescale-label-medium-letter-spacing);
+  line-height: var(--md-sys-typescale-label-medium-line-height);
+  overflow-wrap: anywhere;
+}
+
+.metadata dd,
+.positionList dd {
+  margin: var(--cmt-spacing-4) 0 0;
+  color: var(--md-sys-color-on-surface);
+  font-family: var(--md-sys-typescale-body-medium-font);
+  font-size: var(--md-sys-typescale-body-medium-size);
+  font-weight: var(--md-sys-typescale-body-medium-weight);
+  letter-spacing: var(--md-sys-typescale-body-medium-letter-spacing);
+  line-height: var(--md-sys-typescale-body-medium-line-height);
+  overflow-wrap: anywhere;
+}
+
+.positionList {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
+  gap: var(--cmt-spacing-16);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.positionList > li {
+  display: grid;
+  align-content: start;
+  gap: var(--cmt-spacing-16);
+  min-inline-size: 0;
+  padding: var(--cmt-spacing-16);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--cmt-radius-default);
+  background: var(--md-sys-color-surface-container);
+}
+
+@media (max-width: 40rem) {
+  .filterFields {
+    grid-template-columns: 1fr;
+  }
+
+  .form {
+    padding: var(--cmt-spacing-16);
+  }
+
+  .form > button {
+    justify-self: stretch;
+  }
+}
+
+@media (forced-colors: active) {
+  .form,
+  .metadata,
+  .positionList > li {
+    border-color: CanvasText;
+    background: Canvas;
+  }
+
+  .heading,
+  .results h2,
+  .results h3,
+  .metadata dd,
+  .positionList dd {
+    color: CanvasText;
+  }
+
+  .metadata dt,
+  .positionList dt {
+    color: CanvasText;
+  }
+}

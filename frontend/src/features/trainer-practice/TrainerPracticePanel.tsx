@@ -13,6 +13,7 @@ import {
   type OpeningSelection,
 } from "./OpeningSearchCombobox";
 import type { TrainerColor } from "./trainerPracticeApi";
+import styles from "./TrainerPracticePanel.module.css";
 
 export type TrainerPracticeFormValues = {
   openingSelection: OpeningSelection;
@@ -166,15 +167,17 @@ function PositionItem({
 
 function Results({ data }: { data: TrainingRequirementResponse }) {
   return (
-    <section aria-labelledby="training-requirements-heading">
+    <section className={styles.results} aria-labelledby="training-requirements-heading">
       <h2 id="training-requirements-heading">training-required positions</h2>
-      <Metadata data={data} />
+      <div className={styles.metadata}>
+        <Metadata data={data} />
+      </div>
       {data.items.length === 0 ? (
         <p role="status" aria-live="polite">
           No positions currently require training for these filters.
         </p>
       ) : (
-        <ol aria-label="training-required positions">
+          <ol className={styles.positionList} aria-label="training-required positions">
           {data.items.map((item, index) => (
             <PositionItem
               key={`${item.fen}-${item.trainer_color}-${item.preferred_move_uci}`}
@@ -208,8 +211,10 @@ export function TrainerPracticePanel({
   }
 
   return (
-    <section aria-labelledby="trainer-practice-heading">
-      <h1 id="trainer-practice-heading">Trainer Practice</h1>
+    <section className={styles.page} aria-labelledby="trainer-practice-heading">
+      <h1 className={styles.heading} id="trainer-practice-heading">
+        Trainer Practice
+      </h1>
 
       {catalogueStatus === "loading" ? (
         <p role="status" aria-live="polite">
@@ -231,38 +236,42 @@ export function TrainerPracticePanel({
         </div>
       ) : null}
 
-      <form onSubmit={handleSubmit} noValidate>
-        <Field label="Opening" description="Search by opening name, ECO, or stable key.">
-          <OpeningSearchCombobox
-            onMissingSelection={onMissingOpeningSelection}
-            onQueryChange={onCatalogueSearchChange}
-            onSelectionChange={onOpeningSelectionChange}
-            openings={openings}
-            query={catalogueSearch}
-            selection={values.openingSelection}
-          />
-        </Field>
+      <form className={styles.form} onSubmit={handleSubmit} noValidate>
+        <div className={styles.openingField}>
+          <Field label="Opening" description="Search by opening name, ECO, or stable key.">
+            <OpeningSearchCombobox
+              onMissingSelection={onMissingOpeningSelection}
+              onQueryChange={onCatalogueSearchChange}
+              onSelectionChange={onOpeningSelectionChange}
+              openings={openings}
+              query={catalogueSearch}
+              selection={values.openingSelection}
+            />
+          </Field>
+        </div>
 
-        <Field label="Learner colour">
-          <RadioGroup
-            ariaLabel="Learner colour"
-            options={[
-              { value: "", label: "All colours" },
-              { value: "white", label: "White" },
-              { value: "black", label: "Black" },
-            ]}
-            value={values.trainerColor}
-            onValueChange={(value) => onTrainerColorChange(value as "" | TrainerColor)}
-          />
-        </Field>
+        <div className={styles.filterFields}>
+          <Field label="Learner colour">
+            <RadioGroup
+              ariaLabel="Learner colour"
+              options={[
+                { value: "", label: "All colours" },
+                { value: "white", label: "White" },
+                { value: "black", label: "Black" },
+              ]}
+              value={values.trainerColor}
+              onValueChange={(value) => onTrainerColorChange(value as "" | TrainerColor)}
+            />
+          </Field>
 
-        <Field label="as_of" required>
-          <CalendarDate
-            value={values.asOf}
-            onChange={onAsOfChange}
-            label="as_of"
-          />
-        </Field>
+          <Field label="as_of" required>
+            <CalendarDate
+              value={values.asOf}
+              onChange={onAsOfChange}
+              label="as_of"
+            />
+          </Field>
+        </div>
 
         <Button
           type="submit"

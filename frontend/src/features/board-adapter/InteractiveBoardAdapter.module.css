@@ -3,7 +3,7 @@
   display: grid;
   gap: var(--cmt-spacing-12);
   inline-size: 100%;
-  max-inline-size: 40rem;
+  max-inline-size: var(--cmt-board-max-inline-size);
   min-inline-size: 0;
 }
 
@@ -11,7 +11,7 @@
   box-sizing: border-box;
   aspect-ratio: 1;
   inline-size: 100%;
-  max-inline-size: 40rem;
+  max-inline-size: var(--cmt-board-max-inline-size);
   min-inline-size: 0;
   overflow: hidden;
 }

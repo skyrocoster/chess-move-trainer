@@ -4,6 +4,11 @@
 
 :root {
   font-family: system-ui, sans-serif;
+
+  /* Layout constants (application-owned; color/type/geometry tokens stay in
+     cmt-tokens.css and the generated Material theme). */
+  --cmt-board-max-inline-size: 44rem;
+  --cmt-motion-duration-short: 120ms;
 }
 
 *,
@@ -12,9 +17,16 @@
   box-sizing: border-box;
 }
 
+html,
+body,
+#root {
+  block-size: 100%;
+}
+
 body {
   min-width: 320px;
   margin: 0;
+  overflow: hidden;
 }
 
 button,

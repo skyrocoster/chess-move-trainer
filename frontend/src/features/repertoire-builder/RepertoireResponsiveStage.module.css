@@ -1,16 +1,21 @@
 .stage {
   container-name: repertoire-workspace-stage;
   container-type: inline-size;
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
   inline-size: 100%;
   min-inline-size: 0;
   max-inline-size: 100%;
+  min-block-size: 0;
 }
 
 .stageActions {
   display: flex;
+  flex: none;
   justify-content: flex-end;
   min-inline-size: 0;
-  margin-block-end: var(--cmt-spacing-12);
+  margin-block-end: var(--cmt-spacing-8);
 }
 
 .reset {
@@ -45,12 +50,39 @@
   align-items: stretch;
 }
 
+/* Wide mode fills the workspace height; each lane scrolls independently. */
+.stage[data-layout-mode="wide"] .group {
+  flex: 1 1 0;
+  min-block-size: 0;
+}
+
+.stage[data-layout-mode="medium"],
+.stage[data-layout-mode="narrow"] {
+  flex: none;
+  min-block-size: auto;
+}
+
+.laneFill {
+  min-block-size: 0;
+}
+
+.stage[data-layout-mode="wide"] .laneFill {
+  block-size: 100%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
 .group > [id="board"] {
-  max-inline-size: calc(40rem + 30px + var(--cmt-spacing-24));
+  max-inline-size: calc(var(--cmt-board-max-inline-size) + 30px + var(--cmt-spacing-8));
 }
 
 .panel {
   min-inline-size: 0;
+  min-block-size: 0;
+}
+
+.mediumBoardRow > * {
+  margin-inline: auto;
 }
 
 .mediumLowerRow {

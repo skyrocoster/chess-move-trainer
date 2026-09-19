@@ -5,7 +5,7 @@
   display: grid;
   gap: var(--cmt-spacing-16);
   inline-size: 100%;
-  max-inline-size: 40rem;
+  max-inline-size: var(--cmt-board-max-inline-size);
   min-inline-size: 0;
 }
 
@@ -16,7 +16,7 @@
   border: 1px solid var(--md-sys-color-outline);
   border-radius: 0.25rem;
   inline-size: 100%;
-  max-inline-size: 40rem;
+  max-inline-size: var(--cmt-board-max-inline-size);
   min-inline-size: 0;
   overflow: hidden;
 }
@@ -50,7 +50,7 @@
 
 .unavailable {
   inline-size: 100%;
-  max-inline-size: 40rem;
+  max-inline-size: var(--cmt-board-max-inline-size);
 }
 
 .constrainedStory {

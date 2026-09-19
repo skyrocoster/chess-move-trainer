@@ -8,8 +8,8 @@ async function openProduction(page: Page, width: number) {
   await page.goto("/");
   await expect(page).toHaveURL(/\/$/);
   await expect(
-    page.getByText("Chess Move Trainer", { exact: true }),
-  ).toBeVisible();
+    page.getByTestId(width <= 679 ? "shell-identity-header" : "shell-identity-rail"),
+  ).toHaveText("Chess Move Trainer");
   await expect(
     page.getByRole("heading", { name: "System status" }),
   ).toBeVisible();
@@ -131,6 +131,7 @@ test("supports drawer focus containment and every required dismissal path", asyn
   const close = drawer.getByRole("button", { name: "Close navigation menu" });
   const status = drawer.getByRole("link", { name: "Status" });
   const repertoire = drawer.getByRole("link", { name: "Repertoire Builder" });
+  const trainer = drawer.getByRole("link", { name: "Trainer Practice" });
   await expect(drawer).toBeVisible();
   await expect(
     drawer.getByRole("heading", { name: "Navigation" }),
@@ -143,6 +144,8 @@ test("supports drawer focus containment and every required dismissal path", asyn
   await expect(status).toBeFocused();
   await page.keyboard.press("Tab");
   await expect(repertoire).toBeFocused();
+  await page.keyboard.press("Tab");
+  await expect(trainer).toBeFocused();
   await page.keyboard.press("Tab");
   await expect(close).toBeFocused();
 
@@ -191,9 +194,7 @@ test("keeps the shell available for an unavailable backend", async ({
   await page.setViewportSize({ width: 680, height: 915 });
   await page.goto("/");
 
-  await expect(
-    page.getByText("Chess Move Trainer", { exact: true }),
-  ).toBeVisible();
+  await expect(page.getByTestId("shell-identity-rail")).toHaveText("Chess Move Trainer");
   await expect(
     page.getByRole("heading", { name: "System status" }),
   ).toBeVisible();
@@ -203,4 +204,3 @@ test("keeps the shell available for an unavailable backend", async ({
   ).toHaveAttribute("href", "/");
   await expect(page.locator('a[href="/viewer"]')).toHaveCount(0);
 });
-

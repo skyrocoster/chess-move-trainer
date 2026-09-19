@@ -1,10 +1,10 @@
 .shell {
-  --shell-header-height: 64px;
-  --shell-sidebar-width: 240px;
+  --shell-rail-width: 88px;
+  --shell-header-height: 56px;
   display: grid;
-  min-height: 100vh;
-  grid-template-columns: var(--shell-sidebar-width) minmax(0, 1fr);
-  grid-template-rows: var(--shell-header-height) minmax(0, 1fr);
+  grid-template-columns: var(--shell-rail-width) minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  block-size: 100dvh;
   background: var(--md-sys-color-background);
   color: var(--md-sys-color-on-background);
 }
@@ -29,18 +29,18 @@
   outline-offset: var(--cmt-focus-ring-separation);
 }
 
+/* Mobile top bar: hidden on desktop, shown below the 679px breakpoint. */
 .header {
   position: sticky;
   z-index: 10;
   top: 0;
-  display: flex;
+  display: none;
   grid-column: 1 / -1;
-  grid-row: 1;
   align-items: center;
-  justify-content: space-between;
+  gap: var(--cmt-spacing-8);
   min-width: 0;
   height: var(--shell-header-height);
-  padding: 0 var(--cmt-spacing-24);
+  padding: 0 var(--cmt-spacing-16);
   border-bottom: 1px solid var(--md-sys-color-outline-variant);
   background: var(--md-sys-color-surface);
 }
@@ -71,10 +71,6 @@
   color: var(--md-sys-color-on-surface);
 }
 
-.menuTrigger {
-  display: none;
-}
-
 .menuTrigger:focus-visible,
 .closeTrigger:focus-visible,
 .navigationLink:focus-visible {
@@ -82,17 +78,56 @@
   outline-offset: var(--cmt-focus-ring-separation);
 }
 
-.sidebar {
+/* Desktop navigation rail: full-height, slim, icon-over-label destinations. */
+.rail {
   position: sticky;
   z-index: 1;
-  top: var(--shell-header-height);
-  grid-column: 1;
-  grid-row: 2;
-  height: calc(100vh - var(--shell-header-height));
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--cmt-spacing-24);
+  height: 100dvh;
   overflow-y: auto;
-  padding: var(--cmt-spacing-24) var(--cmt-spacing-16);
+  padding: var(--cmt-spacing-16) var(--cmt-spacing-8);
   border-right: 1px solid var(--md-sys-color-outline-variant);
   background: var(--md-sys-color-surface-container);
+}
+
+.railIdentity {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--cmt-spacing-8);
+  min-inline-size: 0;
+}
+
+.identityMark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 40px;
+  block-size: 40px;
+  border-radius: var(--cmt-radius-12);
+  background: var(--md-sys-color-primary-container);
+  color: var(--md-sys-color-on-primary-container);
+}
+
+.identityWordmark {
+  max-inline-size: 100%;
+  color: var(--md-sys-color-on-surface-variant);
+  font-family: var(--md-sys-typescale-label-small-font);
+  font-size: var(--md-sys-typescale-label-small-size);
+  font-weight: var(--md-sys-typescale-label-small-weight);
+  letter-spacing: var(--md-sys-typescale-label-small-letter-spacing);
+  line-height: var(--md-sys-typescale-label-small-line-height);
+  text-align: center;
+  overflow-wrap: break-word;
+}
+
+.railNav {
+  display: grid;
+  gap: var(--cmt-spacing-4);
+  align-content: start;
 }
 
 .navigationLink {
@@ -116,10 +151,22 @@
   color: var(--md-sys-color-on-secondary-container);
 }
 
+/* Rail destinations stack the icon above a centered, wrapping label. */
+.railNav .navigationLink {
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--cmt-spacing-4);
+  min-height: 64px;
+  padding: var(--cmt-spacing-8) var(--cmt-spacing-4);
+  text-align: center;
+}
+
 .main {
-  grid-column: 2;
-  grid-row: 2;
+  display: flex;
+  flex-direction: column;
   min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
   padding: var(--cmt-spacing-24);
 }
 
@@ -188,22 +235,18 @@
 @media (max-width: 679px) {
   .shell {
     grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: var(--shell-header-height) minmax(0, 1fr);
   }
 
   .header {
-    padding: 0 var(--cmt-spacing-16);
+    display: flex;
   }
 
-  .menuTrigger {
-    display: inline-flex;
-  }
-
-  .sidebar {
+  .rail {
     display: none;
   }
 
   .main {
-    grid-column: 1;
     padding: var(--cmt-spacing-16);
   }
 }

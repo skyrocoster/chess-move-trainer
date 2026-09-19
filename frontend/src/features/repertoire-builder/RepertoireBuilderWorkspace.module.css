@@ -1,30 +1,38 @@
 .repertoire {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
   inline-size: 100%;
   min-inline-size: 0;
+  min-block-size: 0;
 }
 
 .workspace {
   box-sizing: border-box;
-  display: grid;
-  gap: var(--cmt-spacing-24);
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  gap: var(--cmt-spacing-16);
   inline-size: 100%;
-  max-inline-size: 96.25rem;
   min-inline-size: 0;
-  margin-inline: auto;
-  padding: var(--cmt-spacing-24);
+  min-block-size: 0;
   background: var(--md-sys-color-background);
   color: var(--md-sys-color-on-background);
 }
 
 .heading {
   margin: 0;
-  padding-block-end: var(--cmt-spacing-8);
   color: var(--md-sys-color-on-surface);
-  font: var(--md-sys-typescale-headline-medium);
-  text-align: center;
+  font-family: var(--md-sys-typescale-headline-medium-font);
+  font-size: var(--md-sys-typescale-headline-medium-size);
+  font-weight: var(--md-sys-typescale-headline-medium-weight);
+  letter-spacing: var(--md-sys-typescale-headline-medium-letter-spacing);
+  line-height: var(--md-sys-typescale-headline-medium-line-height);
+  text-align: start;
 }
 
 .loader {
+  flex: none;
   min-inline-size: 0;
 }
 
