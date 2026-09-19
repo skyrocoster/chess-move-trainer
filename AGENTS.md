@@ -16,6 +16,15 @@ things that can be shown directly.
   tests live beside frontend features.
 - Do not use ports 5666 and 8444 for unrelated services.
 
+## Graphify catalogue
+
+For orientation, dependency tracing, ownership discovery, or work across repository boundaries, consult
+`docs/graphify/README.md`. A small edit in a known file does not require opening Graphify. The catalogue is
+advisory only: source code, this `AGENTS.md`, and active Plans remain authoritative. Graphify uses local,
+deterministic code-only AST extraction without an API or LLM; Markdown and YAML are not graph inputs. The
+core-data layer covers the complete `src/` core/worker package and its schema source, never live database
+records or other runtime data.
+
 ## Windows shell
 
 The agent's preferred shell is Git Bash. Use PowerShell for commands documented for Windows users.

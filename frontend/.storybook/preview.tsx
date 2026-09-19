@@ -36,7 +36,7 @@ const preview: Preview = {
           "In Development",
           ["Application"],
           "Reference",
-          ["Design System", "Compositions", "Reviews", "Storybook Fixtures"],
+          ["Catalogue", "Design System", "Compositions", "Reviews", "Storybook Fixtures"],
         ],
       },
     },

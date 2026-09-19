@@ -1,11 +1,15 @@
 import { Search } from "lucide-react";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, type FocusEvent, type MouseEvent } from "react";
 
 import type { OpeningCatalogueItemResponse } from "../../api/client";
 import { Combobox } from "../design-system/form-controls/Combobox";
 import styles from "./OpeningSearchCombobox.module.css";
 
 export const ALL_OPENINGS_VALUE = "__cmt_all_openings__";
+
+/** Max dropdown rows built at once. The full catalogue has thousands of
+ * openings, and mounting them all makes the first click feel stuck. */
+export const OPENING_SEARCH_VISIBLE_LIMIT = 100;
 
 export type OpeningSelection =
   | null
@@ -38,7 +42,7 @@ export function filterOpeningCatalogue(
 }
 
 function openingLabel(opening: OpeningCatalogueItemResponse): string {
-  return `${opening.eco} ${opening.name}`;
+  return `${opening.eco} ${opening.name} ${opening.key}`;
 }
 
 export function OpeningSearchCombobox({
@@ -50,10 +54,12 @@ export function OpeningSearchCombobox({
   onMissingSelection,
   disabled = false,
 }: OpeningSearchComboboxProps) {
+  const openingsByKey = useMemo(
+    () => new Map(openings.map((opening) => [opening.key, opening] as const)),
+    [openings],
+  );
   const selectedOpening =
-    selection?.kind === "specific"
-      ? openings.find((opening) => opening.key === selection.key) ?? null
-      : null;
+    selection?.kind === "specific" ? (openingsByKey.get(selection.key) ?? null) : null;
 
   useEffect(() => {
     if (selection?.kind === "specific" && selectedOpening === null) {
@@ -63,7 +69,10 @@ export function OpeningSearchCombobox({
 
   const options = useMemo(() => {
     const normalized = query.trim().toLocaleLowerCase();
-    const matchingOpenings = filterOpeningCatalogue(openings, query);
+    const matchingOpenings = filterOpeningCatalogue(openings, query).slice(
+      0,
+      OPENING_SEARCH_VISIBLE_LIMIT,
+    );
     const allMatches = normalized === "" || "all openings".includes(normalized);
     const allOption = {
       value: ALL_OPENINGS_VALUE,
@@ -106,6 +115,14 @@ export function OpeningSearchCombobox({
     selectedOpening?.name ?? (effectiveSelection?.kind === "all" ? "All openings" : query);
   const selectedEco = selectedOpening?.eco;
 
+  function selectCommittedInput(
+    event: FocusEvent<HTMLInputElement> | MouseEvent<HTMLInputElement>,
+  ) {
+    if (effectiveSelection !== null) {
+      event.currentTarget.select();
+    }
+  }
+
   function handleValueChange(value: string | null) {
     if (value === null) {
       onQueryChange("");
@@ -117,7 +134,7 @@ export function OpeningSearchCombobox({
       onSelectionChange({ kind: "all" });
       return;
     }
-    const opening = openings.find((candidate) => candidate.key === value);
+    const opening = openingsByKey.get(value);
     if (opening === undefined) {
       return;
     }
@@ -141,11 +158,8 @@ export function OpeningSearchCombobox({
       disabled={disabled}
       inputValue={inputValue}
       leading={<Search aria-hidden="true" size={18} />}
-      onInputFocus={(event) => {
-        if (effectiveSelection !== null) {
-          event.currentTarget.select();
-        }
-      }}
+      onInputClick={selectCommittedInput}
+      onInputFocus={selectCommittedInput}
       onInputValueChange={handleInputValueChange}
       onValueChange={handleValueChange}
       options={options}

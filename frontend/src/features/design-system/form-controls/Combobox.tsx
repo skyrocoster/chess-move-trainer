@@ -1,6 +1,12 @@
 import { Combobox as BaseCombobox } from "@base-ui/react/combobox";
 import { ChevronDown, X } from "lucide-react";
-import type { CSSProperties, FocusEventHandler, ReactNode } from "react";
+import type {
+  CSSProperties,
+  FocusEventHandler,
+  MouseEventHandler,
+  ReactNode,
+} from "react";
+import { useCallback, useMemo } from "react";
 
 import styles from "./FormControls.module.css";
 import {
@@ -17,6 +23,7 @@ export interface ComboboxProps {
   inputValue?: string;
   onInputValueChange?: (value: string, reason: string) => void;
   onInputFocus?: FocusEventHandler<HTMLInputElement>;
+  onInputClick?: MouseEventHandler<HTMLInputElement>;
   placeholder?: string;
   disabled?: boolean;
   readOnly?: boolean;
@@ -37,6 +44,7 @@ export function Combobox({
   inputValue,
   onInputValueChange,
   onInputFocus,
+  onInputClick,
   placeholder = "Search options",
   disabled,
   readOnly,
@@ -49,15 +57,33 @@ export function Combobox({
   ariaLabel,
   preferredPopupWidth,
 }: ComboboxProps) {
-  const visibleOptions = loading ? [] : options;
-  const labelFor = (optionValue: string) =>
-    options.find((option) => option.value === optionValue)?.label ?? optionValue;
+  const visibleOptions = useMemo(
+    () => (loading ? [] : options),
+    [loading, options],
+  );
+  const optionByValue = useMemo(
+    () => new Map(visibleOptions.map((option) => [option.value, option] as const)),
+    [visibleOptions],
+  );
+  const labelFor = useCallback(
+    (optionValue: string) => optionByValue.get(optionValue)?.label ?? optionValue,
+    [optionByValue],
+  );
+  const items = useMemo(
+    () => visibleOptions.map((option) => option.value),
+    [visibleOptions],
+  );
+  const filterOption = useCallback(
+    (optionValue: string, query: string) =>
+      labelFor(optionValue).toLocaleLowerCase().includes(query.toLocaleLowerCase()),
+    [labelFor],
+  );
 
   return (
     <BaseCombobox.Root
-      items={visibleOptions.map((option) => option.value)}
+      items={items}
       itemToStringLabel={labelFor}
-      filter={(optionValue, query) => labelFor(optionValue).toLocaleLowerCase().includes(query.toLocaleLowerCase())}
+      filter={filterOption}
       value={value}
       onValueChange={(next) => onValueChange(next)}
       inputValue={inputValue}
@@ -73,6 +99,7 @@ export function Combobox({
         <BaseCombobox.Input
           className={styles.textInput}
           aria-label={ariaLabel}
+          onClick={onInputClick}
           onFocus={onInputFocus}
           placeholder={placeholder}
         />
@@ -93,7 +120,7 @@ export function Combobox({
           <BaseCombobox.Popup className={styles.dropdownPopup}>
             <BaseCombobox.List className={styles.dropdownList}>
               {(optionValue: string, index: number) => {
-                const option = visibleOptions.find((candidate) => candidate.value === optionValue);
+                const option = optionByValue.get(optionValue);
                 if (!option) return null;
                 return (
                   <BaseCombobox.Item

@@ -7,8 +7,9 @@ import type {
 } from "../../api/client";
 import { queryKeys } from "../../api/queryKeys";
 import { readOpeningCatalogueSnapshot } from "./openingCatalogueStorage";
+import { formatUtcDate, getUtcCalendarDay, toUtcMidnight } from "../design-system/CalendarDateUtils";
+import type { CalendarDateValue } from "../design-system/CalendarDate";
 import {
-  currentUtcDate,
   defaultTrainerPracticeApi,
   queryOpeningCatalogueSnapshot,
   isValidAsOf,
@@ -61,7 +62,9 @@ export function TrainerPracticePage({
   const [catalogueSearch, setCatalogueSearch] = useState("");
   const [openingSelection, setOpeningSelection] = useState<OpeningSelection>(null);
   const [trainerColor, setTrainerColor] = useState<"" | TrainerColor>("");
-  const [asOf, setAsOf] = useState(currentUtcDate);
+  const [asOf, setAsOf] = useState<CalendarDateValue>(() =>
+    toUtcMidnight(getUtcCalendarDay(new Date())),
+  );
   const [submittedFilters, setSubmittedFilters] = useState<TrainerPracticeFilters | null>(null);
   const [invalidDateSubmitted, setInvalidDateSubmitted] = useState(false);
   const [storedCatalogue] = useState(readOpeningCatalogueSnapshot);
@@ -134,14 +137,15 @@ export function TrainerPracticePage({
         setInvalidDateSubmitted(false);
         return;
       }
-      if (!isValidAsOf(values.asOf)) {
+      const asOfString = values.asOf === null ? "" : formatUtcDate(values.asOf);
+      if (!isValidAsOf(asOfString)) {
         setSubmittedFilters(null);
         setInvalidDateSubmitted(true);
         return;
       }
 
       const filters: TrainerPracticeFilters = {
-        asOf: values.asOf,
+        asOf: asOfString,
         openingKey:
           values.openingSelection?.kind === "specific"
             ? values.openingSelection.key

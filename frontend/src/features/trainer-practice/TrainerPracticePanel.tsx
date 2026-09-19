@@ -5,6 +5,7 @@ import type {
   TrainingRequirementResponse,
 } from "../../api/client";
 import { Button } from "../design-system/Button";
+import { CalendarDate, type CalendarDateValue } from "../design-system/CalendarDate";
 import { Field } from "../design-system/form-controls/Field";
 import { RadioGroup } from "../design-system/form-controls/RadioGroup";
 import {
@@ -16,7 +17,7 @@ import type { TrainerColor } from "./trainerPracticeApi";
 export type TrainerPracticeFormValues = {
   openingSelection: OpeningSelection;
   trainerColor: "" | TrainerColor;
-  asOf: string;
+  asOf: CalendarDateValue;
 };
 
 export type TrainerPracticePanelProps = {
@@ -32,7 +33,7 @@ export type TrainerPracticePanelProps = {
   onCatalogueSearchChange: (value: string) => void;
   onMissingOpeningSelection: () => void;
   onTrainerColorChange: (value: "" | TrainerColor) => void;
-  onAsOfChange: (value: string) => void;
+  onAsOfChange: (value: CalendarDateValue) => void;
   onSubmit: (values: TrainerPracticeFormValues) => void;
   onRetryCatalogue: () => void;
 };
@@ -193,7 +194,6 @@ export function TrainerPracticePanel({
   openings,
   catalogueStatus,
   retrieval,
-  onOpeningKeyChange,
   onCatalogueSearchChange,
   onTrainerColorChange,
   onAsOfChange,
@@ -256,13 +256,11 @@ export function TrainerPracticePanel({
           />
         </Field>
 
-        <Field htmlFor="trainer-practice-as-of" label="as_of" required>
-          <input
-            id="trainer-practice-as-of"
-            type="date"
+        <Field label="as_of" required>
+          <CalendarDate
             value={values.asOf}
-            onChange={(event) => onAsOfChange(event.target.value)}
-            required
+            onChange={onAsOfChange}
+            label="as_of"
           />
         </Field>
 

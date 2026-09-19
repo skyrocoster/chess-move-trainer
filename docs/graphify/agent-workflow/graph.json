@@ -1,0 +1,206 @@
+{
+  "built_at_commit": null,
+  "directed": false,
+  "graph": {},
+  "graphify_provenance": "complete pre-commit working tree",
+  "hyperedges": [],
+  "links": [
+    {
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "relation": "calls",
+      "source": "tools_glob_execute",
+      "source_file": "tools/glob.ts",
+      "source_location": "L88",
+      "target": "tools_glob_globfiles",
+      "weight": 1.0
+    },
+    {
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "relation": "calls",
+      "source": "tools_glob_globfiles",
+      "source_file": "tools/glob.ts",
+      "source_location": "L44",
+      "target": "tools_glob_resolverg",
+      "weight": 1.0
+    },
+    {
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "relation": "contains",
+      "source": "plugin_bash_timeout",
+      "source_file": "plugin/bash-timeout.js",
+      "source_location": "L14",
+      "target": "plugin_bash_timeout_bashtimeout",
+      "weight": 1.0
+    },
+    {
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "relation": "contains",
+      "source": "plugin_context_budget",
+      "source_file": "plugin/context-budget.js",
+      "source_location": "L15",
+      "target": "plugin_context_budget_contextbudget",
+      "weight": 1.0
+    },
+    {
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "relation": "contains",
+      "source": "plugin_context_budget",
+      "source_file": "plugin/context-budget.js",
+      "source_location": "L9",
+      "target": "plugin_context_budget_cache_resume_windows_ms",
+      "weight": 1.0
+    },
+    {
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "relation": "contains",
+      "source": "tools_glob",
+      "source_file": "tools/glob.ts",
+      "source_location": "L24",
+      "target": "tools_glob_resolverg",
+      "weight": 1.0
+    },
+    {
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "relation": "contains",
+      "source": "tools_glob",
+      "source_file": "tools/glob.ts",
+      "source_location": "L43",
+      "target": "tools_glob_globfiles",
+      "weight": 1.0
+    },
+    {
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "relation": "contains",
+      "source": "tools_glob",
+      "source_file": "tools/glob.ts",
+      "source_location": "L78",
+      "target": "tools_glob_execute",
+      "weight": 1.0
+    }
+  ],
+  "multigraph": false,
+  "nodes": [
+    {
+      "_callable": true,
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "Community 0",
+      "file_type": "code",
+      "id": "tools_glob_execute",
+      "label": "execute()",
+      "norm_label": "execute()",
+      "source_file": "tools/glob.ts",
+      "source_location": "L78"
+    },
+    {
+      "_callable": true,
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "Community 0",
+      "file_type": "code",
+      "id": "tools_glob_globfiles",
+      "label": "globFiles()",
+      "norm_label": "globfiles()",
+      "source_file": "tools/glob.ts",
+      "source_location": "L43"
+    },
+    {
+      "_callable": true,
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "Community 0",
+      "file_type": "code",
+      "id": "tools_glob_resolverg",
+      "label": "resolveRg()",
+      "norm_label": "resolverg()",
+      "source_file": "tools/glob.ts",
+      "source_location": "L24"
+    },
+    {
+      "_callable": true,
+      "_origin": "ast",
+      "community": 1,
+      "community_name": "Community 1",
+      "file_type": "code",
+      "id": "plugin_context_budget_contextbudget",
+      "label": "ContextBudget()",
+      "norm_label": "contextbudget()",
+      "source_file": "plugin/context-budget.js",
+      "source_location": "L15"
+    },
+    {
+      "_callable": true,
+      "_origin": "ast",
+      "community": 2,
+      "community_name": "Community 2",
+      "file_type": "code",
+      "id": "plugin_bash_timeout_bashtimeout",
+      "label": "BashTimeout()",
+      "norm_label": "bashtimeout()",
+      "source_file": "plugin/bash-timeout.js",
+      "source_location": "L14"
+    },
+    {
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "Community 0",
+      "file_type": "code",
+      "id": "tools_glob",
+      "label": "glob.ts",
+      "norm_label": "glob.ts",
+      "source_file": "tools/glob.ts",
+      "source_location": "L1"
+    },
+    {
+      "_origin": "ast",
+      "community": 1,
+      "community_name": "Community 1",
+      "file_type": "code",
+      "id": "plugin_context_budget",
+      "label": "context-budget.js",
+      "norm_label": "context-budget.js",
+      "source_file": "plugin/context-budget.js",
+      "source_location": "L1"
+    },
+    {
+      "_origin": "ast",
+      "community": 1,
+      "community_name": "Community 1",
+      "file_type": "code",
+      "id": "plugin_context_budget_cache_resume_windows_ms",
+      "label": "CACHE_RESUME_WINDOWS_MS",
+      "norm_label": "cache_resume_windows_ms",
+      "source_file": "plugin/context-budget.js",
+      "source_location": "L9"
+    },
+    {
+      "_origin": "ast",
+      "community": 2,
+      "community_name": "Community 2",
+      "file_type": "code",
+      "id": "plugin_bash_timeout",
+      "label": "bash-timeout.js",
+      "norm_label": "bash-timeout.js",
+      "source_file": "plugin/bash-timeout.js",
+      "source_location": "L1"
+    }
+  ]
+}

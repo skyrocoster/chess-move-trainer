@@ -22,6 +22,7 @@ permission:
   webfetch: deny
   websearch: deny
   external_directory: deny
+  "playwright_*": deny
 ---
 
 You are `coordinator`, the only user-facing workflow owner. Load `coordinator-workflow` before handling any

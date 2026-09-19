@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -122,8 +122,7 @@ afterEach(() => {
 });
 
 describe("TrainerPracticePage", () => {
-  it("shows catalogue loading and then exposes native labelled controls", async () => {
-    let resolveCatalogue!: (value: OpeningCatalogueSnapshotResult) => void;
+  it("shows catalogue loading and then exposes native labelled controls", async () => {    let resolveCatalogue!: (value: OpeningCatalogueSnapshotResult) => void;
     const catalogue = new Promise<OpeningCatalogueSnapshotResult>((resolve) => {
       resolveCatalogue = resolve;
     });
@@ -140,23 +139,51 @@ describe("TrainerPracticePage", () => {
     await screen.findByRole("combobox", { name: "Opening" });
     expect(screen.getByRole("combobox", { name: "Opening" })).toBeVisible();
     expect(screen.getByRole("radio", { name: "All colours" })).toBeVisible();
-    expect(screen.getByLabelText(/^as_of/)).toHaveValue(currentUtcDate());
+    expect(
+      screen.getByRole("button", { name: new RegExp(`as_of: ${currentUtcDate()}`) }),
+    ).toBeVisible();
   });
 
   it("waits for explicit submit and sends the selected catalogue key", async () => {
     const api = createApi();
     const user = await renderReady(api);
-    const asOf = screen.getByLabelText(/^as_of/);
 
     await chooseOpening(user, /B10 Caro-Kann Defense/);
     await user.click(screen.getByRole("radio", { name: "Black" }));
-    fireEvent.change(asOf, { target: { value: TODAY } });
     expect(api.loadRequirements).not.toHaveBeenCalled();
 
     await user.click(screen.getByRole("button", { name: "Find training positions" }));
     await waitFor(() => expect(api.loadRequirements).toHaveBeenCalledTimes(1));
     expect(api.loadRequirements).toHaveBeenCalledWith(
-      { asOf: TODAY, openingKey: OPENING_KEY, trainerColor: "black" },
+      { asOf: currentUtcDate(), openingKey: OPENING_KEY, trainerColor: "black" },
+      expect.any(AbortSignal),
+    );
+  });
+
+  it("sends the calendar-selected date as YYYY-MM-DD", async () => {
+    const api = createApi();
+    const user = await renderReady(api);
+    await chooseOpening(user, /B10 Caro-Kann Defense/);
+
+    const now = new Date();
+    const year = now.getUTCFullYear();
+    const month = now.getUTCMonth();
+    const monthName = new Intl.DateTimeFormat("en-US", {
+      month: "long",
+      timeZone: "UTC",
+    }).format(new Date(Date.UTC(year, month, 1)));
+    const expectedAsOf = `${String(year).padStart(4, "0")}-${String(month + 1).padStart(2, "0")}-01`;
+
+    await user.click(screen.getByRole("button", { name: /as_of:/ }));
+    const dialog = await screen.findByRole("dialog", { name: "as_of" });
+    await user.click(
+      within(dialog).getByRole("button", { name: new RegExp(`${monthName} 1st, ${year}`) }),
+    );
+
+    await user.click(screen.getByRole("button", { name: "Find training positions" }));
+    await waitFor(() => expect(api.loadRequirements).toHaveBeenCalledTimes(1));
+    expect(api.loadRequirements).toHaveBeenCalledWith(
+      { asOf: expectedAsOf, openingKey: OPENING_KEY, trainerColor: null },
       expect.any(AbortSignal),
     );
   });
@@ -171,6 +198,9 @@ describe("TrainerPracticePage", () => {
     await user.type(opening, "Caro-Kann");
 
     expect(await screen.findByRole("option", { name: /B10 Caro-Kann Defense/ })).toBeVisible();
+    await user.clear(opening);
+    await user.type(opening, OPENING_KEY);
+    expect(await screen.findByRole("option", { name: /B10 Caro-Kann Defense/ })).toBeVisible();
     expect(loadCatalogue).toHaveBeenCalledTimes(1);
     expect(api.loadRequirements).not.toHaveBeenCalled();
   });
@@ -181,6 +211,7 @@ describe("TrainerPracticePage", () => {
     const opening = screen.getByRole("combobox", { name: "Opening" });
     const findButton = screen.getByRole("button", { name: "Find training positions" });
 
+    opening.blur();
     await user.click(opening);
     expect(opening).toHaveValue("Caro-Kann Defense");
     expect((opening as HTMLInputElement).selectionStart).toBe(0);
@@ -448,8 +479,7 @@ describe("TrainerPracticePage", () => {
 
     await chooseOpening(user, /B10 Caro-Kann Defense/);
     await user.click(screen.getByRole("button", { name: "Find training positions" }));
-    const asOf = screen.getByLabelText(/^as_of/);
-    fireEvent.change(asOf, { target: { value: "2026-09-13" } });
+    await user.click(screen.getByRole("radio", { name: "Black" }));
     await user.click(screen.getByRole("button", { name: "Find training positions" }));
     const firstSignal = loadRequirements.mock.calls[0]?.[1] as AbortSignal;
     expect(firstSignal.aborted).toBe(true);

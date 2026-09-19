@@ -93,6 +93,26 @@ describe("reusable form controls candidate", () => {
     expect(input).toHaveValue("B12 Caro-Kann Advance");
   });
 
+  it("forwards clicks from an already-focused Combobox input", async () => {
+    const user = userEvent.setup();
+    const onInputClick = vi.fn();
+    render(
+      <Combobox
+        ariaLabel="Opening"
+        onInputClick={onInputClick}
+        onValueChange={() => undefined}
+        options={OPTIONS}
+        value={null}
+      />,
+    );
+
+    const input = screen.getByRole("combobox", { name: "Opening" });
+    await user.click(input);
+    await user.click(input);
+
+    expect(onInputClick).toHaveBeenCalledTimes(2);
+  });
+
   it("uses the required plain label for custom option accessibility and filtering", async () => {
     const user = userEvent.setup();
     render(<ControlledCombobox />);
