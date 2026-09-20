@@ -64,6 +64,9 @@ def test_position_remains_after_a_focused_reference_is_removed(tmp_path: Path) -
         connection.execute("DELETE FROM derived_game_position WHERE datasource_game_id = 1")
         connection.execute("DELETE FROM datasource_game WHERE dg_game_id = 1")
 
-        assert connection.execute(
-            "SELECT COUNT(*) FROM derived_position WHERE dp_position_id = ?", (position_id,)
-        ).fetchone()[0] == 1
+        assert (
+            connection.execute(
+                "SELECT COUNT(*) FROM derived_position WHERE dp_position_id = ?", (position_id,)
+            ).fetchone()[0]
+            == 1
+        )

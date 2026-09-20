@@ -2,23 +2,15 @@
 
 from __future__ import annotations
 
-import math
 import re
-from dataclasses import dataclass
 from datetime import UTC, datetime
-from functools import cmp_to_key
-from pathlib import Path
 from typing import Literal
 
 import chess
-from sqlalchemy import text
 
-from ..connection import DEFAULT_LOCK_TIMEOUT_SECONDS, _open_connection
 from ..openings.keys import OpeningKeyError, opening_api_key, parse_opening_api_key
-from .search_errors import GameSearchStorageError, GameSearchValidationError
 from ..positions import CanonicalPosition, PositionValidationError, canonicalize_fen
-from ..schema import SchemaIncompatibleError, _assert_compatible_schema
-
+from .search_errors import GameSearchStorageError, GameSearchValidationError
 
 TrainerColor = Literal["white", "black"]
 TrainerOutcome = Literal["win", "loss", "draw"]

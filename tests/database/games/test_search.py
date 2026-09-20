@@ -258,15 +258,20 @@ def test_every_filter_family_combines_and_canonical_fen_move_filters(tmp_path: P
     page = GameSearchRepository(database).search(query)
 
     assert _uuids(page) == [raw["uuid"]]
-    assert GameSearchRepository(database).search(
-        GameSearchQuery(opening_key="C20:King's Pawn Game", opening_match="reached")
-    ).total == 1
-    assert GameSearchRepository(database).search(
-        GameSearchQuery(trainer_color="black")
-    ).total == 0
-    assert GameSearchRepository(database).search(
-        GameSearchQuery(time_class="daily")
-    ).items[0].game_uuid == other["uuid"]
+    assert (
+        GameSearchRepository(database)
+        .search(GameSearchQuery(opening_key="C20:King's Pawn Game", opening_match="reached"))
+        .total
+        == 1
+    )
+    assert GameSearchRepository(database).search(GameSearchQuery(trainer_color="black")).total == 0
+    assert (
+        GameSearchRepository(database)
+        .search(GameSearchQuery(time_class="daily"))
+        .items[0]
+        .game_uuid
+        == other["uuid"]
+    )
     assert GameSearchRepository(database).search(GameSearchQuery(max_length_plies=1)).total == 1
     assert game_ids
 
@@ -335,28 +340,29 @@ def test_timestamp_bounds_use_fractional_seconds_and_exact_bound_equality(
 
     # The stored timestamp has no fractional seconds; an exact upper bound still matches
     # because _stored_timestamp normalizes "…Z" to "….000000Z" before comparison.
-    assert repository.search(
-        GameSearchQuery(
-            started_at_from="2026-08-01T12:00:00Z",
-            started_at_to="2026-08-01T12:00:00Z",
-        )
-    ).total == 1
-    assert repository.search(
-        GameSearchQuery(started_at_to="2026-08-01T12:00:00+00:00")
-    ).total == 1
+    assert (
+        repository.search(
+            GameSearchQuery(
+                started_at_from="2026-08-01T12:00:00Z",
+                started_at_to="2026-08-01T12:00:00Z",
+            )
+        ).total
+        == 1
+    )
+    assert repository.search(GameSearchQuery(started_at_to="2026-08-01T12:00:00+00:00")).total == 1
 
     # A lower bound one microsecond after the stored instant excludes the game.
-    assert repository.search(
-        GameSearchQuery(started_at_from="2026-08-01T12:00:00.000001Z")
-    ).total == 0
+    assert (
+        repository.search(GameSearchQuery(started_at_from="2026-08-01T12:00:00.000001Z")).total == 0
+    )
     # An upper bound one microsecond before the stored instant excludes the game.
-    assert repository.search(
-        GameSearchQuery(started_at_to="2026-08-01T11:59:59.999999Z")
-    ).total == 0
+    assert (
+        repository.search(GameSearchQuery(started_at_to="2026-08-01T11:59:59.999999Z")).total == 0
+    )
     # A fractional lower bound at exactly the stored instant still matches.
-    assert repository.search(
-        GameSearchQuery(started_at_from="2026-08-01T12:00:00.000000Z")
-    ).total == 1
+    assert (
+        repository.search(GameSearchQuery(started_at_from="2026-08-01T12:00:00.000000Z")).total == 1
+    )
 
 
 def test_deepest_opening_tie_break_selects_lexicographically_smallest_key(
@@ -425,33 +431,24 @@ def test_started_at_desc_places_games_without_timestamp_last(tmp_path: Path) -> 
     )
     database, _game_ids = _database(tmp_path, [dated, undated])
 
-    page = GameSearchRepository(database).search(
-        GameSearchQuery(sort="started_at_desc")
-    )
+    page = GameSearchRepository(database).search(GameSearchQuery(sort="started_at_desc"))
 
     # _compare_nullable returns 1 when the left timestamp is None, so undated
     # games sort after dated games for both started_at_desc and started_at_asc.
     assert _uuids(page) == [dated["uuid"], undated["uuid"]]
-    ascending = GameSearchRepository(database).search(
-        GameSearchQuery(sort="started_at_asc")
-    )
+    ascending = GameSearchRepository(database).search(GameSearchQuery(sort="started_at_asc"))
     assert _uuids(ascending) == [dated["uuid"], undated["uuid"]]
 
 
 def test_pagination_is_deterministic_across_repeated_searches(tmp_path: Path) -> None:
-    raw_games = [
-        _raw_game(f"dddddddd-dddd-4ddd-8ddd-dddddddddd5{i}", "1. e4 e5")
-        for i in range(3)
-    ]
+    raw_games = [_raw_game(f"dddddddd-dddd-4ddd-8ddd-dddddddddd5{i}", "1. e4 e5") for i in range(3)]
     database, _game_ids = _database(tmp_path, raw_games)
     repository = GameSearchRepository(database)
     query_first = GameSearchQuery(page_size=1, page=1, sort="game_uuid_asc")
     query_second = GameSearchQuery(page_size=1, page=2, sort="game_uuid_asc")
 
     first = repository.search(query_first)
-    first_repeat = repository.search(
-        GameSearchQuery(page_size=1, page=1, sort="game_uuid_asc")
-    )
+    first_repeat = repository.search(GameSearchQuery(page_size=1, page=1, sort="game_uuid_asc"))
     second = repository.search(query_second)
 
     assert first == first_repeat

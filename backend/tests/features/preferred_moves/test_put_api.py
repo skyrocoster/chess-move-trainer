@@ -80,19 +80,23 @@ def test_put_open_end_accepts_missing_or_null_and_repeats_safely(api_context) ->
     repeat = client.put("/api/preferred-moves", json={**body, "effective_until": None})
 
     assert first.status_code == repeat.status_code == 200
-    assert first.json() == repeat.json() == {
-        "fen": " ".join((*UNSEEN_FEN.split()[:4], "0", "1")),
-        "effective_from": "2026-01-01",
-        "effective_until": None,
-        "preference": {"kind": "no_preference"},
-        "periods": [
-            {
-                "effective_from": "2026-01-01",
-                "effective_until": None,
-                "preference": {"kind": "no_preference"},
-            }
-        ],
-    }
+    assert (
+        first.json()
+        == repeat.json()
+        == {
+            "fen": " ".join((*UNSEEN_FEN.split()[:4], "0", "1")),
+            "effective_from": "2026-01-01",
+            "effective_until": None,
+            "preference": {"kind": "no_preference"},
+            "periods": [
+                {
+                    "effective_from": "2026-01-01",
+                    "effective_until": None,
+                    "preference": {"kind": "no_preference"},
+                }
+            ],
+        }
+    )
     with sqlite3.connect(database) as connection:
         assert connection.execute(
             "SELECT COUNT(*) FROM datasource_preferred_move_period"
@@ -215,15 +219,21 @@ def test_put_bad_values_give_clear_error(api_context, body, error) -> None:
 def test_put_requires_body_and_rejects_query_params(api_context) -> None:
     client, _database = api_context
 
-    assert client.put(
-        "/api/preferred-moves",
-        params={"fen": START_FEN, "effective_from": "2026-01-01"},
-        json={"preference": {"kind": "no_preference"}},
-    ).status_code == 422
-    assert client.put(
-        "/api/preferred-moves",
-        json={"fen": START_FEN, "effective_from": "2026-01-01"},
-    ).status_code == 422
+    assert (
+        client.put(
+            "/api/preferred-moves",
+            params={"fen": START_FEN, "effective_from": "2026-01-01"},
+            json={"preference": {"kind": "no_preference"}},
+        ).status_code
+        == 422
+    )
+    assert (
+        client.put(
+            "/api/preferred-moves",
+            json={"fen": START_FEN, "effective_from": "2026-01-01"},
+        ).status_code
+        == 422
+    )
 
 
 def test_put_uses_injected_database_when_configured(

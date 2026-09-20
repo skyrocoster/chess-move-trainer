@@ -38,9 +38,7 @@ class AnalysisRequestError(AnalysisError):
     """Base class for bounded desired-analysis request failures."""
 
 
-class AnalysisRequestValidationError(
-    AnalysisRequestError, AnalysisValidationError
-):
+class AnalysisRequestValidationError(AnalysisRequestError, AnalysisValidationError):
     """Raised when a desired-analysis request is invalid."""
 
 
@@ -72,15 +70,11 @@ class AnalysisRequest:
         try:
             position = canonicalize_fen(self.fen)
         except (TypeError, ValueError) as error:
-            raise AnalysisRequestValidationError(
-                "fen must be a complete legal FEN"
-            ) from error
+            raise AnalysisRequestValidationError("fen must be a complete legal FEN") from error
         try:
             quality = AnalysisQuality(self.quality)
         except (TypeError, ValueError) as error:
-            raise AnalysisRequestValidationError(
-                "quality must be 'browser' or 'tool'"
-            ) from error
+            raise AnalysisRequestValidationError("quality must be 'browser' or 'tool'") from error
         object.__setattr__(self, "fen", _canonical_fen(position))
         object.__setattr__(self, "quality", quality)
 
@@ -96,9 +90,7 @@ class AnalysisRequestResult:
         if not isinstance(self.observation, AnalysisObservation):
             raise AnalysisRequestStorageError("analysis observation value is malformed")
         try:
-            object.__setattr__(
-                self, "disposition", AnalysisRequestDisposition(self.disposition)
-            )
+            object.__setattr__(self, "disposition", AnalysisRequestDisposition(self.disposition))
         except (TypeError, ValueError) as error:
             raise AnalysisRequestStorageError(
                 "analysis request disposition is malformed"
@@ -127,9 +119,7 @@ class AnalysisRequestRepository:
         """Request one current analysis result atomically."""
 
         normalized_request = (
-            request
-            if isinstance(request, AnalysisRequest)
-            else AnalysisRequest(request, quality)
+            request if isinstance(request, AnalysisRequest) else AnalysisRequest(request, quality)
         )
         return self._request(normalized_request)
 
@@ -139,9 +129,7 @@ class AnalysisRequestRepository:
         from ..stockfish.queue import _enqueue_in_transaction, _read_live_queue_request
 
         try:
-            with _open_existing_connection(
-                self._database_path, self._lock_timeout
-            ) as connection:
+            with _open_existing_connection(self._database_path, self._lock_timeout) as connection:
                 _assert_compatible_schema(connection, self._lock_timeout)
                 connection.rollback()
 
@@ -165,18 +153,14 @@ class AnalysisRequestRepository:
                     live_request = _read_live_queue_request(connection, position_id)
 
                     if live_request is not None:
-                        if _quality_rank(live_request.quality) < _quality_rank(
-                            request.quality
-                        ):
+                        if _quality_rank(live_request.quality) < _quality_rank(request.quality):
                             _enqueue_in_transaction(
                                 connection,
                                 position_id,
                                 request.quality,
                             )
                             self._checkpoint("queue_promoted")
-                            live_request = _read_live_queue_request(
-                                connection, position_id
-                            )
+                            live_request = _read_live_queue_request(connection, position_id)
                             if live_request is None:
                                 raise AnalysisRequestStorageError(
                                     "promoted analysis request was not returned"
@@ -193,9 +177,7 @@ class AnalysisRequestRepository:
                             request.quality,
                         )
                         self._checkpoint("queue_enqueued")
-                        live_request = _read_live_queue_request(
-                            connection, position_id
-                        )
+                        live_request = _read_live_queue_request(connection, position_id)
                         if live_request is None:
                             raise AnalysisRequestStorageError(
                                 "enqueued analysis request was not returned"
@@ -206,9 +188,7 @@ class AnalysisRequestRepository:
                         connection,
                         position,
                         position_id,
-                        queue_state=(
-                            None if live_request is None else live_request.state
-                        ),
+                        queue_state=(None if live_request is None else live_request.state),
                     )
                     self._checkpoint("before_commit")
                     transaction.commit()
@@ -244,9 +224,7 @@ def _canonicalize_request_fen(fen: str) -> CanonicalPosition:
     try:
         return canonicalize_fen(fen)
     except (TypeError, ValueError) as error:
-        raise AnalysisRequestValidationError(
-            "fen must be a complete legal FEN"
-        ) from error
+        raise AnalysisRequestValidationError("fen must be a complete legal FEN") from error
 
 
 def _validate_current_result(
@@ -256,9 +234,7 @@ def _validate_current_result(
     try:
         return _observation_result(result, position)
     except AnalysisObservationError as error:
-        raise AnalysisRequestStorageError(
-            "analysis result is incomplete or malformed"
-        ) from error
+        raise AnalysisRequestStorageError("analysis result is incomplete or malformed") from error
 
 
 def _result_satisfies(
@@ -290,9 +266,7 @@ def _translate_storage_error(error: Exception) -> AnalysisRequestStorageError:
 
     candidate: BaseException | None = error
     while candidate is not None:
-        if isinstance(candidate, sqlite3.OperationalError) and "locked" in str(
-            candidate
-        ).lower():
+        if isinstance(candidate, sqlite3.OperationalError) and "locked" in str(candidate).lower():
             return AnalysisRequestStorageError(
                 "analysis request writer lock was not acquired before timeout"
             )
@@ -302,21 +276,13 @@ def _translate_storage_error(error: Exception) -> AnalysisRequestStorageError:
             "analysis request writer lock was not acquired before timeout"
         )
     if isinstance(error, PositionStorageError):
-        return AnalysisRequestStorageError(
-            "canonical position could not be resolved"
-        )
+        return AnalysisRequestStorageError("canonical position could not be resolved")
     if isinstance(error, QueueStorageError):
-        return AnalysisRequestStorageError(
-            "analysis queue could not be used safely"
-        )
+        return AnalysisRequestStorageError("analysis queue could not be used safely")
     if isinstance(error, AnalysisReadError):
-        return AnalysisRequestStorageError(
-            "analysis result could not be read"
-        )
+        return AnalysisRequestStorageError("analysis result could not be read")
     if isinstance(error, AnalysisObservationError):
-        return AnalysisRequestStorageError(
-            "analysis observation could not be materialized"
-        )
+        return AnalysisRequestStorageError("analysis observation could not be materialized")
     return AnalysisRequestStorageError("analysis request could not be completed")
 
 

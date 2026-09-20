@@ -68,10 +68,7 @@ def _detail_payload(database_path: Path, opening_key: str) -> bytes | None:
 
 def _catalogue_page_response(page: object) -> OpeningCatalogueResponse:
     return OpeningCatalogueResponse(
-        items=[
-            _catalogue_item_response(item)
-            for item in page.items
-        ],
+        items=[_catalogue_item_response(item) for item in page.items],
         page=page.page,
         page_size=page.page_size,
         total=page.total,
@@ -157,19 +154,11 @@ def get_opening_by_key(
             lambda: _detail_payload(database_path, opening_key),
         )
     except OpeningCatalogueValidationError:
-        return _opening_detail_error(
-            422, "invalid_opening_key", "Invalid opening key"
-        )
+        return _opening_detail_error(422, "invalid_opening_key", "Invalid opening key")
     except (OpeningCatalogueSchemaError, OpeningCatalogueStorageError):
-        return _opening_detail_error(
-            503, "openings_unavailable", "Openings unavailable"
-        )
+        return _opening_detail_error(503, "openings_unavailable", "Openings unavailable")
     except Exception:
-        return _opening_detail_error(
-            500, "unexpected_failure", "Unable to load opening"
-        )
+        return _opening_detail_error(500, "unexpected_failure", "Unable to load opening")
     if payload is None:
-        return _opening_detail_error(
-            404, "opening_not_found", "Opening not found"
-        )
+        return _opening_detail_error(404, "opening_not_found", "Opening not found")
     return json_response(payload)

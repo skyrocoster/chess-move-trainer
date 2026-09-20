@@ -83,9 +83,7 @@ def test_normalization_rejects_out_of_order_overlap_and_nonfinal_indefinite() ->
             [period("2026-01-01", "2026-03-01", MOVE_A), period("2026-02-01", "2026-04-01", MOVE_B)]
         )
     with pytest.raises(RangeValidationError):
-        normalize_periods(
-            [period("2026-01-01", None, MOVE_A), period("2026-02-01", None, MOVE_B)]
-        )
+        normalize_periods([period("2026-01-01", None, MOVE_A), period("2026-02-01", None, MOVE_B)])
 
 
 def test_insertion_into_empty_schedule_is_exact() -> None:
@@ -157,9 +155,7 @@ def test_unset_creates_an_unconfigured_gap_and_preserves_outside_dates() -> None
         period("2026-01-01", "2026-02-01", MOVE_A),
         period("2026-03-01", "2026-04-01", MOVE_A),
     )
-    assert resolve_date(result, "2026-02-15") == DateResolution(
-        ResolutionState.UNCONFIGURED
-    )
+    assert resolve_date(result, "2026-02-15") == DateResolution(ResolutionState.UNCONFIGURED)
 
 
 def test_unset_open_end_removes_the_tail_without_storing_unconfigured() -> None:
@@ -173,11 +169,14 @@ def test_unset_open_end_removes_the_tail_without_storing_unconfigured() -> None:
 
 
 def test_unset_full_coverage_returns_an_empty_configured_schedule() -> None:
-    assert unset_preference(
-        [period("2026-01-01", "2026-04-01", NO_PREFERENCE)],
-        "2025-01-01",
-        "2027-01-01",
-    ) == ()
+    assert (
+        unset_preference(
+            [period("2026-01-01", "2026-04-01", NO_PREFERENCE)],
+            "2025-01-01",
+            "2027-01-01",
+        )
+        == ()
+    )
 
 
 def test_adjacent_equal_move_and_no_preference_states_merge() -> None:
@@ -268,18 +267,12 @@ def test_resolution_distinguishes_all_three_states_at_half_open_boundaries() -> 
         period("2026-04-01", None, MOVE_B),
     )
 
-    assert resolve_date(schedule, "2025-12-31") == DateResolution(
-        ResolutionState.UNCONFIGURED
-    )
+    assert resolve_date(schedule, "2025-12-31") == DateResolution(ResolutionState.UNCONFIGURED)
     assert resolve_date(schedule, "2026-01-01") == DateResolution(
         ResolutionState.PREFERRED_MOVE, "e2e4"
     )
-    assert resolve_date(schedule, "2026-02-01") == DateResolution(
-        ResolutionState.NO_PREFERENCE
-    )
-    assert resolve_date(schedule, "2026-03-01") == DateResolution(
-        ResolutionState.UNCONFIGURED
-    )
+    assert resolve_date(schedule, "2026-02-01") == DateResolution(ResolutionState.NO_PREFERENCE)
+    assert resolve_date(schedule, "2026-03-01") == DateResolution(ResolutionState.UNCONFIGURED)
     assert resolve_date(schedule, "2026-04-01") == DateResolution(
         ResolutionState.PREFERRED_MOVE, "d2d4"
     )
@@ -289,6 +282,4 @@ def test_resolution_distinguishes_all_three_states_at_half_open_boundaries() -> 
 
 
 def test_empty_schedule_always_resolves_unconfigured() -> None:
-    assert resolve_date([], "2026-01-01") == DateResolution(
-        ResolutionState.UNCONFIGURED
-    )
+    assert resolve_date([], "2026-01-01") == DateResolution(ResolutionState.UNCONFIGURED)

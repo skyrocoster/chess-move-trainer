@@ -61,9 +61,7 @@ class NormalizedPeriod:
         if self.effective_until is not None:
             _require_date(self.effective_until, "effective_until")
             if self.effective_until <= self.effective_from:
-                raise RangeValidationError(
-                    "effective_until must be later than effective_from"
-                )
+                raise RangeValidationError("effective_until must be later than effective_from")
         if not isinstance(self.preference, Preference):
             raise RangeValidationError("period preference must be a Preference")
 
@@ -201,12 +199,8 @@ def _overlay(
                     period.preference,
                 )
             )
-        if (
-            amendment.effective_until is not None
-            and (
-                period.effective_until is None
-                or amendment.effective_until < period.effective_until
-            )
+        if amendment.effective_until is not None and (
+            period.effective_until is None or amendment.effective_until < period.effective_until
         ):
             fragments.append(
                 NormalizedPeriod(
@@ -224,19 +218,15 @@ def _overlay(
 
 def _intersects(left: NormalizedPeriod, right: NormalizedPeriod) -> bool:
     left_before_right_end = (
-        right.effective_until is None
-        or left.effective_from < right.effective_until
+        right.effective_until is None or left.effective_from < right.effective_until
     )
     right_before_left_end = (
-        left.effective_until is None
-        or right.effective_from < left.effective_until
+        left.effective_until is None or right.effective_from < left.effective_until
     )
     return left_before_right_end and right_before_left_end
 
 
-def resolve_date(
-    periods: Iterable[NormalizedPeriod], date_literal: str
-) -> DateResolution:
+def resolve_date(periods: Iterable[NormalizedPeriod], date_literal: str) -> DateResolution:
     """Resolve a strict date against a normalized half-open schedule."""
 
     requested_date = parse_date_literal(date_literal)

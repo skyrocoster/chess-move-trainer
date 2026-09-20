@@ -20,9 +20,7 @@ from chess_move_trainer.database.analysis import (
 )
 from chess_move_trainer.database.positions import PositionRepository
 
-STARTING_FEN = (
-    "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
-)
+STARTING_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 OLD_ROOTS = (
     ("e2e4", "e7e5"),
     ("d2d4", "d7d5"),
@@ -122,10 +120,7 @@ def test_publication_requires_an_existing_position_and_never_creates_one(
 
     with sqlite3.connect(database_path) as connection:
         assert connection.execute("SELECT COUNT(*) FROM derived_position").fetchone()[0] == 0
-        assert (
-            connection.execute("SELECT COUNT(*) FROM derived_analysis_result").fetchone()[0]
-            == 0
-        )
+        assert connection.execute("SELECT COUNT(*) FROM derived_analysis_result").fetchone()[0] == 0
 
 
 def test_first_publication_persists_exact_parent_and_complete_lines(
@@ -170,17 +165,20 @@ def test_one_current_result_is_replaced_by_a_new_same_quality_version(
 ) -> None:
     database_path, repository, position_id = _repository(tmp_path)
 
-    assert repository.publish(position_id, _result()) .saved
+    assert repository.publish(position_id, _result()).saved
     assert repository.publish(
         position_id,
         _result(configuration_version=2, lines=_lines(NEW_ROOTS)),
     ).saved
 
     with sqlite3.connect(database_path) as connection:
-        assert connection.execute(
-            "SELECT COUNT(*) FROM derived_analysis_result WHERE derived_position_id = ?",
-            (position_id,),
-        ).fetchone()[0] == 1
+        assert (
+            connection.execute(
+                "SELECT COUNT(*) FROM derived_analysis_result WHERE derived_position_id = ?",
+                (position_id,),
+            ).fetchone()[0]
+            == 1
+        )
 
 
 def test_tool_replaces_browser_but_browser_cannot_downgrade_it(
@@ -188,9 +186,7 @@ def test_tool_replaces_browser_but_browser_cannot_downgrade_it(
 ) -> None:
     database_path, repository, position_id = _repository(tmp_path)
 
-    assert repository.publish(
-        position_id, _result(quality=AnalysisQuality.BROWSER)
-    ).saved
+    assert repository.publish(position_id, _result(quality=AnalysisQuality.BROWSER)).saved
     assert repository.publish(position_id, _result(quality=AnalysisQuality.TOOL)).saved
     outcome = repository.publish(
         position_id,
@@ -231,10 +227,13 @@ def test_same_quality_configuration_version_change_refreshes_result(
     database_path, repository, position_id = _repository(tmp_path)
     assert repository.publish(position_id, _result()).saved
 
-    assert repository.publish(
-        position_id,
-        _result(configuration_version=2, lines=_lines(NEW_ROOTS)),
-    ) == PublicationOutcome.saved_result()
+    assert (
+        repository.publish(
+            position_id,
+            _result(configuration_version=2, lines=_lines(NEW_ROOTS)),
+        )
+        == PublicationOutcome.saved_result()
+    )
 
     parent, _ = _stored_result(database_path, position_id)
     assert parent is not None
@@ -247,10 +246,13 @@ def test_same_quality_engine_version_change_refreshes_result(
     database_path, repository, position_id = _repository(tmp_path)
     assert repository.publish(position_id, _result()).saved
 
-    assert repository.publish(
-        position_id,
-        _result(engine_version="engine-2", lines=_lines(NEW_ROOTS)),
-    ) == PublicationOutcome.saved_result()
+    assert (
+        repository.publish(
+            position_id,
+            _result(engine_version="engine-2", lines=_lines(NEW_ROOTS)),
+        )
+        == PublicationOutcome.saved_result()
+    )
 
     parent, _ = _stored_result(database_path, position_id)
     assert parent is not None

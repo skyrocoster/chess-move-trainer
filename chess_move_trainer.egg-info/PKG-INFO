@@ -2,10 +2,12 @@ Metadata-Version: 2.4
 Name: chess-move-trainer
 Version: 0.1.0
 Requires-Python: <3.13,>=3.12
+Requires-Dist: anyio==4.14.2
 Requires-Dist: cachetools==7.2.0
 Requires-Dist: chess==1.11.2
 Requires-Dist: fastapi==0.141.1
 Requires-Dist: httpx==0.28.1
+Requires-Dist: httpx2==2.13.0
 Requires-Dist: pydantic==2.13.5
 Requires-Dist: PyYAML==6.0.3
 Requires-Dist: SQLAlchemy==2.0.54

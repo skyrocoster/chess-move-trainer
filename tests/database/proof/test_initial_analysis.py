@@ -125,9 +125,7 @@ def _database(tmp_path: Path) -> tuple[Path, dict[str, int]]:
     database = tmp_path / "initial-analysis.db"
     create_schema(database)
     common_fens = (CHECKMATE_FEN, *_common_fens())
-    ids = {
-        fen: PositionRepository(database).resolve_fen(fen) for fen in common_fens
-    }
+    ids = {fen: PositionRepository(database).resolve_fen(fen) for fen in common_fens}
     with sqlite3.connect(database) as connection:
         for game_number, position_id in enumerate(ids.values(), start=1):
             connection.execute(
@@ -145,8 +143,7 @@ def _database(tmp_path: Path) -> tuple[Path, dict[str, int]]:
                 ),
             )
             game_id = connection.execute(
-                "SELECT dg_game_id FROM datasource_game "
-                "WHERE dg_chesscom_game_uuid = ?",
+                "SELECT dg_game_id FROM datasource_game WHERE dg_chesscom_game_uuid = ?",
                 (f"20000000-0000-4000-8000-{game_number:012d}",),
             ).fetchone()[0]
             connection.execute(
@@ -170,9 +167,7 @@ def test_initial_selector_is_deterministic_unique_and_backfills_technical_overla
     second = list(InitialAnalysisTargetSelector(database, page_size=3).iter_targets())
 
     assert len(first) == 25
-    assert [target.position_id for target in first] == [
-        target.position_id for target in second
-    ]
+    assert [target.position_id for target in first] == [target.position_id for target in second]
     assert len({target.position_id for target in first}) == 25
     assert ids[CHECKMATE_FEN] not in [target.position_id for target in first[:20]]
     assert ids[_common_fens()[-1]] == first[19].position_id
@@ -237,12 +232,10 @@ def test_initial_analysis_is_serial_resumable_direct_and_queue_free(
     assert engines[0].closed
     assert mutexes[0].entered and mutexes[0].released
     with sqlite3.connect(database) as connection:
-        assert connection.execute(
-            "SELECT COUNT(*) FROM derived_analysis_result"
-        ).fetchone()[0] == 25
-        assert connection.execute(
-            "SELECT COUNT(*) FROM derived_analysis_queue"
-        ).fetchone()[0] == 0
+        assert (
+            connection.execute("SELECT COUNT(*) FROM derived_analysis_result").fetchone()[0] == 25
+        )
+        assert connection.execute("SELECT COUNT(*) FROM derived_analysis_queue").fetchone()[0] == 0
         terminal_kinds = {
             row[0]
             for row in connection.execute(

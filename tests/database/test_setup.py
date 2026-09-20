@@ -73,8 +73,7 @@ def _game_fixture(name: str) -> dict[str, Any]:
 
 def _write_configuration(path: Path) -> None:
     path.write_text(
-        "username: setup-test\n"
-        f"trainer_chesscom_uuid: {TRAINER_UUID}\n",
+        f"username: setup-test\ntrainer_chesscom_uuid: {TRAINER_UUID}\n",
         encoding="utf-8",
     )
 
@@ -104,11 +103,7 @@ def _setup(
 def _snapshot_files(root: Path) -> dict[Path, bytes]:
     if not root.exists():
         return {}
-    return {
-        path.relative_to(root): path.read_bytes()
-        for path in root.rglob("*")
-        if path.is_file()
-    }
+    return {path.relative_to(root): path.read_bytes() for path in root.rglob("*") if path.is_file()}
 
 
 def _counts(database: Path) -> dict[str, int]:
@@ -157,9 +152,10 @@ def test_setup_absent_path_composes_complete_sources_and_reports_quick_checks(
             for filename in OPENING_SOURCE_FILES
         ],
     ]
-    assert tuple(
-        sorted(path.name for path in (tmp_path / "openings").iterdir())
-    ) == OPENING_SOURCE_FILES
+    assert (
+        tuple(sorted(path.name for path in (tmp_path / "openings").iterdir()))
+        == OPENING_SOURCE_FILES
+    )
     assert (tmp_path / "raw" / "games" / "2026" / "01.json").is_file()
 
 
@@ -352,9 +348,11 @@ def test_setup_uses_direct_internal_services_without_stockfish_or_legacy_delegat
         opening_transport=OpeningTransport(),
     )
 
-    source = (ROOT / "src" / "chess_move_trainer" / "database" / "lifecycle.py").read_text(
-        encoding="utf-8"
-    ).lower()
+    source = (
+        (ROOT / "src" / "chess_move_trainer" / "database" / "lifecycle.py")
+        .read_text(encoding="utf-8")
+        .lower()
+    )
     assert result.exit_code == 0
     assert events == [
         "game acquisition",

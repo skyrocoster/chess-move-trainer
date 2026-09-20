@@ -36,9 +36,7 @@ class AnalysisObservationError(AnalysisError):
     """Base class for bounded FEN-observation failures."""
 
 
-class AnalysisObservationValidationError(
-    AnalysisObservationError, AnalysisValidationError
-):
+class AnalysisObservationValidationError(AnalysisObservationError, AnalysisValidationError):
     """Raised when an observation request is invalid."""
 
 
@@ -69,9 +67,7 @@ class AnalysisObservationRequest:
         try:
             position = canonicalize_fen(self.fen)
         except (PositionValidationError, TypeError, ValueError) as error:
-            raise AnalysisObservationValidationError(
-                "fen must be a complete legal FEN"
-            ) from error
+            raise AnalysisObservationValidationError("fen must be a complete legal FEN") from error
         object.__setattr__(self, "fen", _canonical_fen(position))
 
 
@@ -92,26 +88,16 @@ class AnalysisObservationResult:
             object.__setattr__(self, "quality", AnalysisQuality(self.quality))
             object.__setattr__(self, "settings", validate_settings_object(self.settings))
             if self.terminal_kind is not None:
-                object.__setattr__(
-                    self, "terminal_kind", AnalysisTerminalKind(self.terminal_kind)
-                )
+                object.__setattr__(self, "terminal_kind", AnalysisTerminalKind(self.terminal_kind))
             normalized_lines = tuple(self.lines)
         except (TypeError, ValueError) as error:
-            raise AnalysisObservationStorageError(
-                "analysis result value is malformed"
-            ) from error
+            raise AnalysisObservationStorageError("analysis result value is malformed") from error
         if type(self.configuration_version) is not int or self.configuration_version < 1:
-            raise AnalysisObservationStorageError(
-                "analysis result configuration is malformed"
-            )
+            raise AnalysisObservationStorageError("analysis result configuration is malformed")
         if not isinstance(self.engine_name, str) or not self.engine_name:
-            raise AnalysisObservationStorageError(
-                "analysis result engine name is malformed"
-            )
+            raise AnalysisObservationStorageError("analysis result engine name is malformed")
         if not isinstance(self.engine_version, str) or not self.engine_version:
-            raise AnalysisObservationStorageError(
-                "analysis result engine version is malformed"
-            )
+            raise AnalysisObservationStorageError("analysis result engine version is malformed")
         if any(not isinstance(line, AnalysisLine) for line in normalized_lines):
             raise AnalysisObservationStorageError("analysis result lines are malformed")
         if tuple(line.rank for line in normalized_lines) != tuple(
@@ -121,13 +107,9 @@ class AnalysisObservationResult:
                 "analysis result lines are not complete and contiguous"
             )
         if self.terminal_kind is not None and normalized_lines:
-            raise AnalysisObservationStorageError(
-                "terminal analysis result has candidate lines"
-            )
+            raise AnalysisObservationStorageError("terminal analysis result has candidate lines")
         if self.terminal_kind is None and not normalized_lines:
-            raise AnalysisObservationStorageError(
-                "analysis result has no candidate lines"
-            )
+            raise AnalysisObservationStorageError("analysis result has no candidate lines")
         object.__setattr__(self, "lines", normalized_lines)
 
 
@@ -144,16 +126,12 @@ class AnalysisObservation:
             object.__setattr__(self, "state", AnalysisObservationState(self.state))
         except (TypeError, ValueError) as error:
             raise AnalysisObservationStorageError("analysis state is malformed") from error
-        if self.result is not None and not isinstance(
-            self.result, AnalysisObservationResult
-        ):
+        if self.result is not None and not isinstance(self.result, AnalysisObservationResult):
             raise AnalysisObservationStorageError("analysis result value is malformed")
         if self.state is AnalysisObservationState.READY and self.result is None:
             raise AnalysisObservationStorageError("ready analysis has no result")
         if self.state is AnalysisObservationState.NOT_REQUESTED and self.result is not None:
-            raise AnalysisObservationStorageError(
-                "not-requested analysis has a result"
-            )
+            raise AnalysisObservationStorageError("not-requested analysis has a result")
 
 
 class AnalysisObservationRepository:
@@ -204,7 +182,7 @@ class AnalysisObservationRepository:
             AnalysisReadError,
             PositionStorageError,
             QueueStorageError,
-    ) as error:
+        ) as error:
             raise AnalysisObservationStorageError(
                 "analysis observation could not be read"
             ) from error
@@ -228,9 +206,7 @@ def read_analysis_observation(
         request = fen
     else:
         request = AnalysisObservationRequest(fen)
-    return AnalysisObservationRepository(
-        database_path, lock_timeout=lock_timeout
-    ).read(request)
+    return AnalysisObservationRepository(database_path, lock_timeout=lock_timeout).read(request)
 
 
 get_analysis_observation = read_analysis_observation
@@ -282,9 +258,7 @@ def _observation_result(
             "analysis result is incomplete or malformed"
         ) from error
     if validated.terminal_kind is not result.terminal_kind:
-        raise AnalysisObservationStorageError(
-            "analysis result terminal kind is malformed"
-        )
+        raise AnalysisObservationStorageError("analysis result terminal kind is malformed")
     return AnalysisObservationResult(
         quality=result.quality,
         configuration_version=result.configuration_version,

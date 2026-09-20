@@ -2,46 +2,52 @@
 
 from __future__ import annotations
 
-import math
 import os
 import queue
-import re
 import subprocess
 import threading
 import time
 from collections.abc import Callable
-from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Final, TextIO
-
-import chess
+from typing import Any, TextIO
 
 from ..analysis import (
-    AnalysisLine,
     AnalysisQuality,
-    AnalysisResultInput,
-    AnalysisScoreKind,
-    AnalysisTerminalKind,
     AnalysisValidationError,
     validate_analysis_position,
 )
 from ..positions import CanonicalPosition
 from .configuration import (
-    STOCKFISH_NAME,
     STOCKFISH_VERSION,
     StockfishProfile,
     profile_for,
 )
-
-DEFAULT_STARTUP_TIMEOUT_SECONDS: Final[float] = 10.0
-ANALYSIS_WATCHDOG_SECONDS: Final[float] = 30.0
-_TERMINATION_WAIT_SECONDS: Final[float] = 0.5
-_READER_JOIN_SECONDS: Final[float] = 0.2
-_QUEUE_END: Final[object] = object()
-
-
-from .engine_models import ParsedUciInfo, SearchMetrics, StockfishAnalysis, StockfishError, StockfishIdentity, StockfishIdentityError, StockfishProcessError, StockfishProtocolError, StockfishStartupError, StockfishWatchdogError
-from .engine_helpers import _board_for_position, _classify_terminal, _fen_for_position, _finite_timeout, _is_expected_stockfish, _line_from_info, _metrics_for, _result_for
+from .engine_helpers import (
+    _board_for_position,
+    _classify_terminal,
+    _fen_for_position,
+    _finite_timeout,
+    _is_expected_stockfish,
+    _line_from_info,
+    _metrics_for,
+    _result_for,
+)
+from .engine_models import (
+    _QUEUE_END,
+    _READER_JOIN_SECONDS,
+    _TERMINATION_WAIT_SECONDS,
+    ANALYSIS_WATCHDOG_SECONDS,
+    DEFAULT_STARTUP_TIMEOUT_SECONDS,
+    ParsedUciInfo,
+    StockfishAnalysis,
+    StockfishError,
+    StockfishIdentity,
+    StockfishIdentityError,
+    StockfishProcessError,
+    StockfishProtocolError,
+    StockfishStartupError,
+    StockfishWatchdogError,
+)
 from .engine_parsing import parse_uci_info
 
 
@@ -321,5 +327,3 @@ class StockfishEngine:
                     pass
         if reader is not None:
             reader.join(timeout=_READER_JOIN_SECONDS)
-
-

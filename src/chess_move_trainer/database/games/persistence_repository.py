@@ -2,27 +2,21 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable, Iterable, Iterator
-from contextlib import ExitStack, contextmanager
+from collections.abc import Callable, Iterator
+from contextlib import contextmanager
 from dataclasses import dataclass
-from itertools import chain
 from pathlib import Path
 from typing import Any
-from uuid import UUID
 
 from sqlalchemy import text
 
 from ..connection import DEFAULT_LOCK_TIMEOUT_SECONDS, _open_existing_connection
-from ..positions.repository import PositionIdentity, _PositionUnitOfWork, _position_identity
+from ..positions.repository import PositionIdentity, _position_identity, _PositionUnitOfWork
 from ..schema import _assert_compatible_schema
 from .normalization import (
-    NormalizationResult,
     NormalizationWarning,
     NormalizedGame,
-    normalize_game,
 )
-from .raw_storage import load_month
-
 
 
 class GamePersistenceError(RuntimeError):
@@ -46,7 +40,9 @@ class _BulkImportAbort(Exception):
     """Carry one ordinary import failure out of the bulk transaction."""
 
     def __init__(self, result: ImportResult) -> None:
-        super().__init__(result.failure.message if result.failure is not None else "bulk import failed")
+        super().__init__(
+            result.failure.message if result.failure is not None else "bulk import failed"
+        )
         self.result = result
 
 
@@ -81,12 +77,12 @@ class GameRepository:
         """Verify that the configured target is an existing compatible v1 database."""
 
         try:
-            with _open_existing_connection(
-                self._database_path, self._lock_timeout
-            ) as connection:
+            with _open_existing_connection(self._database_path, self._lock_timeout) as connection:
                 _assert_compatible_schema(connection, self._lock_timeout)
         except Exception as error:
-            raise GamePersistenceError(f"database cannot be used for game import: {error}") from error
+            raise GamePersistenceError(
+                f"database cannot be used for game import: {error}"
+            ) from error
 
     def persist(self, game: NormalizedGame) -> PersistedGame:
         """Insert or fully replace one prevalidated game in its own transaction."""
@@ -94,9 +90,7 @@ class GameRepository:
         if not isinstance(game, NormalizedGame):
             raise TypeError("game must be a fully normalized game")
         try:
-            with _open_existing_connection(
-                self._database_path, self._lock_timeout
-            ) as connection:
+            with _open_existing_connection(self._database_path, self._lock_timeout) as connection:
                 _assert_compatible_schema(connection, self._lock_timeout)
                 return self._persist_on_connection(connection, game)
         except KeyboardInterrupt:
@@ -108,9 +102,7 @@ class GameRepository:
     def _validated_connection(self) -> Iterator[object]:
         """Open one validated connection for an independent import run."""
 
-        with _open_existing_connection(
-            self._database_path, self._lock_timeout
-        ) as connection:
+        with _open_existing_connection(self._database_path, self._lock_timeout) as connection:
             _assert_compatible_schema(connection, self._lock_timeout)
             yield connection
 
@@ -198,26 +190,19 @@ class GameRepository:
         for occurrence in game.occurrences:
             identity = _position_identity(occurrence.position)
             if identity not in position_ids_by_identity:
-                position_ids_by_identity[identity] = position_work._resolve(
-                    occurrence.position
-                )
+                position_ids_by_identity[identity] = position_work._resolve(occurrence.position)
             self._checkpoint("position")
 
         if corrected:
             connection.execute(
-                text(
-                    "DELETE FROM derived_game_position "
-                    "WHERE datasource_game_id = :game_id"
-                ),
+                text("DELETE FROM derived_game_position WHERE datasource_game_id = :game_id"),
                 {"game_id": game_id},
             )
         occurrence_parameters = [
             {
                 "game_id": game_id,
                 "ply": occurrence.ply,
-                "position_id": position_ids_by_identity[
-                    _position_identity(occurrence.position)
-                ],
+                "position_id": position_ids_by_identity[_position_identity(occurrence.position)],
                 "move_uci": occurrence.move_uci,
                 "halfmove_clock": occurrence.halfmove_clock,
                 "fullmove_number": occurrence.fullmove_number,
@@ -236,8 +221,6 @@ class GameRepository:
             corrected=corrected,
             occurrence_count=len(game.occurrences),
         )
-
-
 
 
 def _stored_game_matches(
@@ -290,11 +273,7 @@ def _game_metadata(game: NormalizedGame) -> tuple[object, ...]:
         game.original_pgn,
         game.trainer_color,
         str(game.trainer_chesscom_uuid),
-        (
-            None
-            if game.opponent_chesscom_uuid is None
-            else str(game.opponent_chesscom_uuid)
-        ),
+        (None if game.opponent_chesscom_uuid is None else str(game.opponent_chesscom_uuid)),
         game.trainer_rating,
         game.opponent_rating,
         game.started_at_utc,
@@ -306,9 +285,7 @@ def _game_metadata(game: NormalizedGame) -> tuple[object, ...]:
     )
 
 
-def _metadata_parameters(
-    game: NormalizedGame, *, game_id: int | None = None
-) -> dict[str, Any]:
+def _metadata_parameters(game: NormalizedGame, *, game_id: int | None = None) -> dict[str, Any]:
     return {
         "game_id": game_id,
         "game_uuid": str(game.chesscom_game_uuid),
@@ -317,9 +294,7 @@ def _metadata_parameters(
         "trainer_color": game.trainer_color,
         "trainer_uuid": str(game.trainer_chesscom_uuid),
         "opponent_uuid": (
-            str(game.opponent_chesscom_uuid)
-            if game.opponent_chesscom_uuid is not None
-            else None
+            str(game.opponent_chesscom_uuid) if game.opponent_chesscom_uuid is not None else None
         ),
         "trainer_rating": game.trainer_rating,
         "opponent_rating": game.opponent_rating,

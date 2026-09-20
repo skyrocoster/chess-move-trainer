@@ -21,9 +21,7 @@ from chess_move_trainer.database.analysis import (
 )
 from chess_move_trainer.database.positions import PositionRepository
 
-STARTING_FEN = (
-    "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
-)
+STARTING_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 OLD_ROOTS = (
     ("e2e4", "e7e5"),
     ("d2d4", "d7d5"),
@@ -152,9 +150,7 @@ def test_transaction_recheck_lower_quality_interleaving_is_deterministic(
     tmp_path: Path,
 ) -> None:
     database_path, repository, position_id = _repository(tmp_path)
-    assert repository.publish(
-        position_id, _result(quality=AnalysisQuality.BROWSER)
-    ).saved
+    assert repository.publish(position_id, _result(quality=AnalysisQuality.BROWSER)).saved
     ready = threading.Event()
     release = threading.Event()
 
@@ -252,10 +248,13 @@ def test_successful_refresh_replaces_the_complete_old_line_set_exactly(
     database_path, repository, position_id = _repository(tmp_path)
     assert repository.publish(position_id, _result()).saved
 
-    assert repository.publish(
-        position_id,
-        _result(configuration_version=2, engine_version="engine-2", lines=_lines(NEW_ROOTS)),
-    ) == PublicationOutcome.saved_result()
+    assert (
+        repository.publish(
+            position_id,
+            _result(configuration_version=2, engine_version="engine-2", lines=_lines(NEW_ROOTS)),
+        )
+        == PublicationOutcome.saved_result()
+    )
 
     parent, lines = _snapshot(database_path, position_id)
     assert parent == (
@@ -312,14 +311,8 @@ def test_failure_checkpoint_is_private_and_does_not_add_public_or_persisted_stat
             raise RuntimeError("injected private-seam failure")
 
     with pytest.raises(AnalysisStorageError):
-        AnalysisRepository(database_path, _checkpoint=checkpoint).publish(
-            position_id, _result()
-        )
+        AnalysisRepository(database_path, _checkpoint=checkpoint).publish(position_id, _result())
 
     with sqlite3.connect(database_path) as connection:
-        assert connection.execute(
-            "SELECT COUNT(*) FROM derived_analysis_result"
-        ).fetchone()[0] == 0
-        assert connection.execute(
-            "SELECT COUNT(*) FROM derived_analysis_line"
-        ).fetchone()[0] == 0
+        assert connection.execute("SELECT COUNT(*) FROM derived_analysis_result").fetchone()[0] == 0
+        assert connection.execute("SELECT COUNT(*) FROM derived_analysis_line").fetchone()[0] == 0

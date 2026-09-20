@@ -93,13 +93,11 @@ class TrainingRequirementRange:
 
     def contains(self, value: float) -> bool:
         if self.lower is not None and (
-            value < self.lower
-            or (not self.lower_inclusive and value == self.lower)
+            value < self.lower or (not self.lower_inclusive and value == self.lower)
         ):
             return False
         if self.upper is not None and (
-            value > self.upper
-            or (not self.upper_inclusive and value == self.upper)
+            value > self.upper or (not self.upper_inclusive and value == self.upper)
         ):
             return False
         return True
@@ -132,9 +130,7 @@ class TrainingRequirementQuery:
         }
         normalized: dict[str, float | None] = {}
         for name, value in boundaries.items():
-            normalized[name] = (
-                None if value is None else _finite_number(value, name)
-            )
+            normalized[name] = None if value is None else _finite_number(value, name)
             object.__setattr__(self, name, normalized[name])
         if not any(value is not None for value in normalized.values()):
             raise TrainingRequirementValidationError(
@@ -152,13 +148,9 @@ class TrainingRequirementQuery:
                 )
 
         if self.opening_key is None and self.opening_match is not None:
-            raise TrainingRequirementValidationError(
-                "opening_match requires opening_key"
-            )
+            raise TrainingRequirementValidationError("opening_match requires opening_key")
         if self.opening_key is not None and self.opening_match is None:
-            raise TrainingRequirementValidationError(
-                "opening_key requires opening_match"
-            )
+            raise TrainingRequirementValidationError("opening_key requires opening_match")
         if self.opening_key is not None:
             if not isinstance(self.opening_key, str):
                 raise TrainingRequirementValidationError("opening_key is invalid")
@@ -167,13 +159,9 @@ class TrainingRequirementQuery:
             except (TypeError, ValueError) as error:
                 raise TrainingRequirementValidationError("opening_key is invalid") from error
         if self.opening_match not in (None, "reached", "deepest"):
-            raise TrainingRequirementValidationError(
-                "opening_match must be 'reached' or 'deepest'"
-            )
+            raise TrainingRequirementValidationError("opening_match must be 'reached' or 'deepest'")
         if self.trainer_color not in (None, "white", "black"):
-            raise TrainingRequirementValidationError(
-                "trainer_color must be 'white' or 'black'"
-            )
+            raise TrainingRequirementValidationError("trainer_color must be 'white' or 'black'")
 
         if type(self.page) is not int or self.page < 1:
             raise TrainingRequirementValidationError("page must be a positive integer")
@@ -256,9 +244,7 @@ class TrainingRequirementPage:
         return {
             "as_of": self.as_of,
             "scoring_policy": {
-                "target_success_rate": _round_public(
-                    self.scoring_policy.target_success_rate
-                ),
+                "target_success_rate": _round_public(self.scoring_policy.target_success_rate),
                 "game_hit_weight": _round_public(self.scoring_policy.game_hit_weight),
                 "game_miss_weight": _round_public(self.scoring_policy.game_miss_weight),
                 "training_curve": self.scoring_policy.training_curve,
@@ -289,9 +275,7 @@ def _parse_date(value: object, name: str) -> date:
             f"{name} must be a literal YYYY-MM-DD date"
         ) from error
     if parsed.isoformat() != value:
-        raise TrainingRequirementValidationError(
-            f"{name} must be a literal YYYY-MM-DD date"
-        )
+        raise TrainingRequirementValidationError(f"{name} must be a literal YYYY-MM-DD date")
     return parsed
 
 
@@ -323,16 +307,12 @@ def _normalize_range(boundaries: dict[str, float | None]) -> TrainingRequirement
     lower_inclusive = True
     if lower_candidates:
         lower = max(value for value, _inclusive in lower_candidates)
-        lower_inclusive = all(
-            inclusive for value, inclusive in lower_candidates if value == lower
-        )
+        lower_inclusive = all(inclusive for value, inclusive in lower_candidates if value == lower)
     upper = None
     upper_inclusive = True
     if upper_candidates:
         upper = min(value for value, _inclusive in upper_candidates)
-        upper_inclusive = all(
-            inclusive for value, inclusive in upper_candidates if value == upper
-        )
+        upper_inclusive = all(inclusive for value, inclusive in upper_candidates if value == upper)
     return TrainingRequirementRange(lower, lower_inclusive, upper, upper_inclusive)
 
 

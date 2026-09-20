@@ -7,7 +7,6 @@ from typer.testing import CliRunner
 
 from chess_move_trainer.database import cli as database_cli
 
-
 ROOT = Path(__file__).parents[2]
 V1_RESOURCE = ROOT / "src" / "chess_move_trainer" / "database" / "schema_v1.sql"
 runner = CliRunner()

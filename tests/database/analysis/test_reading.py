@@ -45,9 +45,7 @@ def test_analysis_reader_returns_complete_current_result(tmp_path: Path) -> None
     create_schema(database)
     position_id = PositionRepository(database).resolve_fen(STARTING_FEN)
     repository = AnalysisRepository(database)
-    assert repository.publish(
-        position_id, _result(AnalysisQuality.BROWSER, 1)
-    ).saved
+    assert repository.publish(position_id, _result(AnalysisQuality.BROWSER, 1)).saved
     assert repository.publish(position_id, _result(AnalysisQuality.TOOL, 1)).saved
 
     result = AnalysisReadRepository(database).read(position_id)

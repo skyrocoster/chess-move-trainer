@@ -8,7 +8,6 @@ from uuid import UUID
 import pytest
 from sqlalchemy.engine import Connection
 
-import chess_move_trainer.database.games.persistence as persistence_service
 import chess_move_trainer.database.games.persistence_repository as persistence_repository
 from chess_move_trainer.database import create_schema
 from chess_move_trainer.database.games.persistence import (

@@ -90,9 +90,7 @@ def test_missing_position_reports_missing_without_using_engine(
     assert all(engine.calls == [] for engine in engines)
 
 
-def test_ready_result_returns_without_using_engine(
-    connection: sqlite3.Connection, profile
-) -> None:
+def test_ready_result_returns_without_using_engine(connection: sqlite3.Connection, profile) -> None:
     initialized(connection)
     AnalysisRepository(connection).publish(result_for(profile, START_FEN))
 
@@ -148,9 +146,7 @@ def test_finished_positions_are_detected(connection: sqlite3.Connection, profile
     assert nonterminal.terminal is False
 
 
-def test_analyze_update_retry_follow_rules(
-    connection: sqlite3.Connection, profile
-) -> None:
+def test_analyze_update_retry_follow_rules(connection: sqlite3.Connection, profile) -> None:
     initialized(connection)
     # Analyze on a missing position queues it.
     outcome = request(connection, START_FEN, profile, "analyze")

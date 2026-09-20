@@ -76,18 +76,14 @@ class OpeningCatalogueRepository:
                         connection, normalized_routes, label_ids, endpoint_ids
                     )
                     self._insert_route_moves(connection, normalized_routes, route_ids)
-                    self._verify_publication(
-                        connection, normalized_routes, route_ids, endpoint_ids
-                    )
+                    self._verify_publication(connection, normalized_routes, route_ids, endpoint_ids)
                     self._checkpoint("verified")
         except KeyboardInterrupt:
             raise
         except SchemaIncompatibleError:
             raise
         except Exception as error:
-            raise OpeningPersistenceError(
-                "opening catalogue could not be published"
-            ) from error
+            raise OpeningPersistenceError("opening catalogue could not be published") from error
 
         return CataloguePublication(
             opening_count=len(labels),

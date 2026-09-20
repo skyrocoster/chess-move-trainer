@@ -20,9 +20,7 @@ def _runner() -> CliRunner:
 
 def test_preferred_moves_setup_help_registers_exact_command_without_options() -> None:
     group = _runner().invoke(database_cli.app, ["preferred-moves", "--help"])
-    command = _runner().invoke(
-        database_cli.app, ["preferred-moves", "setup", "--help"]
-    )
+    command = _runner().invoke(database_cli.app, ["preferred-moves", "setup", "--help"])
 
     assert group.exit_code == 0
     assert "setup" in group.stdout
@@ -69,9 +67,7 @@ def test_preferred_moves_setup_forwards_fixed_path_without_reading_prompt(
 def test_preferred_moves_setup_prints_only_the_five_summary_counts(
     monkeypatch: pytest.MonkeyPatch, summary: PreferredMoveSetupResult
 ) -> None:
-    monkeypatch.setattr(
-        database_cli, "run_preferred_moves_setup", lambda path: summary
-    )
+    monkeypatch.setattr(database_cli, "run_preferred_moves_setup", lambda path: summary)
 
     result = _runner().invoke(database_cli.app, ["preferred-moves", "setup"])
 

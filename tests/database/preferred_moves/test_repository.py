@@ -20,12 +20,8 @@ from chess_move_trainer.database.preferred_moves.repository import (
 
 STARTING_PLACEMENT = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR"
 STARTING_FEN = f"{STARTING_PLACEMENT} w KQkq -"
-AFTER_E4_WITH_UNUSED_EP = (
-    "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3"
-)
-AFTER_E4_WITHOUT_EP = (
-    "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq -"
-)
+AFTER_E4_WITH_UNUSED_EP = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3"
+AFTER_E4_WITHOUT_EP = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq -"
 MOVE_E4 = Preference.preferred_move("e2e4")
 MOVE_D4 = Preference.preferred_move("d2d4")
 NO_PREFERENCE = Preference.no_preference()
@@ -65,9 +61,7 @@ def test_only_explicit_existing_exact_v1_database_is_accepted(tmp_path: Path) ->
         f"{STARTING_PLACEMENT} w KQkq impossible",
     ],
 )
-def test_boundary_requires_exactly_four_valid_fen_fields(
-    tmp_path: Path, fen: str
-) -> None:
+def test_boundary_requires_exactly_four_valid_fen_fields(tmp_path: Path, fen: str) -> None:
     service = repository(tmp_path, "four-fields.db")
     with pytest.raises(PreferredMoveValidationError):
         service.list_periods(fen)
@@ -86,9 +80,12 @@ def test_unknown_reads_are_empty_and_unconfigured_without_creating_rows(
 
     with sqlite3.connect(database_path) as connection:
         assert connection.execute("SELECT COUNT(*) FROM derived_position").fetchone()[0] == 0
-        assert connection.execute(
-            "SELECT COUNT(*) FROM datasource_preferred_move_period"
-        ).fetchone()[0] == 0
+        assert (
+            connection.execute("SELECT COUNT(*) FROM datasource_preferred_move_period").fetchone()[
+                0
+            ]
+            == 0
+        )
 
 
 def test_standalone_write_creates_position_and_schedule_together(tmp_path: Path) -> None:
@@ -103,9 +100,12 @@ def test_standalone_write_creates_position_and_schedule_together(tmp_path: Path)
     )
     with sqlite3.connect(database_path) as connection:
         assert connection.execute("SELECT COUNT(*) FROM derived_position").fetchone()[0] == 1
-        assert connection.execute(
-            "SELECT COUNT(*) FROM datasource_preferred_move_period"
-        ).fetchone()[0] == 1
+        assert (
+            connection.execute("SELECT COUNT(*) FROM datasource_preferred_move_period").fetchone()[
+                0
+            ]
+            == 1
+        )
 
 
 def test_legal_only_en_passant_canonicalization_reuses_one_position(tmp_path: Path) -> None:
@@ -119,15 +119,14 @@ def test_legal_only_en_passant_canonicalization_reuses_one_position(tmp_path: Pa
     )
     with sqlite3.connect(database_path) as connection:
         assert connection.execute("SELECT COUNT(*) FROM derived_position").fetchone()[0] == 1
-        assert connection.execute(
-            "SELECT dp_legal_en_passant FROM derived_position"
-        ).fetchone()[0] == "-"
+        assert (
+            connection.execute("SELECT dp_legal_en_passant FROM derived_position").fetchone()[0]
+            == "-"
+        )
 
 
 @pytest.mark.parametrize("move", ["e2e5", "not-uci", "e7e5"])
-def test_non_null_move_must_be_valid_uci_and_legal(
-    tmp_path: Path, move: str
-) -> None:
+def test_non_null_move_must_be_valid_uci_and_legal(tmp_path: Path, move: str) -> None:
     database_path = tmp_path / f"illegal-{move}.db"
     service = repository(tmp_path, database_path.name)
 
@@ -193,9 +192,12 @@ def test_failure_or_interruption_rolls_back_standalone_position_and_period(
 
     with sqlite3.connect(database_path) as connection:
         assert connection.execute("SELECT COUNT(*) FROM derived_position").fetchone()[0] == 0
-        assert connection.execute(
-            "SELECT COUNT(*) FROM datasource_preferred_move_period"
-        ).fetchone()[0] == 0
+        assert (
+            connection.execute("SELECT COUNT(*) FROM datasource_preferred_move_period").fetchone()[
+                0
+            ]
+            == 0
+        )
 
 
 def test_failed_replacement_restores_the_preexisting_schedule(tmp_path: Path) -> None:

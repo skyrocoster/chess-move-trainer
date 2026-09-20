@@ -29,42 +29,6 @@ from .insight import (
     read_position_insight,
 )
 from .repository import PositionRepository, PositionStorageError, position_transaction
-from .training_requirements_models import (
-    OpeningMatch,
-    ScoringPolicy,
-    TrainingRequirementError,
-    TrainingRequirementDiscoveryQuery,
-    TrainingRequirementItem,
-    TrainingRequirementPage,
-    TrainingRequirementPolicy,
-    TrainingRequirementQuery,
-    TrainingRequirementRange,
-    TrainingRequirementScoringPolicy,
-    TrainingRequirementSchemaError,
-    TrainingRequirementStaleError,
-    TrainingRequirementStorageError,
-    TrainingScoringPolicy,
-    TrainingRequirementValidationError,
-)
-from .training_requirements_repository import (
-    TrainingRequirementRepository,
-    discover_training_requirements,
-    get_training_requirements,
-    read_training_requirements,
-)
-from .training_requirements_scoring import (
-    effective_training_balance,
-    calculate_game_balance,
-    calculate_training_adjustment,
-    calculate_training_requirement,
-    decay_training_balance,
-    game_balance,
-    minimum_additional_correct_answers,
-    requirement,
-    score_training_pair,
-    training_adjustment,
-    training_required,
-)
 from .training_answers import (
     TrainingAnswerLockError,
     TrainingAnswerNotFoundError,
@@ -76,6 +40,42 @@ from .training_answers import (
     UtcCalendarDateClock,
     answer_training_position,
     submit_training_answer,
+)
+from .training_requirements_models import (
+    OpeningMatch,
+    ScoringPolicy,
+    TrainingRequirementDiscoveryQuery,
+    TrainingRequirementError,
+    TrainingRequirementItem,
+    TrainingRequirementPage,
+    TrainingRequirementPolicy,
+    TrainingRequirementQuery,
+    TrainingRequirementRange,
+    TrainingRequirementSchemaError,
+    TrainingRequirementScoringPolicy,
+    TrainingRequirementStaleError,
+    TrainingRequirementStorageError,
+    TrainingRequirementValidationError,
+    TrainingScoringPolicy,
+)
+from .training_requirements_repository import (
+    TrainingRequirementRepository,
+    discover_training_requirements,
+    get_training_requirements,
+    read_training_requirements,
+)
+from .training_requirements_scoring import (
+    calculate_game_balance,
+    calculate_training_adjustment,
+    calculate_training_requirement,
+    decay_training_balance,
+    effective_training_balance,
+    game_balance,
+    minimum_additional_correct_answers,
+    requirement,
+    score_training_pair,
+    training_adjustment,
+    training_required,
 )
 
 __all__ = [

@@ -100,9 +100,7 @@ class WorkerRunner:
         self._queue_factory = _queue_factory or (
             lambda path, timeout: QueueService(path, lock_timeout=timeout)
         )
-        self._engine_factory = _engine_factory or (
-            lambda: StockfishEngine(self._executable)
-        )
+        self._engine_factory = _engine_factory or (lambda: StockfishEngine(self._executable))
         self._mutex_factory = _mutex_factory or (lambda path: DatabaseMutex(path))
         self._position_loader = _position_loader or self._load_position
 
@@ -112,9 +110,7 @@ class WorkerRunner:
         queue = self._queue_factory(self._database_path, self._lock_timeout)
         mutex = self._mutex_factory(self._database_path)
         if not mutex.acquire(timeout=self._mutex_acquire_timeout):
-            raise MutexBusyError(
-                f"Stockfish analysis is already running for {self._database_path}"
-            )
+            raise MutexBusyError(f"Stockfish analysis is already running for {self._database_path}")
 
         engine: Any | None = None
         current_claim: QueueClaim | None = None

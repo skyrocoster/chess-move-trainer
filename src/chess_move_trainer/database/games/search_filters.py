@@ -2,64 +2,9 @@
 
 from __future__ import annotations
 
-import math
-import re
-from dataclasses import dataclass
-from datetime import UTC, datetime
-from functools import cmp_to_key
-from pathlib import Path
-from typing import Literal
-
-import chess
-from sqlalchemy import text
-
-from ..connection import DEFAULT_LOCK_TIMEOUT_SECONDS, _open_connection
-from ..openings.keys import OpeningKeyError, opening_api_key, parse_opening_api_key
-from ..positions import CanonicalPosition, PositionValidationError, canonicalize_fen
-from ..schema import SchemaIncompatibleError, _assert_compatible_schema
-
-
-TrainerColor = Literal["white", "black"]
-TrainerOutcome = Literal["win", "loss", "draw"]
-OpeningMatch = Literal["reached", "deepest"]
-CoverageState = Literal["none", "partial", "complete"]
-GameSearchSort = Literal[
-    "started_at_desc",
-    "started_at_asc",
-    "length_desc",
-    "length_asc",
-    "trainer_rating_desc",
-    "trainer_rating_asc",
-    "opponent_rating_desc",
-    "opponent_rating_asc",
-    "opponent_uuid_asc",
-    "opponent_uuid_desc",
-    "game_uuid_asc",
-    "game_uuid_desc",
-]
-
-_SORTS: tuple[GameSearchSort, ...] = (
-    "started_at_desc",
-    "started_at_asc",
-    "length_desc",
-    "length_asc",
-    "trainer_rating_desc",
-    "trainer_rating_asc",
-    "opponent_rating_desc",
-    "opponent_rating_asc",
-    "opponent_uuid_asc",
-    "opponent_uuid_desc",
-    "game_uuid_asc",
-    "game_uuid_desc",
-)
-_TIME_CLASSES = ("bullet", "blitz", "rapid", "daily")
-_COVERAGE_STATES = ("none", "partial", "complete")
-_RFC3339 = re.compile(
-    r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:"
-    r"[0-9]{2}(?:\.[0-9]+)?(?:Z|[+-][0-9]{2}:[0-9]{2})\Z"
-)
-from .search_validation import _in_datetime_bounds, _in_numeric_bounds
+from ..positions import canonicalize_fen
 from .search_models import CoverageState, GameSearchQuery, GameSearchSort, GameSummary, _GameData
+from .search_validation import _in_datetime_bounds, _in_numeric_bounds
 
 
 def _matches(game: _GameData, summary: GameSummary, query: GameSearchQuery) -> bool:
@@ -76,11 +21,18 @@ def _matches(game: _GameData, summary: GameSummary, query: GameSearchQuery) -> b
         or game.termination_reason.strip().casefold() != query.termination_reason
     ):
         return False
-    if not _in_numeric_bounds(game.trainer_rating, query.trainer_rating_min, query.trainer_rating_max):
+    if not _in_numeric_bounds(
+        game.trainer_rating, query.trainer_rating_min, query.trainer_rating_max
+    ):
         return False
-    if not _in_numeric_bounds(game.opponent_rating, query.opponent_rating_min, query.opponent_rating_max):
+    if not _in_numeric_bounds(
+        game.opponent_rating, query.opponent_rating_min, query.opponent_rating_max
+    ):
         return False
-    if query.opponent_chesscom_uuid is not None and game.opponent_chesscom_uuid != query.opponent_chesscom_uuid:
+    if (
+        query.opponent_chesscom_uuid is not None
+        and game.opponent_chesscom_uuid != query.opponent_chesscom_uuid
+    ):
         return False
     if query.time_class is not None and game.time_class != query.time_class:
         return False
@@ -108,9 +60,15 @@ def _matches(game: _GameData, summary: GameSummary, query: GameSearchQuery) -> b
         return False
     if query.max_length_plies is not None and summary.length_plies > query.max_length_plies:
         return False
-    if query.analysis_coverage is not None and summary.coverage.analysis_coverage != query.analysis_coverage:
+    if (
+        query.analysis_coverage is not None
+        and summary.coverage.analysis_coverage != query.analysis_coverage
+    ):
         return False
-    if query.preferred_coverage is not None and summary.coverage.preferred_coverage != query.preferred_coverage:
+    if (
+        query.preferred_coverage is not None
+        and summary.coverage.preferred_coverage != query.preferred_coverage
+    ):
         return False
     return True
 
@@ -152,5 +110,3 @@ def _coverage_state(distinct_count: int, covered_count: int) -> CoverageState:
     if covered_count == distinct_count:
         return "complete"
     return "partial"
-
-

@@ -2,56 +2,28 @@
 
 from __future__ import annotations
 
-import json
 import math
-import sys
 import time
-from collections.abc import Callable
 from pathlib import Path
 
 import typer
 
+from .cli_apps import stockfish_app
+from .cli_helpers import (
+    _interrupted,
+    _operational_error,
+    _render_stockfish_outcome,
+    _stockfish_operational_error,
+    _usage_error,
+    _validate_stockfish_lock_timeout,
+)
 from .connection import DEFAULT_LOCK_TIMEOUT_SECONDS
-from .inspection import inspect_schema, render_schema_markdown
-from .lifecycle import (
-    DEFAULT_DATABASE_PATH,
-    LifecycleResult,
-    setup_database,
-    update_games,
-    update_openings,
-)
-from .openings import (
-    OpeningInputError,
-    OpeningRecognition,
-    OpeningRecognitionError,
-    lookup_fen,
-    replay_pgn,
-)
-from .preferred_moves.ranges import (
-    NormalizedPeriod,
-    Preference,
-    RangeValidationError,
-    ResolutionState,
-)
-from .preferred_moves.repository import (
-    PreferredMoveRepository,
-    PreferredMoveSchemaError,
-    PreferredMoveStorageError,
-    PreferredMoveValidationError,
-)
-from .preferred_moves.setup import (
-    PreferredMoveSetupError,
-    PreferredMoveSetupResult,
-    setup_preferred_moves as run_preferred_moves_setup,
-)
-from .publication import SchemaPublicationCollisionError, publish_schema
-from .schema import SchemaIncompatibleError, create_schema
 from .stockfish import (
+    INITIAL_TECHNICAL_CATEGORIES,
     BenchmarkCompatibilityError,
     BenchmarkInputError,
     BulkInputError,
     BulkRunner,
-    INITIAL_TECHNICAL_CATEGORIES,
     TargetInputError,
     WorkerInputError,
     WorkerOutcome,
@@ -59,9 +31,6 @@ from .stockfish import (
     run_benchmark,
 )
 
-
-from .cli_apps import app, openings_app, preferred_moves_app, schema_app, stockfish_app, update_app
-from .cli_helpers import _interrupted, _is_schema_error, _operational_error, _preference_from_options, _preferred_period_json, _render_preferred_periods, _render_preferred_resolution, _render_preferred_setup, _render_recognition, _render_stockfish_outcome, _run_lifecycle, _stockfish_operational_error, _usage_error, _validate_stockfish_lock_timeout
 
 @stockfish_app.command("benchmark")
 def benchmark_stockfish(
@@ -303,10 +272,7 @@ def _run_worker_loop(
             )
         if outcome.claimed_count == 0 or outcome.failures:
             if not was_idle:
-                typer.echo(
-                    f"Worker idle: listening quietly "
-                    f"(poll every {poll_interval:g}s)."
-                )
+                typer.echo(f"Worker idle: listening quietly (poll every {poll_interval:g}s).")
                 was_idle = True
             try:
                 time.sleep(poll_interval)
@@ -314,5 +280,3 @@ def _run_worker_loop(
                 _interrupted()
         else:
             was_idle = False
-
-

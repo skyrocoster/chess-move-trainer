@@ -2,38 +2,48 @@
 
 from __future__ import annotations
 
-import sqlite3
-import uuid
 from collections.abc import Callable, Collection
-from contextlib import contextmanager
-from dataclasses import dataclass
-from datetime import UTC, datetime, timedelta
+from datetime import datetime
 from pathlib import Path
-from typing import Iterator
 
 from sqlalchemy import text
-from sqlalchemy.exc import OperationalError
 
 from ..analysis import (
     AnalysisError,
     AnalysisQuality,
     AnalysisResultInput,
     AnalysisValidationError,
-    PublicationOutcome,
 )
 from ..analysis.repository import (
     _prepare_publication,
     _publish_in_transaction,
     _translate_storage_error,
 )
-from ..connection import DEFAULT_LOCK_TIMEOUT_SECONDS, _open_existing_connection
-from ..schema import SchemaIncompatibleError, _assert_compatible_schema
-
-STALE_CLAIM_AFTER = timedelta(minutes=2)
-
-from .queue_helpers import _begin_immediate, _checked_connection, _claim_identity, _enqueue_in_transaction, _format_timestamp, _oldest_claimable, _parse_timestamp, _quality_rank, _random_token, _rollback_if_active, _translate_queue_error, _validate_position_id
-from .queue_models import _normalize_quality, _validate_observation_timestamp
-from .queue_models import QueueClaim, QueueCompletionOutcome, QueueError, QueueQualityError, QueueStorageError, QueueValidationError
+from ..connection import DEFAULT_LOCK_TIMEOUT_SECONDS
+from .queue_helpers import (
+    _begin_immediate,
+    _checked_connection,
+    _claim_identity,
+    _enqueue_in_transaction,
+    _format_timestamp,
+    _oldest_claimable,
+    _parse_timestamp,
+    _quality_rank,
+    _random_token,
+    _rollback_if_active,
+    _translate_queue_error,
+    _validate_position_id,
+)
+from .queue_models import (
+    STALE_CLAIM_AFTER,
+    QueueClaim,
+    QueueCompletionOutcome,
+    QueueError,
+    QueueQualityError,
+    QueueStorageError,
+    QueueValidationError,
+    _normalize_quality,
+)
 
 
 class QueueService:
@@ -401,9 +411,7 @@ class QueueService:
             if not isinstance(token, str) or not token:
                 raise QueueStorageError("claim token factory returned an invalid token")
             exists = connection.execute(
-                text(
-                    "SELECT 1 FROM derived_analysis_queue WHERE daq_claim_token = :claim_token"
-                ),
+                text("SELECT 1 FROM derived_analysis_queue WHERE daq_claim_token = :claim_token"),
                 {"claim_token": token},
             ).first()
             if exists is None:

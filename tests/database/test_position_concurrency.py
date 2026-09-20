@@ -23,9 +23,12 @@ def test_concurrent_writers_resolve_one_stable_id_and_one_row(tmp_path: Path) ->
     assert all(type(position_id) is int for position_id in ids)
     assert len(set(ids)) == 1
     with sqlite3.connect(database_path) as connection:
-        assert connection.execute(
-            "SELECT COUNT(*) FROM derived_position WHERE "
-            "dp_placement = ? AND dp_side_to_move = ? AND "
-            "dp_castling_rights = ? AND dp_legal_en_passant = ?",
-            ("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR", "w", "KQkq", "-"),
-        ).fetchone()[0] == 1
+        assert (
+            connection.execute(
+                "SELECT COUNT(*) FROM derived_position WHERE "
+                "dp_placement = ? AND dp_side_to_move = ? AND "
+                "dp_castling_rights = ? AND dp_legal_en_passant = ?",
+                ("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR", "w", "KQkq", "-"),
+            ).fetchone()[0]
+            == 1
+        )

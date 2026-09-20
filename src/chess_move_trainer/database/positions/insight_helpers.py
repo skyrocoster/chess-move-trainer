@@ -2,24 +2,12 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
-from dataclasses import dataclass
-from datetime import date
 from pathlib import Path
-from typing import Any, Literal
 
 import chess
 from sqlalchemy import text
 
-from ..analysis.models import (
-    AnalysisLine,
-    AnalysisQuality,
-    AnalysisScoreKind,
-    AnalysisTerminalKind,
-)
 from ..analysis.reading import AnalysisReadError, _read_current_result
-from ..analysis.validation import validate_settings_object
-from ..connection import DEFAULT_LOCK_TIMEOUT_SECONDS, _open_connection
 from ..openings.keys import opening_api_key
 from ..openings.recognition import (
     OpeningInputError,
@@ -35,17 +23,15 @@ from ..preferred_moves.ranges import (
     period_from_literals,
     resolve_date,
 )
-from ..schema import SchemaIncompatibleError, _assert_compatible_schema
-from .canonicalization import CanonicalPosition, PositionValidationError, canonicalize_fen
-from .repository import _find_existing_position_id
-
-
-TrainerColor = Literal["white", "black"]
-AnalysisState = Literal["not_requested", "queued", "running", "ready"]
-PreferenceKind = Literal["move", "no_preference", "unconfigured"]
-
-
-from .insight_models import AnalysisState, PositionInsight, PositionInsightAnalysis, PositionInsightError, PositionInsightExperience, PositionInsightObservedMove, PositionInsightObservedMoveTotals, PositionInsightOpening, PositionInsightPreference, PositionInsightRequest, PositionInsightResult, PositionInsightSchemaError, PositionInsightStorageError, PositionInsightTerminalTotals, PositionInsightValidationError, PreferenceKind, TrainerColor, _PositionInsightStatistics, _canonical_fen
+from ..schema import SchemaIncompatibleError
+from .insight_models import (
+    AnalysisState,
+    PositionInsightError,
+    PositionInsightOpening,
+    PositionInsightPreference,
+    PositionInsightResult,
+    PositionInsightStorageError,
+)
 
 
 def _read_statistics_count(value: object, name: str) -> int:
@@ -95,9 +81,7 @@ def _read_preference(
             if row[2] is not None:
                 _validate_stored_move(row[2])
             preference = (
-                Preference.no_preference()
-                if row[2] is None
-                else Preference.preferred_move(row[2])
+                Preference.no_preference() if row[2] is None else Preference.preferred_move(row[2])
             )
             periods.append(period_from_literals(row[0], row[1], preference))
         resolution = resolve_date(normalize_periods(periods), as_of)

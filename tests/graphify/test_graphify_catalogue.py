@@ -1,15 +1,13 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
-from pathlib import PurePosixPath
 import subprocess
 import sys
+from pathlib import Path, PurePosixPath
 
 import pytest
 
 from src.tools import graphify_catalogue as catalogue
-
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
@@ -42,8 +40,7 @@ def _artifact_fixture(output: Path, *, unsafe_path: str | None = None) -> bytes:
     manifest_bytes = (json.dumps(manifest, indent=2) + "\n").encode()
     (output / "manifest.json").write_bytes(manifest_bytes)
     (output / "GRAPH_REPORT.md").write_text(
-        "# Graph\n\nBuilt from commit: old-commit\n"
-        "Run `git rev-parse HEAD` to refresh.\n",
+        "# Graph\n\nBuilt from commit: old-commit\nRun `git rev-parse HEAD` to refresh.\n",
         encoding="utf-8",
     )
     (output / "graph.html").write_text(
@@ -137,7 +134,11 @@ def test_catalogue_stops_at_failing_layer(monkeypatch: pytest.MonkeyPatch, tmp_p
     monkeypatch.setattr(catalogue, "normalize_and_validate", lambda output, source: None)
     with pytest.raises(catalogue.GraphifyError, match="controlled backend failure"):
         catalogue.generate_catalogue(tmp_path)
-    assert calls == [("repository", "extract"), ("repository", "cluster-only"), ("backend", "extract")]
+    assert calls == [
+        ("repository", "extract"),
+        ("repository", "cluster-only"),
+        ("backend", "extract"),
+    ]
 
 
 def test_provenance_is_normalized_atomically_and_manifest_is_preserved(tmp_path: Path) -> None:
@@ -232,9 +233,7 @@ def _single_layer_catalogue(
     def fake_run(layer: catalogue.LayerSpec, action: str, destination: Path, root: Path) -> None:
         calls.append(action)
         if action == "extract":
-            (destination / "graph.json").write_text(
-                json.dumps(extracted_graph), encoding="utf-8"
-            )
+            (destination / "graph.json").write_text(json.dumps(extracted_graph), encoding="utf-8")
         elif cluster_writer is not None:
             cluster_writer(destination)
 
@@ -346,7 +345,8 @@ def test_unchanged_graph_repairs_legacy_report_guidance_without_clustering(
 ) -> None:
     legacy_report = (
         "# Graph\n\n## Graph Freshness\n"
-        "- Run `manifest.json for per-file content hashes` and compare to check if the graph is stale.\n"
+        "- Run `manifest.json for per-file content hashes` and compare to check "
+        "if the graph is stale.\n"
         "- Run `graphify update .` after code changes (no API cost).\n\n"
         f"{catalogue.PROVENANCE_NOTE}\n"
     )
@@ -358,9 +358,7 @@ def test_unchanged_graph_repairs_legacy_report_guidance_without_clustering(
     )
 
     assert calls == ["extract"]
-    report = (tmp_path / "docs/graphify/core-data/GRAPH_REPORT.md").read_text(
-        encoding="utf-8"
-    )
+    report = (tmp_path / "docs/graphify/core-data/GRAPH_REPORT.md").read_text(encoding="utf-8")
     assert catalogue.REPORT_FRESHNESS in report
     assert "git rev-parse HEAD" not in report
     assert "Run `manifest.json for per-file content hashes`" not in report
@@ -427,7 +425,9 @@ def test_real_catalogue_has_six_exact_five_artifact_bundles() -> None:
 
         report = (output / "GRAPH_REPORT.md").read_text(encoding="utf-8")
         html = (output / "graph.html").read_text(encoding="utf-8")
-        generated_text = "\n".join((report, html, json.dumps(graph), json.dumps(analysis), json.dumps(manifest))).lower()
+        generated_text = "\n".join(
+            (report, html, json.dumps(graph), json.dumps(analysis), json.dumps(manifest))
+        ).lower()
         assert catalogue.PROVENANCE in generated_text
         assert catalogue.REPORT_FRESHNESS in report
         assert "built from commit" not in generated_text

@@ -76,11 +76,7 @@ def _response(observation: AnalysisObservation) -> AnalysisObservationResponse:
     return AnalysisObservationResponse(
         fen=observation.fen,
         state=observation.state.value,
-        result=(
-            None
-            if observation.result is None
-            else _result_response(observation.result)
-        ),
+        result=(None if observation.result is None else _result_response(observation.result)),
     )
 
 

@@ -5,45 +5,19 @@ from __future__ import annotations
 from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import date
-from pathlib import Path
 from typing import Any, Literal
-
-import chess
-from sqlalchemy import text
 
 from ..analysis.models import (
     AnalysisLine,
     AnalysisQuality,
-    AnalysisScoreKind,
     AnalysisTerminalKind,
 )
-from ..analysis.reading import AnalysisReadError, AnalysisReadRepository
 from ..analysis.validation import validate_settings_object
-from ..connection import DEFAULT_LOCK_TIMEOUT_SECONDS, _open_connection
-from ..openings.keys import opening_api_key
-from ..openings.recognition import (
-    OpeningInputError,
-    OpeningRecognitionError,
-    lookup_fen,
-)
-from ..preferred_moves.ranges import (
-    NormalizedPeriod,
-    Preference,
-    RangeValidationError,
-    ResolutionState,
-    normalize_periods,
-    period_from_literals,
-    resolve_date,
-)
-from ..schema import SchemaIncompatibleError, _assert_compatible_schema
 from .canonicalization import CanonicalPosition, PositionValidationError, canonicalize_fen
-from .repository import _find_existing_position_id
-
 
 TrainerColor = Literal["white", "black"]
 AnalysisState = Literal["not_requested", "queued", "running", "ready"]
 PreferenceKind = Literal["move", "no_preference", "unconfigured"]
-
 
 
 class PositionInsightError(Exception):
@@ -76,9 +50,7 @@ class PositionInsightRequest:
         except (PositionValidationError, TypeError, ValueError) as error:
             raise PositionInsightValidationError("fen must be a complete legal FEN") from error
         if self.trainer_color not in ("white", "black"):
-            raise PositionInsightValidationError(
-                "trainer_color must be 'white' or 'black'"
-            )
+            raise PositionInsightValidationError("trainer_color must be 'white' or 'black'")
         if not isinstance(self.as_of, str):
             raise PositionInsightValidationError("as_of must be a literal YYYY-MM-DD date")
         try:
@@ -88,9 +60,7 @@ class PositionInsightRequest:
                 "as_of must be a literal YYYY-MM-DD date"
             ) from error
         if parsed_date.isoformat() != self.as_of:
-            raise PositionInsightValidationError(
-                "as_of must be a literal YYYY-MM-DD date"
-            )
+            raise PositionInsightValidationError("as_of must be a literal YYYY-MM-DD date")
         object.__setattr__(self, "fen", _canonical_fen(position))
 
 
@@ -157,9 +127,7 @@ class PositionInsightResult:
             object.__setattr__(self, "quality", AnalysisQuality(self.quality))
             object.__setattr__(self, "settings", validate_settings_object(self.settings))
             if self.terminal_kind is not None:
-                object.__setattr__(
-                    self, "terminal_kind", AnalysisTerminalKind(self.terminal_kind)
-                )
+                object.__setattr__(self, "terminal_kind", AnalysisTerminalKind(self.terminal_kind))
             normalized_lines = tuple(self.lines)
         except (TypeError, ValueError) as error:
             raise PositionInsightStorageError("analysis result value is malformed") from error
@@ -199,9 +167,7 @@ class PositionInsightPreference:
                 raise PositionInsightStorageError("resolved preference move is malformed")
         elif self.kind in ("no_preference", "unconfigured"):
             if self.uci is not None:
-                raise PositionInsightStorageError(
-                    "non-move preference must not contain a move"
-                )
+                raise PositionInsightStorageError("non-move preference must not contain a move")
         else:
             raise PositionInsightStorageError("resolved preference kind is malformed")
 
@@ -254,7 +220,6 @@ __all__ = [
     "PositionInsightObservedMove",
     "PositionInsightObservedMoveTotals",
     "PositionInsightPreference",
-    "PositionInsightRepository",
     "PositionInsightRequest",
     "PositionInsightResult",
     "PositionInsightSchemaError",
@@ -262,6 +227,4 @@ __all__ = [
     "PositionInsightTerminalTotals",
     "PositionInsightValidationError",
     "TrainerColor",
-    "get_position_insight",
-    "read_position_insight",
 ]

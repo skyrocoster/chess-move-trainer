@@ -45,9 +45,7 @@ def validate_month_envelope(candidate: object) -> list[dict[str, Any]]:
     return typed_games
 
 
-def merge_current_month(
-    local_envelope: object, remote_envelope: object
-) -> dict[str, Any]:
+def merge_current_month(local_envelope: object, remote_envelope: object) -> dict[str, Any]:
     """Merge a valid current response over a valid local month by game UUID."""
 
     local_games = validate_month_envelope(local_envelope)

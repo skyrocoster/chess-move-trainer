@@ -68,7 +68,7 @@ def _create_rebuilt_database(database: Path) -> Path:
                     game_id,
                     f"00000000-0000-4000-8000-{game_id:012d}",
                     f"https://example.test/{game_id}",
-                    "[Result \"*\"]\n\n*",
+                    '[Result "*"]\n\n*',
                     "11111111-1111-4111-8111-111111111111",
                 ),
             )
@@ -194,9 +194,7 @@ def test_openings_catalogue_version_is_exposed_cross_origin(
     response = CLIENT.get("/api/openings", headers={"Origin": "http://localhost:8444"})
 
     assert response.status_code == 200
-    assert response.headers["access-control-expose-headers"] == (
-        "X-Openings-Catalogue-Version"
-    )
+    assert response.headers["access-control-expose-headers"] == ("X-Openings-Catalogue-Version")
     assert response.headers["x-openings-catalogue-version"]
 
 

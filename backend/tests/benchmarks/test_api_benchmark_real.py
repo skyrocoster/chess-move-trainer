@@ -41,7 +41,6 @@ from fastapi.testclient import TestClient
 from backend.app.caching import clear_caches
 from backend.app.dependencies import REBUILT_DATABASE_PATH_ENV
 from backend.app.main import app
-from chess_move_trainer.database.lifecycle import DEFAULT_DATABASE_PATH
 from backend.tests.benchmarks.test_api_benchmark import (
     _database_info,
     _float_env,
@@ -51,6 +50,7 @@ from backend.tests.benchmarks.test_api_benchmark import (
     _timed_get,
     _write_report,
 )
+from chess_move_trainer.database.lifecycle import DEFAULT_DATABASE_PATH
 
 REAL_AS_OF = "2026-09-14"
 REAL_ALEKHINE_FEN = "rnbqkb1r/pppppppp/5n2/8/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 1"
@@ -141,7 +141,7 @@ def test_real_database_global_training_load(monkeypatch: pytest.MonkeyPatch) -> 
         loaded = 0
         started_total = time.perf_counter()
         status_code, elapsed_ms, body = _timed_get(
-            client, "/api/positions/training-requirements", {**base, "page": 1}, timeout_s
+            client, "/api/positions/training-requirements", {**base, "page": 1}
         )
         assert status_code == 200
         page_times.append(elapsed_ms)
@@ -153,7 +153,7 @@ def test_real_database_global_training_load(monkeypatch: pytest.MonkeyPatch) -> 
         while page < last_page:
             page += 1
             status_code, elapsed_ms, body = _timed_get(
-                client, "/api/positions/training-requirements", {**base, "page": page}, timeout_s
+                client, "/api/positions/training-requirements", {**base, "page": page}
             )
             assert status_code == 200
             page_times.append(elapsed_ms)
@@ -161,7 +161,7 @@ def test_real_database_global_training_load(monkeypatch: pytest.MonkeyPatch) -> 
         total_ms = (time.perf_counter() - started_total) * 1000.0
         median_page = _stats(page_times)["median_ms"]
         warm_status, warm_page1_ms, _ = _timed_get(
-            client, "/api/positions/training-requirements", {**base, "page": 1}, timeout_s
+            client, "/api/positions/training-requirements", {**base, "page": 1}
         )
         assert warm_status == 200
         payload: dict[str, object] = {

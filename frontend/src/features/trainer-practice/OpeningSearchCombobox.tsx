@@ -5,11 +5,11 @@ import type { OpeningCatalogueItemResponse } from "../../api/client";
 import { Combobox } from "../design-system/form-controls/Combobox";
 import styles from "./OpeningSearchCombobox.module.css";
 
-export const ALL_OPENINGS_VALUE = "__cmt_all_openings__";
+const ALL_OPENINGS_VALUE = "__cmt_all_openings__";
 
 /** Max dropdown rows built at once. The full catalogue has thousands of
  * openings, and mounting them all makes the first click feel stuck. */
-export const OPENING_SEARCH_VISIBLE_LIMIT = 100;
+const OPENING_SEARCH_VISIBLE_LIMIT = 100;
 
 export type OpeningSelection = null | { kind: "specific"; key: string } | { kind: "all" };
 
@@ -27,7 +27,7 @@ function searchText(opening: OpeningCatalogueItemResponse): string {
   return `${opening.name} ${opening.eco} ${opening.key}`.toLocaleLowerCase();
 }
 
-export function filterOpeningCatalogue(
+function filterOpeningCatalogue(
   openings: OpeningCatalogueItemResponse[],
   query: string,
 ): OpeningCatalogueItemResponse[] {

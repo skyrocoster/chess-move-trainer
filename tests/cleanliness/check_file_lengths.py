@@ -145,8 +145,7 @@ def print_report(rows: list[dict]) -> list[dict]:
         reverse=True,
     )
     checked = len(rows)
-    print(
-        f"Checked {checked} script files (limits: source {SOURCE_LIMIT}, test {TEST_LIMIT}).")
+    print(f"Checked {checked} script files (limits: source {SOURCE_LIMIT}, test {TEST_LIMIT}).")
     print("Non-script files (like JSON) and generated code were skipped.")
     if not over:
         print("All files are within their limits. Nothing to split up.")
@@ -154,8 +153,7 @@ def print_report(rows: list[dict]) -> list[dict]:
     print(f"Found {len(over)} file(s) over the limit:")
     print(f"{'Lines':>7}  {'Limit':>6}  {'Over':>6}  File")
     for row in over:
-        print(
-            f"{row['lines']:>7}  {row['limit']:>6}  {row['over']:>+6}  {row['path']}")
+        print(f"{row['lines']:>7}  {row['limit']:>6}  {row['over']:>+6}  {row['path']}")
     return over
 
 

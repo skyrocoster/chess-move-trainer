@@ -2,25 +2,18 @@
 
 from __future__ import annotations
 
-import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any
 
-import chess
 from sqlalchemy import text
 
 from .connection import DEFAULT_LOCK_TIMEOUT_SECONDS, _open_connection
-from .games.reading import GameReadRepository
-from .openings.recognition import lookup_fen, replay_pgn
-from .openings.source import OpeningRouteSource, load_opening_sources
-from .positions import canonicalize_board
-from .schema import _assert_compatible_schema
-from .statistics import MoveResponseDistributionReader, PositionContextReader
 from .proof_models import (
     DirectMeasurementCorpus,
     DirectMeasurements,
     DirectPreflightError,
+    MeasurementDecision,
     QueryPlanMeasurement,
 )
 from .proof_opening_helpers import _positive_scalar
@@ -40,9 +33,11 @@ from .proof_statements import (
     _PREFERRED_POSITION_STATEMENT,
     _PREFERRED_SCHEDULE_STATEMENT,
 )
+from .schema import _assert_compatible_schema
 
 _MEASUREMENT_REPETITIONS = 3
 _MEASUREMENT_PAGE_SIZE = 100
+
 
 @dataclass(frozen=True, slots=True)
 class _MeasurementInputs:
@@ -51,7 +46,6 @@ class _MeasurementInputs:
     position_identity: tuple[str, str, str, str]
     analysis_position_id: int
     bulk_cursor: tuple[int, int]
-
 
 
 def collect_direct_measurements(
@@ -267,10 +261,7 @@ def print_direct_measurements(report: DirectMeasurements) -> None:
 
 def _measurement_corpus(connection: Any) -> DirectMeasurementCorpus:
     def count(table_name: str) -> int:
-        return int(
-            connection.execute(text(f"SELECT COUNT(*) FROM {table_name}"))
-            .scalar_one()
-        )
+        return int(connection.execute(text(f"SELECT COUNT(*) FROM {table_name}")).scalar_one())
 
     return DirectMeasurementCorpus(
         database_count=1,
@@ -409,5 +400,3 @@ def _median(values: tuple[float, ...]) -> float:
     if len(ordered) % 2:
         return ordered[middle]
     return (ordered[middle - 1] + ordered[middle]) / 2
-
-

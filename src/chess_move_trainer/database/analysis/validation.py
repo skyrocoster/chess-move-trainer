@@ -227,9 +227,7 @@ def validate_analysis_position(
     for line in result.lines:
         root_uci = _validate_line_moves(board, line)
         if root_uci not in legal_root_uci:
-            raise AnalysisValidationError(
-                f"rank {line.rank} does not begin with a legal root move"
-            )
+            raise AnalysisValidationError(f"rank {line.rank} does not begin with a legal root move")
         if root_uci in seen_root_uci:
             raise AnalysisValidationError("candidate line root moves must be distinct")
         seen_root_uci.add(root_uci)

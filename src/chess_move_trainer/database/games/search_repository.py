@@ -12,11 +12,29 @@ from sqlalchemy import text
 from ..connection import DEFAULT_LOCK_TIMEOUT_SECONDS, _open_connection
 from ..positions import canonicalize_fen
 from ..schema import SchemaIncompatibleError, _assert_compatible_schema
-
-from .search_errors import GameSearchError, GameSearchSchemaError, GameSearchStorageError, GameSearchValidationError
-from .search_models import DeepestOpening, GameCoverage, GameSearchPage, GameSearchQuery, GameSummary, _GameData
+from .search_errors import (
+    GameSearchError,
+    GameSearchSchemaError,
+    GameSearchStorageError,
+    GameSearchValidationError,
+)
 from .search_filters import _compare_games, _coverage_state
-from .search_validation import _in_datetime_bounds, _opening_api_key, _optional_int, _optional_text, _parse_opening_key, _required_int, _required_text
+from .search_loaders import _load_games
+from .search_models import (
+    DeepestOpening,
+    GameCoverage,
+    GameSearchPage,
+    GameSearchQuery,
+    GameSummary,
+    _GameData,
+)
+from .search_validation import (
+    _in_datetime_bounds,
+    _opening_api_key,
+    _parse_opening_key,
+    _required_int,
+    _required_text,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -59,9 +77,11 @@ class GameSearchRepository:
                 opening_filter_ids: list[int] | None = None
                 if request.opening_key is not None and request.opening_match == "deepest":
                     opening_filter_ids = sorted(aggregates)
-                deepest_by_game = _load_deepest_openings(
-                    connection, games, opening_filter_ids
-                ) if opening_filter_ids is not None else {}
+                deepest_by_game = (
+                    _load_deepest_openings(connection, games, opening_filter_ids)
+                    if opening_filter_ids is not None
+                    else {}
+                )
         except SchemaIncompatibleError as error:
             raise GameSearchSchemaError(str(error)) from error
         except GameSearchError:
@@ -87,9 +107,7 @@ class GameSearchRepository:
             for game_id, game, aggregate in matched
         ]
         summaries.sort(
-            key=cmp_to_key(
-                lambda left, right: _compare_games(left[1], right[1], request.sort)
-            )
+            key=cmp_to_key(lambda left, right: _compare_games(left[1], right[1], request.sort))
         )
 
         total = len(summaries)
@@ -97,9 +115,7 @@ class GameSearchRepository:
         start = (request.page - 1) * request.page_size
         page_entries = summaries[start : start + request.page_size]
         if opening_filter_ids is not None:
-            page_deepest = {
-                game_id: deepest_by_game[game_id] for game_id, _summary in page_entries
-            }
+            page_deepest = {game_id: deepest_by_game[game_id] for game_id, _summary in page_entries}
         elif page_entries:
             try:
                 with _open_connection(
@@ -121,8 +137,7 @@ class GameSearchRepository:
             _summarize_aggregates(
                 games[game_id],
                 aggregates[game_id],
-                _select_deepest(page_deepest[game_id])
-                if page_deepest.get(game_id) else None,
+                _select_deepest(page_deepest[game_id]) if page_deepest.get(game_id) else None,
             )
             for game_id, _summary in page_entries
         )
@@ -179,8 +194,15 @@ def _sql_filter_clauses(query: GameSearchQuery) -> _SqlFilters:
 
     _scalar("g.dg_trainer_color", "trainer_color", query.trainer_color)
     _scalar("g.dg_trainer_outcome", "trainer_outcome", query.trainer_outcome)
-    _bounds("g.dg_trainer_rating", "trainer_rating", query.trainer_rating_min, query.trainer_rating_max)
-    _bounds("g.dg_opponent_rating", "opponent_rating", query.opponent_rating_min, query.opponent_rating_max)
+    _bounds(
+        "g.dg_trainer_rating", "trainer_rating", query.trainer_rating_min, query.trainer_rating_max
+    )
+    _bounds(
+        "g.dg_opponent_rating",
+        "opponent_rating",
+        query.opponent_rating_min,
+        query.opponent_rating_max,
+    )
     _scalar("g.dg_opponent_chesscom_uuid", "opponent_uuid", query.opponent_chesscom_uuid)
     _scalar("g.dg_time_class", "time_class", query.time_class)
     _scalar("g.dg_time_control_source", "time_control", query.time_control)
@@ -253,9 +275,7 @@ def _sql_filter_clauses(query: GameSearchQuery) -> _SqlFilters:
     return _SqlFilters(clauses=tuple(clauses), params=params)
 
 
-def _aggregate_games(
-    connection: object, filters: _SqlFilters
-) -> dict[int, _GameAggregates]:
+def _aggregate_games(connection: object, filters: _SqlFilters) -> dict[int, _GameAggregates]:
     # Three join-driven grouped passes replace per-row EXISTS probes: the base
     # pass scans occurrences once, while the coverage passes drive from the
     # much smaller analysis/preferred tables. No schema or index change.
@@ -310,12 +330,8 @@ def _aggregate_games(
         raise GameSearchStorageError("games could not be read") from error
     aggregates: dict[int, _GameAggregates] = {}
     try:
-        analyzed = {
-            _required_int(row[0], "coverage game id"): row[1] for row in analyzed_rows
-        }
-        preferred = {
-            _required_int(row[0], "coverage game id"): row[1] for row in preferred_rows
-        }
+        analyzed = {_required_int(row[0], "coverage game id"): row[1] for row in analyzed_rows}
+        preferred = {_required_int(row[0], "coverage game id"): row[1] for row in preferred_rows}
         for row in base_rows:
             game_id = _required_int(row[0], "game id")
             if game_id in aggregates:
@@ -324,8 +340,12 @@ def _aggregate_games(
                 occurrence_count=_required_int(row[1], "occurrence count"),
                 length_plies=_required_int(row[2], "length plies"),
                 distinct_position_count=_required_int(row[3], "distinct position count"),
-                analyzed_position_count=_required_int(analyzed.get(game_id, 0), "analyzed position count"),
-                preferred_position_count=_required_int(preferred.get(game_id, 0), "preferred position count"),
+                analyzed_position_count=_required_int(
+                    analyzed.get(game_id, 0), "analyzed position count"
+                ),
+                preferred_position_count=_required_int(
+                    preferred.get(game_id, 0), "preferred position count"
+                ),
             )
     except GameSearchError:
         raise
@@ -364,7 +384,9 @@ def _load_deepest_openings(
             if chunk:
                 # Chunk entries are integer game identifiers already validated by
                 # _load_games, so formatting them here cannot inject SQL text.
-                predicate = f"WHERE gp.datasource_game_id IN ({', '.join(str(value) for value in chunk)})"
+                predicate = (
+                    f"WHERE gp.datasource_game_id IN ({', '.join(str(value) for value in chunk)})"
+                )
             rows = connection.execute(
                 text(
                     f"""
@@ -401,9 +423,7 @@ def _load_deepest_openings(
 def _select_deepest(
     opening_matches: dict[str, tuple[str, str, int]],
 ) -> DeepestOpening:
-    key, (eco, name, ply) = min(
-        opening_matches.items(), key=lambda item: (-item[1][2], item[0])
-    )
+    key, (eco, name, ply) = min(opening_matches.items(), key=lambda item: (-item[1][2], item[0]))
     return DeepestOpening(key=key, eco=eco, name=name, ply=ply)
 
 
@@ -426,16 +446,12 @@ def _matches_aggregates(
     if query.max_length_plies is not None and aggregates.length_plies > query.max_length_plies:
         return False
     if query.analysis_coverage is not None and (
-        _coverage_state(
-            aggregates.distinct_position_count, aggregates.analyzed_position_count
-        )
+        _coverage_state(aggregates.distinct_position_count, aggregates.analyzed_position_count)
         != query.analysis_coverage
     ):
         return False
     if query.preferred_coverage is not None and (
-        _coverage_state(
-            aggregates.distinct_position_count, aggregates.preferred_position_count
-        )
+        _coverage_state(aggregates.distinct_position_count, aggregates.preferred_position_count)
         != query.preferred_coverage
     ):
         return False
@@ -476,54 +492,3 @@ def _summarize_aggregates(
             ),
         ),
     )
-
-
-def _load_games(connection: object) -> dict[int, _GameData]:
-    rows = connection.execute(
-        text(
-            """
-            SELECT dg_game_id, dg_chesscom_game_uuid, dg_source_url,
-                   dg_trainer_color, dg_trainer_chesscom_uuid,
-                   dg_opponent_chesscom_uuid, dg_trainer_rating,
-                   dg_opponent_rating, dg_started_at_utc, dg_ended_at_utc,
-                   dg_trainer_outcome, dg_termination_reason,
-                   dg_time_control_source, dg_time_class
-            FROM datasource_game
-            ORDER BY dg_game_id
-            """
-        )
-    ).all()
-    games: dict[int, _GameData] = {}
-    try:
-        for row in rows:
-            game_id = _required_int(row[0], "game id")
-            if game_id in games:
-                raise GameSearchStorageError("game identifiers are duplicated")
-            trainer_color = row[3]
-            if trainer_color not in ("white", "black"):
-                raise ValueError("trainer color")
-            outcome = row[10]
-            if outcome is not None and outcome not in ("win", "loss", "draw"):
-                raise ValueError("trainer outcome")
-            games[game_id] = _GameData(
-                game_uuid=_required_text(row[1], "game UUID"),
-                source_url=_required_text(row[2], "source URL"),
-                trainer_color=trainer_color,
-                trainer_chesscom_uuid=_required_text(row[4], "trainer UUID"),
-                opponent_chesscom_uuid=_optional_text(row[5]),
-                trainer_rating=_optional_int(row[6]),
-                opponent_rating=_optional_int(row[7]),
-                started_at_utc=_optional_text(row[8]),
-                ended_at_utc=_optional_text(row[9]),
-                trainer_outcome=outcome,
-                termination_reason=_optional_text(row[11]),
-                time_control=_optional_text(row[12]),
-                time_class=_optional_text(row[13]),
-                occurrences=[],
-                opening_matches={},
-            )
-    except GameSearchError:
-        raise
-    except (IndexError, TypeError, ValueError) as error:
-        raise GameSearchStorageError("game row is malformed") from error
-    return games

@@ -75,9 +75,9 @@ def test_one_position_real_worker_publishes_fixed_tool_profile_and_exits(
             """,
             (position_id,),
         ).fetchall()
-        queue_count = connection.execute(
-            "SELECT COUNT(*) FROM derived_analysis_queue"
-        ).fetchone()[0]
+        queue_count = connection.execute("SELECT COUNT(*) FROM derived_analysis_queue").fetchone()[
+            0
+        ]
 
     assert parent is not None
     assert parent[0:2] == ("tool", 1)

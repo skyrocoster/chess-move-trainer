@@ -1,23 +1,22 @@
 from __future__ import annotations
 
+import importlib
 import sqlite3
 from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
 
-import importlib
-
 import backend.app.features.openings.router as openings_router
 from backend.app.dependencies import TRAINING_TARGET_SUCCESS_RATE_ENV
+
+from .conftest import OPENINGS_PARAMS, TARGET_FEN, TRAINING_PARAMS, count_reader_calls
 
 # NOTE: the feature package __init__ re-exports `router` (the APIRouter), so a
 # plain `import ... .router as ...` binds the router object, not the module.
 training_router = importlib.import_module(
     "backend.app.features.position_training_requirements.router"
 )
-
-from .conftest import OPENINGS_PARAMS, TARGET_FEN, TRAINING_PARAMS, count_reader_calls
 
 TRAINING_PATH = "/api/positions/training-requirements"
 ANSWERS_PATH = "/api/positions/training-requirements/answers"
@@ -95,9 +94,7 @@ def test_error_responses_are_never_cached(
     assert calls == []
 
     missing = database.parent / "missing-cache.db"
-    monkeypatch.setenv(
-        "CHESS_REBUILT_DATABASE_PATH", str(missing)
-    )
+    monkeypatch.setenv("CHESS_REBUILT_DATABASE_PATH", str(missing))
     first_missing = client.get(TRAINING_PATH, params=TRAINING_PARAMS)
     second_missing = client.get(TRAINING_PATH, params=TRAINING_PARAMS)
     assert first_missing.status_code == second_missing.status_code == 503
@@ -159,4 +156,3 @@ def test_database_file_replacement_invalidates_cached_read(
 
     assert client.get(TRAINING_PATH, params=TRAINING_PARAMS).status_code == 200
     assert len(calls) == 2
-

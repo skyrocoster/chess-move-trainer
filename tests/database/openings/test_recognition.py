@@ -170,7 +170,7 @@ def test_fen_direct_match_and_valid_no_match_have_immutable_results(tmp_path: Pa
         "",
         "1. e5",
         "1. e4 trailing",
-        "1. e4 * [Event \"second\"] 1. d4",
+        '1. e4 * [Event "second"] 1. d4',
         '[SetUp "1"]\n[FEN "8/8/8/8/8/8/4k3/4K3 w - - 0 1"]\n\n1. e4',
     ],
 )
@@ -191,9 +191,7 @@ def test_invalid_fen_raises_opening_input_error(tmp_path: Path) -> None:
 def test_corrupt_persisted_route_fails_as_operational_error(tmp_path: Path) -> None:
     database_path, routes = _publish(tmp_path, [("A00", "Only", "1. e4 e5")])
     with sqlite3.connect(database_path) as connection:
-        connection.execute(
-            "UPDATE derived_opening_route_move SET dorm_ply = 3 WHERE dorm_ply = 1"
-        )
+        connection.execute("UPDATE derived_opening_route_move SET dorm_ply = 3 WHERE dorm_ply = 1")
 
     with pytest.raises(OpeningRecognitionError):
         lookup_fen(database_path, routes[0].endpoint_fen)
@@ -204,9 +202,7 @@ def test_route_cache_reloads_after_database_change(tmp_path: Path) -> None:
     assert lookup_fen(database_path, routes[0].endpoint_fen).current is not None
 
     with sqlite3.connect(database_path) as connection:
-        connection.execute(
-            "UPDATE derived_opening_route_move SET dorm_ply = 3 WHERE dorm_ply = 1"
-        )
+        connection.execute("UPDATE derived_opening_route_move SET dorm_ply = 3 WHERE dorm_ply = 1")
 
     with pytest.raises(OpeningRecognitionError):
         lookup_fen(database_path, routes[0].endpoint_fen)

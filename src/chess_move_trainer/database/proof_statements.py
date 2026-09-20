@@ -1,4 +1,5 @@
 """Fixed SQL statements used by direct-database proof helpers."""
+
 from __future__ import annotations
 
 _GAME_READ_STATEMENT = """
@@ -159,4 +160,3 @@ _BULK_ELIGIBILITY_STATEMENT = """
     FROM derived_analysis_result
     WHERE derived_position_id = :position_id
 """
-

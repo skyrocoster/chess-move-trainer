@@ -19,9 +19,7 @@ BENCHMARK_GAME_COUNT = 512
 
 
 def _raw_game() -> dict[str, object]:
-    return json.loads(
-        (FIXTURES / "game-trainer-white.json").read_text(encoding="utf-8")
-    )
+    return json.loads((FIXTURES / "game-trainer-white.json").read_text(encoding="utf-8"))
 
 
 def test_indexed_persistence_benchmark_is_bounded_and_aggregate_only(tmp_path: Path) -> None:
@@ -44,13 +42,9 @@ def test_indexed_persistence_benchmark_is_bounded_and_aggregate_only(tmp_path: P
     elapsed_ms = (time.perf_counter() - started) * 1000
 
     with sqlite3.connect(database) as connection:
-        game_count = int(
-            connection.execute("SELECT COUNT(*) FROM datasource_game").fetchone()[0]
-        )
+        game_count = int(connection.execute("SELECT COUNT(*) FROM datasource_game").fetchone()[0])
         occurrence_count = int(
-            connection.execute(
-                "SELECT COUNT(*) FROM derived_game_position"
-            ).fetchone()[0]
+            connection.execute("SELECT COUNT(*) FROM derived_game_position").fetchone()[0]
         )
         index_columns = tuple(
             row[2]
@@ -72,7 +66,5 @@ def test_indexed_persistence_benchmark_is_bounded_and_aggregate_only(tmp_path: P
         "dgp_ply",
     )
     print(
-        "benchmark "
-        f"games={game_count} occurrences={occurrence_count} "
-        f"elapsed_ms={elapsed_ms:.2f}"
+        f"benchmark games={game_count} occurrences={occurrence_count} elapsed_ms={elapsed_ms:.2f}"
     )

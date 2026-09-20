@@ -171,9 +171,7 @@ def test_current_month_merges_corrections_new_games_and_omissions(tmp_path: Path
     august_url = f"{CHESSCOM_API_ORIGIN}/pub/player/synthetic-trainer/games/2026/08"
     current_path = tmp_path / "games" / "2026" / "08.json"
     current_path.parent.mkdir(parents=True)
-    current_path.write_text(
-        json.dumps(_fixture("current-month-local.json")), encoding="utf-8"
-    )
+    current_path.write_text(json.dumps(_fixture("current-month-local.json")), encoding="utf-8")
     transport = SyntheticTransport(
         {
             _archive_url(): {"synthetic_fixture": "current only", "archives": [august_url]},
@@ -249,13 +247,9 @@ def test_unsafe_response_preserves_current_and_other_defects_are_published(
 
     defective = {
         "synthetic_fixture": "details accepted raw",
-        "games": [
-            {"uuid": "77777777-7777-4777-8777-777777777777", "pgn": None, "white": 4}
-        ],
+        "games": [{"uuid": "77777777-7777-4777-8777-777777777777", "pgn": None, "white": 4}],
     }
-    acceptable_transport = SyntheticTransport(
-        {_archive_url(): archive, august_url: defective}
-    )
+    acceptable_transport = SyntheticTransport({_archive_url(): archive, august_url: defective})
     acceptable = acquire_months(
         _config(delay=0.0),
         tmp_path,
@@ -460,9 +454,7 @@ def test_selected_current_month_retains_refetch_and_uuid_merge(tmp_path: Path) -
     august_url = _month_url(2026, 8)
     current_path = tmp_path / "games" / "2026" / "08.json"
     current_path.parent.mkdir(parents=True)
-    current_path.write_text(
-        json.dumps(_fixture("current-month-local.json")), encoding="utf-8"
-    )
+    current_path.write_text(json.dumps(_fixture("current-month-local.json")), encoding="utf-8")
     transport = SyntheticTransport(
         {
             _archive_url(): {

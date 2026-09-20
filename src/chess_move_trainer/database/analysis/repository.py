@@ -57,9 +57,7 @@ class AnalysisRepository:
 
         _validate_position_id(dp_position_id)
         try:
-            with _open_existing_connection(
-                self._database_path, self._lock_timeout
-            ) as connection:
+            with _open_existing_connection(self._database_path, self._lock_timeout) as connection:
                 _assert_compatible_schema(connection, self._lock_timeout)
                 validated = _prepare_publication(connection, dp_position_id, result)
                 connection.rollback()
@@ -170,9 +168,7 @@ def _publish_in_transaction(
     return PublicationOutcome.saved_result()
 
 
-def _load_current_result(
-    connection: object, position_id: int
-) -> _StoredAnalysisResult | None:
+def _load_current_result(connection: object, position_id: int) -> _StoredAnalysisResult | None:
     row = connection.execute(
         text(
             """
@@ -190,13 +186,9 @@ def _load_current_result(
     except (TypeError, ValueError) as error:
         raise AnalysisStorageError("stored analysis result has an invalid quality") from error
     if type(row[1]) is not int or row[1] < 1:
-        raise AnalysisStorageError(
-            "stored analysis result has an invalid configuration version"
-        )
+        raise AnalysisStorageError("stored analysis result has an invalid configuration version")
     if not isinstance(row[2], str):
-        raise AnalysisStorageError(
-            "stored analysis result has an invalid engine version"
-        )
+        raise AnalysisStorageError("stored analysis result has an invalid engine version")
     return _StoredAnalysisResult(
         quality=quality,
         configuration_version=row[1],
@@ -265,18 +257,13 @@ def _replace_result(
             "engine_name": result.engine_name,
             "engine_version": result.engine_version,
             "terminal_kind": (
-                None
-                if validated.terminal_kind is None
-                else validated.terminal_kind.value
+                None if validated.terminal_kind is None else validated.terminal_kind.value
             ),
         },
     )
     checkpoint("parent_replaced")
     connection.execute(
-        text(
-            "DELETE FROM derived_analysis_line "
-            "WHERE derived_analysis_result_id = :position_id"
-        ),
+        text("DELETE FROM derived_analysis_line WHERE derived_analysis_result_id = :position_id"),
         {"position_id": position_id},
     )
     for line in validated.lines:
@@ -338,17 +325,13 @@ def _serialize_settings(result: AnalysisResultInput) -> str:
 def _translate_storage_error(error: Exception) -> AnalysisStorageError:
     candidate: BaseException | None = error
     while candidate is not None:
-        if isinstance(candidate, sqlite3.OperationalError) and "locked" in str(
-            candidate
-        ).lower():
+        if isinstance(candidate, sqlite3.OperationalError) and "locked" in str(candidate).lower():
             return AnalysisStorageError(
                 "analysis database writer lock was not acquired before timeout"
             )
         candidate = candidate.__cause__ or candidate.__context__
     if isinstance(error, OperationalError) and "locked" in str(error).lower():
-        return AnalysisStorageError(
-            "analysis database writer lock was not acquired before timeout"
-        )
+        return AnalysisStorageError("analysis database writer lock was not acquired before timeout")
     if isinstance(error, AnalysisStorageError):
         return error
     return AnalysisStorageError("analysis database operation failed")

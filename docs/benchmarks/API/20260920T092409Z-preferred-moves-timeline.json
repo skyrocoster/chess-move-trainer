@@ -1,0 +1,34 @@
+{
+  "name": "preferred-moves-timeline",
+  "measured_at_utc": "2026-09-20T09:24:09.096875+00:00",
+  "endpoint": "/api/preferred-moves",
+  "params": {
+    "fen": "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2",
+    "from": "2026-01-15",
+    "until": "2026-05-15"
+  },
+  "database": {
+    "kind": "synthetic",
+    "file_name": "api-benchmark.db",
+    "size_bytes": 102400
+  },
+  "repeats": 5,
+  "timeout_s": 30.0,
+  "samples_ms": [
+    8.375,
+    3.421,
+    2.892,
+    3.873,
+    4.211
+  ],
+  "stats": {
+    "count": 5,
+    "min_ms": 2.892,
+    "median_ms": 3.873,
+    "mean_ms": 4.554,
+    "max_ms": 8.375
+  },
+  "threshold_median_ms": 2000.0,
+  "items_returned": null,
+  "total_reported": null
+}

@@ -2,35 +2,19 @@
 
 from __future__ import annotations
 
-import math
-import os
-import queue
-import re
-import subprocess
-import threading
-import time
-from collections.abc import Callable
 from dataclasses import dataclass
-from pathlib import Path
-from typing import Any, Final, TextIO
-
-import chess
+from typing import Final
 
 from ..analysis import (
     AnalysisLine,
-    AnalysisQuality,
     AnalysisResultInput,
     AnalysisScoreKind,
     AnalysisTerminalKind,
-    AnalysisValidationError,
-    validate_analysis_position,
 )
-from ..positions import CanonicalPosition
 from .configuration import (
     STOCKFISH_NAME,
     STOCKFISH_VERSION,
     StockfishProfile,
-    profile_for,
 )
 
 DEFAULT_STARTUP_TIMEOUT_SECONDS: Final[float] = 10.0
@@ -38,7 +22,6 @@ ANALYSIS_WATCHDOG_SECONDS: Final[float] = 30.0
 _TERMINATION_WAIT_SECONDS: Final[float] = 0.5
 _READER_JOIN_SECONDS: Final[float] = 0.2
 _QUEUE_END: Final[object] = object()
-
 
 
 class StockfishError(RuntimeError):
@@ -119,5 +102,3 @@ class StockfishAnalysis:
         """Expose candidate lines without requiring callers to unwrap the result."""
 
         return self.result.lines
-
-

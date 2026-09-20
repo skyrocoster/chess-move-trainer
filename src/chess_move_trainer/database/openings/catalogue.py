@@ -74,9 +74,7 @@ class OpeningCatalogueQuery:
         if type(self.page) is not int or self.page < 1:
             raise OpeningCatalogueValidationError("page must be a positive integer")
         if type(self.page_size) is not int or not 1 <= self.page_size <= 100:
-            raise OpeningCatalogueValidationError(
-                "page_size must be an integer from 1 through 100"
-            )
+            raise OpeningCatalogueValidationError("page_size must be an integer from 1 through 100")
         if self.search is not None:
             if type(self.search) is not str:
                 raise OpeningCatalogueValidationError("search must be text")
@@ -91,9 +89,7 @@ class OpeningCatalogueQuery:
         normalized_to = _normalize_eco_bound(self.eco_to, "eco_to")
         if normalized_from is not None and normalized_to is not None:
             if normalized_from > normalized_to:
-                raise OpeningCatalogueValidationError(
-                    "eco_from cannot be greater than eco_to"
-                )
+                raise OpeningCatalogueValidationError("eco_from cannot be greater than eco_to")
         object.__setattr__(self, "eco_from", normalized_from)
         object.__setattr__(self, "eco_to", normalized_to)
 
@@ -151,14 +147,10 @@ class OpeningCatalogueRepository:
 
         request = OpeningCatalogueQuery() if query is None else query
         if not isinstance(request, OpeningCatalogueQuery):
-            raise OpeningCatalogueValidationError(
-                "query must be an OpeningCatalogueQuery"
-            )
+            raise OpeningCatalogueValidationError("query must be an OpeningCatalogueQuery")
 
         entries = self._read_entries()
-        filtered = tuple(
-            entry for entry in entries if _matches(entry, request)
-        )
+        filtered = tuple(entry for entry in entries if _matches(entry, request))
         ordered = tuple(
             sorted(
                 filtered,
@@ -208,9 +200,7 @@ class OpeningCatalogueRepository:
         except OpeningCatalogueError:
             raise
         except Exception as error:
-            raise OpeningCatalogueStorageError(
-                "opening catalogue could not be read"
-            ) from error
+            raise OpeningCatalogueStorageError("opening catalogue could not be read") from error
 
         return tuple(
             OpeningCatalogueEntry(
@@ -249,9 +239,9 @@ def read_opening(
 ) -> OpeningCatalogueEntry | None:
     """Read one exact public opening key from an explicit database path."""
 
-    return OpeningCatalogueRepository(
-        database_path, lock_timeout=lock_timeout
-    ).read_one(opening_key)
+    return OpeningCatalogueRepository(database_path, lock_timeout=lock_timeout).read_one(
+        opening_key
+    )
 
 
 def _load_labels(connection: object) -> tuple[_OpeningLabel, ...]:
@@ -342,9 +332,7 @@ def _load_usage(
             if prior is None or ply > prior:
                 game_opening_max_ply[(game_id, key)] = ply
     except (IndexError, TypeError, ValueError, OpeningKeyError) as error:
-        raise OpeningCatalogueStorageError(
-            "opening occurrence row is malformed"
-        ) from error
+        raise OpeningCatalogueStorageError("opening occurrence row is malformed") from error
 
     deepest: dict[str, int] = {}
     per_game: dict[int, list[tuple[int, str]]] = {}

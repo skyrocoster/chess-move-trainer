@@ -153,6 +153,7 @@ src/chess_move_trainer/database/games/reading.py
 src/chess_move_trainer/database/games/search.py
 src/chess_move_trainer/database/games/search_errors.py
 src/chess_move_trainer/database/games/search_filters.py
+src/chess_move_trainer/database/games/search_loaders.py
 src/chess_move_trainer/database/games/search_models.py
 src/chess_move_trainer/database/games/search_repository.py
 src/chess_move_trainer/database/games/search_validation.py
@@ -171,11 +172,13 @@ src/chess_move_trainer/database/positions/insight_models.py
 src/chess_move_trainer/database/positions/insight_readers.py
 src/chess_move_trainer/database/positions/insight_repository.py
 src/chess_move_trainer/database/positions/repository.py
+src/chess_move_trainer/database/positions/training_answer_support.py
 src/chess_move_trainer/database/positions/training_answers.py
 src/chess_move_trainer/database/positions/training_requirements.py
 src/chess_move_trainer/database/positions/training_requirements_models.py
 src/chess_move_trainer/database/positions/training_requirements_repository.py
 src/chess_move_trainer/database/positions/training_requirements_scoring.py
+src/chess_move_trainer/database/positions/training_requirements_storage.py
 src/chess_move_trainer/database/preferred_moves/__init__.py
 src/chess_move_trainer/database/preferred_moves/inference.py
 src/chess_move_trainer/database/preferred_moves/mutations.py

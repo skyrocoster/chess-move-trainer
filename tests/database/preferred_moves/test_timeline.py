@@ -27,12 +27,8 @@ from chess_move_trainer.database.preferred_moves.repository import (
 )
 
 STARTING_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
-STARTING_FEN_WITH_COUNTERS = (
-    "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 73 42"
-)
-AFTER_E4_WITH_EP = (
-    "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 17 8"
-)
+STARTING_FEN_WITH_COUNTERS = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 73 42"
+AFTER_E4_WITH_EP = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 17 8"
 MOVE_E4 = Preference.preferred_move("e2e4")
 MOVE_D4 = Preference.preferred_move("d2d4")
 NO_PREFERENCE = Preference.no_preference()
@@ -91,9 +87,7 @@ def test_request_canonicalizes_counters_and_legal_en_passant_identity() -> None:
         (STARTING_FEN, "2026-01-01T00:00:00Z", "2026-02-01"),
     ],
 )
-def test_request_rejects_invalid_fen_dates_and_window(
-    fen: str, from_date: str, until: str
-) -> None:
+def test_request_rejects_invalid_fen_dates_and_window(fen: str, from_date: str, until: str) -> None:
     with pytest.raises(PreferredMoveValidationError):
         PreferredMoveTimelineRequest(fen, from_date, until)
 
@@ -124,14 +118,10 @@ def test_timeline_respects_half_open_edges_and_clips_open_ended_period(
     repository = PreferredMoveTimelineRepository(database)
 
     at_boundary = repository.read(_request("2026-02-01", "2026-03-01"))
-    assert _segment_values(at_boundary) == [
-        ("2026-02-01", "2026-03-01", "unconfigured", None)
-    ]
+    assert _segment_values(at_boundary) == [("2026-02-01", "2026-03-01", "unconfigured", None)]
 
     open_ended = repository.read(_request("2026-05-01", "2026-05-15"))
-    assert _segment_values(open_ended) == [
-        ("2026-05-01", "2026-05-15", "move", "d2d4")
-    ]
+    assert _segment_values(open_ended) == [("2026-05-01", "2026-05-15", "move", "d2d4")]
 
 
 def test_delete_is_immediately_visible_as_unconfigured_in_the_timeline(
@@ -144,12 +134,8 @@ def test_delete_is_immediately_visible_as_unconfigured_in_the_timeline(
         PreferredMoveRemovalRequest(STARTING_FEN, "2026-01-01", "2026-02-01"),
     )
 
-    timeline = PreferredMoveTimelineRepository(database).read(
-        _request("2026-01-01", "2026-03-01")
-    )
-    assert _segment_values(timeline) == [
-        ("2026-01-01", "2026-03-01", "unconfigured", None)
-    ]
+    timeline = PreferredMoveTimelineRepository(database).read(_request("2026-01-01", "2026-03-01"))
+    assert _segment_values(timeline) == [("2026-01-01", "2026-03-01", "unconfigured", None)]
 
 
 def test_empty_and_unseen_schedules_are_one_read_only_unconfigured_segment(
@@ -160,16 +146,17 @@ def test_empty_and_unseen_schedules_are_one_read_only_unconfigured_segment(
 
     timeline = PreferredMoveTimelineRepository(database).read(_request())
 
-    assert _segment_values(timeline) == [
-        ("2025-12-01", "2026-06-01", "unconfigured", None)
-    ]
+    assert _segment_values(timeline) == [("2025-12-01", "2026-06-01", "unconfigured", None)]
     assert database.read_bytes() == before
     assert not list(tmp_path.glob("timeline.db-*"))
     with sqlite3.connect(database) as connection:
         assert connection.execute("SELECT COUNT(*) FROM derived_position").fetchone()[0] == 0
-        assert connection.execute(
-            "SELECT COUNT(*) FROM datasource_preferred_move_period"
-        ).fetchone()[0] == 0
+        assert (
+            connection.execute("SELECT COUNT(*) FROM datasource_preferred_move_period").fetchone()[
+                0
+            ]
+            == 0
+        )
 
     unseen = PreferredMoveTimelineRepository(database).read(
         PreferredMoveTimelineRequest(
@@ -178,9 +165,7 @@ def test_empty_and_unseen_schedules_are_one_read_only_unconfigured_segment(
             "2026-02-01",
         )
     )
-    assert _segment_values(unseen) == [
-        ("2026-01-01", "2026-02-01", "unconfigured", None)
-    ]
+    assert _segment_values(unseen) == [("2026-01-01", "2026-02-01", "unconfigured", None)]
     assert database.read_bytes() == before
 
 
@@ -206,9 +191,7 @@ def test_read_values_are_ordinary_immutable_dataclasses(tmp_path: Path) -> None:
         "UPDATE datasource_preferred_move_period SET dpm_move_uci = 'e2e5'",
     ],
 )
-def test_malformed_persisted_schedule_is_unavailable(
-    tmp_path: Path, mutation: str
-) -> None:
+def test_malformed_persisted_schedule_is_unavailable(tmp_path: Path, mutation: str) -> None:
     database = _configured_database(tmp_path)
     with sqlite3.connect(database) as connection:
         connection.execute("PRAGMA ignore_check_constraints = ON")

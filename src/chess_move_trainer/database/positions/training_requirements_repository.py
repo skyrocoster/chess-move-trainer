@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
+import math
 from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import UTC, date, datetime
-import math
 from pathlib import Path
 from typing import Iterable
 
@@ -32,6 +32,7 @@ from .training_requirements_scoring import (
     score_training_pair,
     training_adjustment,
 )
+from .training_requirements_storage import _non_negative_int, _positive_int, _text
 
 
 @dataclass(frozen=True, slots=True)
@@ -109,9 +110,7 @@ class TrainingRequirementRepository:
                 "query must be a TrainingRequirementQuery value"
             )
         if not isinstance(policy, TrainingRequirementPolicy):
-            raise TrainingRequirementValidationError(
-                "policy must be a TrainingRequirementPolicy"
-            )
+            raise TrainingRequirementValidationError("policy must be a TrainingRequirementPolicy")
 
         try:
             with _open_connection(
@@ -323,16 +322,12 @@ def _load_preferences(connection: object) -> dict[int, tuple[_PreferencePeriod, 
         position_id = _positive_int(row[0], "stored preference position identifier")
         effective_from = parse_calendar_date(row[1], "stored preference start date")
         effective_until = (
-            None
-            if row[2] is None
-            else parse_calendar_date(row[2], "stored preference end date")
+            None if row[2] is None else parse_calendar_date(row[2], "stored preference end date")
         )
         if effective_until is not None and effective_until <= effective_from:
             raise TrainingRequirementStorageError("stored preference period is malformed")
         move_uci = None if row[3] is None else validate_uci(row[3], "stored preferred move")
-        periods[position_id].append(
-            _PreferencePeriod(effective_from, effective_until, move_uci)
-        )
+        periods[position_id].append(_PreferencePeriod(effective_from, effective_until, move_uci))
     return {position_id: tuple(values) for position_id, values in periods.items()}
 
 
@@ -386,9 +381,7 @@ def _load_training_aggregates(
                 "stored aggregate training balance is malformed"
             ) from error
         if not math.isfinite(balance):
-            raise TrainingRequirementStorageError(
-                "stored aggregate training balance is not finite"
-            )
+            raise TrainingRequirementStorageError("stored aggregate training balance is not finite")
         updated_on = row[3]
         if updated_on is not None:
             updated_on = parse_calendar_date(updated_on, "stored aggregate update date").isoformat()
@@ -450,9 +443,7 @@ def _group_matches_opening(
     return False
 
 
-def _active_preference(
-    periods: tuple[_PreferencePeriod, ...], on_date: date
-) -> str | None:
+def _active_preference(periods: tuple[_PreferencePeriod, ...], on_date: date) -> str | None:
     active = [
         period
         for period in periods
@@ -490,21 +481,3 @@ def _item_sort_key(item: TrainingRequirementItem) -> tuple[str, str, str, str, s
         item.trainer_color,
         item.preferred_move_uci,
     )
-
-
-def _text(value: object, name: str) -> str:
-    if not isinstance(value, str):
-        raise TrainingRequirementStorageError(f"{name} is malformed")
-    return value
-
-
-def _positive_int(value: object, name: str) -> int:
-    if type(value) is not int or value < 1:
-        raise TrainingRequirementStorageError(f"{name} is malformed")
-    return value
-
-
-def _non_negative_int(value: object, name: str) -> int:
-    if type(value) is not int or value < 0:
-        raise TrainingRequirementStorageError(f"{name} is malformed")
-    return value

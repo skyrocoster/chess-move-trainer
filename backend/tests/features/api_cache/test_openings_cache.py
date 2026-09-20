@@ -1,19 +1,13 @@
 from __future__ import annotations
 
+import importlib
 from pathlib import Path
 from urllib.parse import quote
 
 import pytest
 from fastapi.testclient import TestClient
 
-import importlib
-
 import backend.app.features.openings.router as openings_router
-
-# NOTE: see test_training_cache.py — the package __init__ shadows `.router`.
-training_router = importlib.import_module(
-    "backend.app.features.position_training_requirements.router"
-)
 
 from .conftest import (
     OPENINGS_PARAMS,
@@ -21,6 +15,11 @@ from .conftest import (
     TRAINING_PARAMS,
     UNSEEN_FEN,
     count_reader_calls,
+)
+
+# NOTE: see test_training_cache.py — the package __init__ shadows `.router`.
+training_router = importlib.import_module(
+    "backend.app.features.position_training_requirements.router"
 )
 
 OPENINGS_PATH = "/api/openings"
@@ -40,9 +39,10 @@ def test_openings_repeat_reads_underlying_reader_once(
     assert len(calls) == 1
     assert first.content == second.content
     assert first.headers["x-openings-catalogue-version"]
-    assert second.headers["x-openings-catalogue-version"] == first.headers[
-        "x-openings-catalogue-version"
-    ]
+    assert (
+        second.headers["x-openings-catalogue-version"]
+        == first.headers["x-openings-catalogue-version"]
+    )
 
 
 def test_opening_detail_repeat_and_missing_key_behavior(

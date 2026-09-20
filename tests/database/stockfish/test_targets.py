@@ -124,9 +124,7 @@ def test_union_replays_routes_reuses_positions_and_orders_by_frequency_then_id(
         {ids[START_FEN], ids[E4_FEN], ids[D4_FEN]}
     )
     with sqlite3.connect(database) as connection:
-        stored = connection.execute(
-            "SELECT dp_position_id FROM derived_position"
-        ).fetchall()
+        stored = connection.execute("SELECT dp_position_id FROM derived_position").fetchall()
     assert len(stored) >= 5
 
 

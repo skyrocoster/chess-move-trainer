@@ -7,11 +7,9 @@ import pytest
 
 from chess_move_trainer.database import schema as schema_service
 from chess_move_trainer.database.schema import (
-    SchemaIncompatibleError,
     create_schema,
     upgrade_schema,
 )
-
 
 ROOT = Path(__file__).parents[2]
 PACKAGE_PATH = ROOT / "src" / "chess_move_trainer" / "database"
@@ -23,7 +21,8 @@ def _create_v1_database(path: Path) -> None:
         connection.executescript(V1_RESOURCE.read_text(encoding="utf-8"))
         connection.execute(
             "INSERT INTO derived_position "
-            "(dp_position_id, dp_placement, dp_side_to_move, dp_castling_rights, dp_legal_en_passant) "
+            "(dp_position_id, dp_placement, dp_side_to_move, "
+            "dp_castling_rights, dp_legal_en_passant) "
             "VALUES (1, ?, 'w', 'KQkq', '-')",
             ("8/8/8/8/8/8/8/8",),
         )
@@ -108,20 +107,23 @@ def test_exact_v1_upgrade_preserves_rows_and_starts_empty_aggregate(tmp_path: Pa
     with sqlite3.connect(database_path) as connection:
         connection.execute("PRAGMA foreign_keys = ON")
         assert connection.execute("PRAGMA user_version").fetchone()[0] == 2
-        assert connection.execute(
-            "SELECT COUNT(*) FROM derived_position_training_aggregate"
-        ).fetchone()[0] == 0
+        assert (
+            connection.execute(
+                "SELECT COUNT(*) FROM derived_position_training_aggregate"
+            ).fetchone()[0]
+            == 0
+        )
         assert connection.execute("PRAGMA foreign_key_check").fetchall() == []
 
         connection.execute(
             "INSERT INTO derived_position_training_aggregate "
-            "(derived_position_id, dpta_preferred_move_uci, dpta_training_balance, dpta_updated_on) "
+            "(derived_position_id, dpta_preferred_move_uci, "
+            "dpta_training_balance, dpta_updated_on) "
             "VALUES (1, 'e2e4', CAST(? AS REAL), ?)",
             ("-1.25", "2026-09-12"),
         )
         assert connection.execute(
-            "SELECT dpta_training_balance, dpta_updated_on "
-            "FROM derived_position_training_aggregate"
+            "SELECT dpta_training_balance, dpta_updated_on FROM derived_position_training_aggregate"
         ).fetchone() == (-1.25, "2026-09-12")
         with pytest.raises(sqlite3.IntegrityError):
             connection.execute(
@@ -185,6 +187,9 @@ def test_interrupted_upgrade_rolls_back_additive_ddl_and_version(
     assert _data_snapshot(database_path) == before
     with sqlite3.connect(database_path) as connection:
         assert connection.execute("PRAGMA user_version").fetchone()[0] == 1
-        assert connection.execute(
-            "SELECT name FROM sqlite_master WHERE name = 'derived_position_training_aggregate'"
-        ).fetchone() is None
+        assert (
+            connection.execute(
+                "SELECT name FROM sqlite_master WHERE name = 'derived_position_training_aggregate'"
+            ).fetchone()
+            is None
+        )

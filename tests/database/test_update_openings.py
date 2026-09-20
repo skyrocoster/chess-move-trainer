@@ -76,11 +76,7 @@ def _fixture_game(name: str) -> dict[str, object]:
 
 
 def _source_snapshot(source_dir: Path) -> dict[str, bytes]:
-    return {
-        path.name: path.read_bytes()
-        for path in source_dir.iterdir()
-        if path.is_file()
-    }
+    return {path.name: path.read_bytes() for path in source_dir.iterdir() if path.is_file()}
 
 
 def _catalogue_snapshot(database: Path) -> dict[str, list[tuple[object, ...]]]:
@@ -195,9 +191,9 @@ def test_update_openings_preserves_source_and_catalogue_before_publication(
     failures: dict[str, BaseException] = {}
     if failure_kind == "invalid":
         invalid_url = RAW_SOURCE_URL_TEMPLATE.format(commit=SHA, filename="a.tsv")
-        files[invalid_url] = (
-            OPENING_FIXTURES / "acquisition-invalid-pgn" / "a.tsv"
-        ).read_text(encoding="utf-8")
+        files[invalid_url] = (OPENING_FIXTURES / "acquisition-invalid-pgn" / "a.tsv").read_text(
+            encoding="utf-8"
+        )
     else:
         failed_url = RAW_SOURCE_URL_TEMPLATE.format(commit=SHA, filename="d.tsv")
         failures[failed_url] = OpeningAcquisitionError("synthetic incomplete response")

@@ -29,12 +29,8 @@ LICHESS_REPOSITORY_URL = f"https://github.com/{LICHESS_REPOSITORY}"
 GITHUB_API_HOST = "api.github.com"
 GITHUB_RAW_HOST = "raw.githubusercontent.com"
 OPENING_SOURCE_FILES = ("a.tsv", "b.tsv", "c.tsv", "d.tsv", "e.tsv")
-COMMIT_RESOLUTION_URL = (
-    f"https://{GITHUB_API_HOST}/repos/{LICHESS_REPOSITORY}/commits"
-)
-RAW_SOURCE_URL_TEMPLATE = (
-    f"https://{GITHUB_RAW_HOST}/{LICHESS_REPOSITORY}/{{commit}}/{{filename}}"
-)
+COMMIT_RESOLUTION_URL = f"https://{GITHUB_API_HOST}/repos/{LICHESS_REPOSITORY}/commits"
+RAW_SOURCE_URL_TEMPLATE = f"https://{GITHUB_RAW_HOST}/{LICHESS_REPOSITORY}/{{commit}}/{{filename}}"
 DEFAULT_REQUEST_TIMEOUT = 30.0
 DEFAULT_REQUEST_DELAY = 0.25
 _COMMIT_SHA_PATTERN = re.compile(r"[0-9a-f]{40}\Z")
@@ -155,9 +151,7 @@ def acquire_openings(
         target_dir = Path(source_dir)
     except (TypeError, ValueError) as error:
         raise OpeningAcquisitionError("source directory must be a path") from error
-    acquisition_transport = (
-        HttpxOpeningAcquisitionTransport() if transport is None else transport
-    )
+    acquisition_transport = HttpxOpeningAcquisitionTransport() if transport is None else transport
     sleep_fn = time.sleep if sleep is None else sleep
 
     try:
@@ -402,8 +396,7 @@ def _capture_prior_state(target_dir: Path) -> tuple[_PriorFileState, ...]:
 def _staged_content_matches_target(staging_dir: Path, target_dir: Path) -> bool:
     return all(
         (target_dir / filename).is_file()
-        and (target_dir / filename).read_bytes()
-        == (staging_dir / filename).read_bytes()
+        and (target_dir / filename).read_bytes() == (staging_dir / filename).read_bytes()
         for filename in OPENING_SOURCE_FILES
     )
 

@@ -1,14 +1,12 @@
 """Aggregate verification and direct proof collection."""
+
 from __future__ import annotations
 
-import time
 from pathlib import Path
-from typing import Any
 
 from sqlalchemy import text
 
 from .connection import DEFAULT_LOCK_TIMEOUT_SECONDS, _open_connection
-from .schema import _assert_compatible_schema
 from .proof_models import (
     DIRECT_TABLE_NAMES,
     DirectPreflightError,
@@ -17,6 +15,7 @@ from .proof_models import (
     QueryPlanMeasurement,
 )
 from .proof_query import _measure_query
+from .schema import _assert_compatible_schema
 
 
 def _verify_direct_database(path: Path, *, lock_timeout: float) -> DirectVerification:
@@ -24,9 +23,7 @@ def _verify_direct_database(path: Path, *, lock_timeout: float) -> DirectVerific
 
     try:
         with _open_connection(path, "read-only", lock_timeout) as connection:
-            user_version = int(
-                connection.execute(text("PRAGMA user_version")).scalar_one()
-            )
+            user_version = int(connection.execute(text("PRAGMA user_version")).scalar_one())
             try:
                 _assert_compatible_schema(connection, lock_timeout)
             except Exception:
@@ -44,17 +41,13 @@ def _verify_direct_database(path: Path, *, lock_timeout: float) -> DirectVerific
                     game_position_count=0,
                 )
 
-            integrity_result = str(
-                connection.execute(text("PRAGMA integrity_check")).scalar_one()
-            )
+            integrity_result = str(connection.execute(text("PRAGMA integrity_check")).scalar_one())
             foreign_key_errors = tuple(
                 " ".join(str(value) for value in row)
                 for row in connection.execute(text("PRAGMA foreign_key_check")).all()
             )
             counts = {
-                name: int(
-                    connection.execute(text(f"SELECT COUNT(*) FROM {name}")).scalar_one()
-                )
+                name: int(connection.execute(text(f"SELECT COUNT(*) FROM {name}")).scalar_one())
                 for name in DIRECT_TABLE_NAMES
             }
             return DirectVerification(

@@ -31,6 +31,13 @@ ZERO_WARNING_PATTERN = re.compile(r"\b(?:0|no) warnings?\b", re.IGNORECASE)
 ALLOWED_WARNING_PATTERNS = (re.compile(r"^\s*npm warn EBADENGINE\b", re.IGNORECASE),)
 
 
+def _configure_output_streams() -> None:
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is not None:
+            reconfigure(encoding="utf-8", errors="backslashreplace")
+
+
 @dataclass(frozen=True)
 class Step:
     name: str
@@ -51,6 +58,10 @@ def _tool(name: str) -> str:
     return str(REPOSITORY_ROOT / "node_modules" / ".bin" / f"{name}.cmd")
 
 
+def _npm(*arguments: str) -> tuple[str, ...]:
+    return ("corepack.cmd", "npm", *arguments)
+
+
 def build_steps() -> list[Step]:
     benchmark_output = str(STATE_DIRECTORY / "benchmarks")
     real_test_environment = {
@@ -63,7 +74,7 @@ def build_steps() -> list[Step]:
     return [
         Step("Compose configuration", ("docker", "compose", "config", "--quiet"), 60),
         Step("Python dependency integrity", (sys.executable, "-m", "pip", "check"), 60),
-        Step("Node dependency integrity", ("npm.cmd", "ls", "--all"), 180),
+        Step("Node dependency integrity", _npm("ls", "--all"), 180),
         Step(
             "Source size limits",
             (sys.executable, "tests/cleanliness/check_file_lengths.py"),
@@ -78,7 +89,17 @@ def build_steps() -> list[Step]:
         Step("Prettier formatting", (_tool("prettier"), "--check", "frontend"), 300),
         Step(
             "ESLint",
-            ("npm.cmd", "run", "lint", "--prefix", "frontend", "--", "--max-warnings", "0"),
+            _npm(
+                "--loglevel",
+                "warn",
+                "run",
+                "lint",
+                "--prefix",
+                "frontend",
+                "--",
+                "--max-warnings",
+                "0",
+            ),
             300,
         ),
         Step("TypeScript", (_tool("tsc"), "-b", "frontend"), 300),
@@ -101,7 +122,8 @@ def build_steps() -> list[Step]:
         Step(
             "Frontend unit tests",
             (
-                "npm.cmd",
+                "corepack.cmd",
+                "npm",
                 "run",
                 "test",
                 "--prefix",
@@ -137,11 +159,12 @@ def build_steps() -> list[Step]:
             ),
             300,
         ),
-        Step("Frontend production build", ("npm.cmd", "run", "build", "--prefix", "frontend"), 900),
+        Step("Frontend production build", _npm("run", "build", "--prefix", "frontend"), 900),
         Step(
             "Storybook browser tests",
             (
-                "npm.cmd",
+                "corepack.cmd",
+                "npm",
                 "run",
                 "test-storybook",
                 "--prefix",
@@ -154,7 +177,7 @@ def build_steps() -> list[Step]:
         ),
         Step(
             "Storybook production build",
-            ("npm.cmd", "run", "build-storybook", "--prefix", "frontend"),
+            _npm("run", "build-storybook", "--prefix", "frontend"),
             1200,
         ),
         Step(
@@ -365,6 +388,7 @@ def _parser() -> argparse.ArgumentParser:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
+    _configure_output_streams()
     args = _parser().parse_args(argv)
     steps = build_steps()
     if args.list:

@@ -51,9 +51,7 @@ def _month_url(month: int) -> str:
 
 def _write_config(path: Path) -> None:
     path.write_text(
-        "username: update-test\n"
-        f"trainer_chesscom_uuid: {TRAINER_UUID}\n"
-        "request_delay: 0\n",
+        f"username: update-test\ntrainer_chesscom_uuid: {TRAINER_UUID}\nrequest_delay: 0\n",
         encoding="utf-8",
     )
 
@@ -147,9 +145,7 @@ def test_update_refetches_newest_fills_gaps_persists_independently_and_reports_s
     with sqlite3.connect(database) as connection:
         table_names = {
             str(row[0])
-            for row in connection.execute(
-                "SELECT name FROM sqlite_master WHERE type = 'table'"
-            )
+            for row in connection.execute("SELECT name FROM sqlite_master WHERE type = 'table'")
         }
     assert not any(
         marker in name.casefold()

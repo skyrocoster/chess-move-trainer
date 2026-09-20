@@ -5,15 +5,9 @@ import pytest
 
 from chess_move_trainer.database.positions import PositionValidationError, canonicalize_fen
 
-LEGAL_EN_PASSANT_FEN = (
-    "rnbqkbnr/ppp1pppp/8/3pP3/8/8/PPPP1PPP/RNBQKBNR w KQkq d6 0 3"
-)
-NO_CAPTURER_FEN = (
-    "rnbqkbnr/ppp1pppp/8/3p4/8/P7/1PPPPPPP/RNBQKBNR w KQkq d6 0 2"
-)
-PINNED_CAPTURER_FEN = (
-    "4r1k1/ppp2ppp/8/3pP3/8/8/PPPP1PPP/RNBQKBNR w KQ d6 0 3"
-)
+LEGAL_EN_PASSANT_FEN = "rnbqkbnr/ppp1pppp/8/3pP3/8/8/PPPP1PPP/RNBQKBNR w KQkq d6 0 3"
+NO_CAPTURER_FEN = "rnbqkbnr/ppp1pppp/8/3p4/8/P7/1PPPPPPP/RNBQKBNR w KQkq d6 0 2"
+PINNED_CAPTURER_FEN = "4r1k1/ppp2ppp/8/3pP3/8/8/PPPP1PPP/RNBQKBNR w KQ d6 0 3"
 
 
 @pytest.mark.parametrize(

@@ -73,8 +73,7 @@ class BulkRunner:
         *,
         page_size: int = 100,
         lock_timeout: float = 5.0,
-        _selector_factory: Callable[[str | Path, int, float], BulkTargetSelector]
-        | None = None,
+        _selector_factory: Callable[[str | Path, int, float], BulkTargetSelector] | None = None,
         _engine_factory: Callable[[], Any] | None = None,
         _publisher_factory: Callable[[], Any] | None = None,
         _mutex_factory: Callable[[str | Path], Any] | None = None,
@@ -93,9 +92,7 @@ class BulkRunner:
                 lock_timeout=timeout,
             )
         )
-        self._engine_factory = _engine_factory or (
-            lambda: StockfishEngine(self._executable)
-        )
+        self._engine_factory = _engine_factory or (lambda: StockfishEngine(self._executable))
         self._publisher_factory = _publisher_factory or (
             lambda: AnalysisRepository(
                 self._database_path,
@@ -126,9 +123,7 @@ class BulkRunner:
             raise BulkInputError("--limit cannot be combined with the initial preset")
 
         selector_factory = (
-            self._selector_factory
-            if preset is None
-            else self._initial_selector_factory
+            self._selector_factory if preset is None else self._initial_selector_factory
         )
         selector = selector_factory(
             self._database_path,
@@ -144,9 +139,7 @@ class BulkRunner:
                 0,
                 0,
                 preset=preset,
-                technical_categories=(
-                    INITIAL_TECHNICAL_CATEGORIES if preset == "initial" else ()
-                ),
+                technical_categories=(INITIAL_TECHNICAL_CATEGORIES if preset == "initial" else ()),
             )
         except KeyboardInterrupt:
             return BulkOutcome(
@@ -155,9 +148,7 @@ class BulkRunner:
                 0,
                 interrupted=True,
                 preset=preset,
-                technical_categories=(
-                    INITIAL_TECHNICAL_CATEGORIES if preset == "initial" else ()
-                ),
+                technical_categories=(INITIAL_TECHNICAL_CATEGORIES if preset == "initial" else ()),
             )
 
         selected_count = 0
@@ -197,9 +188,7 @@ class BulkRunner:
             failures=tuple(failures),
             interrupted=interrupted,
             preset=preset,
-            technical_categories=(
-                INITIAL_TECHNICAL_CATEGORIES if preset == "initial" else ()
-            ),
+            technical_categories=(INITIAL_TECHNICAL_CATEGORIES if preset == "initial" else ()),
         )
 
 

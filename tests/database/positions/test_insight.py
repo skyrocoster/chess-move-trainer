@@ -46,7 +46,7 @@ def _game(connection: sqlite3.Connection, game_id: int, color: str) -> None:
             game_id,
             f"game-{game_id}",
             f"https://example.test/game-{game_id}",
-            "[Result \"*\"]\n\n*",
+            '[Result "*"]\n\n*',
             color,
             f"trainer-{game_id}",
         ),
@@ -263,9 +263,7 @@ def test_delete_is_immediately_visible_as_unconfigured_in_position_insight(
         PreferredMoveRemovalRequest(TARGET_FEN, "2026-01-01", "2026-02-01"),
     )
 
-    insight = read_position_insight(
-        database, TARGET_FEN, "white", "2026-01-15"
-    )
+    insight = read_position_insight(database, TARGET_FEN, "white", "2026-01-15")
     assert insight.preference.kind == "unconfigured"
     assert insight.preference.uci is None
 

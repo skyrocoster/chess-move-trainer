@@ -11,7 +11,6 @@ from backend.app.dependencies import REBUILT_DATABASE_PATH_ENV
 from backend.app.main import app
 from chess_move_trainer.database.lifecycle import DEFAULT_DATABASE_PATH
 
-
 pytestmark = pytest.mark.skipif(
     os.environ.get("CHESS_RUN_REAL_TRAINING_REQUIREMENTS_SMOKE") != "1",
     reason="opt-in real-database fidelity smoke",
@@ -43,8 +42,7 @@ def test_real_database_training_requirement_anchor(monkeypatch: pytest.MonkeyPat
     matching_items = [
         candidate
         for candidate in body["items"]
-        if candidate["fen"]
-        == "rnbqkb1r/pppppppp/5n2/8/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 1"
+        if candidate["fen"] == "rnbqkb1r/pppppppp/5n2/8/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 1"
         and candidate["trainer_color"] == "white"
         and candidate["preferred_move_uci"] == "b1c3"
     ]
@@ -124,9 +122,7 @@ def test_real_database_caro_reached_scope_includes_deeper_variation(
     assert reached["page"] == 1
     assert reached["page_size"] == 100
 
-    representative_fen = (
-        "rnbqkbnr/pp2pppp/8/3p4/8/1B6/PPPP1PPP/RNBQK1NR b KQkq - 0 1"
-    )
+    representative_fen = "rnbqkbnr/pp2pppp/8/3p4/8/1B6/PPPP1PPP/RNBQK1NR b KQkq - 0 1"
     representative = next(
         item
         for item in reached["items"]

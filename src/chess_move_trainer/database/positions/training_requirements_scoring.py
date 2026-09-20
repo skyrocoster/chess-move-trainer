@@ -40,9 +40,7 @@ def requirement(
 
     game_value = _finite_float(game_balance_value, "game balance")
     training_value = _finite_float(effective_training_balance, "training balance")
-    return _finite_result(
-        game_value + training_adjustment(training_value), "training requirement"
-    )
+    return _finite_result(game_value + training_adjustment(training_value), "training requirement")
 
 
 def training_required(training_requirement: float) -> bool:
@@ -72,9 +70,7 @@ def effective_training_balance(
     updated_date = _coerce_date(training_updated_on, "training_updated_on")
     elapsed_days = (scoring_date - updated_date).days
     if elapsed_days < 0:
-        raise TrainingRequirementValidationError(
-            "training_updated_on cannot be later than as_of"
-        )
+        raise TrainingRequirementValidationError("training_updated_on cannot be later than as_of")
 
     stored_adjustment = training_adjustment(stored)
     decay_factor = 2.0 ** (-elapsed_days / policy.credit_half_life_days)
@@ -94,9 +90,7 @@ def minimum_additional_correct_answers(
     """Find the smallest whole number of same-date correct answers for ``R >= 0``."""
 
     game_value = _finite_float(game_balance_value, "game balance")
-    effective_value = _finite_float(
-        effective_training_balance_value, "effective training balance"
-    )
+    effective_value = _finite_float(effective_training_balance_value, "effective training balance")
     current_requirement = requirement(game_value, effective_value)
     if current_requirement >= 0.0:
         return 0
@@ -151,9 +145,7 @@ def _validate_counts(hits: object, misses: object) -> None:
 
 def _validate_policy(policy: object) -> None:
     if not isinstance(policy, TrainingRequirementPolicy):
-        raise TrainingRequirementValidationError(
-            "policy must be a TrainingRequirementPolicy"
-        )
+        raise TrainingRequirementValidationError("policy must be a TrainingRequirementPolicy")
 
 
 def _finite_float(value: object, name: str) -> float:

@@ -29,7 +29,8 @@ def test_pinned_source_has_a_bounded_same_side_transposition_pair() -> None:
     route, alternate = _find_transposition_pair(routes)
 
     differing_plies = [
-        ply for ply, (source, candidate) in enumerate(zip(route.moves_uci, alternate))
+        ply
+        for ply, (source, candidate) in enumerate(zip(route.moves_uci, alternate))
         if source != candidate
     ]
     assert alternate != route.moves_uci
@@ -103,9 +104,7 @@ def test_real_direct_database_matches_the_retained_source_ledger() -> None:
             continue
         accepted_by_id[game_uuid] = game.source_url
 
-    month_paths = sorted(
-        (raw_root / "games").glob("[0-9][0-9][0-9][0-9]/[0-9][0-9].json")
-    )
+    month_paths = sorted((raw_root / "games").glob("[0-9][0-9][0-9][0-9]/[0-9][0-9].json"))
     source_months_by_id: dict[str, set[str]] = {}
     for month_path in month_paths:
         month = f"{month_path.parent.name}-{month_path.stem}"
@@ -121,11 +120,7 @@ def test_real_direct_database_matches_the_retained_source_ledger() -> None:
         game_uuid not in source_months_by_id for game_uuid in accepted_by_id
     )
     source_month_to_ids = {
-        month: {
-            game_uuid
-            for game_uuid, months in source_months_by_id.items()
-            if month in months
-        }
+        month: {game_uuid for game_uuid, months in source_months_by_id.items() if month in months}
         for month in {month for months in source_months_by_id.values() for month in months}
     }
 
@@ -181,9 +176,7 @@ def _assert_same_key_set(left: dict[str, object], right: dict[str, object], labe
         )
 
 
-def _assert_same_mapping(
-    left: dict[str, object], right: dict[str, object], label: str
-) -> None:
+def _assert_same_mapping(left: dict[str, object], right: dict[str, object], label: str) -> None:
     if set(left) != set(right):
         _assert_same_key_set(left, right, label)
     mismatch_count = sum(left[key] != right[key] for key in left)

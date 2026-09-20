@@ -4,27 +4,16 @@ from __future__ import annotations
 
 import json
 import math
-import sys
 from collections.abc import Callable
-from pathlib import Path
 
 import typer
 
-from .connection import DEFAULT_LOCK_TIMEOUT_SECONDS
-from .inspection import inspect_schema, render_schema_markdown
 from .lifecycle import (
     DEFAULT_DATABASE_PATH,
     LifecycleResult,
-    setup_database,
-    update_games,
-    update_openings,
 )
 from .openings import (
-    OpeningInputError,
     OpeningRecognition,
-    OpeningRecognitionError,
-    lookup_fen,
-    replay_pgn,
 )
 from .preferred_moves.ranges import (
     NormalizedPeriod,
@@ -32,31 +21,10 @@ from .preferred_moves.ranges import (
     RangeValidationError,
     ResolutionState,
 )
-from .preferred_moves.repository import (
-    PreferredMoveRepository,
-    PreferredMoveSchemaError,
-    PreferredMoveStorageError,
-    PreferredMoveValidationError,
-)
 from .preferred_moves.setup import (
-    PreferredMoveSetupError,
     PreferredMoveSetupResult,
-    setup_preferred_moves as run_preferred_moves_setup,
 )
-from .publication import SchemaPublicationCollisionError, publish_schema
-from .schema import SchemaIncompatibleError, create_schema
-from .stockfish import (
-    BenchmarkCompatibilityError,
-    BenchmarkInputError,
-    BulkInputError,
-    BulkRunner,
-    INITIAL_TECHNICAL_CATEGORIES,
-    TargetInputError,
-    WorkerInputError,
-    WorkerRunner,
-    run_benchmark,
-)
-
+from .schema import SchemaIncompatibleError
 
 
 def _render_stockfish_outcome(message: str, outcome: object) -> None:
@@ -110,8 +78,7 @@ def _run_lifecycle(service: Callable[[], LifecycleResult]) -> None:
     if result.database_path != DEFAULT_DATABASE_PATH:
         _operational_error(
             RuntimeError(
-                "lifecycle service returned a destination other than "
-                f"{DEFAULT_DATABASE_PATH}"
+                f"lifecycle service returned a destination other than {DEFAULT_DATABASE_PATH}"
             ),
             1,
         )
@@ -193,18 +160,14 @@ def _preferred_period_json(period: NormalizedPeriod) -> dict[str, str | None]:
     return {
         "effective_from": period.effective_from.isoformat(),
         "effective_until": (
-            None
-            if period.effective_until is None
-            else period.effective_until.isoformat()
+            None if period.effective_until is None else period.effective_until.isoformat()
         ),
         "move": period.preference.move,
         "state": period.preference.state.value,
     }
 
 
-def _render_preferred_periods(
-    periods: tuple[NormalizedPeriod, ...], json_output: bool
-) -> None:
+def _render_preferred_periods(periods: tuple[NormalizedPeriod, ...], json_output: bool) -> None:
     serialized = [_preferred_period_json(period) for period in periods]
     if json_output:
         typer.echo(

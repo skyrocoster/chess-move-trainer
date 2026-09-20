@@ -176,9 +176,7 @@ def acquire_months(
                 candidate = remote
             publish_month(target, candidate, replace_existing=is_current)
         except Exception as error:
-            failures.append(
-                AcquisitionFailure(month=archive_month.label, message=str(error))
-            )
+            failures.append(AcquisitionFailure(month=archive_month.label, message=str(error)))
             continue
         published.append(archive_month.label)
 
@@ -268,9 +266,7 @@ def acquire_incremental_months(
                 replace_existing=target.exists(),
             )
         except Exception as error:
-            failures.append(
-                AcquisitionFailure(month=archive_month.label, message=str(error))
-            )
+            failures.append(AcquisitionFailure(month=archive_month.label, message=str(error)))
             continue
         published.append(archive_month.label)
 

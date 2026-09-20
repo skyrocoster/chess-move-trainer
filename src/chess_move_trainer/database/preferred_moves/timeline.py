@@ -36,9 +36,7 @@ class PreferredMoveTimelineRequest:
         try:
             position = canonicalize_fen(self.fen)
         except (PositionValidationError, TypeError, ValueError) as error:
-            raise PreferredMoveValidationError(
-                "fen must be a complete legal FEN"
-            ) from error
+            raise PreferredMoveValidationError("fen must be a complete legal FEN") from error
 
         try:
             start = parse_date_literal(self.from_date, field_name="from")
@@ -75,9 +73,7 @@ class PreferredMoveTimelinePreference:
     def __post_init__(self) -> None:
         if self.kind == "move":
             if type(self.uci) is not str or not self.uci:
-                raise PreferredMoveValidationError(
-                    "a move preference requires a UCI move"
-                )
+                raise PreferredMoveValidationError("a move preference requires a UCI move")
         elif self.kind in ("no_preference", "unconfigured"):
             if self.uci is not None:
                 raise PreferredMoveValidationError(
@@ -114,9 +110,7 @@ class PreferredMoveTimelineSegment:
         except RangeValidationError as error:
             raise PreferredMoveValidationError(str(error)) from error
         if start >= end:
-            raise PreferredMoveValidationError(
-                "segment from must be earlier than segment until"
-            )
+            raise PreferredMoveValidationError("segment from must be earlier than segment until")
         if not isinstance(self.preference, PreferredMoveTimelinePreference):
             raise PreferredMoveValidationError("segment preference is malformed")
         object.__setattr__(self, "from_date", start.isoformat())
@@ -159,8 +153,7 @@ class PreferredMoveTimeline:
 
         segments = tuple(self.segments)
         if not segments or any(
-            not isinstance(segment, PreferredMoveTimelineSegment)
-            for segment in segments
+            not isinstance(segment, PreferredMoveTimelineSegment) for segment in segments
         ):
             raise PreferredMoveStorageError("timeline segments are malformed")
 
@@ -173,17 +166,10 @@ class PreferredMoveTimeline:
                 raise PreferredMoveStorageError(
                     "timeline segments do not exactly cover the requested window"
                 )
-            if (
-                previous_preference is not None
-                and previous_preference == segment.preference
-            ):
-                raise PreferredMoveStorageError(
-                    "timeline contains adjacent equal preferences"
-                )
+            if previous_preference is not None and previous_preference == segment.preference:
+                raise PreferredMoveStorageError("timeline contains adjacent equal preferences")
             if segment_end > end:
-                raise PreferredMoveStorageError(
-                    "timeline segments exceed the requested window"
-                )
+                raise PreferredMoveStorageError("timeline segments exceed the requested window")
             cursor = segment_end
             previous_preference = segment.preference
         if cursor != end:
@@ -218,9 +204,7 @@ class PreferredMoveTimelineRepository:
         *,
         lock_timeout: float = DEFAULT_LOCK_TIMEOUT_SECONDS,
     ) -> None:
-        self._repository = PreferredMoveRepository(
-            database_path, lock_timeout=lock_timeout
-        )
+        self._repository = PreferredMoveRepository(database_path, lock_timeout=lock_timeout)
 
     def read(self, request: PreferredMoveTimelineRequest) -> PreferredMoveTimeline:
         """Return a complete timeline without creating a position or period."""
@@ -248,19 +232,13 @@ def read_preferred_moves(
 
     if isinstance(fen, PreferredMoveTimelineRequest):
         if from_date is not None or until is not None:
-            raise PreferredMoveValidationError(
-                "request cannot be combined with from_date or until"
-            )
+            raise PreferredMoveValidationError("request cannot be combined with from_date or until")
         request = fen
     else:
         if from_date is None or until is None:
-            raise PreferredMoveValidationError(
-                "fen, from_date, and until are required"
-            )
+            raise PreferredMoveValidationError("fen, from_date, and until are required")
         request = PreferredMoveTimelineRequest(fen, from_date, until)
-    return PreferredMoveTimelineRepository(
-        database_path, lock_timeout=lock_timeout
-    ).read(request)
+    return PreferredMoveTimelineRepository(database_path, lock_timeout=lock_timeout).read(request)
 
 
 get_preferred_moves = read_preferred_moves

@@ -4,11 +4,8 @@ import type { CSSProperties, FocusEventHandler, MouseEventHandler, ReactNode } f
 import { useCallback, useMemo } from "react";
 
 import styles from "./FormControls.module.css";
-import {
-  DropdownItemBody,
-  dropdownPositionerProps,
-  type DropdownOptionDefinition,
-} from "./private/DropdownParts";
+import { DropdownItemBody, type DropdownOptionDefinition } from "./private/DropdownParts";
+import { dropdownPositionerProps } from "./private/dropdownPositionerProps";
 
 export interface ComboboxProps {
   options: readonly DropdownOptionDefinition[];

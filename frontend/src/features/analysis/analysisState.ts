@@ -96,6 +96,7 @@ function useDefaultAnalysisState(fen: Fen | null, pollIntervalMs: number): Analy
   const lastInsightInvalidated = useRef<string | null>(null);
   const previousRetryToken = useRef(retryToken);
   const query = useAnalysisQuery(fen, undefined, pollIntervalMs, pollResetToken);
+  const { refetch } = query;
 
   useEffect(() => {
     currentFen.current = fen;
@@ -105,8 +106,8 @@ function useDefaultAnalysisState(fen: Fen | null, pollIntervalMs: number): Analy
     if (previousRetryToken.current === retryToken) return;
     previousRetryToken.current = retryToken;
     setRefreshing(true);
-    void query.refetch().finally(() => setRefreshing(false));
-  }, [query.refetch, retryToken]);
+    void refetch().finally(() => setRefreshing(false));
+  }, [refetch, retryToken]);
 
   useEffect(() => {
     setRetained((current) => {

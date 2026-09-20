@@ -79,14 +79,18 @@ def _position_with_result(
     engine_version: str = "19",
 ) -> int:
     position_id = PositionRepository(database).resolve_fen(STARTING_FEN)
-    assert AnalysisRepository(database).publish(
-        position_id,
-        _result(
-            quality=quality,
-            configuration_version=configuration_version,
-            engine_version=engine_version,
-        ),
-    ).saved
+    assert (
+        AnalysisRepository(database)
+        .publish(
+            position_id,
+            _result(
+                quality=quality,
+                configuration_version=configuration_version,
+                engine_version=engine_version,
+            ),
+        )
+        .saved
+    )
     return position_id
 
 
@@ -290,13 +294,13 @@ def test_concurrent_mixed_quality_requests_create_one_position_and_queue_row(
         )
 
     assert all(outcome.observation.fen == NOVEL_CANONICAL_FEN for outcome in outcomes)
-    assert all(
-        outcome.observation.state is AnalysisObservationState.QUEUED
-        for outcome in outcomes
-    )
+    assert all(outcome.observation.state is AnalysisObservationState.QUEUED for outcome in outcomes)
     with sqlite3.connect(database) as connection:
         assert connection.execute("SELECT COUNT(*) FROM derived_position").fetchone()[0] == 1
         assert connection.execute("SELECT COUNT(*) FROM derived_analysis_queue").fetchone()[0] == 1
-        assert connection.execute(
-            "SELECT daq_requested_quality FROM derived_analysis_queue"
-        ).fetchone()[0] == "tool"
+        assert (
+            connection.execute(
+                "SELECT daq_requested_quality FROM derived_analysis_queue"
+            ).fetchone()[0]
+            == "tool"
+        )

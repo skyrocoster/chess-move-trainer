@@ -10,6 +10,7 @@ import { Select } from "../form-controls/Select";
 import { TextInput } from "../form-controls/TextInput";
 import type { DropdownOptionDefinition } from "../form-controls/private/DropdownParts";
 import { storyViewport } from "../../../storybook/viewports";
+import { catalogueDemoShell } from "./catalogueDemoShell";
 import { DemoRow, FamilyPage } from "./FamilyPage";
 import styles from "./catalogue.module.css";
 
@@ -45,24 +46,6 @@ const RADIO_OPTIONS = [
   { value: "white", label: "White subject" },
   { value: "black", label: "Black subject", description: "Fitted from Black's reply" },
 ];
-
-function shell(children: React.ReactNode) {
-  return (
-    <main
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        gap: "var(--cmt-spacing-24)",
-        padding: "var(--cmt-spacing-32)",
-        minHeight: "100vh",
-        backgroundColor: "var(--md-sys-color-surface)",
-        color: "var(--md-sys-color-on-surface)",
-      }}
-    >
-      {children}
-    </main>
-  );
-}
 
 function ControlledSelectHarness() {
   const [value, setValue] = useState<string | null>("repertoire");
@@ -256,7 +239,7 @@ export const Docs: Story = {
 
 export const FieldStates: Story = {
   render: () =>
-    shell(
+    catalogueDemoShell(
       <div className={styles.demoStack}>
         <DemoRow caption="Default with a description">
           <Field
@@ -293,7 +276,7 @@ export const FieldStates: Story = {
 
 export const TextInputStates: Story = {
   render: () =>
-    shell(
+    catalogueDemoShell(
       <div className={styles.demoStack}>
         <DemoRow caption="Default">
           <div className={styles.demoControlWrap}>
@@ -331,7 +314,7 @@ export const TextInputStates: Story = {
 
 export const SelectStates: Story = {
   render: () =>
-    shell(
+    catalogueDemoShell(
       <div className={styles.demoStack}>
         <DemoRow caption="Default (interactive: open, choose, clear of the popup)">
           <div className={styles.demoControlWrap}>
@@ -366,7 +349,7 @@ export const SelectStates: Story = {
 
 export const SelectLoadingAndEmpty: Story = {
   render: () =>
-    shell(
+    catalogueDemoShell(
       <div className={styles.demoStack}>
         <DemoRow caption="Loading (options replaced by a loading message in the popup)">
           <div className={styles.demoControlWrap}>
@@ -384,7 +367,7 @@ export const SelectLoadingAndEmpty: Story = {
 
 export const ComboboxStates: Story = {
   render: () =>
-    shell(
+    catalogueDemoShell(
       <div className={styles.demoStack}>
         <DemoRow caption="Default (interactive: type to filter, clear, or choose an option)">
           <div className={styles.demoControlWrap}>
@@ -419,7 +402,7 @@ export const ComboboxStates: Story = {
 
 export const AutocompleteStates: Story = {
   render: () =>
-    shell(
+    catalogueDemoShell(
       <div className={styles.demoStack}>
         <DemoRow caption="Default (interactive: pick a suggestion or keep typing)">
           <div className={styles.demoControlWrap}>
@@ -454,7 +437,7 @@ export const AutocompleteStates: Story = {
 
 export const RadioGroupStates: Story = {
   render: () =>
-    shell(
+    catalogueDemoShell(
       <div className={styles.demoStack}>
         <DemoRow caption="Segmented (selected: White subject)">
           <RadioGroup
@@ -492,7 +475,7 @@ export const RadioGroupStates: Story = {
 export const NarrowViewport: Story = {
   parameters: storyViewport("constrained-412"),
   render: () =>
-    shell(
+    catalogueDemoShell(
       <div className={styles.demoStack}>
         <DemoRow caption="Field with required TextInput at the constrained width">
           <Field label="Opening name" required htmlFor="catalogue-narrow-input">

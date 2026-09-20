@@ -62,7 +62,7 @@ def create_cache_database(path: Path) -> Path:
                     game_id,
                     f"00000000-0000-4000-8000-{game_id:012d}",
                     f"https://example.test/cache-api-game-{game_id}",
-                    "[Result \"*\"]\n\n*",
+                    '[Result "*"]\n\n*',
                     color,
                     f"11111111-1111-4111-8111-11111111110{game_id}",
                     started,

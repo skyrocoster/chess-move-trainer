@@ -55,13 +55,7 @@ def test_one_position_real_benchmark_is_contained_and_completed_run_is_noop(
     first_position = approved["positions"][0]
     position_input = tmp_path / "one-position.json"
     position_input.write_text(
-        json.dumps(
-            {
-                "positions": [
-                    {"id": first_position["id"], "fen": first_position["fen"]}
-                ]
-            }
-        ),
+        json.dumps({"positions": [{"id": first_position["id"], "fen": first_position["fen"]}]}),
         encoding="utf-8",
     )
     output_dir = tmp_path / "benchmark-artifacts"
@@ -69,11 +63,7 @@ def test_one_position_real_benchmark_is_contained_and_completed_run_is_noop(
 
     first = _run(arguments)
     assert first.returncode == 0, first.stderr.decode("utf-8", errors="replace")
-    first_files = {
-        path.relative_to(output_dir)
-        for path in output_dir.rglob("*")
-        if path.is_file()
-    }
+    first_files = {path.relative_to(output_dir) for path in output_dir.rglob("*") if path.is_file()}
 
     assert first_files == {
         Path("manifest.json"),
@@ -92,17 +82,14 @@ def test_one_position_real_benchmark_is_contained_and_completed_run_is_noop(
     assert summary["total_jobs"] == summary["successful_attempts"] == 1
     assert len((output_dir / "summary.csv").read_text(encoding="utf-8").splitlines()) == 2
     assert all(
-        path.resolve().is_relative_to(output_dir.resolve())
-        for path in output_dir.rglob("*")
+        path.resolve().is_relative_to(output_dir.resolve()) for path in output_dir.rglob("*")
     )
 
     second = _run(arguments)
     assert second.returncode == 0, second.stderr.decode("utf-8", errors="replace")
     assert len((output_dir / "attempts.jsonl").read_text(encoding="utf-8").splitlines()) == 1
     assert {
-        path.relative_to(output_dir)
-        for path in output_dir.rglob("*")
-        if path.is_file()
+        path.relative_to(output_dir) for path in output_dir.rglob("*") if path.is_file()
     } == first_files
     second_checkpoint = json.loads((output_dir / "checkpoint.json").read_text(encoding="utf-8"))
     assert second_checkpoint["complete"] is True

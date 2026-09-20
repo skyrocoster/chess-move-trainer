@@ -2,22 +2,9 @@
 
 from __future__ import annotations
 
-import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Literal
-
-import chess
-from sqlalchemy import text
-
-from .connection import DEFAULT_LOCK_TIMEOUT_SECONDS, _open_connection
-from .games.reading import GameReadRepository
-from .openings.recognition import lookup_fen, replay_pgn
-from .openings.source import OpeningRouteSource, load_opening_sources
-from .positions import canonicalize_board
-from .schema import _assert_compatible_schema
-from .statistics import MoveResponseDistributionReader, PositionContextReader
-
+from typing import Literal
 
 DEFAULT_DATABASE_PATH = Path("data/database/chess.db")
 DIRECT_TABLE_NAMES = (
@@ -32,7 +19,6 @@ DIRECT_TABLE_NAMES = (
     "derived_opening_route_move",
     "derived_position",
 )
-
 
 
 class DirectPreflightError(ValueError):
@@ -192,5 +178,3 @@ class DirectCapabilities:
     opening_transposition_match_proven: bool
     opening_fen_clock_insensitive: bool
     opening_future_variation_excluded: bool
-
-

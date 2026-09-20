@@ -36,40 +36,40 @@
     "semantic_hash": "3d48a8dce9d2da1698ecaff252080c28"
   },
   "chess_move_trainer/database/analysis/observation.py": {
-    "mtime": 1789291909.4641104,
-    "seen": 1789502888.6864994,
-    "ast_hash": "b570d70d5be5353182943a51e5f5a3cf",
-    "semantic_hash": "b570d70d5be5353182943a51e5f5a3cf"
+    "mtime": 1789888082.302778,
+    "seen": 1789896431.4058163,
+    "ast_hash": "d1d496d8f3e32e8ecef8c7d3a247c0e7",
+    "semantic_hash": "d1d496d8f3e32e8ecef8c7d3a247c0e7"
   },
   "chess_move_trainer/database/analysis/reading.py": {
-    "mtime": 1789291912.9076574,
-    "seen": 1789502888.6864994,
-    "ast_hash": "14d8b2bcd36bad68004e4fed979590a1",
-    "semantic_hash": "14d8b2bcd36bad68004e4fed979590a1"
+    "mtime": 1789888082.3057795,
+    "seen": 1789896431.4058163,
+    "ast_hash": "f4974e8fa607acf7b2a768246841998e",
+    "semantic_hash": "f4974e8fa607acf7b2a768246841998e"
   },
   "chess_move_trainer/database/analysis/repository.py": {
-    "mtime": 1789291914.9954278,
-    "seen": 1789502888.6864994,
-    "ast_hash": "b7539e3807f2ffb187fdc36deed86a90",
-    "semantic_hash": "b7539e3807f2ffb187fdc36deed86a90"
+    "mtime": 1789888082.3127797,
+    "seen": 1789896431.4058163,
+    "ast_hash": "84c03213aea4e6e9e90bcd7a5910d304",
+    "semantic_hash": "84c03213aea4e6e9e90bcd7a5910d304"
   },
   "chess_move_trainer/database/analysis/requests.py": {
-    "mtime": 1789291917.5351727,
-    "seen": 1789502888.6864994,
-    "ast_hash": "263f4bd46e94a854b285bc80ddfb993d",
-    "semantic_hash": "263f4bd46e94a854b285bc80ddfb993d"
+    "mtime": 1789888082.406747,
+    "seen": 1789896431.4058163,
+    "ast_hash": "ec173dac194cbd1a9476d3607417c001",
+    "semantic_hash": "ec173dac194cbd1a9476d3607417c001"
   },
   "chess_move_trainer/database/analysis/validation.py": {
-    "mtime": 1789131697.6485827,
-    "seen": 1789502888.6864994,
-    "ast_hash": "0122116807f383b329e74b7cfc708152",
-    "semantic_hash": "0122116807f383b329e74b7cfc708152"
+    "mtime": 1789888082.364749,
+    "seen": 1789896431.4058163,
+    "ast_hash": "90124b790917a1d3833d343f01983e1f",
+    "semantic_hash": "90124b790917a1d3833d343f01983e1f"
   },
   "chess_move_trainer/database/cli.py": {
-    "mtime": 1789811192.5853908,
-    "seen": 1789849437.6613166,
-    "ast_hash": "6e402844561a67e9c805273e2eee1b3e",
-    "semantic_hash": "6e402844561a67e9c805273e2eee1b3e"
+    "mtime": 1789890524.7626886,
+    "seen": 1789896431.4058163,
+    "ast_hash": "e303b58c576443d1bbd30e062804d3c8",
+    "semantic_hash": "e303b58c576443d1bbd30e062804d3c8"
   },
   "chess_move_trainer/database/cli_apps.py": {
     "mtime": 1789135034.9672348,
@@ -78,40 +78,40 @@
     "semantic_hash": "cc9c57ddc8cb9e4b8e07eae23786acb6"
   },
   "chess_move_trainer/database/cli_helpers.py": {
-    "mtime": 1789811192.5853908,
-    "seen": 1789849437.6618407,
-    "ast_hash": "059e1c3908a70ddf4b7634a4d66be7c7",
-    "semantic_hash": "059e1c3908a70ddf4b7634a4d66be7c7"
+    "mtime": 1789888082.302778,
+    "seen": 1789896431.4058163,
+    "ast_hash": "a2a3384be22c68692fb037a79012a111",
+    "semantic_hash": "a2a3384be22c68692fb037a79012a111"
   },
   "chess_move_trainer/database/cli_lifecycle.py": {
-    "mtime": 1789811192.5853908,
-    "seen": 1789849437.6618407,
-    "ast_hash": "83d82e8cdb5c3418a04be98c235e3c54",
-    "semantic_hash": "83d82e8cdb5c3418a04be98c235e3c54"
+    "mtime": 1789888032.7548974,
+    "seen": 1789896431.4058163,
+    "ast_hash": "9d35295014d5f58e76343c740278ab03",
+    "semantic_hash": "9d35295014d5f58e76343c740278ab03"
   },
   "chess_move_trainer/database/cli_openings.py": {
-    "mtime": 1789811192.5853908,
-    "seen": 1789849437.6618407,
-    "ast_hash": "c8ab13c83db2ad6d22a432ac4518f1cd",
-    "semantic_hash": "c8ab13c83db2ad6d22a432ac4518f1cd"
+    "mtime": 1789888082.3047805,
+    "seen": 1789896431.4058163,
+    "ast_hash": "a4f4038e0ede231b8532f8665b59a028",
+    "semantic_hash": "a4f4038e0ede231b8532f8665b59a028"
   },
   "chess_move_trainer/database/cli_preferred.py": {
-    "mtime": 1789811192.5853908,
-    "seen": 1789849437.6618407,
-    "ast_hash": "09473a3310f3484f197f87856c0f8cf2",
-    "semantic_hash": "09473a3310f3484f197f87856c0f8cf2"
+    "mtime": 1789889442.8379347,
+    "seen": 1789896431.4058163,
+    "ast_hash": "7f8faf64df8b7e961659f1b2211faa4f",
+    "semantic_hash": "7f8faf64df8b7e961659f1b2211faa4f"
   },
   "chess_move_trainer/database/cli_stockfish.py": {
-    "mtime": 1789847798.2840345,
-    "seen": 1789849437.6618407,
-    "ast_hash": "db8d11cab1d4691e331dbcd2eb42071d",
-    "semantic_hash": "db8d11cab1d4691e331dbcd2eb42071d"
+    "mtime": 1789888082.31178,
+    "seen": 1789896431.4058163,
+    "ast_hash": "797297321db7af8a2c6acd09f83f823c",
+    "semantic_hash": "797297321db7af8a2c6acd09f83f823c"
   },
   "chess_move_trainer/database/connection.py": {
-    "mtime": 1789131697.6460824,
-    "seen": 1789502888.6864994,
-    "ast_hash": "62736a99d0d68e525c47b75acf30f803",
-    "semantic_hash": "62736a99d0d68e525c47b75acf30f803"
+    "mtime": 1789888082.3147793,
+    "seen": 1789896431.4058163,
+    "ast_hash": "f842249c12d94935416da0368cb4db7a",
+    "semantic_hash": "f842249c12d94935416da0368cb4db7a"
   },
   "chess_move_trainer/database/games/__init__.py": {
     "mtime": 1789131697.636082,
@@ -120,10 +120,10 @@
     "semantic_hash": "341d73f23f14affdc85a1aca3d936efb"
   },
   "chess_move_trainer/database/games/acquisition.py": {
-    "mtime": 1789131877.043865,
-    "seen": 1789502888.6864994,
-    "ast_hash": "75f85ffb12acd51735a456ce298dbfb9",
-    "semantic_hash": "75f85ffb12acd51735a456ce298dbfb9"
+    "mtime": 1789888082.3227794,
+    "seen": 1789896431.4058163,
+    "ast_hash": "f628c744a55837d1d94bf5972d11fc54",
+    "semantic_hash": "f628c744a55837d1d94bf5972d11fc54"
   },
   "chess_move_trainer/database/games/configuration.py": {
     "mtime": 1789131697.6405814,
@@ -132,34 +132,34 @@
     "semantic_hash": "469fb7305180eb1e51b59f2f7155148e"
   },
   "chess_move_trainer/database/games/normalization.py": {
-    "mtime": 1789131880.272352,
-    "seen": 1789502888.6864994,
-    "ast_hash": "9675407ec5f82c51aa2f3ed24b9b051a",
-    "semantic_hash": "9675407ec5f82c51aa2f3ed24b9b051a"
+    "mtime": 1789888082.32478,
+    "seen": 1789896431.4058163,
+    "ast_hash": "058cf59f2d1e67cf31445261d1d0865a",
+    "semantic_hash": "058cf59f2d1e67cf31445261d1d0865a"
   },
   "chess_move_trainer/database/games/persistence.py": {
-    "mtime": 1789811192.5853908,
-    "seen": 1789849437.6618407,
-    "ast_hash": "db474edcf14997a4e720bee6bb334b9b",
-    "semantic_hash": "db474edcf14997a4e720bee6bb334b9b"
+    "mtime": 1789887847.4449916,
+    "seen": 1789896431.4058163,
+    "ast_hash": "4fb65f99dca082393a9bfc7d7281f94d",
+    "semantic_hash": "4fb65f99dca082393a9bfc7d7281f94d"
   },
   "chess_move_trainer/database/games/persistence_import.py": {
-    "mtime": 1789811192.5697627,
-    "seen": 1789849437.6618407,
-    "ast_hash": "2ba0f96d85d3e47f22ae7f95be3ec244",
-    "semantic_hash": "2ba0f96d85d3e47f22ae7f95be3ec244"
+    "mtime": 1789888082.2817788,
+    "seen": 1789896431.4058163,
+    "ast_hash": "ce9525f67bfbb222c082d9a4de8d65a2",
+    "semantic_hash": "ce9525f67bfbb222c082d9a4de8d65a2"
   },
   "chess_move_trainer/database/games/persistence_repository.py": {
-    "mtime": 1789811192.5697627,
-    "seen": 1789849437.6618407,
-    "ast_hash": "71052fbf62f11cf6fa417adeac5b4624",
-    "semantic_hash": "71052fbf62f11cf6fa417adeac5b4624"
+    "mtime": 1789888032.7548974,
+    "seen": 1789896431.4058163,
+    "ast_hash": "50478ac92cb4cb6a35c366044dd499c6",
+    "semantic_hash": "50478ac92cb4cb6a35c366044dd499c6"
   },
   "chess_move_trainer/database/games/raw_storage.py": {
-    "mtime": 1788535259.744059,
-    "seen": 1789502888.6864994,
-    "ast_hash": "a6eb9d6998faeee082c700948e1f4436",
-    "semantic_hash": "a6eb9d6998faeee082c700948e1f4436"
+    "mtime": 1789888082.3047805,
+    "seen": 1789896431.4058163,
+    "ast_hash": "702fdc34372022da2ca78e8835dfec98",
+    "semantic_hash": "702fdc34372022da2ca78e8835dfec98"
   },
   "chess_move_trainer/database/games/reading.py": {
     "mtime": 1789131697.6380818,
@@ -168,10 +168,10 @@
     "semantic_hash": "aae35aa32511168f63433bb6a061581c"
   },
   "chess_move_trainer/database/games/search.py": {
-    "mtime": 1789811192.5697627,
-    "seen": 1789849437.6628408,
-    "ast_hash": "4da672e68d8f622ff72212b555d9d53f",
-    "semantic_hash": "4da672e68d8f622ff72212b555d9d53f"
+    "mtime": 1789888574.1549804,
+    "seen": 1789896431.4058163,
+    "ast_hash": "2fd44be85416f8ccac1bef7e8b957e25",
+    "semantic_hash": "2fd44be85416f8ccac1bef7e8b957e25"
   },
   "chess_move_trainer/database/games/search_errors.py": {
     "mtime": 1789134562.0984867,
@@ -180,40 +180,40 @@
     "semantic_hash": "940cb62309bce9b8357f4c39781a0af2"
   },
   "chess_move_trainer/database/games/search_filters.py": {
-    "mtime": 1789811192.5697627,
-    "seen": 1789849437.6628408,
-    "ast_hash": "7d7c40e28336fedd16e9b1fdde8b06a6",
-    "semantic_hash": "7d7c40e28336fedd16e9b1fdde8b06a6"
+    "mtime": 1789888032.7548974,
+    "seen": 1789896431.4058163,
+    "ast_hash": "55234ddc1f95c45973bc6ff05fdafd09",
+    "semantic_hash": "55234ddc1f95c45973bc6ff05fdafd09"
   },
   "chess_move_trainer/database/games/search_models.py": {
-    "mtime": 1789811192.5697627,
-    "seen": 1789849437.6628408,
-    "ast_hash": "8156d86d077c33718111c3873244ed02",
-    "semantic_hash": "8156d86d077c33718111c3873244ed02"
+    "mtime": 1789888032.7548974,
+    "seen": 1789896431.4058163,
+    "ast_hash": "c0d84f4697ac1b517c45ef6877bfb139",
+    "semantic_hash": "c0d84f4697ac1b517c45ef6877bfb139"
   },
   "chess_move_trainer/database/games/search_repository.py": {
-    "mtime": 1789811192.5697627,
-    "seen": 1789849437.6628408,
-    "ast_hash": "0a74a7251046c17a8918c4377afb8891",
-    "semantic_hash": "0a74a7251046c17a8918c4377afb8891"
+    "mtime": 1789888032.7548974,
+    "seen": 1789896431.4058163,
+    "ast_hash": "688935aee9e6b5206bf17a86ff38f97c",
+    "semantic_hash": "688935aee9e6b5206bf17a86ff38f97c"
   },
   "chess_move_trainer/database/games/search_validation.py": {
-    "mtime": 1789811192.5697627,
-    "seen": 1789849437.6628408,
-    "ast_hash": "36bb4130653a812c09938bbec96b72ea",
-    "semantic_hash": "36bb4130653a812c09938bbec96b72ea"
+    "mtime": 1789887847.4489923,
+    "seen": 1789896431.4058163,
+    "ast_hash": "4e3dec442ed83dde7b4086d023da421d",
+    "semantic_hash": "4e3dec442ed83dde7b4086d023da421d"
   },
   "chess_move_trainer/database/inspection.py": {
-    "mtime": 1789131952.1785643,
-    "seen": 1789502888.6864994,
-    "ast_hash": "86ec4393a6e2b9b0bda166e25567fe38",
-    "semantic_hash": "86ec4393a6e2b9b0bda166e25567fe38"
+    "mtime": 1789888082.302778,
+    "seen": 1789896431.4058163,
+    "ast_hash": "d94740e225811739566681201e837639",
+    "semantic_hash": "d94740e225811739566681201e837639"
   },
   "chess_move_trainer/database/lifecycle.py": {
-    "mtime": 1789292069.256117,
-    "seen": 1789502888.6864994,
-    "ast_hash": "8ff7d644f91aba9c52a95a8685782afe",
-    "semantic_hash": "8ff7d644f91aba9c52a95a8685782afe"
+    "mtime": 1789888082.3057795,
+    "seen": 1789896431.4058163,
+    "ast_hash": "b21a98fcd115e39acb064e14233c0b95",
+    "semantic_hash": "b21a98fcd115e39acb064e14233c0b95"
   },
   "chess_move_trainer/database/openings/__init__.py": {
     "mtime": 1789131697.6160822,
@@ -222,16 +222,16 @@
     "semantic_hash": "ce603b8fc69c265966a0d82cd311569e"
   },
   "chess_move_trainer/database/openings/acquisition.py": {
-    "mtime": 1789131697.6260827,
-    "seen": 1789502888.6864994,
-    "ast_hash": "687d2c7fb6d8091795b931e6622f7faa",
-    "semantic_hash": "687d2c7fb6d8091795b931e6622f7faa"
+    "mtime": 1789888082.3127797,
+    "seen": 1789896431.4058163,
+    "ast_hash": "b0486b3b012a0472d93bc51ed457e478",
+    "semantic_hash": "b0486b3b012a0472d93bc51ed457e478"
   },
   "chess_move_trainer/database/openings/catalogue.py": {
-    "mtime": 1789131959.8395336,
-    "seen": 1789502888.6864994,
-    "ast_hash": "142e51686dee9f6a2b5584ffbbaa11f4",
-    "semantic_hash": "142e51686dee9f6a2b5584ffbbaa11f4"
+    "mtime": 1789888082.3227794,
+    "seen": 1789896431.4058163,
+    "ast_hash": "7760c78aa2076ba1b0487bc1ed75dd39",
+    "semantic_hash": "7760c78aa2076ba1b0487bc1ed75dd39"
   },
   "chess_move_trainer/database/openings/keys.py": {
     "mtime": 1789291925.657279,
@@ -240,28 +240,28 @@
     "semantic_hash": "c1d741399790b57b01ea95ecc42de995"
   },
   "chess_move_trainer/database/openings/persistence.py": {
-    "mtime": 1788800818.1995275,
-    "seen": 1789502888.6864994,
-    "ast_hash": "eac256cfdf4e58e6fc781a28e0b83c7b",
-    "semantic_hash": "eac256cfdf4e58e6fc781a28e0b83c7b"
+    "mtime": 1789888082.32478,
+    "seen": 1789896431.4058163,
+    "ast_hash": "43d941dca8055e184e92c4f6b3019e6a",
+    "semantic_hash": "43d941dca8055e184e92c4f6b3019e6a"
   },
   "chess_move_trainer/database/openings/recognition.py": {
-    "mtime": 1789812665.8198416,
-    "seen": 1789849437.6638408,
-    "ast_hash": "09956f50fe10901ba7bae3690a7825b1",
-    "semantic_hash": "09956f50fe10901ba7bae3690a7825b1"
+    "mtime": 1789888032.7559,
+    "seen": 1789896431.4058163,
+    "ast_hash": "699ef05e7baefd3677e5be3adcb36bb1",
+    "semantic_hash": "699ef05e7baefd3677e5be3adcb36bb1"
   },
   "chess_move_trainer/database/openings/source.py": {
-    "mtime": 1789131976.2806356,
-    "seen": 1789502888.6864994,
-    "ast_hash": "5ba9009a4ae0e1e5b51330e733da3b8c",
-    "semantic_hash": "5ba9009a4ae0e1e5b51330e733da3b8c"
+    "mtime": 1789888082.3257797,
+    "seen": 1789896431.4058163,
+    "ast_hash": "ba72a0c800d295e4ee006e473a347e90",
+    "semantic_hash": "ba72a0c800d295e4ee006e473a347e90"
   },
   "chess_move_trainer/database/positions/__init__.py": {
-    "mtime": 1789811192.5697627,
-    "seen": 1789849437.6638408,
-    "ast_hash": "d943bfb31e0d1ec77cfcdfd4afafe00e",
-    "semantic_hash": "d943bfb31e0d1ec77cfcdfd4afafe00e"
+    "mtime": 1789887847.4094007,
+    "seen": 1789896431.4058163,
+    "ast_hash": "f395cc2fb3dd081d9c8d20f937f71595",
+    "semantic_hash": "f395cc2fb3dd081d9c8d20f937f71595"
   },
   "chess_move_trainer/database/positions/canonicalization.py": {
     "mtime": 1788941828.6539493,
@@ -270,70 +270,70 @@
     "semantic_hash": "165e6eeadb49cba7e2d76e8c1703b940"
   },
   "chess_move_trainer/database/positions/insight.py": {
-    "mtime": 1789811192.5697627,
-    "seen": 1789849437.6638408,
-    "ast_hash": "bfe54462e04507f57d327150571274e3",
-    "semantic_hash": "bfe54462e04507f57d327150571274e3"
+    "mtime": 1789888522.2286284,
+    "seen": 1789896431.4058163,
+    "ast_hash": "c2b24218e0a31431768f4db95dc5f13b",
+    "semantic_hash": "c2b24218e0a31431768f4db95dc5f13b"
   },
   "chess_move_trainer/database/positions/insight_helpers.py": {
-    "mtime": 1789812701.7057633,
-    "seen": 1789849437.6638408,
-    "ast_hash": "c004218d3e1445b425b7266c821a0912",
-    "semantic_hash": "c004218d3e1445b425b7266c821a0912"
+    "mtime": 1789888032.7548974,
+    "seen": 1789896431.4058163,
+    "ast_hash": "c2e2120c5fbee87022e5f7cd2b24dd7a",
+    "semantic_hash": "c2e2120c5fbee87022e5f7cd2b24dd7a"
   },
   "chess_move_trainer/database/positions/insight_models.py": {
-    "mtime": 1789811192.5697627,
-    "seen": 1789849437.6638408,
-    "ast_hash": "cef60e7dca0d783ba9f8e6485becd90a",
-    "semantic_hash": "cef60e7dca0d783ba9f8e6485becd90a"
+    "mtime": 1789888032.7548974,
+    "seen": 1789896431.4058163,
+    "ast_hash": "4677c3ba80461afad55b9a2c60d894f3",
+    "semantic_hash": "4677c3ba80461afad55b9a2c60d894f3"
   },
   "chess_move_trainer/database/positions/insight_readers.py": {
-    "mtime": 1789812382.9707875,
-    "seen": 1789849437.6638408,
-    "ast_hash": "7e4b5628d522069bea5e45621d7661a2",
-    "semantic_hash": "7e4b5628d522069bea5e45621d7661a2"
+    "mtime": 1789888032.7548974,
+    "seen": 1789896431.4058163,
+    "ast_hash": "ae895bd29e11eb086cefd63945d2ad94",
+    "semantic_hash": "ae895bd29e11eb086cefd63945d2ad94"
   },
   "chess_move_trainer/database/positions/insight_repository.py": {
-    "mtime": 1789812701.7068098,
-    "seen": 1789849437.6638408,
-    "ast_hash": "6df9728271f231ef0c3d7292722f6084",
-    "semantic_hash": "6df9728271f231ef0c3d7292722f6084"
+    "mtime": 1789888032.7548974,
+    "seen": 1789896431.4058163,
+    "ast_hash": "f71ced712ea7161592e2605dbd9ff4fc",
+    "semantic_hash": "f71ced712ea7161592e2605dbd9ff4fc"
   },
   "chess_move_trainer/database/positions/repository.py": {
-    "mtime": 1788943853.690624,
-    "seen": 1789502888.6864994,
-    "ast_hash": "538a9048b53fe8c863de22ec8909e85b",
-    "semantic_hash": "538a9048b53fe8c863de22ec8909e85b"
+    "mtime": 1789888082.3267806,
+    "seen": 1789896431.4058163,
+    "ast_hash": "5ca652a0d7f53d88ae06bf33ab44c802",
+    "semantic_hash": "5ca652a0d7f53d88ae06bf33ab44c802"
   },
   "chess_move_trainer/database/positions/training_answers.py": {
-    "mtime": 1789849163.1082158,
-    "seen": 1789849437.6638408,
-    "ast_hash": "0dd10dd402583f4b4ce23504446c37b0",
-    "semantic_hash": "0dd10dd402583f4b4ce23504446c37b0"
+    "mtime": 1789890232.0120971,
+    "seen": 1789896431.4058163,
+    "ast_hash": "92b7c1f8489d525c152ce4804e978834",
+    "semantic_hash": "92b7c1f8489d525c152ce4804e978834"
   },
   "chess_move_trainer/database/positions/training_requirements.py": {
-    "mtime": 1789811192.5697627,
-    "seen": 1789849437.6638408,
-    "ast_hash": "22829e3435e1af014b103238f38d914c",
-    "semantic_hash": "22829e3435e1af014b103238f38d914c"
+    "mtime": 1789887847.4419913,
+    "seen": 1789896431.4058163,
+    "ast_hash": "13caf62f15b6d24b4c83d03fed6d38d5",
+    "semantic_hash": "13caf62f15b6d24b4c83d03fed6d38d5"
   },
   "chess_move_trainer/database/positions/training_requirements_models.py": {
-    "mtime": 1789343617.8313572,
-    "seen": 1789502888.6864994,
-    "ast_hash": "d1a91e90bf06489c0958f90d258d424d",
-    "semantic_hash": "d1a91e90bf06489c0958f90d258d424d"
+    "mtime": 1789888082.302778,
+    "seen": 1789896431.4058163,
+    "ast_hash": "3a132322c96e298a6420a208b08ffb37",
+    "semantic_hash": "3a132322c96e298a6420a208b08ffb37"
   },
   "chess_move_trainer/database/positions/training_requirements_repository.py": {
-    "mtime": 1789811192.5697627,
-    "seen": 1789849437.6638408,
-    "ast_hash": "29ca090b4110a7683f1931f10301c588",
-    "semantic_hash": "29ca090b4110a7683f1931f10301c588"
+    "mtime": 1789888082.3137798,
+    "seen": 1789896431.4058163,
+    "ast_hash": "1ca86a5dc9dab2806af56be549970f30",
+    "semantic_hash": "1ca86a5dc9dab2806af56be549970f30"
   },
   "chess_move_trainer/database/positions/training_requirements_scoring.py": {
-    "mtime": 1789223806.0785046,
-    "seen": 1789502888.6864994,
-    "ast_hash": "33f62f215a6893a7edef3ebe304efa7a",
-    "semantic_hash": "33f62f215a6893a7edef3ebe304efa7a"
+    "mtime": 1789888082.41375,
+    "seen": 1789896431.4058163,
+    "ast_hash": "b41f7082799bc26777adb01bb9fcb62a",
+    "semantic_hash": "b41f7082799bc26777adb01bb9fcb62a"
   },
   "chess_move_trainer/database/preferred_moves/__init__.py": {
     "mtime": 1789131697.6000826,
@@ -342,88 +342,88 @@
     "semantic_hash": "4a1c513ef929c6590c1886bfb14c1904"
   },
   "chess_move_trainer/database/preferred_moves/inference.py": {
-    "mtime": 1789131697.6095822,
-    "seen": 1789502888.6864994,
-    "ast_hash": "a9af85631cdfbd7f57c1a011c8ba92d1",
-    "semantic_hash": "a9af85631cdfbd7f57c1a011c8ba92d1"
+    "mtime": 1789888082.3577478,
+    "seen": 1789896431.4058163,
+    "ast_hash": "b15477e10bdde0de354dea3ae621ba91",
+    "semantic_hash": "b15477e10bdde0de354dea3ae621ba91"
   },
   "chess_move_trainer/database/preferred_moves/mutations.py": {
-    "mtime": 1788951997.4097388,
-    "seen": 1789502888.6864994,
-    "ast_hash": "63ecf31a5d2443ddf70ab39f82bf966b",
-    "semantic_hash": "63ecf31a5d2443ddf70ab39f82bf966b"
+    "mtime": 1789888082.3587487,
+    "seen": 1789896431.4058163,
+    "ast_hash": "ee85a0fef4edb54c122991511801d457",
+    "semantic_hash": "ee85a0fef4edb54c122991511801d457"
   },
   "chess_move_trainer/database/preferred_moves/ranges.py": {
-    "mtime": 1789131697.6075828,
-    "seen": 1789502888.6864994,
-    "ast_hash": "0790cce723ffe5a7dc723299cc0c36b5",
-    "semantic_hash": "0790cce723ffe5a7dc723299cc0c36b5"
+    "mtime": 1789888082.3597476,
+    "seen": 1789896431.4058163,
+    "ast_hash": "4f4c3b2551aa5a14e6a9e22ce1af813b",
+    "semantic_hash": "4f4c3b2551aa5a14e6a9e22ce1af813b"
   },
   "chess_move_trainer/database/preferred_moves/repository.py": {
-    "mtime": 1789131697.606583,
-    "seen": 1789502888.6864994,
-    "ast_hash": "ad4612fe9d938a9576bbfc5f61332f33",
-    "semantic_hash": "ad4612fe9d938a9576bbfc5f61332f33"
+    "mtime": 1789888082.3607507,
+    "seen": 1789896431.4058163,
+    "ast_hash": "66f48ebdbf808083439ddb9006909184",
+    "semantic_hash": "66f48ebdbf808083439ddb9006909184"
   },
   "chess_move_trainer/database/preferred_moves/setup.py": {
-    "mtime": 1789292038.2123687,
-    "seen": 1789502888.6864994,
-    "ast_hash": "2ac1560e3cf9d3f7dc8389e5523412e5",
-    "semantic_hash": "2ac1560e3cf9d3f7dc8389e5523412e5"
+    "mtime": 1789888082.361749,
+    "seen": 1789896431.4058163,
+    "ast_hash": "9be88fc7d9a48833b6593124232c795b",
+    "semantic_hash": "9be88fc7d9a48833b6593124232c795b"
   },
   "chess_move_trainer/database/preferred_moves/timeline.py": {
-    "mtime": 1789131697.601583,
-    "seen": 1789502888.6864994,
-    "ast_hash": "2dd35215d24129756cf2c45952f321aa",
-    "semantic_hash": "2dd35215d24129756cf2c45952f321aa"
+    "mtime": 1789888082.3157806,
+    "seen": 1789896431.4058163,
+    "ast_hash": "28963299494c51b1112dfcab13b4c619",
+    "semantic_hash": "28963299494c51b1112dfcab13b4c619"
   },
   "chess_move_trainer/database/proof.py": {
-    "mtime": 1789811192.5697627,
-    "seen": 1789849437.6658406,
-    "ast_hash": "8a314b43e70efc544f82497e4ba6f21f",
-    "semantic_hash": "8a314b43e70efc544f82497e4ba6f21f"
+    "mtime": 1789888635.2743075,
+    "seen": 1789896431.4058163,
+    "ast_hash": "e6a29f599af67a927871f2fc4089213e",
+    "semantic_hash": "e6a29f599af67a927871f2fc4089213e"
   },
   "chess_move_trainer/database/proof_capabilities.py": {
-    "mtime": 1789811192.5697627,
-    "seen": 1789849437.6658406,
-    "ast_hash": "492c8e39ad0a24438040278d45843082",
-    "semantic_hash": "492c8e39ad0a24438040278d45843082"
+    "mtime": 1789888082.329779,
+    "seen": 1789896431.4058163,
+    "ast_hash": "1cc2f729efe21ff2d37f2fdba065f823",
+    "semantic_hash": "1cc2f729efe21ff2d37f2fdba065f823"
   },
   "chess_move_trainer/database/proof_measurements.py": {
-    "mtime": 1789811192.5697627,
-    "seen": 1789849437.6658406,
-    "ast_hash": "188ac8bdcb60cc494c20b59f97777b0b",
-    "semantic_hash": "188ac8bdcb60cc494c20b59f97777b0b"
+    "mtime": 1789888032.7559,
+    "seen": 1789896431.4058163,
+    "ast_hash": "50da5584dfafa347512be91b3c65708f",
+    "semantic_hash": "50da5584dfafa347512be91b3c65708f"
   },
   "chess_move_trainer/database/proof_models.py": {
-    "mtime": 1789811192.5697627,
-    "seen": 1789849437.6658406,
-    "ast_hash": "9c0d3d3bc811da4b3d61241927ce75ad",
-    "semantic_hash": "9c0d3d3bc811da4b3d61241927ce75ad"
+    "mtime": 1789888082.3307793,
+    "seen": 1789896431.4058163,
+    "ast_hash": "c17325459bf77544fcb7d00d4e0fb00c",
+    "semantic_hash": "c17325459bf77544fcb7d00d4e0fb00c"
   },
   "chess_move_trainer/database/proof_opening_helpers.py": {
-    "mtime": 1789133722.966536,
-    "seen": 1789502888.6864994,
-    "ast_hash": "39b71f4e9cb9e192cd85fa66de7a598e",
-    "semantic_hash": "39b71f4e9cb9e192cd85fa66de7a598e"
+    "mtime": 1789888082.3257797,
+    "seen": 1789896431.4058163,
+    "ast_hash": "470f1f2a2d066d4afbc4d2b3b8d72558",
+    "semantic_hash": "470f1f2a2d066d4afbc4d2b3b8d72558"
   },
   "chess_move_trainer/database/proof_query.py": {
-    "mtime": 1789133771.9167964,
-    "seen": 1789502888.6864994,
-    "ast_hash": "2fbd6974d53a360807202e34fcdec0a5",
-    "semantic_hash": "2fbd6974d53a360807202e34fcdec0a5"
+    "mtime": 1789888082.3267806,
+    "seen": 1789896431.4058163,
+    "ast_hash": "04e41057e3e41abd9b22d2c195f7c439",
+    "semantic_hash": "04e41057e3e41abd9b22d2c195f7c439"
   },
   "chess_move_trainer/database/proof_statements.py": {
-    "mtime": 1789133722.966536,
-    "seen": 1789502888.6864994,
-    "ast_hash": "85e1881b51145cf3a331b08a93707bcf",
-    "semantic_hash": "85e1881b51145cf3a331b08a93707bcf"
+    "mtime": 1789888082.3277786,
+    "seen": 1789896431.4058163,
+    "ast_hash": "b94f839c1ceef6eef955437941bbc19a",
+    "semantic_hash": "b94f839c1ceef6eef955437941bbc19a"
   },
   "chess_move_trainer/database/proof_verification.py": {
-    "mtime": 1789811192.5697627,
-    "seen": 1789849437.6658406,
-    "ast_hash": "744adbf7d939751a4d98008cec6e2e84",
-    "semantic_hash": "744adbf7d939751a4d98008cec6e2e84"
+    "mtime": 1789888082.3277786,
+    "seen": 1789896431.4058163,
+    "ast_hash": "f8a0727ac8f4597aace69cf1d93e4d15",
+    "semantic_hash": "f8a0727ac8f4597aace69cf1d93e4d15"
   },
   "chess_move_trainer/database/publication.py": {
     "mtime": 1788521566.1350658,
@@ -468,46 +468,46 @@
     "semantic_hash": "39aac79b489af06bba0821d1a09401c3"
   },
   "chess_move_trainer/database/stockfish/benchmark.py": {
-    "mtime": 1789811192.5697627,
-    "seen": 1789849437.6668406,
-    "ast_hash": "577a68c3e10edb9989f097d2fe518417",
-    "semantic_hash": "577a68c3e10edb9989f097d2fe518417"
+    "mtime": 1789887847.4224317,
+    "seen": 1789896431.4058163,
+    "ast_hash": "b8f95e6fe2a3acc52c359e750ea45b99",
+    "semantic_hash": "b8f95e6fe2a3acc52c359e750ea45b99"
   },
   "chess_move_trainer/database/stockfish/benchmark_artifacts.py": {
-    "mtime": 1789811192.5697627,
-    "seen": 1789849437.6668406,
-    "ast_hash": "f30211bf5edfd8b0c104140cf6f8e16d",
-    "semantic_hash": "f30211bf5edfd8b0c104140cf6f8e16d"
+    "mtime": 1789888082.3017771,
+    "seen": 1789896431.4058163,
+    "ast_hash": "77f51e5f8c7a2970baaf6f7ecf80eedc",
+    "semantic_hash": "77f51e5f8c7a2970baaf6f7ecf80eedc"
   },
   "chess_move_trainer/database/stockfish/benchmark_io.py": {
-    "mtime": 1789811192.5697627,
-    "seen": 1789849437.6668406,
-    "ast_hash": "3e47de0301ab487671463aeeb28dd6e8",
-    "semantic_hash": "3e47de0301ab487671463aeeb28dd6e8"
+    "mtime": 1789888032.7559,
+    "seen": 1789896431.4058163,
+    "ast_hash": "8fbaf8c840602b4a070dc37d7971f276",
+    "semantic_hash": "8fbaf8c840602b4a070dc37d7971f276"
   },
   "chess_move_trainer/database/stockfish/benchmark_models.py": {
-    "mtime": 1789811192.5697627,
-    "seen": 1789849437.6668406,
-    "ast_hash": "484223688334aa9ff34ba327775ec824",
-    "semantic_hash": "484223688334aa9ff34ba327775ec824"
+    "mtime": 1789887847.4339485,
+    "seen": 1789896431.4058163,
+    "ast_hash": "669ca90f37e119cc9a4b0abdfb281dfb",
+    "semantic_hash": "669ca90f37e119cc9a4b0abdfb281dfb"
   },
   "chess_move_trainer/database/stockfish/benchmark_records.py": {
-    "mtime": 1789811192.5697627,
-    "seen": 1789849437.6668406,
-    "ast_hash": "eb1a8be803023c2d028ae71ba2412a8c",
-    "semantic_hash": "eb1a8be803023c2d028ae71ba2412a8c"
+    "mtime": 1789888032.7568984,
+    "seen": 1789896431.4058163,
+    "ast_hash": "9aa323bcc337e8db4247c2bd7fa270a8",
+    "semantic_hash": "9aa323bcc337e8db4247c2bd7fa270a8"
   },
   "chess_move_trainer/database/stockfish/benchmark_runner.py": {
-    "mtime": 1789811192.5697627,
-    "seen": 1789849437.6668406,
-    "ast_hash": "b130d2290e63cae2c42096b9c39acd7c",
-    "semantic_hash": "b130d2290e63cae2c42096b9c39acd7c"
+    "mtime": 1789888082.3057795,
+    "seen": 1789896431.4058163,
+    "ast_hash": "427d9ab5463bd27c4c69a18a4ee20c88",
+    "semantic_hash": "427d9ab5463bd27c4c69a18a4ee20c88"
   },
   "chess_move_trainer/database/stockfish/bulk.py": {
-    "mtime": 1789131697.6430826,
-    "seen": 1789502888.6864994,
-    "ast_hash": "1e3f79a56a58641cc8540575e16b6d1b",
-    "semantic_hash": "1e3f79a56a58641cc8540575e16b6d1b"
+    "mtime": 1789888082.31178,
+    "seen": 1789896431.4058163,
+    "ast_hash": "8bc40e7c04022c3e0cfc9d9980dbd167",
+    "semantic_hash": "8bc40e7c04022c3e0cfc9d9980dbd167"
   },
   "chess_move_trainer/database/stockfish/configuration.py": {
     "mtime": 1789847798.2810328,
@@ -516,76 +516,76 @@
     "semantic_hash": "a6a9eb133a2743bb8a8d4c98cae367b5"
   },
   "chess_move_trainer/database/stockfish/engine.py": {
-    "mtime": 1789847798.283034,
-    "seen": 1789849437.6668406,
-    "ast_hash": "d274236cb9889db7e73a2f9397b04cf2",
-    "semantic_hash": "d274236cb9889db7e73a2f9397b04cf2"
+    "mtime": 1789887847.4449916,
+    "seen": 1789896431.4058163,
+    "ast_hash": "b131c9270e7d800bd1d44b89c98cfd97",
+    "semantic_hash": "b131c9270e7d800bd1d44b89c98cfd97"
   },
   "chess_move_trainer/database/stockfish/engine_helpers.py": {
-    "mtime": 1789847798.2820363,
-    "seen": 1789849437.6668406,
-    "ast_hash": "de14508bc1ac506cd30f99ee5cdfd846",
-    "semantic_hash": "de14508bc1ac506cd30f99ee5cdfd846"
+    "mtime": 1789888032.7588978,
+    "seen": 1789896431.4058163,
+    "ast_hash": "c288e33d4ea31e7a0d67c6682cde1d67",
+    "semantic_hash": "c288e33d4ea31e7a0d67c6682cde1d67"
   },
   "chess_move_trainer/database/stockfish/engine_models.py": {
-    "mtime": 1789847798.2840345,
-    "seen": 1789849437.6668406,
-    "ast_hash": "c9f57cc94d4a5847d0cbb1e6cfec25ac",
-    "semantic_hash": "c9f57cc94d4a5847d0cbb1e6cfec25ac"
+    "mtime": 1789888082.31178,
+    "seen": 1789896431.4058163,
+    "ast_hash": "294ff1cf5ad7f0b841a0e4497aae9219",
+    "semantic_hash": "294ff1cf5ad7f0b841a0e4497aae9219"
   },
   "chess_move_trainer/database/stockfish/engine_parsing.py": {
-    "mtime": 1789811192.5697627,
-    "seen": 1789849437.6668406,
-    "ast_hash": "b622a5f2826bd1a57844b6d7d7c26b6e",
-    "semantic_hash": "b622a5f2826bd1a57844b6d7d7c26b6e"
+    "mtime": 1789888032.7568984,
+    "seen": 1789896431.4058163,
+    "ast_hash": "32bec65ba4157d5d7fc121cd177e3e3c",
+    "semantic_hash": "32bec65ba4157d5d7fc121cd177e3e3c"
   },
   "chess_move_trainer/database/stockfish/engine_runner.py": {
-    "mtime": 1789847798.283034,
-    "seen": 1789849437.6668406,
-    "ast_hash": "39d6716a67ec9da320ab91a89199d910",
-    "semantic_hash": "39d6716a67ec9da320ab91a89199d910"
+    "mtime": 1789888082.3147793,
+    "seen": 1789896431.4058163,
+    "ast_hash": "8c1204011deae226796e80f0c94e035d",
+    "semantic_hash": "8c1204011deae226796e80f0c94e035d"
   },
   "chess_move_trainer/database/stockfish/mutex.py": {
-    "mtime": 1789468562.3433638,
-    "seen": 1789502888.6864994,
-    "ast_hash": "c5744ffdf8c70d8f9f45c9462d08b3c0",
-    "semantic_hash": "c5744ffdf8c70d8f9f45c9462d08b3c0"
+    "mtime": 1789888082.3697474,
+    "seen": 1789896431.4058163,
+    "ast_hash": "4648d741cdf96a03933c1f757b5faa08",
+    "semantic_hash": "4648d741cdf96a03933c1f757b5faa08"
   },
   "chess_move_trainer/database/stockfish/queue.py": {
-    "mtime": 1789811192.5697627,
-    "seen": 1789849437.6668406,
-    "ast_hash": "5151d7f1cd388a4fc40fdd44a014a6f5",
-    "semantic_hash": "5151d7f1cd388a4fc40fdd44a014a6f5"
+    "mtime": 1789888931.660498,
+    "seen": 1789896431.4058163,
+    "ast_hash": "2fa42d4ba9efd3311b394e3734a4e4cb",
+    "semantic_hash": "2fa42d4ba9efd3311b394e3734a4e4cb"
   },
   "chess_move_trainer/database/stockfish/queue_helpers.py": {
-    "mtime": 1789811192.5697627,
-    "seen": 1789849437.6668406,
-    "ast_hash": "4ff432771d7a7f1e86db12e3b3e2a538",
-    "semantic_hash": "4ff432771d7a7f1e86db12e3b3e2a538"
+    "mtime": 1789888032.7559,
+    "seen": 1789896431.4058163,
+    "ast_hash": "6a10ba7017ef4b588a1004de52982767",
+    "semantic_hash": "6a10ba7017ef4b588a1004de52982767"
   },
   "chess_move_trainer/database/stockfish/queue_models.py": {
-    "mtime": 1789811192.5697627,
-    "seen": 1789849437.6668406,
-    "ast_hash": "95aae41c6a3b3e42201542cf5bbc0e88",
-    "semantic_hash": "95aae41c6a3b3e42201542cf5bbc0e88"
+    "mtime": 1789887847.4184299,
+    "seen": 1789896431.4058163,
+    "ast_hash": "e21744b4f33caa58d256a3fa7f865996",
+    "semantic_hash": "e21744b4f33caa58d256a3fa7f865996"
   },
   "chess_move_trainer/database/stockfish/queue_service.py": {
-    "mtime": 1789811192.5697627,
-    "seen": 1789849437.6668406,
-    "ast_hash": "6212024a336dd3aa996d36848706a580",
-    "semantic_hash": "6212024a336dd3aa996d36848706a580"
+    "mtime": 1789888032.7559,
+    "seen": 1789896431.4058163,
+    "ast_hash": "c06e707a77465dc7f103ec537b09a2fd",
+    "semantic_hash": "c06e707a77465dc7f103ec537b09a2fd"
   },
   "chess_move_trainer/database/stockfish/targets.py": {
-    "mtime": 1789132131.196015,
-    "seen": 1789502888.6864994,
-    "ast_hash": "d914bc9a86f7c8d3ae770fa13137b383",
-    "semantic_hash": "d914bc9a86f7c8d3ae770fa13137b383"
+    "mtime": 1789888082.3817487,
+    "seen": 1789896431.4058163,
+    "ast_hash": "84cddd322f22c61625290dbbd1037cde",
+    "semantic_hash": "84cddd322f22c61625290dbbd1037cde"
   },
   "chess_move_trainer/database/stockfish/worker.py": {
-    "mtime": 1789131697.636082,
-    "seen": 1789502888.6864994,
-    "ast_hash": "4ef81421d1ce33d5f6690a9dd78561de",
-    "semantic_hash": "4ef81421d1ce33d5f6690a9dd78561de"
+    "mtime": 1789888082.302778,
+    "seen": 1789896431.4058163,
+    "ast_hash": "73bf6c23658304d727a107a9c45f311e",
+    "semantic_hash": "73bf6c23658304d727a107a9c45f311e"
   },
   "tools/__init__.py": {
     "mtime": 1789504129.279128,
@@ -594,15 +594,39 @@
     "semantic_hash": "ea7e4536483f602f08b6f7cccd410711"
   },
   "tools/graphify_catalogue.py": {
-    "mtime": 1789811192.5697627,
-    "seen": 1789849437.6678405,
-    "ast_hash": "570ea518894223b7af61e04c41f562de",
-    "semantic_hash": "570ea518894223b7af61e04c41f562de"
+    "mtime": 1789890825.601224,
+    "seen": 1789896431.4058163,
+    "ast_hash": "864cc013a2164198ed0a17517d23b08c",
+    "semantic_hash": "864cc013a2164198ed0a17517d23b08c"
   },
   "tools/full_test_process.py": {
-    "mtime": 1789847367.2293572,
-    "seen": 1789849437.6678405,
-    "ast_hash": "be73ee083587af9da891deb23ce7ac8b",
-    "semantic_hash": "be73ee083587af9da891deb23ce7ac8b"
+    "mtime": 1789888293.1876688,
+    "seen": 1789896431.4058163,
+    "ast_hash": "20c37abcc3ede5a73750dd8674f801f0",
+    "semantic_hash": "20c37abcc3ede5a73750dd8674f801f0"
+  },
+  "chess_move_trainer/database/games/search_loaders.py": {
+    "mtime": 1789887286.0513139,
+    "seen": 1789896431.4058163,
+    "ast_hash": "4d6ff653fdccb8918919a89ca8b8403f",
+    "semantic_hash": "4d6ff653fdccb8918919a89ca8b8403f"
+  },
+  "chess_move_trainer/database/positions/training_answer_support.py": {
+    "mtime": 1789888082.3277786,
+    "seen": 1789896431.4058163,
+    "ast_hash": "3907c7012216af743c8468b66e0be365",
+    "semantic_hash": "3907c7012216af743c8468b66e0be365"
+  },
+  "chess_move_trainer/database/positions/training_requirements_storage.py": {
+    "mtime": 1789887500.8815122,
+    "seen": 1789896431.4058163,
+    "ast_hash": "5437da8a4b64ddb4e3aa2fce7c8e38e3",
+    "semantic_hash": "5437da8a4b64ddb4e3aa2fce7c8e38e3"
+  },
+  "tools/graphify_catalogue_validation.py": {
+    "mtime": 1789888082.3147793,
+    "seen": 1789896431.4058163,
+    "ast_hash": "52d57f44b051f62e38c8605818e14788",
+    "semantic_hash": "52d57f44b051f62e38c8605818e14788"
   }
 }

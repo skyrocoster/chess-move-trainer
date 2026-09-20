@@ -119,9 +119,7 @@ def test_preferred_moves_public_exports_are_usable_without_handles() -> None:
         period_from_literals("2026-01-01", "2026-02-01", move),
     )
     assert unset_preference([period], "2027-01-01", "2027-02-01") == (period,)
-    assert resolve_date([], "2026-01-01") == DateResolution(
-        ResolutionState.UNCONFIGURED
-    )
+    assert resolve_date([], "2026-01-01") == DateResolution(ResolutionState.UNCONFIGURED)
     request = PreferredMoveTimelineRequest(
         "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
         "2026-01-01",

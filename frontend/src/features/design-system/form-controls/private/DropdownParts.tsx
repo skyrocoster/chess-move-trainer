@@ -14,12 +14,6 @@ export interface DropdownOptionDefinition {
   customBody?: ReactNode;
 }
 
-export const dropdownPositionerProps = {
-  align: "start" as const,
-  sideOffset: 8,
-  collisionPadding: 12,
-};
-
 export function DropdownItemBody({
   option,
   indicator,

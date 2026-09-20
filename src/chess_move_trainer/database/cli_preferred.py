@@ -2,35 +2,26 @@
 
 from __future__ import annotations
 
-import json
-import math
-import sys
-from collections.abc import Callable
 from pathlib import Path
 
 import typer
 
-from .connection import DEFAULT_LOCK_TIMEOUT_SECONDS
-from .inspection import inspect_schema, render_schema_markdown
+from .cli_apps import app as app
+from .cli_apps import preferred_moves_app
+from .cli_helpers import (
+    _interrupted,
+    _operational_error,
+    _preference_from_options,
+    _render_preferred_periods,
+    _render_preferred_resolution,
+    _render_preferred_setup,
+    _usage_error,
+)
 from .lifecycle import (
     DEFAULT_DATABASE_PATH,
-    LifecycleResult,
-    setup_database,
-    update_games,
-    update_openings,
-)
-from .openings import (
-    OpeningInputError,
-    OpeningRecognition,
-    OpeningRecognitionError,
-    lookup_fen,
-    replay_pgn,
 )
 from .preferred_moves.ranges import (
-    NormalizedPeriod,
-    Preference,
     RangeValidationError,
-    ResolutionState,
 )
 from .preferred_moves.repository import (
     PreferredMoveRepository,
@@ -40,30 +31,17 @@ from .preferred_moves.repository import (
 )
 from .preferred_moves.setup import (
     PreferredMoveSetupError,
-    PreferredMoveSetupResult,
+)
+from .preferred_moves.setup import (
     setup_preferred_moves as run_preferred_moves_setup,
 )
-from .publication import SchemaPublicationCollisionError, publish_schema
-from .schema import SchemaIncompatibleError, create_schema
-from .stockfish import (
-    BenchmarkCompatibilityError,
-    BenchmarkInputError,
-    BulkInputError,
-    BulkRunner,
-    INITIAL_TECHNICAL_CATEGORIES,
-    TargetInputError,
-    WorkerInputError,
-    WorkerRunner,
-    run_benchmark,
-)
 
-
-from .cli_apps import app, openings_app, preferred_moves_app, schema_app, stockfish_app, update_app
-from .cli_helpers import _interrupted, _is_schema_error, _operational_error, _preference_from_options, _preferred_period_json, _render_preferred_periods, _render_preferred_resolution, _render_preferred_setup, _render_recognition, _render_stockfish_outcome, _run_lifecycle, _stockfish_operational_error, _usage_error, _validate_stockfish_lock_timeout
 
 @preferred_moves_app.command("list")
 def list_preferred_moves(
-    database: Path = typer.Option(..., "--database", help="Explicit existing SQLite database path."),
+    database: Path = typer.Option(
+        ..., "--database", help="Explicit existing SQLite database path."
+    ),
     fen: str = typer.Option(..., "--fen", help="Exactly four meaningful FEN fields."),
     json_output: bool = typer.Option(False, "--json", help="Emit stable JSON output."),
 ) -> None:
@@ -105,7 +83,9 @@ def setup_preferred_moves_command() -> None:
 
 @preferred_moves_app.command("resolve")
 def resolve_preferred_move(
-    database: Path = typer.Option(..., "--database", help="Explicit existing SQLite database path."),
+    database: Path = typer.Option(
+        ..., "--database", help="Explicit existing SQLite database path."
+    ),
     fen: str = typer.Option(..., "--fen", help="Exactly four meaningful FEN fields."),
     date_literal: str = typer.Option(..., "--date", help="Literal UTC calendar date YYYY-MM-DD."),
     json_output: bool = typer.Option(False, "--json", help="Emit stable JSON output."),
@@ -130,7 +110,9 @@ def resolve_preferred_move(
 
 @preferred_moves_app.command("set")
 def set_preferred_move(
-    database: Path = typer.Option(..., "--database", help="Explicit existing SQLite database path."),
+    database: Path = typer.Option(
+        ..., "--database", help="Explicit existing SQLite database path."
+    ),
     fen: str = typer.Option(..., "--fen", help="Exactly four meaningful FEN fields."),
     from_date: str = typer.Option(..., "--from", help="Literal UTC start date YYYY-MM-DD."),
     until: str | None = typer.Option(
@@ -146,9 +128,7 @@ def set_preferred_move(
 
     try:
         preference = _preference_from_options(move, no_preference)
-        periods = PreferredMoveRepository(database).set(
-            fen, from_date, until, preference
-        )
+        periods = PreferredMoveRepository(database).set(fen, from_date, until, preference)
     except KeyboardInterrupt:
         _interrupted()
     except (PreferredMoveValidationError, RangeValidationError) as error:
@@ -165,7 +145,9 @@ def set_preferred_move(
 
 @preferred_moves_app.command("unset")
 def unset_preferred_move(
-    database: Path = typer.Option(..., "--database", help="Explicit existing SQLite database path."),
+    database: Path = typer.Option(
+        ..., "--database", help="Explicit existing SQLite database path."
+    ),
     fen: str = typer.Option(..., "--fen", help="Exactly four meaningful FEN fields."),
     from_date: str = typer.Option(..., "--from", help="Literal UTC start date YYYY-MM-DD."),
     until: str | None = typer.Option(
@@ -189,5 +171,3 @@ def unset_preferred_move(
         _operational_error(error, 1)
     else:
         _render_preferred_periods(periods, json_output)
-
-

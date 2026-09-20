@@ -6,51 +6,25 @@ search_repository, search_filters, and search_validation.
 
 from __future__ import annotations
 
-from .search_filters import _compare_games, _compare_nullable, _coverage_state
+from .search_errors import (
+    GameSearchError,
+    GameSearchSchemaError,
+    GameSearchStorageError,
+    GameSearchValidationError,
+)
 from .search_models import (
     CoverageState,
     DeepestOpening,
     GameCoverage,
-    GameSearchError,
     GameSearchPage,
     GameSearchQuery,
-    GameSearchSchemaError,
     GameSearchSort,
-    GameSearchStorageError,
-    GameSearchValidationError,
     GameSummary,
     OpeningMatch,
-    TrainerColor,
-    TrainerOutcome,
 )
 from .search_repository import (
     GameSearchRepository,
-    _aggregate_games,
-    _load_deepest_openings,
-    _load_games,
-    _matches_aggregates,
-    _select_deepest,
-    _summarize_aggregates,
     search_games,
-)
-from .search_validation import (
-    _in_datetime_bounds,
-    _in_numeric_bounds,
-    _normalize_fen,
-    _normalize_timestamp,
-    _opening_api_key,
-    _optional_int,
-    _optional_text,
-    _parse_opening_key,
-    _require_optional_non_negative_int,
-    _require_ordered_bounds,
-    _require_positive_int,
-    _required_int,
-    _required_text,
-    _stored_position,
-    _stored_timestamp,
-    _validate_legal_move,
-    _validate_optional_non_empty_text,
 )
 
 __all__ = [

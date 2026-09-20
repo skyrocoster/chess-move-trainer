@@ -95,9 +95,9 @@ def test_proof_boundary_has_only_the_aggregate_proof_module() -> None:
     )
 
     proof_text = source_path.read_text(encoding="utf-8")
-    assert "data/database/chess.db" in (
-        PACKAGE_PATH / "proof_models.py"
-    ).read_text(encoding="utf-8")
+    assert "data/database/chess.db" in (PACKAGE_PATH / "proof_models.py").read_text(
+        encoding="utf-8"
+    )
     assert "subprocess" not in proof_text.lower()
     assert "sqlite3" not in proof_text.lower()
 
@@ -184,8 +184,7 @@ def test_opening_acquisition_owns_transport_without_storage_or_process_direction
 
     assert "httpx" in imported_modules
     assert not any(
-        module == forbidden
-        or module.startswith(f"{forbidden}.")
+        module == forbidden or module.startswith(f"{forbidden}.")
         for module in imported_modules
         for forbidden in ("backend", "games", "scripts", "legacy", "sqlite3", "subprocess")
     )
@@ -205,8 +204,7 @@ def test_lower_level_database_packages_do_not_depend_on_openings() -> None:
                 if isinstance(node, ast.ImportFrom) and node.module
             ]
             assert not any(
-                module == "openings" or module.endswith(".openings")
-                for module in imports
+                module == "openings" or module.endswith(".openings") for module in imports
             )
 
 
@@ -251,9 +249,7 @@ def test_preferred_moves_dependencies_are_owned_and_one_way() -> None:
             for module in modules:
                 assert not (
                     module in forbidden_modules
-                    or module.startswith(
-                        tuple(f"{prefix}." for prefix in forbidden_modules)
-                    )
+                    or module.startswith(tuple(f"{prefix}." for prefix in forbidden_modules))
                     or module.startswith(
                         tuple(f"chess_move_trainer.{prefix}" for prefix in forbidden_modules)
                     )
@@ -293,8 +289,7 @@ def test_preferred_moves_feature_and_cli_have_no_excluded_or_business_logic_impo
         for path in sorted((PACKAGE_PATH / "preferred_moves").rglob("*.py"))
     )
     cli_text = "\n".join(
-        (PACKAGE_PATH / name).read_text(encoding="utf-8")
-        for name in ("__main__.py", "cli.py")
+        (PACKAGE_PATH / name).read_text(encoding="utf-8") for name in ("__main__.py", "cli.py")
     )
 
     for forbidden in (
@@ -327,6 +322,4 @@ def test_preferred_moves_feature_and_cli_have_no_excluded_or_business_logic_impo
             cli_imports.extend(alias.name for alias in node.names)
         elif isinstance(node, ast.ImportFrom) and node.module:
             cli_imports.append(node.module)
-    assert not any(
-        module == "chess" or module.startswith("chess.") for module in cli_imports
-    )
+    assert not any(module == "chess" or module.startswith("chess.") for module in cli_imports)

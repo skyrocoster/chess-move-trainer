@@ -76,11 +76,7 @@ def _fake_files() -> dict[str, str]:
 
 
 def _target_snapshot(source_dir: Path) -> dict[str, bytes]:
-    return {
-        entry.name: entry.read_bytes()
-        for entry in source_dir.iterdir()
-        if entry.is_file()
-    }
+    return {entry.name: entry.read_bytes() for entry in source_dir.iterdir() if entry.is_file()}
 
 
 def _parent_snapshot(parent: Path) -> set[Path]:

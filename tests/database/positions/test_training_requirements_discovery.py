@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-import sqlite3
 import math
+import sqlite3
 from pathlib import Path
 
 import chess
@@ -16,7 +16,6 @@ from chess_move_trainer.database.positions import (
     TrainingRequirementValidationError,
     discover_training_requirements,
 )
-
 
 DEFAULT_POLICY = TrainingRequirementPolicy(0.8, 30)
 TARGET_FEN = "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 1"
@@ -43,7 +42,7 @@ def _game(connection: sqlite3.Connection, game_id: int, color: str, started: str
             game_id,
             f"training-game-{game_id}",
             f"https://example.test/training-game-{game_id}",
-            "[Result \"*\"]\n\n*",
+            '[Result "*"]\n\n*',
             color,
             f"trainer-{game_id}",
             started,
@@ -110,13 +109,10 @@ def _fixture(tmp_path: Path) -> tuple[Path, dict[str, int]]:
     fens = {
         "target": TARGET_FEN,
         "start": _position_fen(),
-        "deep": _position_fen(
-            "e2e4", "e7e5", "g1f3", "b8c6", "f1b5", "a7a6"
-        ),
+        "deep": _position_fen("e2e4", "e7e5", "g1f3", "b8c6", "f1b5", "a7a6"),
     }
     position_ids = {
-        name: PositionRepository(database).resolve_fen(fen)
-        for name, fen in fens.items()
+        name: PositionRepository(database).resolve_fen(fen) for name, fen in fens.items()
     }
     with sqlite3.connect(database) as connection:
         _game(connection, 1, "white", "2026-01-15T00:00:00Z")
@@ -159,8 +155,7 @@ def _item(page, preferred_move: str, fen: str | None = None):
     return next(
         item
         for item in page.items
-        if item.preferred_move_uci == preferred_move
-        and (fen is None or item.fen == fen)
+        if item.preferred_move_uci == preferred_move and (fen is None or item.fen == fen)
     )
 
 
@@ -204,10 +199,7 @@ def test_preference_no_preference_and_reactivation_control_current_items(
         TrainingRequirementQuery("2026-02-20", training_requirement_gte=-100),
         DEFAULT_POLICY,
     )
-    assert all(
-        item.fen != TARGET_FEN.rsplit(" ", 2)[0] + " 0 1"
-        for item in no_preference.items
-    )
+    assert all(item.fen != TARGET_FEN.rsplit(" ", 2)[0] + " 0 1" for item in no_preference.items)
 
     reactivated = discover_training_requirements(
         database,
@@ -218,8 +210,7 @@ def test_preference_no_preference_and_reactivation_control_current_items(
     assert (target.encounters, target.hits, target.misses) == (1, 1, 0)
     assert all(
         not (
-            item.fen == TARGET_FEN.rsplit(" ", 2)[0] + " 0 1"
-            and item.preferred_move_uci == "a2a3"
+            item.fen == TARGET_FEN.rsplit(" ", 2)[0] + " 0 1" and item.preferred_move_uci == "a2a3"
         )
         for item in reactivated.items
     )
@@ -237,9 +228,7 @@ def test_opening_filters_use_game_association_without_recalculating_global_evide
     )
 
     reached = discover_training_requirements(database, query, DEFAULT_POLICY)
-    reached_target = _item(
-        reached, "a2a3", TARGET_FEN.rsplit(" ", 2)[0] + " 0 1"
-    )
+    reached_target = _item(reached, "a2a3", TARGET_FEN.rsplit(" ", 2)[0] + " 0 1")
     assert (reached_target.encounters, reached_target.hits, reached_target.misses) == (3, 2, 1)
 
     deepest_a = discover_training_requirements(
@@ -264,9 +253,7 @@ def test_opening_filters_use_game_association_without_recalculating_global_evide
         ),
         DEFAULT_POLICY,
     )
-    assert _item(
-        deepest_b, "a2a3", TARGET_FEN.rsplit(" ", 2)[0] + " 0 1"
-    ).encounters == 3
+    assert _item(deepest_b, "a2a3", TARGET_FEN.rsplit(" ", 2)[0] + " 0 1").encounters == 3
 
 
 def test_trainer_color_filter_intersects_due_and_opening_filters(tmp_path: Path) -> None:
@@ -355,29 +342,21 @@ def test_all_requirement_boundaries_are_applied_before_pagination(tmp_path: Path
 
     all_items = discover_training_requirements(
         database,
-        TrainingRequirementQuery(
-            "2026-01-25", training_requirement_gte=-100, page=1, page_size=1
-        ),
+        TrainingRequirementQuery("2026-01-25", training_requirement_gte=-100, page=1, page_size=1),
         DEFAULT_POLICY,
     )
     second = discover_training_requirements(
         database,
-        TrainingRequirementQuery(
-            "2026-01-25", training_requirement_gte=-100, page=2, page_size=1
-        ),
+        TrainingRequirementQuery("2026-01-25", training_requirement_gte=-100, page=2, page_size=1),
         DEFAULT_POLICY,
     )
     third = discover_training_requirements(
         database,
-        TrainingRequirementQuery(
-            "2026-01-25", training_requirement_gte=-100, page=3, page_size=1
-        ),
+        TrainingRequirementQuery("2026-01-25", training_requirement_gte=-100, page=3, page_size=1),
         DEFAULT_POLICY,
     )
     assert all_items.total == second.total == third.total == 3
-    assert len({
-        page.items[0].fen for page in (all_items, second, third)
-    }) == 3
+    assert len({page.items[0].fen for page in (all_items, second, third)}) == 3
 
 
 def test_stale_current_state_is_rejected_before_range_filtering(tmp_path: Path) -> None:

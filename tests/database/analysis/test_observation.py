@@ -228,8 +228,7 @@ def test_missing_incompatible_malformed_and_invalid_storage_are_typed_failures(
     database, position_id = _database(tmp_path)
     with sqlite3.connect(database) as connection:
         connection.execute(
-            "UPDATE derived_analysis_result SET dar_engine_name = '' "
-            "WHERE derived_position_id = ?",
+            "UPDATE derived_analysis_result SET dar_engine_name = '' WHERE derived_position_id = ?",
             (position_id,),
         )
     with pytest.raises(AnalysisObservationStorageError):

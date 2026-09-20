@@ -20,15 +20,9 @@ from chess_move_trainer.database.preferred_moves import (
 )
 
 STARTING_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
-STARTING_WITH_COUNTERS = (
-    "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 73 42"
-)
-AFTER_E4_WITH_UNUSED_EP = (
-    "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 17 8"
-)
-AFTER_E4_CANONICAL = (
-    "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1"
-)
+STARTING_WITH_COUNTERS = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 73 42"
+AFTER_E4_WITH_UNUSED_EP = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 17 8"
+AFTER_E4_CANONICAL = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1"
 MOVE_E4 = Preference.preferred_move("e2e4")
 MOVE_D4 = Preference.preferred_move("d2d4")
 NO_PREFERENCE = Preference.no_preference()
@@ -46,9 +40,7 @@ def _request(
     effective_until: str | None = None,
     preference: Preference = MOVE_E4,
 ) -> PreferredMoveMutationRequest:
-    return PreferredMoveMutationRequest(
-        fen, effective_from, effective_until, preference
-    )
+    return PreferredMoveMutationRequest(fen, effective_from, effective_until, preference)
 
 
 def _removal_request(
@@ -111,9 +103,12 @@ def test_no_preference_is_a_configured_null_period(tmp_path: Path) -> None:
 
     assert result.periods[0].preference == NO_PREFERENCE
     with sqlite3.connect(database) as connection:
-        assert connection.execute(
-            "SELECT dpm_move_uci FROM datasource_preferred_move_period"
-        ).fetchone()[0] is None
+        assert (
+            connection.execute(
+                "SELECT dpm_move_uci FROM datasource_preferred_move_period"
+            ).fetchone()[0]
+            is None
+        )
 
 
 def test_delete_canonicalizes_and_creates_an_unseen_parent_without_a_period(
@@ -137,9 +132,12 @@ def test_delete_canonicalizes_and_creates_an_unseen_parent_without_a_period(
     assert repeated == result
     with sqlite3.connect(database) as connection:
         assert connection.execute("SELECT COUNT(*) FROM derived_position").fetchone()[0] == 1
-        assert connection.execute(
-            "SELECT COUNT(*) FROM datasource_preferred_move_period"
-        ).fetchone()[0] == 0
+        assert (
+            connection.execute("SELECT COUNT(*) FROM datasource_preferred_move_period").fetchone()[
+                0
+            ]
+            == 0
+        )
 
 
 def test_delete_removes_move_and_no_preference_coverage_with_split_fragments(
@@ -229,9 +227,12 @@ def test_delete_shortens_fully_removes_and_repeats_as_a_no_op(tmp_path: Path) ->
     assert repeated == empty
     assert nonintersecting.periods == ()
     with sqlite3.connect(database) as connection:
-        assert connection.execute(
-            "SELECT COUNT(*) FROM datasource_preferred_move_period"
-        ).fetchone()[0] == 0
+        assert (
+            connection.execute("SELECT COUNT(*) FROM datasource_preferred_move_period").fetchone()[
+                0
+            ]
+            == 0
+        )
 
 
 def test_delete_open_end_shortens_an_indefinite_period(tmp_path: Path) -> None:
@@ -312,9 +313,12 @@ def test_strict_dates_are_rejected_before_any_write(
 
     with sqlite3.connect(database) as connection:
         assert connection.execute("SELECT COUNT(*) FROM derived_position").fetchone()[0] == 0
-        assert connection.execute(
-            "SELECT COUNT(*) FROM datasource_preferred_move_period"
-        ).fetchone()[0] == 0
+        assert (
+            connection.execute("SELECT COUNT(*) FROM datasource_preferred_move_period").fetchone()[
+                0
+            ]
+            == 0
+        )
 
 
 @pytest.mark.parametrize(
@@ -418,9 +422,7 @@ def test_delete_rejects_malformed_persisted_move_before_replacement(tmp_path: Pa
     put_preferred_move(database, _request(effective_from="2026-01-01", preference=MOVE_E4))
     with sqlite3.connect(database) as connection:
         connection.execute("PRAGMA ignore_check_constraints = ON")
-        connection.execute(
-            "UPDATE datasource_preferred_move_period SET dpm_move_uci = 'e2e5'"
-        )
+        connection.execute("UPDATE datasource_preferred_move_period SET dpm_move_uci = 'e2e5'")
 
     with pytest.raises(PreferredMoveStorageError):
         delete_preferred_move(
@@ -429,9 +431,12 @@ def test_delete_rejects_malformed_persisted_move_before_replacement(tmp_path: Pa
         )
 
     with sqlite3.connect(database) as connection:
-        assert connection.execute(
-            "SELECT dpm_move_uci FROM datasource_preferred_move_period"
-        ).fetchone()[0] == "e2e5"
+        assert (
+            connection.execute(
+                "SELECT dpm_move_uci FROM datasource_preferred_move_period"
+            ).fetchone()[0]
+            == "e2e5"
+        )
 
 
 def test_delete_writer_lock_failure_is_bounded_and_does_not_create_parent(
@@ -464,9 +469,7 @@ def test_malformed_persisted_move_is_rejected_before_replacement(tmp_path: Path)
     )
     with sqlite3.connect(database) as connection:
         connection.execute("PRAGMA ignore_check_constraints = ON")
-        connection.execute(
-            "UPDATE datasource_preferred_move_period SET dpm_move_uci = 'e2e5'"
-        )
+        connection.execute("UPDATE datasource_preferred_move_period SET dpm_move_uci = 'e2e5'")
 
     with pytest.raises(PreferredMoveStorageError):
         put_preferred_move(
@@ -475,9 +478,12 @@ def test_malformed_persisted_move_is_rejected_before_replacement(tmp_path: Path)
         )
 
     with sqlite3.connect(database) as connection:
-        assert connection.execute(
-            "SELECT dpm_move_uci FROM datasource_preferred_move_period"
-        ).fetchone()[0] == "e2e5"
+        assert (
+            connection.execute(
+                "SELECT dpm_move_uci FROM datasource_preferred_move_period"
+            ).fetchone()[0]
+            == "e2e5"
+        )
 
 
 def test_writer_lock_failure_is_bounded_and_does_not_create_parent(tmp_path: Path) -> None:

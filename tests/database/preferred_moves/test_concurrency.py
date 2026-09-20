@@ -54,12 +54,8 @@ def _run_serialized_writers(
         if name == "before_lock":
             second_attempting.set()
 
-    first = PreferredMoveRepository(
-        database_path, lock_timeout=2.0, _checkpoint=first_checkpoint
-    )
-    second = PreferredMoveRepository(
-        database_path, lock_timeout=2.0, _checkpoint=second_checkpoint
-    )
+    first = PreferredMoveRepository(database_path, lock_timeout=2.0, _checkpoint=first_checkpoint)
+    second = PreferredMoveRepository(database_path, lock_timeout=2.0, _checkpoint=second_checkpoint)
     errors: list[BaseException] = []
 
     def write(
@@ -72,9 +68,7 @@ def _run_serialized_writers(
         except BaseException as error:
             errors.append(error)
 
-    first_thread = threading.Thread(
-        target=write, args=(first, first_range, MOVE_E4), daemon=True
-    )
+    first_thread = threading.Thread(target=write, args=(first, first_range, MOVE_E4), daemon=True)
     second_thread = threading.Thread(
         target=write, args=(second, second_range, MOVE_D4), daemon=True
     )
@@ -113,20 +107,14 @@ def _run_serialized_delete_and_put(
         if name == "before_lock":
             second_attempting.set()
 
-    first = PreferredMoveRepository(
-        database_path, lock_timeout=2.0, _checkpoint=first_checkpoint
-    )
-    second = PreferredMoveRepository(
-        database_path, lock_timeout=2.0, _checkpoint=second_checkpoint
-    )
+    first = PreferredMoveRepository(database_path, lock_timeout=2.0, _checkpoint=first_checkpoint)
+    second = PreferredMoveRepository(database_path, lock_timeout=2.0, _checkpoint=second_checkpoint)
 
     def delete_mutation(checkpoint: object) -> None:
         try:
             delete_preferred_move(
                 database_path,
-                PreferredMoveRemovalRequest(
-                    STARTING_PUBLIC_FEN, "2026-02-01", "2026-04-01"
-                ),
+                PreferredMoveRemovalRequest(STARTING_PUBLIC_FEN, "2026-02-01", "2026-04-01"),
                 lock_timeout=2.0,
                 _checkpoint=checkpoint,
             )
@@ -235,16 +223,19 @@ def test_serialized_delete_and_put_use_the_latest_committed_schedule(
 ) -> None:
     database_path = tmp_path / f"delete-put-{first_operation}.db"
     create_schema(database_path)
-    PreferredMoveRepository(database_path).set(
-        STARTING_FEN, "2026-01-01", "2026-05-01", MOVE_E4
-    )
+    PreferredMoveRepository(database_path).set(STARTING_FEN, "2026-01-01", "2026-05-01", MOVE_E4)
 
     service = _run_serialized_delete_and_put(database_path, first_operation)
 
-    assert _period_values(service) == [
-        ("2026-01-01", "2026-02-01", "e2e4"),
-        ("2026-03-01", "2026-05-01", "d2d4"),
-    ] if first_operation == "delete" else [
-        ("2026-01-01", "2026-02-01", "e2e4"),
-        ("2026-04-01", "2026-05-01", "d2d4"),
-    ]
+    assert (
+        _period_values(service)
+        == [
+            ("2026-01-01", "2026-02-01", "e2e4"),
+            ("2026-03-01", "2026-05-01", "d2d4"),
+        ]
+        if first_operation == "delete"
+        else [
+            ("2026-01-01", "2026-02-01", "e2e4"),
+            ("2026-04-01", "2026-05-01", "d2d4"),
+        ]
+    )

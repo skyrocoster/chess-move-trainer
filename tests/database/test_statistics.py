@@ -27,9 +27,9 @@ def _database_with_synthetic_occurrences(tmp_path: Path) -> tuple[Path, int]:
                 "-",
             ),
         )
-        position_id = connection.execute(
-            "SELECT dp_position_id FROM derived_position"
-        ).fetchone()[0]
+        position_id = connection.execute("SELECT dp_position_id FROM derived_position").fetchone()[
+            0
+        ]
         connection.executemany(
             """
             INSERT INTO datasource_game (

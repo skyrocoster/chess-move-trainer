@@ -150,9 +150,10 @@ def test_interrupted_existing_empty_creation_preserves_the_target(
     assert statements_seen == 1
     assert database_path.read_bytes() == original_bytes
     with sqlite3.connect(database_path) as connection:
-        assert connection.execute(
-            "SELECT name FROM sqlite_master WHERE type = 'table'"
-        ).fetchall() == []
+        assert (
+            connection.execute("SELECT name FROM sqlite_master WHERE type = 'table'").fetchall()
+            == []
+        )
 
 
 def test_internal_compatibility_assertion_accepts_v2_and_leaves_connection_clean(

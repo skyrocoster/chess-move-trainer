@@ -20,6 +20,7 @@ import {
   expectSessionBoundary,
   expectSingleStagedStatus,
   sharedPositionSummary,
+  verifyStandardWorkspace,
 } from "./repertoireBuilderStoryAssertions";
 import { workspace } from "./repertoireBuilderStoryRender";
 import {
@@ -70,101 +71,6 @@ function SelectedPositionAnalysisLifecycleStory() {
         {events.some(({ quality }) => quality === "tool") ? "tool" : "none"}; states: {summary}
       </output>
     </>
-  );
-}
-
-async function verifyStandardWorkspace(
-  canvasElement: HTMLElement,
-  mode: "wide" | "medium" | "narrow" = "wide",
-) {
-  const canvas = within(canvasElement);
-  await expect(canvas.getByRole("heading", { name: "Repertoire Builder", level: 1 })).toBeVisible();
-  const board = canvas.getByRole("group", {
-    name: "Chess board: standard starting position, White at the bottom",
-  });
-  const stage = canvas.getByTestId("board-eval-stage");
-  const rail = canvas.getByTestId("board-eval-rail-shell");
-  const boardLane = canvas.getByTestId("repertoire-board-lane");
-  const sessionLane = canvas.getByTestId("repertoire-session-lane");
-  const engineLane = canvas.getByTestId("repertoire-engine-lane");
-  const tablist = within(engineLane).getByRole("tablist", {
-    name: "Analysis and move responses",
-  });
-  const analysisTab = within(tablist).getByRole("tab", { name: "Analysis" });
-  const responsesTab = within(tablist).getByRole("tab", { name: "Move responses" });
-  await expect(within(tablist).getAllByRole("tab")).toHaveLength(2);
-  await expect(analysisTab).toHaveAttribute("aria-selected", "true");
-  await expect(within(engineLane).getByTestId("move-response-distribution")).toHaveAttribute(
-    "data-embedded",
-    "true",
-  );
-  await expect(within(engineLane).getByTestId("tabs-panel-move-responses")).toHaveAttribute(
-    "hidden",
-  );
-  const meter = canvas.getByRole("meter", { name: "Evaluation" });
-  const responsiveStage = canvas.getByTestId("repertoire-workspace-stage");
-  await expect(responsiveStage).toHaveAttribute("data-layout-mode", mode);
-  const expectedSeparators =
-    mode === "wide"
-      ? ["Board and Session boundary", "Session and Engine boundary"]
-      : mode === "medium"
-        ? ["Session and Engine boundary"]
-        : [];
-  const stageQueries = within(responsiveStage);
-  await expect(stageQueries.queryAllByRole("separator")).toHaveLength(expectedSeparators.length);
-  await expect(
-    stageQueries
-      .queryAllByRole("separator")
-      .map((separator) => separator.getAttribute("aria-label")),
-  ).toEqual(expectedSeparators);
-  await expect(board).toBeVisible();
-  await expect(responsiveStage).toContainElement(boardLane);
-  await expect(responsiveStage).toContainElement(sessionLane);
-  await expect(responsiveStage).toContainElement(engineLane);
-  await expect(
-    within(engineLane).getByRole("heading", { name: "Analysis", level: 2 }),
-  ).toBeVisible();
-  await expect(stage).toContainElement(board);
-  await expect(stage).toContainElement(rail);
-  await expect(within(boardLane).getByTestId("board-move-history")).toBeVisible();
-  await expect(within(sessionLane).getByTestId("repertoire-session")).toBeVisible();
-  await expect(meter).toHaveAttribute("data-state", "neutral");
-  await expect(meter).toHaveAttribute("data-orientation", "white");
-  await expect(meter).toHaveAttribute("aria-valuetext", "No analysis yet; evaluation neutral.");
-  const descriptionRow = canvas.getByTestId("position-description-row");
-  await expect(boardLane).not.toContainElement(descriptionRow);
-  await expect(sessionLane).toContainElement(descriptionRow);
-  const description = canvas.getByRole("button", { name: "Position description" });
-  await expect(description).toHaveAttribute("aria-expanded", "false");
-  await userEvent.click(description);
-  await expect(await sharedPositionSummary(canvasElement)).toHaveTextContent(
-    "OrientationWhite at the bottom",
-  );
-  description.focus();
-  await expect(description).toHaveFocus();
-  await expectSessionBoundary(canvasElement);
-  await expectPreferredMoveState(canvasElement, "empty");
-  await expectPositionReachFrequency(canvasElement, "available", "White", "3 / 10 games", "30%");
-  await userEvent.click(responsesTab);
-  const distribution = canvas.getByTestId("move-response-distribution");
-  await expect(distribution).toHaveAttribute("data-state", "available");
-  await expect(
-    within(distribution).getByText("White repertoire colour", { exact: true }),
-  ).toBeVisible();
-  await expect(
-    within(distribution).getByRole("button", { name: /e4, 4 occurrences, 33.3%/ }),
-  ).toBeVisible();
-  await expect(
-    within(distribution).getByText(
-      "12 outgoing move occurrences observed in 10 matching White repertoire games.",
-    ),
-  ).toBeVisible();
-  await expect(within(distribution).queryByText("Queen's Pawn Game")).not.toBeInTheDocument();
-  await expectNoHorizontalOverflow(canvasElement);
-  await userEvent.click(analysisTab);
-  await expect(analysisTab).toHaveAttribute("aria-selected", "true");
-  await expect(within(engineLane).getByTestId("tabs-panel-move-responses")).toHaveAttribute(
-    "hidden",
   );
 }
 

@@ -58,3 +58,5 @@ until a later change affects what it established. Require only finite tests or b
 the approved behavior. Exclude lint, formatting, broad type/build, source-size, aggregate, and repository-hygiene
 checks unless the outcome changes that tool or constraint. Temporary maintenance violations do not block Plan
 acceptance. Route independent validation or complete test/fix runs only when the user requests them as separate work.
+Never invoke the `bash` tool without an explicit finite timeout in milliseconds; missing, zero, or non-finite
+timeouts are forbidden because commands can hang.

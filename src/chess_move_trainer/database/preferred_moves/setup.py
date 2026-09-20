@@ -99,24 +99,18 @@ class PreferredMoveSetupService:
         """Scan, validate, and publish one complete setup result or none."""
 
         try:
-            with _open_existing_connection(
-                self._database_path, self._lock_timeout
-            ) as connection:
+            with _open_existing_connection(self._database_path, self._lock_timeout) as connection:
                 _assert_compatible_schema(connection, self._lock_timeout)
                 self._checkpoint("before_lock")
                 connection.exec_driver_sql("BEGIN IMMEDIATE")
                 transaction = connection.get_transaction()
                 if transaction is None:
-                    raise PreferredMoveSetupError(
-                        "SQLite did not establish the setup transaction"
-                    )
+                    raise PreferredMoveSetupError("SQLite did not establish the setup transaction")
                 try:
                     self._require_empty_schedule(connection)
                     read_data = _read_data(connection)
                     inference = self._inference(read_data.observations)
-                    periods = _validate_complete_result(
-                        inference, read_data.position_ids
-                    )
+                    periods = _validate_complete_result(inference, read_data.position_ids)
                     self._insert_periods(connection, periods, read_data.position_ids)
                     result = PreferredMoveSetupResult(
                         examined_games=read_data.examined_games,
@@ -150,9 +144,7 @@ class PreferredMoveSetupService:
             text("SELECT COUNT(*) FROM datasource_preferred_move_period")
         ).scalar_one()
         if int(row_count) != 0:
-            raise PreferredMoveSetupRefused(
-                "preferred-move setup requires an empty schedule"
-            )
+            raise PreferredMoveSetupRefused("preferred-move setup requires an empty schedule")
 
     def _insert_periods(
         self,
@@ -200,9 +192,7 @@ def setup_preferred_moves(
 ) -> PreferredMoveSetupResult:
     """Run preferred-move setup through the package-owned service boundary."""
 
-    return PreferredMoveSetupService(
-        database_path, lock_timeout=lock_timeout
-    ).run()
+    return PreferredMoveSetupService(database_path, lock_timeout=lock_timeout).run()
 
 
 def _read_data(connection: object) -> _ReadData:
@@ -245,9 +235,7 @@ def _read_data(connection: object) -> _ReadData:
         if game_id not in examined_game_ids:
             examined_game_ids.add(game_id)
             if trainer_color not in ("white", "black"):
-                raise PreferredMoveSetupValidationError(
-                    "stored game has an invalid trainer color"
-                )
+                raise PreferredMoveSetupValidationError("stored game has an invalid trainer color")
             game_colors[game_id] = trainer_color
             if started_at is None:
                 skipped_game_ids.add(game_id)
@@ -268,9 +256,7 @@ def _read_data(connection: object) -> _ReadData:
         position_id = occurrence["position_id"]
         prior_position = position_by_id.setdefault(position_id, position)
         if prior_position != position:
-            raise PreferredMoveSetupValidationError(
-                "stored position identity is inconsistent"
-            )
+            raise PreferredMoveSetupValidationError("stored position identity is inconsistent")
         prior_id = position_ids.setdefault(position, position_id)
         if prior_id != position_id:
             raise PreferredMoveSetupValidationError(
@@ -281,12 +267,9 @@ def _read_data(connection: object) -> _ReadData:
         if (
             0 <= occurrence["ply"] <= 29
             and move_uci is not None
-            and position.side_to_move
-            == ("w" if game_colors[game_id] == "white" else "b")
+            and position.side_to_move == ("w" if game_colors[game_id] == "white" else "b")
         ):
-            observations.append(
-                PreferredMoveObservation(position, game_dates[game_id], move_uci)
-            )
+            observations.append(PreferredMoveObservation(position, game_dates[game_id], move_uci))
 
     return _ReadData(
         observations=tuple(observations),
@@ -322,9 +305,7 @@ def _occurrence_from_row(row: object) -> dict[str, object]:
             legal_en_passant=row[11],
         )
     except (IndexError, TypeError) as error:
-        raise PreferredMoveSetupValidationError(
-            "stored occurrence row is malformed"
-        ) from error
+        raise PreferredMoveSetupValidationError("stored occurrence row is malformed") from error
     if type(ply) is not int or ply < 0:
         raise PreferredMoveSetupValidationError("stored occurrence has an invalid ply")
     if type(position_id) is not int or position_id < 1:
@@ -332,18 +313,12 @@ def _occurrence_from_row(row: object) -> dict[str, object]:
             "stored occurrence has an invalid position identity"
         )
     if type(halfmove_clock) is not int or halfmove_clock < 0:
-        raise PreferredMoveSetupValidationError(
-            "stored occurrence has an invalid halfmove clock"
-        )
+        raise PreferredMoveSetupValidationError("stored occurrence has an invalid halfmove clock")
     if type(fullmove_number) is not int or fullmove_number < 1:
-        raise PreferredMoveSetupValidationError(
-            "stored occurrence has an invalid fullmove number"
-        )
+        raise PreferredMoveSetupValidationError("stored occurrence has an invalid fullmove number")
     if move_uci is not None:
         if not isinstance(move_uci, str) or not move_uci:
-            raise PreferredMoveSetupValidationError(
-                "stored occurrence has an invalid move"
-            )
+            raise PreferredMoveSetupValidationError("stored occurrence has an invalid move")
         try:
             chess.Move.from_uci(move_uci)
         except ValueError as error:
@@ -361,9 +336,7 @@ def _occurrence_from_row(row: object) -> dict[str, object]:
 
 def _parse_started_at_utc(value: object) -> date:
     if not isinstance(value, str) or not value:
-        raise PreferredMoveSetupValidationError(
-            "non-null game start timestamp is malformed"
-        )
+        raise PreferredMoveSetupValidationError("non-null game start timestamp is malformed")
     literal = value[:-1] + "+00:00" if value.endswith("Z") else value
     try:
         parsed = datetime.fromisoformat(literal)
@@ -390,13 +363,9 @@ def _validate_canonical_position(position: CanonicalPosition) -> None:
     try:
         canonical = canonicalize_fen(" ".join((*fields, "0", "1")))
     except PositionValidationError as error:
-        raise PreferredMoveSetupValidationError(
-            "stored canonical position is invalid"
-        ) from error
+        raise PreferredMoveSetupValidationError("stored canonical position is invalid") from error
     if canonical != position:
-        raise PreferredMoveSetupValidationError(
-            "stored canonical position is not canonical"
-        )
+        raise PreferredMoveSetupValidationError("stored canonical position is not canonical")
 
 
 def _validate_complete_result(
@@ -409,9 +378,7 @@ def _validate_complete_result(
     periods_by_position: dict[CanonicalPosition, tuple[NormalizedPeriod, ...]] = {}
     for summary in inference.summaries:
         if summary.position not in position_ids:
-            raise PreferredMoveSetupValidationError(
-                "inference result contains an unread position"
-            )
+            raise PreferredMoveSetupValidationError("inference result contains an unread position")
         _validate_canonical_position(summary.position)
         try:
             periods = normalize_periods(summary.periods)
@@ -420,9 +387,7 @@ def _validate_complete_result(
                 "inference result schedule is not normalized"
             ) from error
         if periods != summary.periods or not periods:
-            raise PreferredMoveSetupValidationError(
-                "inference result schedule is not complete"
-            )
+            raise PreferredMoveSetupValidationError("inference result schedule is not complete")
         if periods[-1].effective_until is not None:
             raise PreferredMoveSetupValidationError(
                 "inference result final period must be open-ended"
@@ -456,9 +421,7 @@ def _validate_legal_move(position: CanonicalPosition, period: NormalizedPeriod) 
         board = chess.Board(fen)
         move = chess.Move.from_uci(period.preference.move or "")
     except ValueError as error:
-        raise PreferredMoveSetupValidationError(
-            "inference result move is not valid UCI"
-        ) from error
+        raise PreferredMoveSetupValidationError("inference result move is not valid UCI") from error
     if move not in board.legal_moves:
         raise PreferredMoveSetupValidationError(
             "inference result move is not legal from its position"

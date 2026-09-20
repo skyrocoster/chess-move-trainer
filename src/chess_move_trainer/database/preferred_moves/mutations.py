@@ -49,9 +49,7 @@ class PreferredMoveMutationRequest:
             else _parse_mutation_date(self.effective_until, "effective_until")
         )
         if end is not None and end <= start:
-            raise PreferredMoveValidationError(
-                "effective_until must be later than effective_from"
-            )
+            raise PreferredMoveValidationError("effective_until must be later than effective_from")
 
         object.__setattr__(self, "fen", _canonical_fen(position))
         object.__setattr__(self, "effective_from", start.isoformat())
@@ -94,9 +92,7 @@ class PreferredMoveRemovalRequest:
             else _parse_mutation_date(self.effective_until, "effective_until")
         )
         if end is not None and end <= start:
-            raise PreferredMoveValidationError(
-                "effective_until must be later than effective_from"
-            )
+            raise PreferredMoveValidationError("effective_until must be later than effective_from")
 
         object.__setattr__(self, "fen", _canonical_fen(position))
         object.__setattr__(self, "effective_from", start.isoformat())
@@ -127,9 +123,7 @@ def put_preferred_move(
     """Atomically apply one ordinary preferred-move mutation value."""
 
     if not isinstance(request, PreferredMoveMutationRequest):
-        raise PreferredMoveValidationError(
-            "request must be a PreferredMoveMutationRequest value"
-        )
+        raise PreferredMoveValidationError("request must be a PreferredMoveMutationRequest value")
 
     position = canonicalize_fen(request.fen)
     try:
@@ -141,9 +135,7 @@ def put_preferred_move(
     except PreferredMoveValidationError as error:
         if str(error) == "move must be valid UCI":
             raise PreferredMoveValidationError("UCI move is invalid") from error
-        raise PreferredMoveValidationError(
-            "Move is illegal from the parent FEN"
-        ) from error
+        raise PreferredMoveValidationError("Move is illegal from the parent FEN") from error
 
     repository = PreferredMoveRepository(
         database_path,
@@ -178,9 +170,7 @@ def delete_preferred_move(
     """Atomically remove one ordinary preferred-move interval value."""
 
     if not isinstance(request, PreferredMoveRemovalRequest):
-        raise PreferredMoveValidationError(
-            "request must be a PreferredMoveRemovalRequest value"
-        )
+        raise PreferredMoveValidationError("request must be a PreferredMoveRemovalRequest value")
 
     position = canonicalize_fen(request.fen)
     repository = PreferredMoveRepository(

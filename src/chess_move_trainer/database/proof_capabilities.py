@@ -1,4 +1,5 @@
 """Real-reader capability proof while retaining only aggregate facts."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -10,17 +11,15 @@ from .connection import DEFAULT_LOCK_TIMEOUT_SECONDS, _open_connection
 from .games.reading import GameReadRepository
 from .openings.recognition import lookup_fen, replay_pgn
 from .openings.source import load_opening_sources
-from .schema import _assert_compatible_schema
-from .statistics import MoveResponseDistributionReader, PositionContextReader
 from .proof_models import DirectCapabilities, DirectPreflightError
 from .proof_opening_helpers import (
-    _board_for_moves,
     _find_nested_routes,
     _find_transposition_pair,
-    _opening_label,
     _pgn_for_moves,
     _positive_scalar,
 )
+from .schema import _assert_compatible_schema
+from .statistics import MoveResponseDistributionReader, PositionContextReader
 
 
 def _collect_opening_capabilities(
@@ -81,12 +80,8 @@ def _collect_opening_capabilities(
         " ".join((*fields[:4], "99", "120")),
     )
     fen_clock_insensitive = tuple(
-        (item.ply, item.eco, item.name, item.match)
-        for item in clockless.recognized
-    ) == tuple(
-        (item.ply, item.eco, item.name, item.match)
-        for item in clock_changed.recognized
-    )
+        (item.ply, item.eco, item.name, item.match) for item in clockless.recognized
+    ) == tuple((item.ply, item.eco, item.name, item.match) for item in clock_changed.recognized)
 
     if not route_match_proven or not transposition_match_proven:
         raise DirectPreflightError(
@@ -200,17 +195,14 @@ def collect_direct_capabilities(
     except Exception as error:
         if isinstance(error, DirectPreflightError):
             raise
-        raise DirectPreflightError(
-            "real direct-capability inputs could not be selected"
-        ) from error
+        raise DirectPreflightError("real direct-capability inputs could not be selected") from error
 
     game = GameReadRepository(path, lock_timeout=lock_timeout).read(game_id)
     if game is None or not game.occurrences:
         raise DirectPreflightError("real direct game reconstruction returned no game")
     final_occurrence = game.occurrences[-1]
     if (
-        tuple(item.ply for item in game.occurrences)
-        != tuple(range(len(game.occurrences)))
+        tuple(item.ply for item in game.occurrences) != tuple(range(len(game.occurrences)))
         or final_occurrence.ply != len(game.occurrences) - 1
         or final_occurrence.move_uci is not None
         or any(item.move_uci is None for item in game.occurrences[:-1])
@@ -269,4 +261,3 @@ def collect_direct_capabilities(
         final_position_final_occurrence_count=final_distribution.final_occurrence_count,
         **opening_facts,
     )
-

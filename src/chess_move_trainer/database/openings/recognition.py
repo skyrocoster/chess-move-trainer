@@ -66,9 +66,7 @@ class _StoredRoute:
     endpoint: CanonicalPosition
 
 
-def lookup_fen(
-    database_path: str | Path, fen: str
-) -> OpeningRecognition:
+def lookup_fen(database_path: str | Path, fen: str) -> OpeningRecognition:
     """Recognize a valid full FEN without writing or exposing database state."""
 
     position = _parse_fen_input(fen)
@@ -94,9 +92,7 @@ def lookup_fen(
     return _build_recognition(evidence)
 
 
-def replay_pgn(
-    database_path: str | Path, pgn: str
-) -> OpeningRecognition:
+def replay_pgn(database_path: str | Path, pgn: str) -> OpeningRecognition:
     """Replay one standard-start PGN and recognize reached opening endpoints."""
 
     game = _parse_pgn_input(pgn)
@@ -171,7 +167,8 @@ def _load_catalogue(
 
 @lru_cache(maxsize=32)
 def _load_routes_cached(
-    resolved_database_path: str, database_signature: tuple[tuple[int, int, int | None, int | None] | None, ...]
+    resolved_database_path: str,
+    database_signature: tuple[tuple[int, int, int | None, int | None] | None, ...],
 ) -> tuple[_StoredRoute, ...]:
     """Reuse immutable route materialization while retaining write freshness."""
 
@@ -182,15 +179,11 @@ def _load_routes_cached(
 @lru_cache(maxsize=32)
 def _load_endpoint_map_cached(
     resolved_database_path: str,
-    database_signature: tuple[
-        tuple[int, int, int | None, int | None] | None, ...
-    ],
+    database_signature: tuple[tuple[int, int, int | None, int | None] | None, ...],
 ) -> dict[CanonicalPosition, tuple[_StoredRoute, ...]]:
     """Build the route endpoint index once for each on-disk DB version."""
 
-    return _endpoint_map(
-        _load_routes_cached(resolved_database_path, database_signature)
-    )
+    return _endpoint_map(_load_routes_cached(resolved_database_path, database_signature))
 
 
 def _database_signature(
@@ -206,7 +199,12 @@ def _database_signature(
             entries.append(None)
         else:
             entries.append(
-                (stat.st_size, stat.st_mtime_ns, getattr(stat, "st_dev", None), getattr(stat, "st_ino", None))
+                (
+                    stat.st_size,
+                    stat.st_mtime_ns,
+                    getattr(stat, "st_dev", None),
+                    getattr(stat, "st_ino", None),
+                )
             )
     return tuple(entries)
 
@@ -320,9 +318,7 @@ def _canonical_endpoint(fields: tuple[str, ...]) -> CanonicalPosition:
     return position
 
 
-def _verify_route_replay(
-    moves_uci: tuple[str, ...], endpoint: CanonicalPosition
-) -> None:
+def _verify_route_replay(moves_uci: tuple[str, ...], endpoint: CanonicalPosition) -> None:
     board = chess.Board()
     for ply, move_uci in enumerate(moves_uci, start=1):
         _push_stored_move(board, move_uci, ply)
@@ -374,9 +370,7 @@ def _record_evidence(
     evidence[key] = "route" if match == "route" else "transposition"
 
 
-def _build_recognition(
-    evidence: dict[tuple[int, str, str], MatchKind]
-) -> OpeningRecognition:
+def _build_recognition(evidence: dict[tuple[int, str, str], MatchKind]) -> OpeningRecognition:
     recognized = tuple(
         RecognizedOpening(ply=ply, eco=eco, name=name, match=match)
         for (ply, eco, name), match in sorted(evidence.items())

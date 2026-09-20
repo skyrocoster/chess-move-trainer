@@ -162,9 +162,7 @@ def get_position_insight(
         request = PositionInsightRequest(fen, trainer_color, as_of)
     except PositionInsightValidationError as error:
         return _validation_error(error)
-    key = position_insight_key(
-        database_path, request.fen, request.trainer_color, request.as_of
-    )
+    key = position_insight_key(database_path, request.fen, request.trainer_color, request.as_of)
     try:
         payload = get_or_compute(
             read_namespace,

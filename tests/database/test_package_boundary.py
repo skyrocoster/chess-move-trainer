@@ -76,12 +76,8 @@ def test_common_package_and_database_namespace_are_importable() -> None:
         "request_analysis",
     ):
         assert hasattr(analysis, name)
-    assert not any(
-        name in analysis.__all__ for name in ("FastAPI", "BaseModel", "backend")
-    )
-    assert not any(
-        name in positions.__all__ for name in ("FastAPI", "BaseModel", "backend")
-    )
+    assert not any(name in analysis.__all__ for name in ("FastAPI", "BaseModel", "backend"))
+    assert not any(name in positions.__all__ for name in ("FastAPI", "BaseModel", "backend"))
     for name in (
         "OpeningRouteSource",
         "load_opening_sources",
@@ -145,9 +141,7 @@ def test_common_package_and_database_namespace_are_importable() -> None:
 
 
 def test_preferred_moves_package_public_namespace_is_importable() -> None:
-    preferred_moves = importlib.import_module(
-        "chess_move_trainer.database.preferred_moves"
-    )
+    preferred_moves = importlib.import_module("chess_move_trainer.database.preferred_moves")
 
     assert preferred_moves.__name__ == "chess_move_trainer.database.preferred_moves"
     for name in (

@@ -95,9 +95,9 @@ def _game(
 def _count_periods(database: Path) -> int:
     with sqlite3.connect(database) as connection:
         return int(
-            connection.execute(
-                "SELECT COUNT(*) FROM datasource_preferred_move_period"
-            ).fetchone()[0]
+            connection.execute("SELECT COUNT(*) FROM datasource_preferred_move_period").fetchone()[
+                0
+            ]
         )
 
 
@@ -277,9 +277,12 @@ def test_successful_setup_inserts_all_periods_for_multiple_positions(tmp_path: P
     assert result.periods_applied == 2
     assert result.conflicting_positions == 0
     with sqlite3.connect(database) as connection:
-        assert connection.execute(
-            "SELECT COUNT(*) FROM datasource_preferred_move_period"
-        ).fetchone()[0] == 2
+        assert (
+            connection.execute("SELECT COUNT(*) FROM datasource_preferred_move_period").fetchone()[
+                0
+            ]
+            == 2
+        )
         assert {
             row[0]
             for row in connection.execute(

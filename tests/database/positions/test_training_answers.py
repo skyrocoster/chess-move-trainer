@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from datetime import date
 import math
-from pathlib import Path
 import sqlite3
 import time
+from datetime import date
+from pathlib import Path
 
 import pytest
 
@@ -20,7 +20,6 @@ from chess_move_trainer.database.positions import (
     TrainingRequirementPolicy,
     TrainingRequirementStorageError,
 )
-
 
 POLICY = TrainingRequirementPolicy(0.8, 30)
 FEN = "rnbqkb1r/pppppppp/5n2/8/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 1"
@@ -38,7 +37,7 @@ def _game(connection: sqlite3.Connection, game_id: int, started: str) -> None:
             game_id,
             f"answer-game-{game_id}",
             f"https://example.test/answer-game-{game_id}",
-            "[Result \"*\"]\n\n*",
+            '[Result "*"]\n\n*',
             f"trainer-{game_id}",
             started,
         ),

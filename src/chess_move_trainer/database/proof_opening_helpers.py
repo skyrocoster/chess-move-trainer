@@ -1,4 +1,5 @@
 """Pure opening helpers for direct-database proof inputs."""
+
 from __future__ import annotations
 
 import chess
@@ -42,9 +43,7 @@ def _opening_label(item: object) -> tuple[str, str]:
 def _find_transposition_pair(
     routes: tuple[OpeningRouteSource, ...],
 ) -> tuple[OpeningRouteSource, tuple[str, ...]]:
-    source_identities = {
-        (route.eco, route.name, route.moves_uci) for route in routes
-    }
+    source_identities = {(route.eco, route.name, route.moves_uci) for route in routes}
     ordered = sorted(routes, key=lambda route: (len(route.moves_uci), route.eco, route.name))
     for route in ordered:
         for transposed_moves in _bounded_move_reorders(route.moves_uci):
@@ -115,5 +114,3 @@ def _find_nested_routes(
                 continue
             return prefix, deep
     raise DirectPreflightError("pinned opening source has no bounded nested route pair")
-
-

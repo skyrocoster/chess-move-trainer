@@ -298,13 +298,12 @@ def test_failed_publication_does_not_leave_partial_lines(tmp_path: Path) -> None
         ).complete(claim, _result())
 
     with sqlite3.connect(database_path) as connection:
-        assert connection.execute(
-            "SELECT COUNT(*) FROM derived_analysis_result"
-        ).fetchone()[0] == 0
-        assert connection.execute(
-            "SELECT COUNT(*) FROM derived_analysis_line"
-        ).fetchone()[0] == 0
-        assert connection.execute(
-            "SELECT COUNT(*) FROM derived_analysis_queue WHERE daq_claim_token = ?",
-            (claim.claim_token,),
-        ).fetchone()[0] == 1
+        assert connection.execute("SELECT COUNT(*) FROM derived_analysis_result").fetchone()[0] == 0
+        assert connection.execute("SELECT COUNT(*) FROM derived_analysis_line").fetchone()[0] == 0
+        assert (
+            connection.execute(
+                "SELECT COUNT(*) FROM derived_analysis_queue WHERE daq_claim_token = ?",
+                (claim.claim_token,),
+            ).fetchone()[0]
+            == 1
+        )

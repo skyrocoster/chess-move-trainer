@@ -63,10 +63,7 @@ class PreferredMoveInferenceResult:
 
     def __post_init__(self) -> None:
         summaries = tuple(self.summaries)
-        if any(
-            not isinstance(summary, PreferredMoveInferenceSummary)
-            for summary in summaries
-        ):
+        if any(not isinstance(summary, PreferredMoveInferenceSummary) for summary in summaries):
             raise ValueError("inference summaries must contain summary values")
         positions = tuple(summary.position for summary in summaries)
         if len(set(positions)) != len(positions):
@@ -105,9 +102,8 @@ class PreferredMoveInferenceResult:
     ) -> Mapping[CanonicalPosition, tuple[NormalizedPeriod, ...]]:
         """Return a read-only position-to-period view for downstream consumers."""
 
-        return MappingProxyType(
-            {summary.position: summary.periods for summary in self.summaries}
-        )
+        return MappingProxyType({summary.position: summary.periods for summary in self.summaries})
+
 
 @dataclass(frozen=True, slots=True)
 class _Qualification:
@@ -130,9 +126,7 @@ def infer_preferred_moves(
     calendar order and all arithmetic uses half-open 90-day windows.
     """
 
-    grouped: dict[CanonicalPosition, list[PreferredMoveObservation]] = defaultdict(
-        list
-    )
+    grouped: dict[CanonicalPosition, list[PreferredMoveObservation]] = defaultdict(list)
     for observation in observations:
         if not isinstance(observation, PreferredMoveObservation):
             raise ValueError("observations must contain PreferredMoveObservation values")
@@ -207,16 +201,12 @@ def _infer_position(
     periods = [
         NormalizedPeriod(
             effective_from=start,
-            effective_until=(
-                accepted[index + 1][0] if index + 1 < len(accepted) else None
-            ),
+            effective_until=(accepted[index + 1][0] if index + 1 < len(accepted) else None),
             preference=Preference.preferred_move(move_uci),
         )
         for index, (start, move_uci) in enumerate(accepted)
     ]
-    return _PositionInference(
-        normalize_periods(periods), _has_conflicting_evidence(qualifications)
-    )
+    return _PositionInference(normalize_periods(periods), _has_conflicting_evidence(qualifications))
 
 
 @dataclass(frozen=True, slots=True)

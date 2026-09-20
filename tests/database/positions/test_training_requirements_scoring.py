@@ -17,7 +17,6 @@ from chess_move_trainer.database.positions import (
     training_required,
 )
 
-
 DEFAULT_POLICY = TrainingRequirementPolicy(0.8, 30)
 
 
@@ -67,9 +66,7 @@ def test_one_credit_half_life_halves_signed_adjustment_not_quarters_it(
 
     expected_adjustment = math.copysign(2.0, stored)
     assert training_adjustment(effective) == pytest.approx(expected_adjustment)
-    assert effective == pytest.approx(
-        math.copysign(math.sqrt(2.0), stored)
-    )
+    assert effective == pytest.approx(math.copysign(math.sqrt(2.0), stored))
 
 
 def test_scoring_preserves_signed_fractional_precision_and_supports_future_preview() -> None:

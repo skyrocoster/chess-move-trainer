@@ -6,28 +6,22 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-from backend.app.dependencies import REBUILT_DATABASE_PATH_ENV
 import backend.app.features.games.router as games_router
 import backend.app.features.position_insight.router as insight_router
+from backend.app.dependencies import REBUILT_DATABASE_PATH_ENV
 from backend.tests.features.position_insight.conftest import create_insight_database
 
 from .conftest import TARGET_FEN, count_reader_calls
 
-analysis_router = importlib.import_module(
-    "backend.app.features.analysis_observation.router"
-)
-preferred_moves_router = importlib.import_module(
-    "backend.app.features.preferred_moves.router"
-)
+analysis_router = importlib.import_module("backend.app.features.analysis_observation.router")
+preferred_moves_router = importlib.import_module("backend.app.features.preferred_moves.router")
 
 
 def test_repeated_analysis_reads_share_cached_payloads(
     api_context: tuple[TestClient, Path], monkeypatch: pytest.MonkeyPatch
 ) -> None:
     client, _database = api_context
-    analysis_calls = count_reader_calls(
-        monkeypatch, analysis_router, "read_analysis_observation"
-    )
+    analysis_calls = count_reader_calls(monkeypatch, analysis_router, "read_analysis_observation")
 
     first = client.get("/api/analysis", params={"fen": TARGET_FEN})
     second = client.get("/api/analysis", params={"fen": TARGET_FEN})
@@ -50,9 +44,7 @@ def test_repeated_insight_reads_share_cached_payloads(
 ) -> None:
     database = create_insight_database(tmp_path / "insight-cache.db")
     monkeypatch.setenv(REBUILT_DATABASE_PATH_ENV, str(database))
-    insight_calls = count_reader_calls(
-        monkeypatch, insight_router, "read_position_insight"
-    )
+    insight_calls = count_reader_calls(monkeypatch, insight_router, "read_position_insight")
 
     params = {
         "fen": TARGET_FEN,

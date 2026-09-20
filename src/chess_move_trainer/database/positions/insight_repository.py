@@ -2,52 +2,26 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
-from dataclasses import dataclass
-from datetime import date
 from pathlib import Path
-from typing import Any, Literal
 
-import chess
-from sqlalchemy import text
-
-from ..analysis.models import (
-    AnalysisLine,
-    AnalysisQuality,
-    AnalysisScoreKind,
-    AnalysisTerminalKind,
-)
-from ..analysis.reading import AnalysisReadError, AnalysisReadRepository
-from ..analysis.validation import validate_settings_object
 from ..connection import DEFAULT_LOCK_TIMEOUT_SECONDS, _open_connection
-from ..openings.keys import opening_api_key
-from ..openings.recognition import (
-    OpeningInputError,
-    OpeningRecognitionError,
-    lookup_fen,
-)
-from ..preferred_moves.ranges import (
-    NormalizedPeriod,
-    Preference,
-    RangeValidationError,
-    ResolutionState,
-    normalize_periods,
-    period_from_literals,
-    resolve_date,
-)
 from ..schema import SchemaIncompatibleError, _assert_compatible_schema
-from .canonicalization import CanonicalPosition, PositionValidationError, canonicalize_fen
-from .repository import _find_existing_position_id
-
-
-TrainerColor = Literal["white", "black"]
-AnalysisState = Literal["not_requested", "queued", "running", "ready"]
-PreferenceKind = Literal["move", "no_preference", "unconfigured"]
-
-
-from .insight_models import AnalysisState, PositionInsight, PositionInsightAnalysis, PositionInsightError, PositionInsightExperience, PositionInsightObservedMove, PositionInsightObservedMoveTotals, PositionInsightOpening, PositionInsightPreference, PositionInsightRequest, PositionInsightResult, PositionInsightSchemaError, PositionInsightStorageError, PositionInsightTerminalTotals, PositionInsightValidationError, PreferenceKind, TrainerColor, _PositionInsightStatistics, _canonical_fen
+from .canonicalization import canonicalize_fen
+from .insight_helpers import _analysis_state, _read_analysis_result, _read_opening
+from .insight_models import (
+    PositionInsight,
+    PositionInsightAnalysis,
+    PositionInsightError,
+    PositionInsightPreference,
+    PositionInsightRequest,
+    PositionInsightSchemaError,
+    PositionInsightStorageError,
+    PositionInsightValidationError,
+    TrainerColor,
+    _PositionInsightStatistics,
+)
 from .insight_readers import _read_position_data, _read_position_statistics
-from .insight_helpers import _analysis_state, _read_analysis_result, _read_opening, _read_preference, _read_queue_state
+from .repository import _find_existing_position_id
 
 
 class PositionInsightRepository:
@@ -66,18 +40,14 @@ class PositionInsightRepository:
         """Read one insight without resolving or creating a derived position."""
 
         if not isinstance(request, PositionInsightRequest):
-            raise PositionInsightValidationError(
-                "request must be a PositionInsightRequest value"
-            )
+            raise PositionInsightValidationError("request must be a PositionInsightRequest value")
 
         try:
             with _open_connection(
                 self._database_path, "read-only", self._lock_timeout
             ) as connection:
                 _assert_compatible_schema(connection, self._lock_timeout)
-                position_id = _find_existing_position_id(
-                    connection, canonicalize_fen(request.fen)
-                )
+                position_id = _find_existing_position_id(connection, canonicalize_fen(request.fen))
                 if position_id is None:
                     statistics = _read_position_statistics(connection, None, request)
                     return _sparse_insight(request, statistics)
@@ -128,9 +98,7 @@ def read_position_insight(
         request = fen
     else:
         if trainer_color is None or as_of is None:
-            raise PositionInsightValidationError(
-                "fen, trainer_color, and as_of are required"
-            )
+            raise PositionInsightValidationError("fen, trainer_color, and as_of are required")
         request = PositionInsightRequest(fen, trainer_color, as_of)
     return PositionInsightRepository(database_path, lock_timeout=lock_timeout).read(request)
 
@@ -154,8 +122,3 @@ def _sparse_insight(
         analysis=PositionInsightAnalysis("not_requested", None),
         preference=PositionInsightPreference("unconfigured"),
     )
-
-
-
-
-

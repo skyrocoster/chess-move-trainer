@@ -3,44 +3,29 @@
 from __future__ import annotations
 
 import math
-import os
-import queue
 import re
-import subprocess
-import threading
-import time
-from collections.abc import Callable
-from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Final, TextIO
 
 import chess
 
 from ..analysis import (
     AnalysisLine,
-    AnalysisQuality,
     AnalysisResultInput,
-    AnalysisScoreKind,
     AnalysisTerminalKind,
-    AnalysisValidationError,
-    validate_analysis_position,
 )
 from ..positions import CanonicalPosition
 from .configuration import (
-    STOCKFISH_NAME,
     STOCKFISH_VERSION,
     StockfishProfile,
-    profile_for,
 )
-
-DEFAULT_STARTUP_TIMEOUT_SECONDS: Final[float] = 10.0
-ANALYSIS_WATCHDOG_SECONDS: Final[float] = 30.0
-_TERMINATION_WAIT_SECONDS: Final[float] = 0.5
-_READER_JOIN_SECONDS: Final[float] = 0.2
-_QUEUE_END: Final[object] = object()
-
-
-from .engine_models import SearchMetrics
+from .engine_models import (
+    DEFAULT_STARTUP_TIMEOUT_SECONDS,
+    ParsedUciInfo,
+    SearchMetrics,
+    StockfishIdentity,
+    StockfishIdentityError,
+    StockfishProtocolError,
+)
 
 
 def verify_stockfish_identity(
@@ -49,6 +34,8 @@ def verify_stockfish_identity(
     timeout: float = DEFAULT_STARTUP_TIMEOUT_SECONDS,
 ) -> StockfishIdentity:
     """Verify one explicit executable and terminate it cleanly."""
+
+    from .engine_runner import StockfishEngine
 
     with StockfishEngine(executable, startup_timeout=timeout) as engine:
         identity = engine.identity
@@ -140,8 +127,7 @@ def _classify_terminal(board: chess.Board) -> AnalysisTerminalKind | None:
 
 def _is_expected_stockfish(reported_name: str) -> bool:
     return (
-        re.match(rf"^Stockfish\s+{re.escape(STOCKFISH_VERSION)}(?:\b|$)", reported_name)
-        is not None
+        re.match(rf"^Stockfish\s+{re.escape(STOCKFISH_VERSION)}(?:\b|$)", reported_name) is not None
     )
 
 

@@ -122,12 +122,33 @@ def create_benchmark_database(path: Path) -> Path:
             ) VALUES (?, ?, ?, ?, ?, ?, ?)
             """,
             (
-                (1, BENCH_GAME_UUIDS[0], "https://example.test/bench-1", '[Result "*"]\n\n*',
-                 "white", BENCH_TRAINER_UUID, "2026-01-01T00:00:00Z"),
-                (2, BENCH_GAME_UUIDS[1], "https://example.test/bench-2", '[Result "*"]\n\n*',
-                 "white", BENCH_TRAINER_UUID, "2026-01-02T00:00:00Z"),
-                (3, BENCH_GAME_UUIDS[2], "https://example.test/bench-3", '[Result "*"]\n\n*',
-                 "black", BENCH_TRAINER_UUID, "2026-01-03T00:00:00Z"),
+                (
+                    1,
+                    BENCH_GAME_UUIDS[0],
+                    "https://example.test/bench-1",
+                    '[Result "*"]\n\n*',
+                    "white",
+                    BENCH_TRAINER_UUID,
+                    "2026-01-01T00:00:00Z",
+                ),
+                (
+                    2,
+                    BENCH_GAME_UUIDS[1],
+                    "https://example.test/bench-2",
+                    '[Result "*"]\n\n*',
+                    "white",
+                    BENCH_TRAINER_UUID,
+                    "2026-01-02T00:00:00Z",
+                ),
+                (
+                    3,
+                    BENCH_GAME_UUIDS[2],
+                    "https://example.test/bench-3",
+                    '[Result "*"]\n\n*',
+                    "black",
+                    BENCH_TRAINER_UUID,
+                    "2026-01-03T00:00:00Z",
+                ),
             ),
         )
         connection.executemany(
@@ -248,10 +269,9 @@ def _timed_get(
     client: TestClient,
     path: str,
     params: dict[str, object] | None,
-    timeout_s: float,
 ) -> tuple[int, float, dict[str, object]]:
     started = time.perf_counter()
-    response = client.get(path, params=params, timeout=timeout_s)
+    response = client.get(path, params=params)
     elapsed_ms = (time.perf_counter() - started) * 1000.0
     try:
         body = response.json()
@@ -283,7 +303,7 @@ def _run_case(
     for _ in range(repeats):
         if cold:
             clear_caches()
-        status_code, elapsed_ms, last_body = _timed_get(client, path, params, timeout_s)
+        status_code, elapsed_ms, last_body = _timed_get(client, path, params)
         assert status_code == 200, f"{name} returned {status_code}: {last_body}"
         samples.append(elapsed_ms)
     stats = _stats(samples)
@@ -296,9 +316,14 @@ def _run_case(
         "repeats": repeats,
         "timeout_s": timeout_s,
         "samples_ms": [round(value, 3) for value in samples],
-        "stats": {key: round(value, 3) if isinstance(value, float) else value for key, value in stats.items()},
+        "stats": {
+            key: round(value, 3) if isinstance(value, float) else value
+            for key, value in stats.items()
+        },
         "threshold_median_ms": threshold_ms,
-        "items_returned": len(last_body.get("items", [])) if isinstance(last_body.get("items"), list) else None,
+        "items_returned": (
+            len(last_body.get("items", [])) if isinstance(last_body.get("items"), list) else None
+        ),
         "total_reported": last_body.get("total"),
     }
     if cold:
@@ -306,7 +331,7 @@ def _run_case(
     if warm_repeats:
         warm_samples: list[float] = []
         for _ in range(warm_repeats):
-            status_code, elapsed_ms, _ = _timed_get(client, path, params, timeout_s)
+            status_code, elapsed_ms, _ = _timed_get(client, path, params)
             assert status_code == 200, f"{name} warm repeat returned {status_code}"
             warm_samples.append(elapsed_ms)
         payload["warm_repeats"] = warm_repeats
@@ -318,7 +343,9 @@ def _run_case(
     if extra:
         payload.update(extra)
     _write_report(name, payload)
-    assert stats["median_ms"] < threshold_ms, f"{name} median {stats['median_ms']:.1f}ms >= {threshold_ms}ms"
+    assert stats["median_ms"] < threshold_ms, (
+        f"{name} median {stats['median_ms']:.1f}ms >= {threshold_ms}ms"
+    )
     return payload
 
 
@@ -364,7 +391,7 @@ def test_openings_catalogue_benchmark(
         warm_repeats=repeats,
     )
     status_code, _, body = _timed_get(
-        benchmark_client, "/api/openings", {"page": 1, "page_size": 50}, timeout_s
+        benchmark_client, "/api/openings", {"page": 1, "page_size": 50}
     )
     assert status_code == 200 and body.get("items")
     first_key = body["items"][0]["key"]
@@ -405,9 +432,7 @@ def test_games_search_benchmark(
         cold=True,
         warm_repeats=repeats,
     )
-    status_code, _, body = _timed_get(
-        benchmark_client, "/api/games", {"page": 1, "page_size": 50}, timeout_s
-    )
+    status_code, _, body = _timed_get(benchmark_client, "/api/games", {"page": 1, "page_size": 50})
     assert status_code == 200 and body.get("items")
     game_uuid = body["items"][0]["game_uuid"]
     _run_case(
@@ -524,7 +549,6 @@ def test_trainer_practice_full_load_benchmark(
             benchmark_client,
             "/api/positions/training-requirements",
             {"as_of": AS_OF, "training_requirement_gte": -100, "page": page, "page_size": 50},
-            timeout_s,
         )
         assert status_code == 200
         page_times.append(elapsed_ms)
@@ -539,7 +563,6 @@ def test_trainer_practice_full_load_benchmark(
         benchmark_client,
         "/api/positions/training-requirements",
         {"as_of": AS_OF, "training_requirement_gte": -100, "page": 1, "page_size": 50},
-        timeout_s,
     )
     assert warm_status == 200
     payload: dict[str, object] = {
@@ -551,7 +574,10 @@ def test_trainer_practice_full_load_benchmark(
         "repeats": 1,
         "timeout_s": timeout_s,
         "samples_ms": [round(value, 3) for value in page_times],
-        "stats": {k: round(v, 3) if isinstance(v, float) else v for k, v in _stats(page_times).items()},
+        "stats": {
+            key: round(value, 3) if isinstance(value, float) else value
+            for key, value in _stats(page_times).items()
+        },
         "threshold_median_ms": threshold_ms,
         "pages_read": page,
         "total_reported": total,
@@ -580,7 +606,7 @@ def test_board_navigation_benchmark(
     started_total = time.perf_counter()
     for index in range(10):
         status_code, elapsed_ms, _ = _timed_get(
-            benchmark_client, "/api/positions/insight", addresses[index % 2], timeout_s
+            benchmark_client, "/api/positions/insight", addresses[index % 2]
         )
         assert status_code == 200
         samples.append(elapsed_ms)
@@ -594,7 +620,10 @@ def test_board_navigation_benchmark(
         "repeats": 10,
         "timeout_s": timeout_s,
         "samples_ms": [round(value, 3) for value in samples],
-        "stats": {k: round(v, 3) if isinstance(v, float) else v for k, v in _stats(samples).items()},
+        "stats": {
+            key: round(value, 3) if isinstance(value, float) else value
+            for key, value in _stats(samples).items()
+        },
         "threshold_median_ms": threshold_ms,
         "full_load_total_ms": round(total_ms, 3),
     }

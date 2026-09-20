@@ -65,7 +65,7 @@ def _make_database(tmp_path: Path) -> Path:
                     game_id,
                     f"00000000-0000-4000-8000-{game_id:012d}",
                     f"https://example.test/{game_id}",
-                    "[Result \"*\"]\n\n*",
+                    '[Result "*"]\n\n*',
                     "11111111-1111-4111-8111-111111111111",
                 ),
             )
@@ -180,9 +180,7 @@ def test_read_opening_returns_none_for_valid_absent_key(tmp_path: Path) -> None:
 
 
 @pytest.mark.parametrize("opening_key", ["not-a-key", "A0:Alpha", "A00:"])
-def test_read_opening_rejects_malformed_key(
-    tmp_path: Path, opening_key: str
-) -> None:
+def test_read_opening_rejects_malformed_key(tmp_path: Path, opening_key: str) -> None:
     database = _make_database(tmp_path)
 
     with pytest.raises(OpeningCatalogueValidationError):
@@ -237,9 +235,7 @@ def test_catalogue_search_and_eco_bounds_are_trimmed_and_combine_with_and(
 ) -> None:
     repository = OpeningCatalogueRepository(_make_database(tmp_path))
 
-    assert _keys(repository.search(OpeningCatalogueQuery(search="  beta  "))) == [
-        "B10:Beta:Study"
-    ]
+    assert _keys(repository.search(OpeningCatalogueQuery(search="  beta  "))) == ["B10:Beta:Study"]
     assert _keys(
         repository.read(OpeningCatalogueQuery(search="a", eco_from=" b00 ", eco_to=" d99"))
     ) == ["B10:Beta:Study", "C20:Gamma"]
@@ -316,8 +312,6 @@ def test_catalogue_rejects_missing_incompatible_and_malformed_data(tmp_path: Pat
     malformed_directory.mkdir()
     malformed = _make_database(malformed_directory)
     with sqlite3.connect(malformed) as connection:
-        connection.execute(
-            "UPDATE datasource_opening SET do_name = '' WHERE do_opening_id = 1"
-        )
+        connection.execute("UPDATE datasource_opening SET do_name = '' WHERE do_opening_id = 1")
     with pytest.raises(OpeningCatalogueStorageError):
         OpeningCatalogueRepository(malformed).read()

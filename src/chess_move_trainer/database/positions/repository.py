@@ -20,9 +20,7 @@ class PositionStorageError(RuntimeError):
 PositionIdentity: TypeAlias = tuple[str, str, str, str]
 
 
-def _find_existing_position_id(
-    connection: object, position: CanonicalPosition
-) -> int | None:
+def _find_existing_position_id(connection: object, position: CanonicalPosition) -> int | None:
     """Find one canonical position without resolving or creating it."""
 
     row = connection.execute(

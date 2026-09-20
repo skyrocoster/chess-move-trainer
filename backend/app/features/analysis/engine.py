@@ -14,6 +14,7 @@ from typing import Any, Protocol
 
 import chess
 import chess.engine
+
 from chess_move_trainer.database.stockfish.configuration import STOCKFISH_VERSION
 
 from .errors import AnalysisTimeoutError, AnalysisValidationError, EngineLifecycleError

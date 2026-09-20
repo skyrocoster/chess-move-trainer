@@ -142,7 +142,6 @@ class DatabaseMutex:
         except BaseException:
             pass
 
-
     def _acquire_windows(self, wait_seconds: float) -> bool:
         api = _windows_api()
         handle = api.CreateMutexW(None, False, self.name)

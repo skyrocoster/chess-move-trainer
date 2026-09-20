@@ -57,9 +57,7 @@ def post_analysis_request(
         outcome = request_analysis(database_path, body.fen, body.quality)
         clear_caches()
         status_code = (
-            200
-            if outcome.disposition is AnalysisRequestDisposition.RESULT_REUSED
-            else 202
+            200 if outcome.disposition is AnalysisRequestDisposition.RESULT_REUSED else 202
         )
         response = observation_response(outcome.observation)
         return JSONResponse(

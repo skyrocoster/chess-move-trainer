@@ -57,9 +57,10 @@ def test_games_distinct_filters_use_distinct_keys(
 
     assert client.get(GAMES_PATH, params={"page": 1, "page_size": 2}).status_code == 200
     assert client.get(GAMES_PATH, params={"page": 2, "page_size": 2}).status_code == 200
-    assert client.get(
-        GAMES_PATH, params={"page": 1, "page_size": 2, "sort": "length_asc"}
-    ).status_code == 200
+    assert (
+        client.get(GAMES_PATH, params={"page": 1, "page_size": 2, "sort": "length_asc"}).status_code
+        == 200
+    )
     assert len(calls) == 3
 
 

@@ -7,14 +7,6 @@ engine_parsing, engine_runner, and engine_helpers.
 from __future__ import annotations
 
 from .engine_helpers import (
-    _classify_terminal,
-    _fen_for_position,
-    _finite_timeout,
-    _is_expected_stockfish,
-    _line_from_info,
-    _metrics_for,
-    _board_for_position,
-    _result_for,
     verify_stockfish_identity,
 )
 from .engine_models import (
@@ -31,7 +23,7 @@ from .engine_models import (
     StockfishStartupError,
     StockfishWatchdogError,
 )
-from .engine_parsing import _parse_int, normalize_score, normalize_wdl, parse_uci_info
+from .engine_parsing import normalize_score, normalize_wdl, parse_uci_info
 from .engine_runner import StockfishEngine
 
 __all__ = [

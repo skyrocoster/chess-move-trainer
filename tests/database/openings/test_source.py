@@ -116,7 +116,7 @@ def test_reordered_rows_and_files_produce_the_same_deterministic_result(tmp_path
         (
             "malformed TSV",
             lambda path: (path / "a.tsv").write_text(
-                "eco\tname\tpgn\nA00\t\"unterminated\t1. e4\n", encoding="utf-8"
+                'eco\tname\tpgn\nA00\t"unterminated\t1. e4\n', encoding="utf-8"
             ),
         ),
         (
@@ -157,9 +157,7 @@ def test_reordered_rows_and_files_produce_the_same_deterministic_result(tmp_path
         ),
         (
             "malformed encoding",
-            lambda path: (path / "a.tsv").write_bytes(
-                b"eco\tname\tpgn\nA00\tName\t1. e4\xff\n"
-            ),
+            lambda path: (path / "a.tsv").write_bytes(b"eco\tname\tpgn\nA00\tName\t1. e4\xff\n"),
         ),
     ],
 )
@@ -169,7 +167,7 @@ def test_invalid_batch_raises_source_error_without_returning_partial_result(
     source_dir = _copy_fixture(tmp_path)
     mutate(source_dir)  # type: ignore[operator]
 
-    with pytest.raises(OpeningSourceError, match=""):
+    with pytest.raises(OpeningSourceError):
         load_opening_sources(source_dir)
 
 
@@ -197,9 +195,7 @@ def test_valid_capture_is_normalized_to_uci(tmp_path: Path) -> None:
     _write_batch(
         source_dir,
         {
-            name: ["A00\tCapture\t1. e4 d5 2. exd5"]
-            if name == "a.tsv"
-            else []
+            name: ["A00\tCapture\t1. e4 d5 2. exd5"] if name == "a.tsv" else []
             for name in EXPECTED_FILES
         },
     )

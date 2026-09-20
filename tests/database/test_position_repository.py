@@ -15,9 +15,7 @@ from chess_move_trainer.database.schema import SchemaIncompatibleError
 
 STARTING_PLACEMENT = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR"
 STARTING_FEN = f"{STARTING_PLACEMENT} w KQkq - 0 1"
-LEGAL_EN_PASSANT_FEN = (
-    "rnbqkbnr/ppp1pppp/8/3pP3/8/8/PPPP1PPP/RNBQKBNR w KQkq d6 0 3"
-)
+LEGAL_EN_PASSANT_FEN = "rnbqkbnr/ppp1pppp/8/3pP3/8/8/PPPP1PPP/RNBQKBNR w KQkq d6 0 3"
 
 
 def test_only_an_existing_compatible_v1_database_is_accepted(

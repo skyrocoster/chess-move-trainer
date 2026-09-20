@@ -19,9 +19,6 @@ from .persistence_repository import (
     GameRepository,
     ImportFailure,
     ImportResult,
-    _game_metadata,
-    _metadata_parameters,
-    _stored_game_matches,
 )
 
 __all__ = [

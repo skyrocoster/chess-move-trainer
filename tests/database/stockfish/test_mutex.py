@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import ctypes
 import os
 import subprocess
 import sys
 import time
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -43,8 +45,8 @@ finally:
     return subprocess.Popen(
         [sys.executable, "-c", code, str(database_path), str(signal_path), str(ROOT), action],
         cwd=ROOT,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
         text=True,
     )
 
@@ -60,6 +62,18 @@ def _wait_for_signal(signal_path: Path, process: subprocess.Popen[str]) -> None:
     process.kill()
     process.wait(timeout=5)
     raise AssertionError("mutex child did not acquire within the finite test timeout")
+
+
+def _open_keeper(database_path: Path) -> tuple[Any, Any]:
+    """Open one extra handle so the named mutex survives its crashed owner."""
+
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)  # type: ignore[attr-defined]
+    create = kernel32.CreateMutexW
+    create.argtypes = [ctypes.c_void_p, ctypes.c_bool, ctypes.c_wchar_p]
+    create.restype = ctypes.c_void_p
+    handle = create(None, False, mutex_name_for_database(database_path))
+    assert handle
+    return kernel32, handle
 
 
 def test_mutex_name_uses_one_normalized_database_identity(tmp_path: Path) -> None:
@@ -103,11 +117,15 @@ def test_abandoned_child_acquisition_is_reported_as_acquired(tmp_path: Path) -> 
     signal_path = tmp_path / "abandoned-owner.signal"
     child = _child_process(database_path, signal_path, "crash")
     _wait_for_signal(signal_path, child)
-    child.kill()
-    child.wait(timeout=5)
+    keeper_api, keeper_handle = _open_keeper(database_path)
+    try:
+        child.kill()
+        child.wait(timeout=5)
 
-    recovered = DatabaseMutex(database_path)
-    assert recovered.acquire(timeout=1)
-    assert recovered.acquired_abandoned
-    assert recovered.owned
-    recovered.release()
+        recovered = DatabaseMutex(database_path)
+        assert recovered.acquire(timeout=1)
+        assert recovered.acquired_abandoned
+        assert recovered.owned
+        recovered.release()
+    finally:
+        keeper_api.CloseHandle(keeper_handle)

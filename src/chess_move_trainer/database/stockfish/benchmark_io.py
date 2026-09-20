@@ -3,15 +3,12 @@
 from __future__ import annotations
 
 import json
-from collections.abc import Callable, Iterable, Mapping, Sequence
+from collections.abc import Callable, Iterable, Mapping
 from pathlib import Path
 from typing import Any
 
-from ..analysis import AnalysisQuality
-from ..positions import CanonicalPosition, canonicalize_fen
-from .benchmark_artifacts import _StoredAttempts
+from .benchmark_artifacts import ArtifactWriter
 from .benchmark_models import (
-    BENCHMARK_FORMAT_VERSION,
     DEFAULT_ARTIFACT_WRITE_RETRIES,
     DEFAULT_HASH_SIZES_MB,
     DEFAULT_NODE_BUDGETS,
@@ -19,28 +16,13 @@ from .benchmark_models import (
     DEFAULT_SHUFFLE_SEED,
     DEFAULT_THREAD_COUNTS,
     BenchmarkInputError,
-    BenchmarkJob,
+    BenchmarkOutcome,
     BenchmarkPosition,
     BenchmarkSpec,
 )
-from .benchmark_records import (
-    _checkpoint_payload,
-    _current_job_sets,
-    _expected_manifest,
-    _job_fields,
-    _load_attempts,
-    _metrics_dict,
-    _outcome,
-    _profile_blocks,
-    _records_for_job,
-    _success_record,
-    _summary_csv,
-    _summary_payload,
-    _validate_checkpoint,
-)
-from .engine import ANALYSIS_WATCHDOG_SECONDS, SearchMetrics, StockfishEngine
 from .benchmark_runner import BenchmarkRunner
-from .configuration import CONFIGURATION_VERSION, MULTI_PV, STOCKFISH_NAME, STOCKFISH_VERSION
+from .engine import ANALYSIS_WATCHDOG_SECONDS
+
 
 def load_positions(position_input: str | Path) -> tuple[BenchmarkPosition, ...]:
     """Load and structurally validate explicit JSON benchmark positions."""
@@ -100,4 +82,3 @@ def run_benchmark(
         retry_delay_seconds=retry_delay_seconds,
         progress=progress,
     ).run()
-

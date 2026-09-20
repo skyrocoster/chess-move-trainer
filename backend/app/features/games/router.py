@@ -66,9 +66,7 @@ def _summary_response(summary: object) -> GameSummaryResponse:
         trainer_color=summary.trainer_color,
         trainer_chesscom_uuid=UUID(summary.trainer_chesscom_uuid),
         opponent_chesscom_uuid=(
-            None
-            if summary.opponent_chesscom_uuid is None
-            else UUID(summary.opponent_chesscom_uuid)
+            None if summary.opponent_chesscom_uuid is None else UUID(summary.opponent_chesscom_uuid)
         ),
         trainer_rating=summary.trainer_rating,
         opponent_rating=summary.opponent_rating,
@@ -110,9 +108,7 @@ def _detail_response(detail: object) -> GameDetailResponse:
         trainer_color=detail.trainer_color,
         trainer_chesscom_uuid=UUID(detail.trainer_chesscom_uuid),
         opponent_chesscom_uuid=(
-            None
-            if detail.opponent_chesscom_uuid is None
-            else UUID(detail.opponent_chesscom_uuid)
+            None if detail.opponent_chesscom_uuid is None else UUID(detail.opponent_chesscom_uuid)
         ),
         trainer_rating=detail.trainer_rating,
         opponent_rating=detail.opponent_rating,
@@ -216,9 +212,7 @@ def get_games(
             games_namespace,
             key,
             database_path,
-            lambda: serialize_response_body(
-                _page_response(search_games(database_path, query))
-            ),
+            lambda: serialize_response_body(_page_response(search_games(database_path, query))),
         )
     except (GameSearchSchemaError, GameSearchStorageError):
         return _games_error(503, "games_unavailable", "Games unavailable")

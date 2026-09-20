@@ -121,9 +121,7 @@ def load_opening_sources(source_dir: str | Path) -> tuple[OpeningRouteSource, ..
     except OSError as error:
         raise OpeningSourceError("source directory contains an unreadable entry") from error
     if source_names != EXPECTED_SOURCE_FILES:
-        raise OpeningSourceError(
-            f"expected exactly {EXPECTED_SOURCE_FILES}, found {source_names}"
-        )
+        raise OpeningSourceError(f"expected exactly {EXPECTED_SOURCE_FILES}, found {source_names}")
 
     routes: dict[tuple[str, str, tuple[str, ...]], OpeningRouteSource] = {}
     for source_name in EXPECTED_SOURCE_FILES:
@@ -136,9 +134,7 @@ def load_opening_sources(source_dir: str | Path) -> tuple[OpeningRouteSource, ..
     return tuple(routes[key] for key in sorted(routes))
 
 
-def _read_source_rows(
-    path: Path, source_name: str
-) -> tuple[tuple[int, str, str, str], ...]:
+def _read_source_rows(path: Path, source_name: str) -> tuple[tuple[int, str, str, str], ...]:
     rows: list[tuple[int, str, str, str]] = []
     try:
         with path.open("r", encoding="utf-8", newline="") as stream:
@@ -160,13 +156,9 @@ def _read_source_rows(
                     )
                 eco, name, pgn = row
                 if _ECO_PATTERN.fullmatch(eco) is None:
-                    raise OpeningSourceError(
-                        f"{source_name} row {row_number}: invalid ECO"
-                    )
+                    raise OpeningSourceError(f"{source_name} row {row_number}: invalid ECO")
                 if not pgn.strip():
-                    raise OpeningSourceError(
-                        f"{source_name} row {row_number}: move text is empty"
-                    )
+                    raise OpeningSourceError(f"{source_name} row {row_number}: move text is empty")
                 rows.append((row_number, eco, name, pgn))
     except OpeningSourceError:
         raise

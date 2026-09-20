@@ -11,10 +11,7 @@ from chess_move_trainer.database.positions import PositionRepository, TrainingRe
 
 from .conftest import TARGET_CANONICAL_FEN, TARGET_FEN
 
-
-BLACK_TARGET_FEN = (
-    "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1"
-)
+BLACK_TARGET_FEN = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1"
 BLACK_TARGET_CANONICAL_FEN = " ".join((*BLACK_TARGET_FEN.split()[:4], "0", "1"))
 
 
@@ -185,12 +182,15 @@ def test_discovery_supports_global_opening_colour_and_combined_due_filters(
         },
     )
 
-    assert all(response.status_code == 200 for response in (
-        global_due,
-        opening_due,
-        colour_due,
-        combined_due,
-    ))
+    assert all(
+        response.status_code == 200
+        for response in (
+            global_due,
+            opening_due,
+            colour_due,
+            combined_due,
+        )
+    )
     assert len(global_due.json()["items"]) == 2
     assert all(item["training_required"] for item in global_due.json()["items"])
     assert {item["trainer_color"] for item in opening_due.json()["items"]} == {"white"}

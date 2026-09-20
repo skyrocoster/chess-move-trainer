@@ -9,14 +9,35 @@ from __future__ import annotations
 
 import json
 import os
-from dataclasses import dataclass
-from pathlib import Path, PurePosixPath
 import re
 import shutil
 import subprocess
 import sys
 import tempfile
-from typing import Any, Iterable
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any
+
+if __package__:
+    from .graphify_catalogue_validation import PATH_KEYS as PATH_KEYS
+    from .graphify_catalogue_validation import (
+        REQUIRED_ARTIFACTS,
+        GraphifyError,
+        _load_json,
+        _validate_artifact_files,
+        _validate_generated_text,
+    )
+else:
+    from graphify_catalogue_validation import (
+        PATH_KEYS as PATH_KEYS,  # type: ignore[import-not-found]
+    )
+    from graphify_catalogue_validation import (  # type: ignore[import-not-found]
+        REQUIRED_ARTIFACTS,
+        GraphifyError,
+        _load_json,
+        _validate_artifact_files,
+        _validate_generated_text,
+    )
 
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
@@ -26,9 +47,7 @@ PROVENANCE_NOTE = (
     "This graph represents the complete pre-commit working tree, including local "
     "changes. See manifest.json for per-file content hashes."
 )
-REFRESH_COMMAND = (
-    "timeout 10800s .venv/Scripts/python.exe src/tools/graphify_catalogue.py"
-)
+REFRESH_COMMAND = "timeout 10800s .venv/Scripts/python.exe src/tools/graphify_catalogue.py"
 REPORT_FRESHNESS = (
     "## Graph Freshness\n"
     "- This report represents the complete pre-commit working tree, including local changes.\n"
@@ -38,13 +57,6 @@ REPORT_FRESHNESS = (
 HTML_PROVENANCE_COMMENT = (
     "<!-- Graphify provenance: complete pre-commit working tree, including local "
     "changes. See manifest.json for per-file content hashes. -->"
-)
-REQUIRED_ARTIFACTS = (
-    "GRAPH_REPORT.md",
-    "graph.html",
-    "graph.json",
-    ".graphify_analysis.json",
-    "manifest.json",
 )
 
 
@@ -92,28 +104,6 @@ KNOWN_EPHEMERAL_FILES = frozenset(
     }
 )
 KNOWN_EPHEMERAL_DIRS = frozenset({"cache"})
-FORBIDDEN_PATH_RE = re.compile(
-    r"(?i)(?:^[\"'`\s(/\\])data(?:[/\\])"
-    r"(?:database(?:[/\\])|stockfish(?:[/\\]))"
-)
-ABSOLUTE_WINDOWS_RE = re.compile(r"(?i)^[a-z]:[/\\]")
-PATH_KEYS = frozenset(
-    {
-        "file",
-        "file_name",
-        "filename",
-        "file_path",
-        "filepath",
-        "path",
-        "relative_path",
-        "source_file",
-        "source_path",
-    }
-)
-
-
-class GraphifyError(RuntimeError):
-    """A fail-fast error that identifies the layer and operation involved."""
 
 
 def _command_text(command: list[str]) -> str:
@@ -224,8 +214,7 @@ def _validate_known_tree(
                 if kind == "directory":
                     if top_level and name not in allowed_directories:
                         raise GraphifyError(
-                            f"Unknown Graphify output directory refuses cleanup: "
-                            f"{entry.path}"
+                            f"Unknown Graphify output directory refuses cleanup: {entry.path}"
                         )
                     visit(Path(entry.path))
                 elif top_level and name not in allowed_files:
@@ -271,82 +260,6 @@ def _remove_known_entries(directory: Path) -> None:
                     target.unlink()
 
 
-def _assert_safe_path(value: str, label: str) -> None:
-    normalized = value.replace("\\", "/")
-    path = PurePosixPath(normalized)
-    if path.is_absolute() or ABSOLUTE_WINDOWS_RE.match(value) or normalized.startswith("//"):
-        raise GraphifyError(f"Absolute path in generated {label}: {value}")
-    if any(part == ".." for part in path.parts):
-        raise GraphifyError(f"Parent traversal in generated {label}: {value}")
-    lowered = normalized.lower().lstrip("./")
-    if lowered.startswith(("data/database/", "data/stockfish/")):
-        raise GraphifyError(f"Runtime-data path in generated {label}: {value}")
-    if lowered.startswith("docs/graphify/"):
-        raise GraphifyError(f"Forbidden generated {label}: {value}")
-
-
-def _walk_json_paths(value: Any, label: str) -> Iterable[tuple[str, str]]:
-    if isinstance(value, dict):
-        for key, child in value.items():
-            if isinstance(key, str) and key.replace("\\", "/").lower().startswith("data/"):
-                yield f"{label}.<key>", key
-            if isinstance(key, str) and ("/" in key or "\\" in key):
-                yield f"{label}.<key>", key
-            if isinstance(key, str) and key.lower() in PATH_KEYS and isinstance(child, str):
-                yield f"{label}.{key}", child
-            yield from _walk_json_paths(child, f"{label}.{key}")
-    elif isinstance(value, list):
-        for index, child in enumerate(value):
-            yield from _walk_json_paths(child, f"{label}[{index}]")
-
-
-def _validate_generated_text(text: str, label: str) -> None:
-    normalized = text.replace("\\", "/")
-    lowered = normalized.lower()
-    if "data/database/chess.db" in lowered or FORBIDDEN_PATH_RE.search(normalized):
-        raise GraphifyError(f"Runtime-data path in generated {label}")
-    if "docs/graphify/" in lowered:
-        raise GraphifyError(f"Self-indexed output path in generated {label}")
-    root_text = str(REPOSITORY_ROOT).replace("\\", "/").lower()
-    if root_text and root_text in lowered:
-        raise GraphifyError(f"Absolute repository path in generated {label}")
-
-
-def _load_json(path: Path, label: str) -> Any:
-    try:
-        with path.open(encoding="utf-8") as stream:
-            value = json.load(stream)
-    except (OSError, json.JSONDecodeError) as error:
-        raise GraphifyError(f"Malformed generated {label}: {path}") from error
-    for path_label, path_value in _walk_json_paths(value, label):
-        _assert_safe_path(path_value, path_label)
-    _validate_generated_text(json.dumps(value), label)
-    return value
-
-
-def _validate_artifact_files(output_dir: Path) -> None:
-    if not output_dir.is_dir() or output_dir.is_symlink():
-        raise GraphifyError(f"Graphify output directory is invalid: {output_dir}")
-    names = {entry.name for entry in output_dir.iterdir()}
-    required = set(REQUIRED_ARTIFACTS)
-    missing = required - names
-    extra = names - required
-    if missing:
-        raise GraphifyError(
-            f"Graphify output is missing required artifacts in {output_dir}: "
-            f"{sorted(missing)}"
-        )
-    if extra:
-        raise GraphifyError(
-            f"Graphify output has unexpected final artifacts in {output_dir}: "
-            f"{sorted(extra)}"
-        )
-    for name in REQUIRED_ARTIFACTS:
-        artifact = output_dir / name
-        if artifact.is_symlink() or not artifact.is_file():
-            raise GraphifyError(f"Graphify artifact is not a regular file: {artifact}")
-
-
 def _atomic_write_batch(updates: dict[Path, str | bytes]) -> None:
     temporary_paths: list[Path] = []
     try:
@@ -376,13 +289,12 @@ def _atomic_write_batch(updates: dict[Path, str | bytes]) -> None:
 def _report_without_stale_commit_claim(report: str) -> str:
     report = re.sub(r"(?im)^.*built from commit.*(?:\n|$)", "", report)
     report = re.sub(
-        r"(?im)^.*(?:git rev-parse HEAD|graphify update \.|Run `manifest\.json for per-file content hashes`).*(?:\n|$)",
+        r"(?im)^.*(?:git rev-parse HEAD|graphify update \.|"
+        r"Run `manifest\.json for per-file content hashes`).*(?:\n|$)",
         "",
         report,
     )
-    freshness = re.compile(
-        r"(?ims)^## Graph Freshness[ \t]*\r?\n.*?(?=^## |\Z)"
-    )
+    freshness = re.compile(r"(?ims)^## Graph Freshness[ \t]*\r?\n.*?(?=^## |\Z)")
     if freshness.search(report):
         report = freshness.sub(REPORT_FRESHNESS, report, count=1)
     else:
@@ -463,9 +375,7 @@ def _capture_prior_derived_artifacts(output_dir: Path) -> PriorDerivedArtifacts 
         return None
 
 
-def _restore_prior_derived_artifacts(
-    output_dir: Path, prior: PriorDerivedArtifacts
-) -> None:
+def _restore_prior_derived_artifacts(output_dir: Path, prior: PriorDerivedArtifacts) -> None:
     _atomic_write_batch(
         {
             output_dir / ".graphify_analysis.json": prior.analysis,

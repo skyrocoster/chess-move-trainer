@@ -23,9 +23,7 @@ GAME_UUID = "dddddddd-dddd-4ddd-8ddd-ddddddddddd1"
 def test_game_reader_returns_ordered_occurrences_including_final(tmp_path: Path) -> None:
     database = tmp_path / "reading.db"
     create_schema(database)
-    raw = json.loads(
-        (FIXTURES / "game-trainer-white.json").read_text(encoding="utf-8")
-    )
+    raw = json.loads((FIXTURES / "game-trainer-white.json").read_text(encoding="utf-8"))
     normalized = normalize_game(raw, TRAINER_UUID)
     assert normalized.game is not None
     persisted = GameRepository(database).persist(normalized.game)
@@ -52,9 +50,7 @@ def test_game_reader_returns_ordered_occurrences_including_final(tmp_path: Path)
 def test_public_game_detail_returns_metadata_pgn_and_replayable_fens(tmp_path: Path) -> None:
     database = tmp_path / "detail.db"
     create_schema(database)
-    raw = json.loads(
-        (FIXTURES / "game-trainer-white.json").read_text(encoding="utf-8")
-    )
+    raw = json.loads((FIXTURES / "game-trainer-white.json").read_text(encoding="utf-8"))
     normalized = normalize_game(raw, TRAINER_UUID)
     assert normalized.game is not None
     GameRepository(database).persist(normalized.game)
@@ -99,9 +95,7 @@ def test_public_game_detail_returns_metadata_pgn_and_replayable_fens(tmp_path: P
 def test_public_game_detail_is_read_only_and_uses_schema_compatibility(tmp_path: Path) -> None:
     database = tmp_path / "detail.db"
     create_schema(database)
-    raw = json.loads(
-        (FIXTURES / "game-trainer-white.json").read_text(encoding="utf-8")
-    )
+    raw = json.loads((FIXTURES / "game-trainer-white.json").read_text(encoding="utf-8"))
     normalized = normalize_game(raw, TRAINER_UUID)
     assert normalized.game is not None
     GameRepository(database).persist(normalized.game)

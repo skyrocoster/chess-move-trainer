@@ -6,9 +6,9 @@ import styles from "./FormControls.module.css";
 import {
   DropdownItemBody,
   DropdownMessage,
-  dropdownPositionerProps,
   type DropdownOptionDefinition,
 } from "./private/DropdownParts";
+import { dropdownPositionerProps } from "./private/dropdownPositionerProps";
 
 export interface SelectProps {
   options: readonly DropdownOptionDefinition[];

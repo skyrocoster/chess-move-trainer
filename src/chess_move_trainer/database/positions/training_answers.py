@@ -2,12 +2,10 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from datetime import UTC, date, datetime
 import math
+from dataclasses import dataclass
+from datetime import date
 from pathlib import Path
-import sqlite3
-from typing import Callable
 
 import chess
 from sqlalchemy import text
@@ -16,6 +14,12 @@ from ..connection import DEFAULT_LOCK_TIMEOUT_SECONDS, _open_existing_connection
 from ..schema import SchemaIncompatibleError, _assert_compatible_schema
 from .canonicalization import CanonicalPosition, PositionValidationError, canonicalize_fen
 from .repository import _find_existing_position_id
+from .training_answer_support import (
+    UtcCalendarDateClock,
+    _clock_date,
+    _is_lock_failure,
+    _utc_today,
+)
 from .training_requirements_models import (
     TrainerColor,
     TrainingRequirementError,
@@ -70,14 +74,10 @@ class TrainingAnswerRequest:
         try:
             position = canonicalize_fen(self.fen)
         except (PositionValidationError, TypeError, ValueError) as error:
-            raise TrainingAnswerValidationError(
-                "fen must be a complete legal FEN"
-            ) from error
+            raise TrainingAnswerValidationError("fen must be a complete legal FEN") from error
 
         if self.trainer_color not in ("white", "black"):
-            raise TrainingAnswerValidationError(
-                "trainer_color must be 'white' or 'black'"
-            )
+            raise TrainingAnswerValidationError("trainer_color must be 'white' or 'black'")
         expected_color = "white" if position.side_to_move == "w" else "black"
         if self.trainer_color != expected_color:
             raise TrainingAnswerValidationError(
@@ -95,17 +95,11 @@ class TrainingAnswerRequest:
         try:
             move = chess.Move.from_uci(self.played_move_uci)
         except (TypeError, ValueError) as error:
-            raise TrainingAnswerValidationError(
-                "played_move_uci is malformed"
-            ) from error
+            raise TrainingAnswerValidationError("played_move_uci is malformed") from error
         if move.uci() != self.played_move_uci:
-            raise TrainingAnswerValidationError(
-                "played_move_uci must be canonical UCI"
-            )
+            raise TrainingAnswerValidationError("played_move_uci must be canonical UCI")
         if not board.is_legal(move):
-            raise TrainingAnswerValidationError(
-                "played_move_uci must be legal from fen"
-            )
+            raise TrainingAnswerValidationError("played_move_uci must be legal from fen")
 
         object.__setattr__(self, "fen", _canonical_fen(position))
         object.__setattr__(self, "as_of", parsed_as_of.isoformat())
@@ -133,9 +127,6 @@ class TrainingAnswerResult:
         }
 
 
-UtcCalendarDateClock = Callable[[], date | datetime]
-
-
 class TrainingAnswerRepository:
     """Judge and persist one answer in an existing compatible database."""
 
@@ -148,9 +139,7 @@ class TrainingAnswerRepository:
         today: UtcCalendarDateClock | None = None,
     ) -> None:
         if clock is not None and today is not None:
-            raise TrainingAnswerValidationError(
-                "clock and today cannot both be supplied"
-            )
+            raise TrainingAnswerValidationError("clock and today cannot both be supplied")
         self._database_path = database_path
         self._lock_timeout = lock_timeout
         self._clock = clock or today or _utc_today
@@ -163,13 +152,9 @@ class TrainingAnswerRepository:
         """Judge one answer and atomically update its aggregate credit."""
 
         if not isinstance(request, TrainingAnswerRequest):
-            raise TrainingAnswerValidationError(
-                "request must be a TrainingAnswerRequest value"
-            )
+            raise TrainingAnswerValidationError("request must be a TrainingAnswerRequest value")
         if not isinstance(policy, TrainingRequirementPolicy):
-            raise TrainingAnswerValidationError(
-                "policy must be a TrainingRequirementPolicy"
-            )
+            raise TrainingAnswerValidationError("policy must be a TrainingRequirementPolicy")
 
         answer_date = parse_calendar_date(request.as_of, "as_of")
         today = _clock_date(self._clock)
@@ -184,8 +169,9 @@ class TrainingAnswerRepository:
                 self._lock_timeout,
             ) as connection:
                 try:
-                    connection.exec_driver_sql("BEGIN IMMEDIATE")
                     _assert_compatible_schema(connection, self._lock_timeout)
+                    connection.rollback()
+                    connection.exec_driver_sql("BEGIN IMMEDIATE")
                     result = self._submit_connection(
                         connection,
                         request,
@@ -231,9 +217,7 @@ class TrainingAnswerRepository:
         periods = preferences.get(position_id, ())
         preferred_move_uci = _active_preference(periods, answer_date)
         if preferred_move_uci is None:
-            raise TrainingAnswerNotFoundError(
-                "no preferred move is active for the requested date"
-            )
+            raise TrainingAnswerNotFoundError("no preferred move is active for the requested date")
         validate_uci(preferred_move_uci, "stored preferred move")
 
         hits, misses = _eligible_evidence(
@@ -272,9 +256,7 @@ class TrainingAnswerRepository:
         correct = request.played_move_uci == preferred_move_uci
         resulting_balance = effective_balance + (1.0 if correct else -1.0)
         if not math.isfinite(resulting_balance):
-            raise TrainingRequirementStorageError(
-                "resulting training balance is not finite"
-            )
+            raise TrainingRequirementStorageError("resulting training balance is not finite")
 
         connection.execute(
             text(
@@ -384,9 +366,7 @@ def _eligible_evidence(
         if position.side_to_move not in ("w", "b"):
             raise TrainingRequirementStorageError("stored position side is malformed")
         if stored_trainer_color not in ("white", "black"):
-            raise TrainingRequirementStorageError(
-                "stored trainer color is malformed"
-            )
+            raise TrainingRequirementStorageError("stored trainer color is malformed")
         if position.side_to_move != expected_side or stored_trainer_color != trainer_color:
             continue
         if move_uci is None:
@@ -436,9 +416,7 @@ def _load_current_aggregate(
             "stored aggregate training balance is malformed"
         ) from error
     if not math.isfinite(balance):
-        raise TrainingRequirementStorageError(
-            "stored aggregate training balance is not finite"
-        )
+        raise TrainingRequirementStorageError("stored aggregate training balance is not finite")
     updated_on = row[1]
     if updated_on is not None:
         try:
@@ -464,50 +442,6 @@ def _canonical_fen(position: CanonicalPosition) -> str:
             "1",
         )
     )
-
-
-def _utc_today() -> date:
-    return datetime.now(UTC).date()
-
-
-def _clock_date(clock: UtcCalendarDateClock) -> date:
-    try:
-        value = clock()
-    except Exception as error:
-        raise TrainingRequirementStorageError(
-            "UTC calendar-date clock could not be read"
-        ) from error
-    if isinstance(value, datetime):
-        if value.tzinfo is None:
-            raise TrainingRequirementStorageError(
-                "UTC calendar-date clock must return an aware datetime"
-            )
-        return value.astimezone(UTC).date()
-    if isinstance(value, date):
-        return value
-    raise TrainingRequirementStorageError(
-        "UTC calendar-date clock must return a date"
-    )
-
-
-def _is_lock_failure(error: BaseException) -> bool:
-    pending: list[BaseException] = [error]
-    seen: set[int] = set()
-    while pending:
-        current = pending.pop()
-        marker = id(current)
-        if marker in seen:
-            continue
-        seen.add(marker)
-        if isinstance(current, sqlite3.OperationalError):
-            message = str(current).lower()
-            if "locked" in message or "busy" in message:
-                return True
-        for attribute in ("orig", "__cause__", "__context__"):
-            nested = getattr(current, attribute, None)
-            if isinstance(nested, BaseException):
-                pending.append(nested)
-    return False
 
 
 __all__ = [

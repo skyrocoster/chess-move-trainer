@@ -345,7 +345,9 @@ def run_session(
     if not 1 <= workers <= MAX_WORKERS:
         raise ValueError(f"workers must be between 1 and {MAX_WORKERS}")
     if profile.profile_id != QUALIFIED_PROFILE_ID:
-        raise EvaluationValidationError("the evaluation service uses the fixed qualified profile only")
+        raise EvaluationValidationError(
+            "the evaluation service uses the fixed qualified profile only"
+        )
     database_path = Path(database)
     if not database_path.is_file():
         raise AnalysisLockError(f"database does not exist: {database_path}")

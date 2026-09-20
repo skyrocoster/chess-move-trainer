@@ -2,30 +2,19 @@
 
 from __future__ import annotations
 
-import csv
 import hashlib
 import json
-import math
 import os
-import random
 import tempfile
-import time
-from collections.abc import Callable, Iterable, Mapping, Sequence
+from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Final, Protocol
+from typing import Any, Protocol
 
-from ..analysis import AnalysisQuality
-from ..positions import CanonicalPosition, canonicalize_fen
-from .configuration import (
-    CONFIGURATION_VERSION,
-    MULTI_PV,
-    STOCKFISH_NAME,
-    STOCKFISH_VERSION,
-    StockfishProfile,
+from .benchmark_models import (
+    _MAX_DIAGNOSTIC_LENGTH,
+    BenchmarkInputError,
 )
-from .engine import ANALYSIS_WATCHDOG_SECONDS, SearchMetrics, StockfishEngine
-from .benchmark_models import BENCHMARK_FORMAT_VERSION, DEFAULT_ARTIFACT_WRITE_RETRIES, DEFAULT_HASH_SIZES_MB, DEFAULT_NODE_BUDGETS, DEFAULT_REPETITIONS, DEFAULT_SHUFFLE_SEED, DEFAULT_THREAD_COUNTS, _MAX_DIAGNOSTIC_LENGTH, BenchmarkError, BenchmarkInputError
 
 
 class ArtifactWriter(Protocol):
@@ -44,8 +33,7 @@ class AtomicArtifactWriter:
     def write_json(self, path: Path, payload: Mapping[str, Any]) -> None:
         self.write_text(
             path,
-            json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
-            + "\n",
+            json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")) + "\n",
         )
 
     def write_text(self, path: Path, content: str) -> None:
@@ -112,6 +100,7 @@ class _StoredAttempts:
     successful_job_ids: frozenset[str]
     failed_job_ids: frozenset[str]
 
+
 def _normalized_directory(path: Path) -> Path:
     try:
         return path.expanduser().resolve(strict=False)
@@ -158,4 +147,3 @@ def _is_transient_artifact_error(error: OSError) -> bool:
 def _bounded_message(error: BaseException) -> str:
     message = str(error).replace("\r", " ").replace("\n", " ").strip()
     return message[:_MAX_DIAGNOSTIC_LENGTH] or error.__class__.__name__
-

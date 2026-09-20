@@ -45,9 +45,7 @@ def probe_connection(
     timeout_seconds = _validate_lock_timeout(lock_timeout)
 
     with _open_connection(path, mode, timeout_seconds) as connection:
-        foreign_keys_enabled = connection.exec_driver_sql(
-            "PRAGMA foreign_keys"
-        ).scalar_one() == 1
+        foreign_keys_enabled = connection.exec_driver_sql("PRAGMA foreign_keys").scalar_one() == 1
         busy_timeout_ms = int(connection.exec_driver_sql("PRAGMA busy_timeout").scalar_one())
         journal_mode = str(connection.exec_driver_sql("PRAGMA journal_mode").scalar_one())
 

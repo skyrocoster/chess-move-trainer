@@ -43,9 +43,12 @@ Use this loop:
 1. Run the process. It stops at the first failed command, timeout, error, or warning and records that check in
    `.stage-check/full-test/state.json`. Read `.stage-check/full-test/latest-failure.log` when the terminal excerpt
    is not enough.
-2. Diagnose only that first issue. Fix its cause with the smallest semantic change. Do not batch later cleanup,
-   weaken assertions, skip or delete valid tests, lower limits, hide warnings, or add broad suppressions. A warning
-   is a failure even when its process exits zero.
+2. Diagnose only that first failed check. When its tool provides an automated fixer or formatter, run that first
+   over the same repository-defined scope (for example Ruff `check --fix`, Ruff `format`, Prettier `--write`, or
+   ESLint `--fix`). It is acceptable for that fixer to repair every issue reported by the current check in one
+   pass; review its diff, preserve unrelated work, and then repair any remaining diagnostics manually. Do not use
+   unsafe fix modes, batch unrelated cleanup from later checks, weaken assertions, skip or delete valid tests,
+   lower limits, hide warnings, or add broad suppressions. A warning is a failure even when its process exits zero.
 3. Run the same process command again. It automatically reruns the failed check and continues from there after it
    passes. Use `--from "<check name>"` only when the repair invalidated an earlier passing check; choose the earliest
    invalidated check. Retain earlier proof when the repair could not affect it.

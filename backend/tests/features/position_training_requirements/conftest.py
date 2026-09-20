@@ -15,7 +15,6 @@ from backend.app.main import app
 from chess_move_trainer.database import create_schema
 from chess_move_trainer.database.positions import PositionRepository
 
-
 TARGET_FEN = "rnbqkb1r/pppppppp/5n2/8/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 1"
 TARGET_CANONICAL_FEN = " ".join((*TARGET_FEN.split()[:4], "0", "1"))
 
@@ -32,7 +31,7 @@ def _game(connection: sqlite3.Connection, game_id: int, color: str, started: str
             game_id,
             f"training-api-game-{game_id}",
             f"https://example.test/training-api-game-{game_id}",
-            "[Result \"*\"]\n\n*",
+            '[Result "*"]\n\n*',
             color,
             f"trainer-{game_id}",
             started,

@@ -19,6 +19,7 @@ from .persistence_repository import (
 )
 from .raw_storage import load_month
 
+
 def import_raw_games(
     raw_games: Iterable[object],
     trainer_uuid: UUID,
@@ -188,5 +189,3 @@ def import_raw_month(
 
     envelope = load_month(month_path)
     return import_raw_games(envelope["games"], trainer_uuid, repository)
-
-

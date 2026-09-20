@@ -84,9 +84,7 @@ class AnalysisReadRepository:
     get = read
 
 
-def _read_current_result(
-    connection: object, position_id: int
-) -> AnalysisReadResult | None:
+def _read_current_result(connection: object, position_id: int) -> AnalysisReadResult | None:
     """Read and validate one complete current result on an owned connection."""
 
     parent = connection.execute(
@@ -130,9 +128,7 @@ def _materialize_result(parent: object, line_rows: list[object]) -> AnalysisRead
             raise ValueError("analysis settings must be a JSON object")
         engine_name = _required_text(parent[4], "engine name")
         engine_version = _required_text(parent[5], "engine version")
-        terminal_kind = (
-            None if parent[6] is None else AnalysisTerminalKind(parent[6])
-        )
+        terminal_kind = None if parent[6] is None else AnalysisTerminalKind(parent[6])
         lines = tuple(_line_from_row(row) for row in line_rows)
     except (IndexError, TypeError, ValueError, json.JSONDecodeError) as error:
         raise AnalysisReadError("analysis result row is malformed") from error

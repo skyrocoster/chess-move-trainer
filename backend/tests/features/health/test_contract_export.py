@@ -13,12 +13,8 @@ EXPECTED_OPERATION_IDS: dict[str, dict[str, str]] = {
     "/api/openings": {"get": "getOpenings"},
     "/api/openings/{opening_key}": {"get": "getOpeningByKey"},
     "/api/positions/insight": {"get": "getPositionInsight"},
-    "/api/positions/training-requirements": {
-        "get": "getPositionTrainingRequirements"
-    },
-    "/api/positions/training-requirements/answers": {
-        "post": "submitPositionTrainingAnswer"
-    },
+    "/api/positions/training-requirements": {"get": "getPositionTrainingRequirements"},
+    "/api/positions/training-requirements/answers": {"post": "submitPositionTrainingAnswer"},
     "/api/analysis": {"get": "getAnalysis"},
     "/api/analysis-requests": {"post": "requestAnalysis"},
     "/api/preferred-moves": {

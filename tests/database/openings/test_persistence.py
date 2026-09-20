@@ -117,9 +117,7 @@ def test_existing_endpoint_is_reused_and_unrelated_position_survives_replacement
     )
 
     OpeningCatalogueRepository(database_path).replace(routes)
-    replacement = load_opening_sources(
-        _write_source_dir(tmp_path, "1. c4 e5", eco="C00")
-    )
+    replacement = load_opening_sources(_write_source_dir(tmp_path, "1. c4 e5", eco="C00"))
     OpeningCatalogueRepository(database_path).replace(replacement)
 
     position_ids = {row[0] for row in _rows(database_path, "derived_position")}
@@ -193,9 +191,9 @@ def test_keyboard_interrupt_rolls_back_catalogue_and_new_endpoints(tmp_path: Pat
             raise KeyboardInterrupt
 
     with pytest.raises(KeyboardInterrupt):
-        OpeningCatalogueRepository(
-            database_path, _checkpoint=interrupt_after_route
-        ).replace(replacement)
+        OpeningCatalogueRepository(database_path, _checkpoint=interrupt_after_route).replace(
+            replacement
+        )
 
     assert _catalogue_snapshot(database_path) == before
 
@@ -267,8 +265,7 @@ def test_replace_uses_returned_ids_and_batches_route_moves(
     assert isinstance(move_parameters, list)
     assert len(move_parameters) == 20
     route_plies = [
-        (int(parameters["route_id"]), int(parameters["ply"]))
-        for parameters in move_parameters
+        (int(parameters["route_id"]), int(parameters["ply"])) for parameters in move_parameters
     ]
     assert route_plies == sorted(route_plies)
     assert not any(

@@ -1,4 +1,5 @@
 """Shared query-plan measurement helper."""
+
 from __future__ import annotations
 
 import time
@@ -19,9 +20,7 @@ def _measure_query(
 ) -> tuple[QueryPlanMeasurement, ...]:
     if type(repetitions) is not int or repetitions < 1:
         raise DirectPreflightError("measurement repetitions must be positive")
-    plan_rows = connection.execute(
-        text(f"EXPLAIN QUERY PLAN {statement}"), parameters
-    ).all()
+    plan_rows = connection.execute(text(f"EXPLAIN QUERY PLAN {statement}"), parameters).all()
     elapsed_seconds: list[float] = []
     result_row_count: int | None = None
     for _ in range(repetitions):
@@ -31,9 +30,7 @@ def _measure_query(
         if result_row_count is None:
             result_row_count = len(rows)
         elif len(rows) != result_row_count:
-            raise DirectPreflightError(
-                f"measurement result count changed for {name}"
-            )
+            raise DirectPreflightError(f"measurement result count changed for {name}")
     return (
         QueryPlanMeasurement(
             name=name,

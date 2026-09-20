@@ -268,9 +268,7 @@ class BulkTargetSelector:
             ) as position_work:
                 for route_id, moves in routes:
                     if not moves:
-                        raise TargetSelectionError(
-                            f"opening route {route_id} has no legal moves"
-                        )
+                        raise TargetSelectionError(f"opening route {route_id} has no legal moves")
                     board = chess.Board()
                     _record_route_position(board, position_work, route_positions)
                     for route_move in moves:
@@ -331,9 +329,7 @@ class InitialAnalysisTargetSelector:
                 break
 
         if len(common) != INITIAL_COMMON_TARGET_COUNT:
-            raise TargetSelectionError(
-                "initial analysis requires at least 20 common positions"
-            )
+            raise TargetSelectionError("initial analysis requires at least 20 common positions")
 
         yielded = 0
         for target in (*common, *technical):

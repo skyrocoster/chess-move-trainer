@@ -2,23 +2,23 @@
 
 from __future__ import annotations
 
-import math
 import re
 from dataclasses import dataclass
-from datetime import UTC, datetime
-from functools import cmp_to_key
-from pathlib import Path
+from datetime import datetime
 from typing import Literal
 
-import chess
-from sqlalchemy import text
-
-from ..connection import DEFAULT_LOCK_TIMEOUT_SECONDS, _open_connection
-from ..openings.keys import OpeningKeyError, opening_api_key, parse_opening_api_key
-from .search_validation import _in_datetime_bounds, _in_numeric_bounds, _normalize_fen, _normalize_timestamp, _parse_opening_key, _require_optional_non_negative_int, _require_ordered_bounds, _require_positive_int, _validate_legal_move, _validate_optional_non_empty_text
-from ..positions import CanonicalPosition, PositionValidationError, canonicalize_fen
-from ..schema import SchemaIncompatibleError, _assert_compatible_schema
-
+from ..positions import CanonicalPosition
+from .search_errors import GameSearchValidationError
+from .search_validation import (
+    _normalize_fen,
+    _normalize_timestamp,
+    _parse_opening_key,
+    _require_optional_non_negative_int,
+    _require_ordered_bounds,
+    _require_positive_int,
+    _validate_legal_move,
+    _validate_optional_non_empty_text,
+)
 
 TrainerColor = Literal["white", "black"]
 TrainerOutcome = Literal["win", "loss", "draw"]
@@ -59,8 +59,6 @@ _RFC3339 = re.compile(
     r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:"
     r"[0-9]{2}(?:\.[0-9]+)?(?:Z|[+-][0-9]{2}:[0-9]{2})\Z"
 )
-
-from .search_errors import GameSearchError, GameSearchSchemaError, GameSearchStorageError, GameSearchValidationError
 
 
 @dataclass(frozen=True, slots=True)
@@ -118,8 +116,7 @@ class GameSearchQuery:
             ("ended_at_to", self.ended_at_to),
         )
         normalized_dates = {
-            field_name: _normalize_timestamp(value, field_name)
-            for field_name, value in dates
+            field_name: _normalize_timestamp(value, field_name) for field_name, value in dates
         }
         _require_ordered_bounds(
             normalized_dates["started_at_from"],
@@ -137,7 +134,9 @@ class GameSearchQuery:
         if self.termination_reason is not None:
             if type(self.termination_reason) is not str or not self.termination_reason.strip():
                 raise GameSearchValidationError("termination_reason must be non-empty")
-            object.__setattr__(self, "termination_reason", self.termination_reason.strip().casefold())
+            object.__setattr__(
+                self, "termination_reason", self.termination_reason.strip().casefold()
+            )
         _validate_optional_non_empty_text(self.opponent_chesscom_uuid, "opponent_chesscom_uuid")
         _validate_optional_non_empty_text(self.time_control, "time_control")
         if self.time_class is not None and (
@@ -152,27 +151,21 @@ class GameSearchQuery:
             "opponent_rating_max",
         ):
             _require_optional_non_negative_int(getattr(self, field_name), field_name)
-        _require_ordered_bounds(
-            self.trainer_rating_min, self.trainer_rating_max, "trainer_rating"
-        )
+        _require_ordered_bounds(self.trainer_rating_min, self.trainer_rating_max, "trainer_rating")
         _require_ordered_bounds(
             self.opponent_rating_min, self.opponent_rating_max, "opponent_rating"
         )
 
         if self.opening_key is None:
             if self.opening_match is not None:
-                raise GameSearchValidationError(
-                    "opening_match requires opening_key"
-                )
+                raise GameSearchValidationError("opening_match requires opening_key")
         else:
             try:
                 _parse_opening_key(self.opening_key)
             except ValueError as error:
                 raise GameSearchValidationError(str(error)) from error
             if self.opening_match is None:
-                raise GameSearchValidationError(
-                    "opening_key requires opening_match"
-                )
+                raise GameSearchValidationError("opening_key requires opening_match")
 
         contains_position = _normalize_fen(self.contains_fen, "contains_fen")
         move_position = _normalize_fen(self.move_fen, "move_fen")
@@ -186,9 +179,7 @@ class GameSearchQuery:
 
         for field_name in ("min_length_plies", "max_length_plies"):
             _require_optional_non_negative_int(getattr(self, field_name), field_name)
-        _require_ordered_bounds(
-            self.min_length_plies, self.max_length_plies, "length_plies"
-        )
+        _require_ordered_bounds(self.min_length_plies, self.max_length_plies, "length_plies")
 
 
 @dataclass(frozen=True, slots=True)
@@ -272,5 +263,3 @@ class _GameData:
     @property
     def length_plies(self) -> int:
         return max((item[0] for item in self.occurrences), default=0)
-
-

@@ -127,9 +127,7 @@ def openings_catalogue_version(database_path: Path | str) -> str:
 
     resolved = str(Path(database_path).resolve())
     signature = _current_signature(resolved)
-    material = json.dumps(signature, separators=(",", ":"), ensure_ascii=True).encode(
-        "utf-8"
-    )
+    material = json.dumps(signature, separators=(",", ":"), ensure_ascii=True).encode("utf-8")
     return hashlib.sha256(material).hexdigest()
 
 
@@ -165,11 +163,7 @@ def clear_caches() -> None:
 def serialize_response_body(body: object) -> bytes:
     """Serialize one response model exactly like Starlette's JSONResponse."""
 
-    payload = (
-        body.model_dump(mode="json", by_alias=True)
-        if hasattr(body, "model_dump")
-        else body
-    )
+    payload = body.model_dump(mode="json", by_alias=True) if hasattr(body, "model_dump") else body
     return json.dumps(
         payload,
         ensure_ascii=False,

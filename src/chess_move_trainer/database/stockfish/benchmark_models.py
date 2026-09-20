@@ -2,29 +2,19 @@
 
 from __future__ import annotations
 
-import csv
-import hashlib
-import json
-import math
-import os
 import random
-import tempfile
-import time
-from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Final, Protocol
+from typing import Any, Final
 
 from ..analysis import AnalysisQuality
 from ..positions import CanonicalPosition, canonicalize_fen
 from .configuration import (
     CONFIGURATION_VERSION,
     MULTI_PV,
-    STOCKFISH_NAME,
-    STOCKFISH_VERSION,
     StockfishProfile,
 )
-from .engine import ANALYSIS_WATCHDOG_SECONDS, SearchMetrics, StockfishEngine
+from .engine import ANALYSIS_WATCHDOG_SECONDS
 
 BENCHMARK_FORMAT_VERSION: Final[int] = 1
 

@@ -28,8 +28,8 @@ from chess_move_trainer.database.preferred_moves import (
     PreferredMoveSchemaError,
     PreferredMoveStorageError,
     PreferredMoveTimeline,
-    PreferredMoveTimelineRequest,
     PreferredMoveTimelinePreference,
+    PreferredMoveTimelineRequest,
     PreferredMoveTimelineSegment,
     PreferredMoveValidationError,
     delete_preferred_move,
@@ -117,9 +117,7 @@ def _mutation_period_response(period: NormalizedPeriod) -> PreferredMovesPeriodR
     return PreferredMovesPeriodResponse(
         effective_from=period.effective_from.isoformat(),
         effective_until=(
-            None
-            if period.effective_until is None
-            else period.effective_until.isoformat()
+            None if period.effective_until is None else period.effective_until.isoformat()
         ),
         preference=_mutation_preference_response(period.preference),
     )
@@ -180,9 +178,7 @@ def _mutation_validation_error(error: PreferredMoveValidationError) -> JSONRespo
             "Move is illegal from the parent FEN",
         ),
     }
-    code, stable_message = mapping.get(
-        message, ("invalid_preference", "Preference is invalid")
-    )
+    code, stable_message = mapping.get(message, ("invalid_preference", "Preference is invalid"))
     return _error(422, code, stable_message)
 
 
@@ -226,9 +222,7 @@ def get_preferred_moves(
         request = PreferredMoveTimelineRequest(fen, from_date, until)
     except PreferredMoveValidationError as error:
         return _validation_error(error)
-    key = preferred_moves_key(
-        database_path, request.fen, request.from_date, request.until
-    )
+    key = preferred_moves_key(database_path, request.fen, request.from_date, request.until)
     try:
         payload = get_or_compute(
             read_namespace,

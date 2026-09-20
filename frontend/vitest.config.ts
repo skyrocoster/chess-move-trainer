@@ -47,6 +47,10 @@ export default defineConfig({
             provider: playwright({}),
             headless: true,
             instances: [{ browser: "chromium" }],
+            // Windows Hyper-V/Docker can reserve the default 63315 port
+            // (EACCES on excluded ranges); use a fixed port outside the
+            // excluded ranges so Storybook browser tests can start locally.
+            api: { port: 47111 },
           },
         },
       },

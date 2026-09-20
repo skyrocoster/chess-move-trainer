@@ -249,9 +249,7 @@ def test_canonical_resource_is_installed_and_schema_is_exact(tmp_path: Path) -> 
     with sqlite3.connect(database_path) as connection:
         tables = {
             row[0]
-            for row in connection.execute(
-                "SELECT name FROM sqlite_master WHERE type = 'table'"
-            )
+            for row in connection.execute("SELECT name FROM sqlite_master WHERE type = 'table'")
         }
         assert tables == set(EXPECTED_COLUMNS)
         assert connection.execute("PRAGMA user_version").fetchone()[0] == 2

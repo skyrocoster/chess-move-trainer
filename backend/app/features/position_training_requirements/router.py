@@ -23,7 +23,6 @@ from backend.app.dependencies import (
 from chess_move_trainer.database.positions import (
     TrainingAnswerNotFoundError,
     TrainingAnswerRepository,
-    TrainingAnswerRequest as DomainTrainingAnswerRequest,
     TrainingAnswerResult,
     TrainingRequirementItem,
     TrainingRequirementPage,
@@ -34,6 +33,9 @@ from chess_move_trainer.database.positions import (
     TrainingRequirementStorageError,
     TrainingRequirementValidationError,
     discover_training_requirements,
+)
+from chess_move_trainer.database.positions import (
+    TrainingAnswerRequest as DomainTrainingAnswerRequest,
 )
 
 from .api_schemas import (
@@ -181,9 +183,7 @@ def get_position_training_requirements(
             key,
             database_path,
             lambda: serialize_response_body(
-                _page_response(
-                    discover_training_requirements(database_path, query, policy)
-                )
+                _page_response(discover_training_requirements(database_path, query, policy))
             ),
         )
     except TrainingRequirementStaleError:

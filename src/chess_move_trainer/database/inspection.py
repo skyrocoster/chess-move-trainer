@@ -219,8 +219,7 @@ def render_schema_markdown(inspection: SchemaInspection) -> bytes:
                 "yes" if index.partial else "no",
                 _cell(
                     ", ".join(
-                        column if column is not None else "<expression>"
-                        for column in index.columns
+                        column if column is not None else "<expression>" for column in index.columns
                     )
                 ),
                 "yes" if index.sql is not None else "no",

@@ -68,9 +68,9 @@ class _RecordingPublisher:
     def publish(self, position_id: int, result: AnalysisResultInput) -> PublicationOutcome:
         self.calls.append(position_id)
         with sqlite3.connect(self.repository._database_path) as connection:
-            assert connection.execute(
-                "SELECT COUNT(*) FROM derived_analysis_queue"
-            ).fetchone()[0] == 0
+            assert (
+                connection.execute("SELECT COUNT(*) FROM derived_analysis_queue").fetchone()[0] == 0
+            )
         return self.repository.publish(position_id, result)
 
 
@@ -214,12 +214,8 @@ def test_limit_restart_and_unlimited_recompute_publish_directly_without_queue(
     assert all(mutex.entered and mutex.released for mutex in mutexes)
     assert sum(len(publisher.calls) for publisher in publishers) == 3
     with sqlite3.connect(database) as connection:
-        assert connection.execute(
-            "SELECT COUNT(*) FROM derived_analysis_result"
-        ).fetchone()[0] == 3
-        assert connection.execute(
-            "SELECT COUNT(*) FROM derived_analysis_queue"
-        ).fetchone()[0] == 0
+        assert connection.execute("SELECT COUNT(*) FROM derived_analysis_result").fetchone()[0] == 3
+        assert connection.execute("SELECT COUNT(*) FROM derived_analysis_queue").fetchone()[0] == 0
 
 
 def test_isolated_failure_continues_once_without_same_launch_retry(tmp_path: Path) -> None:
@@ -255,9 +251,7 @@ def test_ctrl_c_discards_only_current_result_and_releases_bulk_mutex(tmp_path: P
     assert engine.closed
     assert mutex.entered and mutex.released
     with sqlite3.connect(database) as connection:
-        assert connection.execute(
-            "SELECT COUNT(*) FROM derived_analysis_result"
-        ).fetchone()[0] == 0
+        assert connection.execute("SELECT COUNT(*) FROM derived_analysis_result").fetchone()[0] == 0
 
 
 def test_direct_tool_profile_is_used_for_every_serial_engine_call(tmp_path: Path) -> None:

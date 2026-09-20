@@ -3,20 +3,27 @@
 from __future__ import annotations
 
 import csv
-import random
-import time
-import hashlib
 import json
+import random
 from collections.abc import Iterable, Mapping, Sequence
 from pathlib import Path
-from typing import Any
+from typing import Any, Final
 
-from ..analysis import AnalysisQuality
-from .engine import SearchMetrics
-from ..positions import CanonicalPosition, canonicalize_fen
-from .benchmark_artifacts import _StoredAttempts, _is_within, _normalized_directory, _normalized_file_path, _sha256_file
-from .benchmark_models import BENCHMARK_FORMAT_VERSION, BenchmarkCompatibilityError, BenchmarkInputError, BenchmarkJob, BenchmarkOutcome, BenchmarkPersistenceError, BenchmarkSpec, _positive_int_tuple
+from .benchmark_artifacts import (
+    _normalized_file_path,
+    _sha256_file,
+    _StoredAttempts,
+)
+from .benchmark_models import (
+    BENCHMARK_FORMAT_VERSION,
+    BenchmarkCompatibilityError,
+    BenchmarkJob,
+    BenchmarkOutcome,
+    BenchmarkSpec,
+)
 from .configuration import CONFIGURATION_VERSION, MULTI_PV, STOCKFISH_NAME, STOCKFISH_VERSION
+from .engine import SearchMetrics
+
 
 def _expected_manifest(
     spec: BenchmarkSpec, executable: Path, position_input: Path
@@ -262,9 +269,7 @@ def _validate_checkpoint(
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, ValueError) as error:
-        raise BenchmarkCompatibilityError(
-            "existing benchmark checkpoint is unreadable"
-        ) from error
+        raise BenchmarkCompatibilityError("existing benchmark checkpoint is unreadable") from error
     if (
         not isinstance(payload, Mapping)
         or payload.get("format_version") != BENCHMARK_FORMAT_VERSION
@@ -302,4 +307,3 @@ def _outcome(
         complete=len(stored.successful_job_ids) == len(jobs_by_id),
         resumed=resumed,
     )
-

@@ -247,9 +247,7 @@ def _end_timestamp(value: object, headers: chess.pgn.Headers) -> str | None:
     return _header_timestamp(headers, "EndDate", "EndTime")
 
 
-def _header_timestamp(
-    headers: chess.pgn.Headers, date_name: str, time_name: str
-) -> str | None:
+def _header_timestamp(headers: chess.pgn.Headers, date_name: str, time_name: str) -> str | None:
     date_value = headers.get(date_name)
     time_value = headers.get(time_name)
     if not date_value or not time_value:

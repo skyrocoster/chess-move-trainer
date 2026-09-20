@@ -96,9 +96,7 @@ def _setup_database(
     try:
         sidecar_cleanup_error = _remove_stale_database_sidecars(database_path)
         if sidecar_cleanup_error is not None:
-            raise SetupError(
-                f"stale database sidecar cleanup failed: {sidecar_cleanup_error}"
-            )
+            raise SetupError(f"stale database sidecar cleanup failed: {sidecar_cleanup_error}")
         schema_result = create_schema(database_path)
         created_by_setup = schema_result.created
         if not created_by_setup:
@@ -273,8 +271,7 @@ def _update_openings(
         )
         if not acquisition.completed:
             details = "; ".join(
-                f"{failure.subject}: {failure.message}"
-                for failure in acquisition.failures
+                f"{failure.subject}: {failure.message}" for failure in acquisition.failures
             )
             return _failure(
                 database_path,
@@ -312,8 +309,7 @@ def _require_game_acquisition(result: AcquisitionResult) -> None:
     if result.completed:
         return
     details = "; ".join(
-        f"{failure.month or 'archive discovery'}: {failure.message}"
-        for failure in result.failures
+        f"{failure.month or 'archive discovery'}: {failure.message}" for failure in result.failures
     )
     raise SetupError(f"game acquisition failed: {details}")
 
@@ -321,9 +317,7 @@ def _require_game_acquisition(result: AcquisitionResult) -> None:
 def _require_opening_acquisition(result: OpeningAcquisitionResult) -> None:
     if result.completed:
         return
-    details = "; ".join(
-        f"{failure.subject}: {failure.message}" for failure in result.failures
-    )
+    details = "; ".join(f"{failure.subject}: {failure.message}" for failure in result.failures)
     raise SetupError(f"opening acquisition failed: {details}")
 
 

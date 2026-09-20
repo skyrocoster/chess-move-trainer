@@ -103,9 +103,7 @@ class PreferredMoveRepository:
         """Read one canonical position schedule through a read-only connection."""
 
         if not isinstance(position, CanonicalPosition):
-            raise PreferredMoveValidationError(
-                "position must be a CanonicalPosition value"
-            )
+            raise PreferredMoveValidationError("position must be a CanonicalPosition value")
         try:
             with _open_connection(
                 self._database_path, "read-only", self._lock_timeout
@@ -154,9 +152,7 @@ class PreferredMoveRepository:
         _validate_preference(position, preference)
         return self._amend(
             position,
-            lambda schedule: set_preference(
-                schedule, effective_from, effective_until, preference
-            ),
+            lambda schedule: set_preference(schedule, effective_from, effective_until, preference),
         )
 
     def unset(
@@ -170,22 +166,16 @@ class PreferredMoveRepository:
         position = _canonicalize_four_field_fen(fen)
         return self._amend(
             position,
-            lambda schedule: unset_preference(
-                schedule, effective_from, effective_until
-            ),
+            lambda schedule: unset_preference(schedule, effective_from, effective_until),
         )
 
     def _amend(
         self,
         position: CanonicalPosition,
-        amendment: Callable[
-            [tuple[NormalizedPeriod, ...]], tuple[NormalizedPeriod, ...]
-        ],
+        amendment: Callable[[tuple[NormalizedPeriod, ...]], tuple[NormalizedPeriod, ...]],
     ) -> tuple[NormalizedPeriod, ...]:
         try:
-            with _open_existing_connection(
-                self._database_path, self._lock_timeout
-            ) as connection:
+            with _open_existing_connection(self._database_path, self._lock_timeout) as connection:
                 _assert_compatible_schema(connection, self._lock_timeout)
                 self._checkpoint("before_lock")
                 connection.exec_driver_sql("BEGIN IMMEDIATE")
@@ -305,17 +295,13 @@ def _load_schedule(
                 period_from_literals(
                     row[0],
                     row[1],
-                    Preference.no_preference()
-                    if move is None
-                    else Preference.preferred_move(move),
+                    Preference.no_preference() if move is None else Preference.preferred_move(move),
                 )
             )
         periods = tuple(periods_list)
         return normalize_periods(periods)
     except (IndexError, TypeError, ValueError, RangeValidationError) as error:
-        raise PreferredMoveStorageError(
-            "stored preferred-move schedule is malformed"
-        ) from error
+        raise PreferredMoveStorageError("stored preferred-move schedule is malformed") from error
 
 
 def _validate_stored_move(position: CanonicalPosition, move_uci: str) -> None:
@@ -346,8 +332,7 @@ def _replace_schedule(
 ) -> None:
     connection.execute(
         text(
-            "DELETE FROM datasource_preferred_move_period "
-            "WHERE derived_position_id = :position_id"
+            "DELETE FROM datasource_preferred_move_period WHERE derived_position_id = :position_id"
         ),
         {"position_id": position_id},
     )
@@ -372,9 +357,7 @@ def _replace_schedule(
                 "position_id": position_id,
                 "effective_from": period.effective_from.isoformat(),
                 "effective_until": (
-                    None
-                    if period.effective_until is None
-                    else period.effective_until.isoformat()
+                    None if period.effective_until is None else period.effective_until.isoformat()
                 ),
                 "move": period.preference.move,
             },
@@ -384,17 +367,13 @@ def _replace_schedule(
 def _translate_storage_error(error: Exception) -> PreferredMoveStorageError:
     candidate: BaseException | None = error
     while candidate is not None:
-        if isinstance(candidate, sqlite3.OperationalError) and "locked" in str(
-            candidate
-        ).lower():
+        if isinstance(candidate, sqlite3.OperationalError) and "locked" in str(candidate).lower():
             return PreferredMoveLockError(
                 "preferred-move writer lock was not acquired before timeout"
             )
         candidate = candidate.__cause__ or candidate.__context__
     if isinstance(error, OperationalError) and "locked" in str(error).lower():
-        return PreferredMoveLockError(
-            "preferred-move writer lock was not acquired before timeout"
-        )
+        return PreferredMoveLockError("preferred-move writer lock was not acquired before timeout")
     if isinstance(error, PositionStorageError):
         return PreferredMoveStorageError(str(error))
     return PreferredMoveStorageError("preferred-move database operation failed")

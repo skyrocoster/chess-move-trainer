@@ -73,9 +73,7 @@ def test_import_requires_only_trainer_identity_and_accepts_override(tmp_path: Pa
     override_uuid = "33333333-3333-4333-8333-333333333333"
 
     from_yaml = load_import_configuration(without_username)
-    overridden = load_import_configuration(
-        without_username, trainer_chesscom_uuid=override_uuid
-    )
+    overridden = load_import_configuration(without_username, trainer_chesscom_uuid=override_uuid)
 
     assert from_yaml.trainer_chesscom_uuid == UUID(TRAINER_UUID)
     assert overridden.trainer_chesscom_uuid == UUID(override_uuid)
