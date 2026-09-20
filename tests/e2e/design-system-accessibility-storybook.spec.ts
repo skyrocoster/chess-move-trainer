@@ -8,10 +8,10 @@ import { retryAxeWhenBusy } from "./axe-busy-retry";
 // accessibility spec precedent.
 test.use({ baseURL: "http://localhost:6006" });
 
-// Story id for the Documentation/Reviews/Responsive Accessibility fixture:
+// Story id for the Reference/Reviews/Responsive Accessibility fixture:
 // sanitize(title) + "--" + sanitize(startCase(exportName)).
 const STORY_ID =
-  "documentation-reviews-responsive-accessibility--responsive-accessibility-review";
+  "reference-reviews-responsive-accessibility--responsive-accessibility-review";
 const STORY_URL = `/iframe.html?id=${STORY_ID}&viewMode=story`;
 const LONG_MESSAGE = /deliberately long message/;
 

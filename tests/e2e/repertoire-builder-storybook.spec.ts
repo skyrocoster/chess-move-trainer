@@ -32,7 +32,7 @@ test.describe("Repertoire Builder Storybook workspace", () => {
       await expectPreferredRelationship(page, "empty");
       await expectBothRelationshipBoxes(page);
       await expect(preferredPanel(page).getByText("None yet")).toBeVisible();
-      await expect(preferredPanel(page).getByText("No move selected.")).toBeVisible();
+      await expect(preferredPanel(page).getByText("No move selected", { exact: true })).toBeVisible();
       await expect(
         preferredPanel(page).getByText("Play a legal move to select the first saved choice."),
       ).toBeVisible();
@@ -179,7 +179,7 @@ test.describe("Repertoire Builder Storybook workspace", () => {
         await openStory(page, STORY_IDS.replacement, viewport.width, viewport.height);
         await expectPreferredRelationship(page, "replacement");
         await expectPreferredPanelFidelity(page, true);
-        await expect(preferredPanel(page).getByText("Save d4 to replace e4.")).toBeVisible();
+        await expect(preferredPanel(page).getByRole("status")).toHaveText("Ready to save");
         await expectPreferredActions(page, ["Save", "Remove"]);
         await expectDateFreePreferredPanel(page);
         await expectNoHorizontalOverflow(page);
@@ -199,29 +199,27 @@ test.describe("Repertoire Builder Storybook workspace", () => {
     const panel = preferredPanel(page);
     const requestLog = page.getByTestId("clean-preferred-request-log");
     await expect
-      .poll(async () => JSON.parse((await requestLog.textContent()) ?? "[]").length, {
+      .poll(
+        async () =>
+          (JSON.parse((await requestLog.textContent()) ?? "[]") as Array<Record<string, string>>)
+            .filter((request) => request.method !== "GET")
+            .map((request) => request.method),
+        {
         timeout: 30_000,
-      })
-      .toBe(5);
+        },
+      )
+      .toEqual(["PUT", "DELETE"]);
     const requests = JSON.parse((await requestLog.textContent()) ?? "[]") as Array<Record<string, string>>;
-    expect(requests).toHaveLength(5);
-    expect(requests.map((request) => request.method)).toEqual([
-      "GET",
-      "PUT",
-      "GET",
-      "DELETE",
-      "GET",
-    ]);
 
     const parentFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-    const firstGet = requests[0]!;
-    const save = requests[1]!;
-    const refreshedGet = requests[2]!;
-    const remove = requests[3]!;
-    const finalGet = requests[4]!;
+    const gets = requests.filter((request) => request.method === "GET");
+    const mutations = requests.filter((request) => request.method !== "GET");
+    const firstGet = gets[0]!;
+    const save = mutations[0]!;
+    const remove = mutations[1]!;
+    expect(gets.length).toBeGreaterThanOrEqual(3);
     expect(firstGet).toMatchObject({ method: "GET", fen: parentFen });
-    expect(refreshedGet).toEqual(firstGet);
-    expect(finalGet).toEqual(firstGet);
+    for (const get of gets) expect(get).toEqual(firstGet);
     expect(firstGet.from).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     expect(firstGet.until).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     expect(save).toEqual({

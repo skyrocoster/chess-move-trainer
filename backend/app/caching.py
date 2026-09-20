@@ -35,6 +35,7 @@ from chess_move_trainer.database.positions import (
     TrainingRequirementPolicy,
     TrainingRequirementQuery,
 )
+from chess_move_trainer.database.reporting import StatisticsOverviewQuery
 
 TRAINING_TTL_SECONDS = 60.0
 TRAINING_MAX_ENTRIES = 128
@@ -283,6 +284,20 @@ def position_insight_key(
     )
 
 
+def statistics_overview_key(database_path: Path | str, query: StatisticsOverviewQuery) -> tuple:
+    """Canonical key from the validated statistics overview query and resolved database."""
+
+    return (
+        "statistics-overview",
+        str(Path(database_path).resolve()),
+        query.as_of,
+        query.started_on_or_after,
+        query.started_on_or_before,
+        query.trainer_color,
+        query.time_class,
+    )
+
+
 def preferred_moves_key(
     database_path: Path | str,
     fen: str,
@@ -437,6 +452,7 @@ __all__ = [
     "preferred_moves_key",
     "read_namespace",
     "serialize_response_body",
+    "statistics_overview_key",
     "training_namespace",
     "training_requirements_key",
 ]

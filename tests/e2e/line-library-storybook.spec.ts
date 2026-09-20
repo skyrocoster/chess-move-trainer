@@ -4,25 +4,20 @@ import { retryAxeWhenBusy } from "./axe-busy-retry";
 
 const STORYBOOK_URL = "http://127.0.0.1:6006";
 const STORYBOOK_ROOT = "#storybook-root";
+const STORY_PREFIX = "production-application-openings-opening-line-library";
 const SYNTHETIC_NOTICE =
   "Synthetic in-memory fixture only — IDs and values are not authoritative production data.";
 const STORY_IDS = {
-  browserSelectionAndCommit:
-    "application-openings-opening-line-library--browser-selection-and-commit",
-  textSearch: "application-openings-opening-line-library--text-search-scenario",
-  ecoRange: "application-openings-opening-line-library--eco-range-scenario",
-  acceptedCorpus:
-    "application-openings-opening-line-library--accepted-corpus-scenario",
-  disabledAndReference:
-    "application-openings-opening-line-library--disabled-and-transposition-reference",
-  selectionLimit:
-    "application-openings-opening-line-library--declared-synthetic-selection-limit",
-  initialLoading:
-    "application-openings-opening-line-library--initial-loading",
-  staleRefresh: "application-openings-opening-line-library--stale-refresh",
-  failureAndRetry:
-    "application-openings-opening-line-library--failure-and-retry",
-  emptyResult: "application-openings-opening-line-library--empty-result",
+  browserSelectionAndCommit: `${STORY_PREFIX}--browser-selection-and-commit`,
+  textSearch: `${STORY_PREFIX}--text-search-scenario`,
+  ecoRange: `${STORY_PREFIX}--eco-range-scenario`,
+  acceptedCorpus: `${STORY_PREFIX}--accepted-corpus-scenario`,
+  disabledAndReference: `${STORY_PREFIX}--disabled-and-transposition-reference`,
+  selectionLimit: `${STORY_PREFIX}--declared-synthetic-selection-limit`,
+  initialLoading: `${STORY_PREFIX}--initial-loading`,
+  staleRefresh: `${STORY_PREFIX}--stale-refresh`,
+  failureAndRetry: `${STORY_PREFIX}--failure-and-retry`,
+  emptyResult: `${STORY_PREFIX}--empty-result`,
 } as const;
 
 async function openStory(

@@ -4,19 +4,19 @@ import { retryAxeWhenBusy } from "./axe-busy-retry";
 
 const STORYBOOK_URL = "http://127.0.0.1:6006";
 const STORYBOOK_ROOT = "#storybook-root";
+const STORY_PREFIX = "production-application-analysis-analysis-panel";
 const STORY_IDS = {
-  loading: "application-analysis-analysis-panel--loading",
-  notRequested: "application-analysis-analysis-panel--not-requested",
-  queued: "application-analysis-analysis-panel--queued",
-  running: "application-analysis-analysis-panel--running",
-  ready: "application-analysis-analysis-panel--ready",
-  activeWithResult: "application-analysis-analysis-panel--active-with-result",
-  constrainedReady:
-    "application-analysis-analysis-panel--constrained-ready",
-  observationError: "application-analysis-analysis-panel--observation-error",
-  requestPending: "application-analysis-analysis-panel--request-pending",
-  requestError: "application-analysis-analysis-panel--request-error",
-  terminalEmpty: "application-analysis-analysis-panel--terminal-empty",
+  loading: `${STORY_PREFIX}--loading`,
+  notRequested: `${STORY_PREFIX}--not-requested`,
+  queued: `${STORY_PREFIX}--queued`,
+  running: `${STORY_PREFIX}--running`,
+  ready: `${STORY_PREFIX}--ready`,
+  activeWithResult: `${STORY_PREFIX}--active-with-result`,
+  constrainedReady: `${STORY_PREFIX}--constrained-ready`,
+  observationError: `${STORY_PREFIX}--observation-error`,
+  requestPending: `${STORY_PREFIX}--request-pending`,
+  requestError: `${STORY_PREFIX}--request-error`,
+  terminalEmpty: `${STORY_PREFIX}--terminal-empty`,
 } as const;
 
 async function openStory(

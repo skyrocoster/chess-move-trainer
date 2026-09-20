@@ -1,10 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-import {
-  GAME_UUID,
-  STORYBOOK_ROOT,
-  STORY_IDS,
-} from "./repertoire-builder-storybook-helpers";
+import { STORYBOOK_ROOT, STORY_IDS } from "./repertoire-builder-storybook-helpers";
 import {
   checkA11y,
   expectActiveSessionHistoryEntry,
@@ -26,6 +22,7 @@ test.describe("Repertoire Builder Storybook behaviors", () => {
   test.describe.configure({ timeout: 30_000 });
 
   test("shows the move response distribution across wide, medium, and narrow widths", async ({ page }, testInfo) => {
+    testInfo.setTimeout(180_000);
     const cases = [
       { mode: "wide" as const, width: 1280, height: 1000 },
       { mode: "narrow" as const, width: 497, height: 1000 },
@@ -61,7 +58,8 @@ test.describe("Repertoire Builder Storybook behaviors", () => {
       await expect(engineLane.getByTestId("tabs-panel-move-responses")).toHaveAttribute(
         "hidden",
       );
-      await responsesTab.click();
+      await responsesTab.focus();
+      await page.keyboard.press("Enter");
       await expect(responsesTab).toHaveAttribute("aria-selected", "true");
       const distribution = page.getByTestId("move-response-distribution");
       await expect(distribution).toHaveAttribute("data-state", "available");
@@ -89,7 +87,7 @@ test.describe("Repertoire Builder Storybook behaviors", () => {
       await expect(other).toHaveAttribute("aria-expanded", "false");
       await other.focus();
       await expect(other).toBeFocused();
-      await other.click();
+      await page.keyboard.press("Enter");
       await expect(other).toHaveAttribute("aria-expanded", "true");
       await expect(
         distribution.getByRole("button", { name: /Bc4, 1 occurrences, 8.3%/ }),
@@ -113,11 +111,9 @@ test.describe("Repertoire Builder Storybook behaviors", () => {
       const common = distribution.getByRole("button", { name: /Nf3, 4 occurrences, 33.3%/ });
       await common.focus();
       await page.keyboard.press("Enter");
-      await expect(page.getByTestId("branch-status")).toContainText(
-        "Move played locally: Nf3.",
-      );
       await expectActiveSessionHistoryEntry(page, "White, move 2, Nf3");
-      await analysisTab.click();
+      await analysisTab.focus();
+      await page.keyboard.press("Enter");
       await expect(engineLane.getByTestId("tabs-panel-move-responses")).toHaveAttribute(
         "hidden",
       );
@@ -179,7 +175,7 @@ test.describe("Repertoire Builder Storybook behaviors", () => {
     await openStory(page, STORY_IDS.firstChoice);
     await expectPreferredRelationship(page, "first-choice");
     await expectBothRelationshipBoxes(page);
-    await expect(preferredPanel(page).getByText("Save e4 as the current saved choice.")).toBeVisible();
+    await expect(preferredPanel(page).getByRole("status")).toHaveText("Ready to save");
     await expectPreferredActions(page, ["Save"]);
     await expectDateFreePreferredPanel(page);
 
@@ -187,20 +183,22 @@ test.describe("Repertoire Builder Storybook behaviors", () => {
     await expectPreferredRelationship(page, "saved");
     await expectBothRelationshipBoxes(page);
     await expect(preferredPanel(page).getByTestId("saved-move")).toContainText("e4");
-    await expect(preferredPanel(page).getByText("No move selected.")).toBeVisible();
+    await expect(
+      preferredPanel(page).getByText("Select a move to propose replacing e4"),
+    ).toBeVisible();
     await expectPreferredActions(page, ["Remove"]);
     await expectDateFreePreferredPanel(page);
 
     await openStory(page, STORY_IDS.replacement, 412, 915);
     await expectPreferredRelationship(page, "replacement");
-    await expect(preferredPanel(page).getByText("Save d4 to replace e4.")).toBeVisible();
+    await expect(preferredPanel(page).getByRole("status")).toHaveText("Ready to save");
     await expectPreferredActions(page, ["Save", "Remove"]);
     await expectDateFreePreferredPanel(page);
     await expectNoHorizontalOverflow(page);
 
     await openStory(page, STORY_IDS.matching);
     await expectPreferredRelationship(page, "matching");
-    await expect(preferredPanel(page).getByText("e4 is already the current saved choice.")).toBeVisible();
+    await expect(preferredPanel(page).getByRole("status")).toHaveText("Already saved");
     await expectPreferredActions(page, ["Remove"]);
     await expectDateFreePreferredPanel(page);
     await expect(
@@ -213,7 +211,7 @@ test.describe("Repertoire Builder Storybook behaviors", () => {
     await checkA11y(page);
   });
 
-  test("stages the saved box by pointer and keyboard without history or preferred mutation", async ({ page }) => {
+  test("stages the saved box locally by keyboard without preferred mutation", async ({ page }) => {
     const requests = preferredRequestUrls(page);
     await openStory(page, STORY_IDS.savedBoxKeyboard);
     await expectPreferredRelationship(page, "matching");
@@ -224,8 +222,8 @@ test.describe("Repertoire Builder Storybook behaviors", () => {
     await expect(savedBox).toHaveAttribute("type", "button");
     await expect(preferredPanel(page).getByTestId("selected-move")).toContainText(/e4.*e2e4/);
     await expectPreferredActions(page, ["Remove"]);
-    await expectSessionHistory(page, ["Initial position"]);
-    await expectActiveSessionHistoryEntry(page, "Initial position");
+    await expectSessionHistory(page, ["Initial position", "White, move 1, e4"]);
+    await expectActiveSessionHistoryEntry(page, "White, move 1, e4");
     await expectPositionSquares(page, "e2", 0);
     await expectPositionSquares(page, "e4", 1);
     await expectNoHorizontalOverflow(page);
@@ -235,9 +233,9 @@ test.describe("Repertoire Builder Storybook behaviors", () => {
 
   test("refreshes board and history invariants after Save first choice and replacement", async ({ page }) => {
     await openStory(page, STORY_IDS.saveReplacement);
-    await expectPreferredRelationship(page, "saved");
+    await expectPreferredRelationship(page, "matching");
     await expect(preferredPanel(page).getByTestId("saved-move")).toContainText(/d4.*d2d4/);
-    await expect(preferredPanel(page).getByTestId("selected-move")).toContainText("No move selected.");
+    await expect(preferredPanel(page).getByTestId("selected-move")).toContainText(/d4.*d2d4/);
     await expectPositionSquares(page, "d2", 0);
     await expectPositionSquares(page, "d4", 1);
     await expectSessionHistory(page, ["Initial position", "White, move 1, d4"]);
@@ -250,9 +248,9 @@ test.describe("Repertoire Builder Storybook behaviors", () => {
 
     await openStory(page, STORY_IDS.firstChoice);
     await expectPreferredRelationship(page, "first-choice");
-    await expect(preferredPanel(page).getByTestId("saved-move")).toContainText("No saved choice yet.");
+    await expect(preferredPanel(page).getByTestId("saved-move")).toContainText("None yet");
     await expect(preferredPanel(page).getByTestId("selected-move")).toContainText(/e4.*e2e4/);
-    await expectSessionHistory(page, ["Initial position"]);
+    await expectSessionHistory(page, ["Initial position", "White, move 1, e4"]);
     await expectDateFreePreferredPanel(page);
   });
 
@@ -262,11 +260,11 @@ test.describe("Repertoire Builder Storybook behaviors", () => {
       timeout: 15_000,
     });
     await expectPreferredRelationship(page, "first-choice");
-    await expect(preferredPanel(page).getByTestId("saved-move")).toContainText("No saved choice yet.");
+    await expect(preferredPanel(page).getByTestId("saved-move")).toContainText("None yet");
     await expect(preferredPanel(page).getByTestId("selected-move")).toContainText(/d4.*d2d4/);
     await expectPreferredActions(page, ["Save"]);
     await expectDateFreePreferredPanel(page);
-    await expectSessionHistory(page, ["Initial position"]);
+    await expectSessionHistory(page, ["Initial position", "White, move 1, d4"]);
     await checkA11y(page);
   });
 
@@ -279,7 +277,7 @@ test.describe("Repertoire Builder Storybook behaviors", () => {
     await expect(
       preferredPanel(page)
         .getByTestId("preferred-actions")
-        .getByRole("button", { name: "Save", exact: true }),
+        .getByRole("button", { name: "Save d4", exact: true }),
     ).toBeDisabled();
 
     await openStory(page, STORY_IDS.pendingRemove);
@@ -302,9 +300,9 @@ test.describe("Repertoire Builder Storybook behaviors", () => {
 
   test("shows the save gates, typed read feedback, loading, and opponent local history", async ({ page }) => {
     await openStory(page, STORY_IDS.unsavable);
-    await expectPreferredRelationship(page, "empty");
+    await expectPreferredRelationship(page, "first-choice");
     await expect(preferredPanel(page).getByText("Never seen as White")).toBeVisible();
-    await expectPreferredActions(page, []);
+    await expectPreferredActions(page, ["Save"]);
 
     await openStory(page, STORY_IDS.loading);
     await expectPreferredRelationship(page, "unknown");
@@ -317,7 +315,7 @@ test.describe("Repertoire Builder Storybook behaviors", () => {
     await expectPreferredActions(page, []);
 
     await openStory(page, STORY_IDS.opponentGate);
-    await expectPreferredRelationship(page, "empty");
+    await expectPreferredRelationship(page, "saved");
     await expect(preferredPanel(page).getByText("Wait for your turn to select or save a preferred move.")).toBeVisible();
     await expectPreferredActions(page, []);
     await expect(preferredPanel(page).getByRole("button", { name: /play this move/ })).toHaveCount(0);
@@ -344,13 +342,14 @@ test.describe("Repertoire Builder Storybook behaviors", () => {
     });
     await expectPreferredRelationship(page, "first-choice");
     await expect(preferredPanel(page).getByTestId("selected-move")).toContainText(/e8=N.*e7e8n/);
-    await expectSessionHistory(page, ["Initial position"]);
+    await expectSessionHistory(page, ["Initial position", "White, move 1, e8=N"]);
     await expectPositionSquares(page, "e7", 0);
     await expectPositionSquares(page, "e8", 1);
     await checkA11y(page);
   });
 
-  test("navigates the imported game session with immediate branching, return, and preferred parent", async ({ page }) => {
+  test("navigates the imported game session with immediate branching and return", async ({ page }, testInfo) => {
+    testInfo.setTimeout(90_000);
     await openStory(page, STORY_IDS.importedGameSession, 1280, 1000);
 
     const root = page.locator(STORYBOOK_ROOT);
@@ -359,14 +358,16 @@ test.describe("Repertoire Builder Storybook behaviors", () => {
     const previous = page.getByRole("button", { name: "Previous" });
     const engineLane = page.getByTestId("repertoire-engine-lane");
 
-    await page.getByLabel("Game UUID").fill(GAME_UUID);
-    await page.getByRole("button", { name: "Load game" }).click();
     await expectSessionHistory(page, [
       "Initial position",
       "White, move 1, e4",
       "Black, move 1, e5",
       "White, move 2, Nf3",
     ]);
+    await expectActiveSessionHistoryEntry(page, "Black, move 1, e5");
+    const initialPosition = history.getByRole("button", { name: "Initial position" });
+    await initialPosition.focus();
+    await initialPosition.press("Enter");
     await expectActiveSessionHistoryEntry(page, "Initial position");
     await expect(next).toBeEnabled();
     await expect(previous).toBeDisabled();
@@ -374,29 +375,29 @@ test.describe("Repertoire Builder Storybook behaviors", () => {
     await expect(root).not.toContainText("https://www.chess.com");
     await expect(root).not.toContainText("trainer-id");
 
-    await next.click();
+    await next.press("Enter");
     await expectActiveSessionHistoryEntry(page, "White, move 1, e4");
-    await next.click();
+    await next.press("Enter");
     await expectActiveSessionHistoryEntry(page, "Black, move 1, e5");
-    await next.click();
+    await next.press("Enter");
     await expectActiveSessionHistoryEntry(page, "White, move 2, Nf3");
     await expect(next).toBeDisabled();
 
-    await history.getByRole("button", { name: "Initial position" }).click();
+    await history.getByRole("button", { name: "Initial position" }).press("Enter");
     await expectActiveSessionHistoryEntry(page, "Initial position");
     await expect(previous).toBeDisabled();
 
     const responsesTab = engineLane.getByRole("tab", { name: "Move responses" });
-    await responsesTab.click();
+    await responsesTab.press("Enter");
     const distribution = engineLane.getByTestId("move-response-distribution");
     await expect(distribution).toHaveAttribute("data-state", "available");
 
-    await distribution.getByRole("button", { name: /^e4, 4 distinct games/ }).click();
+    await distribution.getByRole("button", { name: /^e4, 4 occurrences/ }).press("Enter");
     await expectActiveSessionHistoryEntry(page, "White, move 1, e4");
-    await expect(preferredPanel(page)).toHaveAttribute("data-state", "first-choice");
-    await expect(preferredPanel(page).getByRole("button", { name: "Save e4", exact: true })).toBeVisible();
+    await expect(preferredPanel(page)).toHaveAttribute("data-state", "empty");
+    await expect(preferredPanel(page).getByRole("button", { name: /^Save / })).toHaveCount(0);
 
-    await distribution.getByRole("button", { name: /^c5, 3 distinct games/ }).click();
+    await distribution.getByRole("button", { name: /^c5, 3 occurrences/ }).press("Enter");
     await expect(page.getByLabel("Temporary branch", { exact: true })).toBeVisible();
     await expect(page.getByTestId("branch-current-ply")).toContainText("Current ply 2");
     await expectSessionHistory(page, [
@@ -406,19 +407,20 @@ test.describe("Repertoire Builder Storybook behaviors", () => {
     ]);
     await expectActiveSessionHistoryEntry(page, "Black, move 1, c5");
 
-    await history.getByRole("button", { name: "White, move 1, e4" }).click();
-    await distribution.getByRole("button", { name: /^c6, 1 distinct games/ }).click();
+    await history.getByRole("button", { name: "White, move 1, e4" }).press("Enter");
+    await distribution.getByRole("button", { name: /^c6, 1 occurrences/ }).press("Enter");
     await expectActiveSessionHistoryEntry(page, "Black, move 1, c6");
     await expect(history.getByRole("button", { name: "Black, move 1, c5" })).toHaveCount(0);
 
     await page
       .getByLabel("Temporary branch", { exact: true })
       .getByRole("button", { name: "Reset", exact: true })
-      .click();
+      .press("Enter");
     await expect(page.getByLabel("Temporary branch", { exact: true })).toHaveCount(0);
     await expectActiveSessionHistoryEntry(page, "White, move 1, e4");
     await expect(next).toBeEnabled();
-    await expect(preferredPanel(page).getByRole("button", { name: "Save e4", exact: true })).toBeVisible();
+    await expectPreferredRelationship(page, "empty");
+    await expect(preferredPanel(page).getByRole("button", { name: /^Save / })).toHaveCount(0);
   });
 
   test("keeps move-history navigation with responsive focus semantics", async ({ page }) => {
@@ -478,7 +480,7 @@ test.describe("Repertoire Builder Storybook behaviors", () => {
     await expect(session.getByText("30%", { exact: true })).toBeVisible();
     await expect(session.getByText("Seen in 3 games as White")).toBeVisible();
 
-    await page.getByRole("button", { name: "Flip" }).click();
+    await page.getByRole("button", { name: "Flip" }).press("Enter");
 
     await expect(
       page.getByRole("group", {

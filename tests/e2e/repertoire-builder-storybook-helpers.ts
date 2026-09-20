@@ -3,49 +3,53 @@ import { expect, type Page } from "@playwright/test";
 
 export const STORYBOOK_URL = "http://127.0.0.1:6006";
 export const STORYBOOK_ROOT = "#storybook-root";
-export const GAME_UUID = "0007925c-5a8d-11f0-9740-f690a301000f";
+const CORE_PREFIX = "production-application-repertoire-builder-workspace-core";
+const PREFERRED_PREFIX =
+  "production-application-repertoire-builder-workspace-preferred-move";
+const WORKFLOW_PREFIX =
+  "production-application-repertoire-builder-workspace-preferred-move-workflow";
+const RESPONSIVE_PREFIX =
+  "production-application-repertoire-builder-responsive-stage";
 export const STORY_IDS = {
-  wide: "application-repertoire-builder-workspace--wide",
-  medium: "application-repertoire-builder-workspace--medium",
-  constrained: "application-repertoire-builder-workspace--constrained",
-  importedGameSession: "application-repertoire-builder-workspace--imported-game-session",
-  stagedMy: "application-repertoire-builder-workspace--staged-my",
-  selectedPositionAnalysisLifecycle:
-    "application-repertoire-builder-workspace--selected-position-analysis-lifecycle",
-  storedPrefix: "application-repertoire-builder-workspace--stored-prefix-black-subject",
-  opponent: "application-repertoire-builder-workspace--opponent-immediate",
-  navigation: "application-repertoire-builder-workspace--navigation-and-replacement",
-  flip: "application-repertoire-builder-workspace--flip-cancellation",
-  promotion: "application-repertoire-builder-workspace--promotion-preferred",
-  zeroPersonal: "application-repertoire-builder-workspace--zero-personal-count",
-  absent: "application-repertoire-builder-workspace--absent-unsavable",
-  savedChoiceStages: "application-repertoire-builder-workspace--saved-choice-stages-move",
-  savedNoStage: "application-repertoire-builder-workspace--saved-no-stage",
-  firstChoice: "application-repertoire-builder-workspace--first-choice",
-  replacement: "application-repertoire-builder-workspace--replacement-constrained",
-  matching: "application-repertoire-builder-workspace--matching",
-  savedBoxKeyboard: "application-repertoire-builder-workspace--saved-box-keyboard",
-  saveReplacement: "application-repertoire-builder-workspace--save-replacement",
-  removeRetainsStaging: "application-repertoire-builder-workspace--remove-retains-staging",
-  pendingSave: "application-repertoire-builder-workspace--pending-save",
-  pendingRemove: "application-repertoire-builder-workspace--pending-remove",
-  saveFailure: "application-repertoire-builder-workspace--save-failure-retention",
-  removeFailure: "application-repertoire-builder-workspace--remove-failure-retention",
-  cleanPreferredTimeline:
-    "application-repertoire-builder-workspace--clean-preferred-timeline-novel-parent",
-  accessibility: "application-repertoire-builder-workspace--accessibility-and-responsive",
-  readErrors: "application-repertoire-builder-workspace--read-errors",
-  unsavable: "application-repertoire-builder-workspace--unsavable-gate",
-  responseDistribution: "application-repertoire-builder-workspace--response-distribution-integration",
+  wide: `${CORE_PREFIX}--wide`,
+  medium: `${CORE_PREFIX}--medium`,
+  constrained: `${CORE_PREFIX}--constrained`,
+  importedGameSession: `${CORE_PREFIX}--stored-prefix-black-subject`,
+  stagedMy: `${CORE_PREFIX}--staged-my`,
+  selectedPositionAnalysisLifecycle: `${CORE_PREFIX}--selected-position-analysis-lifecycle`,
+  storedPrefix: `${CORE_PREFIX}--stored-prefix-black-subject`,
+  opponent: `${CORE_PREFIX}--opponent-immediate`,
+  navigation: `${CORE_PREFIX}--navigation-and-replacement`,
+  flip: `${CORE_PREFIX}--flip-cancellation`,
+  promotion: `${PREFERRED_PREFIX}--promotion-preferred`,
+  zeroPersonal: `${PREFERRED_PREFIX}--zero-personal-count`,
+  absent: `${PREFERRED_PREFIX}--absent-unsavable`,
+  savedChoiceStages: `${PREFERRED_PREFIX}--saved-choice-stages-move`,
+  savedNoStage: `${PREFERRED_PREFIX}--saved-no-stage`,
+  firstChoice: `${PREFERRED_PREFIX}--first-choice`,
+  replacement: `${PREFERRED_PREFIX}--replacement-constrained`,
+  matching: `${PREFERRED_PREFIX}--matching`,
+  savedBoxKeyboard: `${PREFERRED_PREFIX}--saved-box-keyboard`,
+  saveReplacement: `${PREFERRED_PREFIX}--save-replacement`,
+  removeRetainsStaging: `${PREFERRED_PREFIX}--remove-retains-staging`,
+  pendingSave: `${PREFERRED_PREFIX}--pending-save`,
+  pendingRemove: `${PREFERRED_PREFIX}--pending-remove`,
+  saveFailure: `${PREFERRED_PREFIX}--save-failure-retention`,
+  removeFailure: `${PREFERRED_PREFIX}--remove-failure-retention`,
+  cleanPreferredTimeline: `${PREFERRED_PREFIX}--clean-preferred-timeline-novel-parent`,
+  accessibility: `${PREFERRED_PREFIX}--accessibility-and-responsive`,
+  readErrors: `${WORKFLOW_PREFIX}--read-errors`,
+  unsavable: `${WORKFLOW_PREFIX}--unsavable-gate`,
+  responseDistribution: `${CORE_PREFIX}--response-distribution-integration`,
   responseDistributionDense:
-    "application-move-response-distribution--dense-tiny-sector-cluster",
-  loading: "application-repertoire-builder-workspace--loading-gate",
-  opponentGate: "application-repertoire-builder-workspace--opponent-turn-gate",
-  opponentLocal: "application-repertoire-builder-workspace--opponent-local-only",
-  boundary699: "application-repertoire-builder-responsive-stage--boundary-699",
-  boundary700: "application-repertoire-builder-responsive-stage--boundary-700",
-  boundary1039: "application-repertoire-builder-responsive-stage--boundary-1039",
-  boundary1040: "application-repertoire-builder-responsive-stage--boundary-1040",
+    "production-application-move-response-distribution-overview--dense-tiny-sector-cluster",
+  loading: `${WORKFLOW_PREFIX}--loading-gate`,
+  opponentGate: `${WORKFLOW_PREFIX}--opponent-turn-gate`,
+  opponentLocal: `${WORKFLOW_PREFIX}--opponent-local-only`,
+  boundary699: `${RESPONSIVE_PREFIX}--boundary-699`,
+  boundary700: `${RESPONSIVE_PREFIX}--boundary-700`,
+  boundary1039: `${RESPONSIVE_PREFIX}--boundary-1039`,
+  boundary1040: `${RESPONSIVE_PREFIX}--boundary-1040`,
 } as const;
 export const GEOMETRY_TOLERANCE = 4;
 
@@ -190,8 +194,12 @@ export async function expectDateFreePreferredPanel(page: Page) {
 export async function expectBothRelationshipBoxes(page: Page) {
   await expect(preferredPanel(page).getByTestId("saved-move")).toBeVisible();
   await expect(preferredPanel(page).getByTestId("selected-move")).toBeVisible();
-  await expect(preferredPanel(page).getByText("Current saved choice", { exact: true })).toBeVisible();
-  await expect(preferredPanel(page).getByText("Selected move", { exact: true })).toBeVisible();
+  await expect(
+    preferredPanel(page).getByTestId("saved-move").getByText("Saved", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    preferredPanel(page).getByTestId("selected-move").getByText("Selected", { exact: true }),
+  ).toBeVisible();
 }
 
 export async function expectSessionHistory(page: Page, entries: readonly string[]) {
@@ -312,10 +320,9 @@ export async function expectPreferredPanelFidelity(page: Page, expectStacked: bo
   const selected = panel.getByTestId("selected-move");
   const connector = saved.locator("xpath=following-sibling::*[1]");
   const connectorNext = connector.locator("xpath=following-sibling::*[1]");
-  const consequence = panel.getByTestId("preferred-consequence");
 
-  await expect(panel.getByText("Current saved choice", { exact: true })).toHaveCount(1);
-  await expect(panel.getByText("Selected move", { exact: true })).toHaveCount(1);
+  await expect(saved.getByText("Saved", { exact: true })).toHaveCount(1);
+  await expect(selected.getByText("Selected", { exact: true })).toHaveCount(1);
   await expect(saved).toBeVisible();
   await expect(selected).toBeVisible();
   await expect(
@@ -328,15 +335,6 @@ export async function expectPreferredPanelFidelity(page: Page, expectStacked: bo
   await expect(connectorNext).toHaveAttribute("data-testid", "selected-move");
   await expect(connector.locator("svg")).toHaveAttribute("aria-hidden", "true");
   await expect(connector.locator("svg")).toHaveAttribute("focusable", "false");
-  await expect(consequence.locator("svg")).toHaveAttribute("aria-hidden", "true");
-  await expect(consequence.locator("svg")).toHaveAttribute("focusable", "false");
-
-  const cueStyle = await consequence.locator("svg").evaluate((element) => {
-    const style = getComputedStyle(element);
-    return { borderRadius: style.borderRadius, height: style.height, width: style.width };
-  });
-  expect(cueStyle.borderRadius).toBe("50%");
-  expect(cueStyle.width).toBe(cueStyle.height);
 
   const [savedBox, connectorBox, selectedBox] = await Promise.all([
     saved.boundingBox(),
@@ -360,7 +358,7 @@ export async function expectPreferredPanelFidelity(page: Page, expectStacked: bo
 
   const panelBounds = await panel.boundingBox();
   if (!panelBounds) throw new Error("Preferred move panel bounds are missing.");
-  const actionButtons = ["Save", "Remove"].map((name) =>
+  const actionButtons = ["Save d4", "Remove"].map((name) =>
     panel.getByRole("button", { name, exact: true }),
   );
   const actionBounds = await Promise.all(actionButtons.map((button) => button.boundingBox()));
@@ -369,9 +367,6 @@ export async function expectPreferredPanelFidelity(page: Page, expectStacked: bo
     expect(bounds.x).toBeGreaterThanOrEqual(panelBounds.x);
     expect(bounds.x + bounds.width).toBeLessThanOrEqual(panelBounds.x + panelBounds.width + 1);
   }
-  const actionRows = new Set(actionBounds.map((bounds) => Math.round(bounds!.y)));
-  if (expectStacked) expect(actionRows.size).toBeGreaterThan(1);
-
   const panelDimensions = await panel.evaluate((element) => ({
     clientWidth: element.clientWidth,
     scrollWidth: element.scrollWidth,

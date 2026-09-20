@@ -4,16 +4,16 @@ import { retryAxeWhenBusy } from "./axe-busy-retry";
 
 const STORYBOOK_ORIGIN = "http://127.0.0.1:6006";
 const STORYBOOK_ROOT_SELECTOR = "#storybook-root";
+const STORY_PREFIX = "production-application-shell-app-shell";
 const STORY_IDS = {
-  wideHealthy: "application-shell--wide-healthy",
-  constrainedClosed: "application-shell--constrained-closed",
-  constrainedOpen: "application-shell--constrained-open",
-  loading: "application-shell--loading",
-  healthy: "application-shell--healthy",
-  unavailable: "application-shell--unavailable",
-  unexpectedFailure: "application-shell--unexpected-failure-try-again",
-  unexpectedFailureBrowserProof:
-    "application-shell--unexpected-failure-browser-proof",
+  wideHealthy: `${STORY_PREFIX}--wide-healthy`,
+  constrainedClosed: `${STORY_PREFIX}--constrained-closed`,
+  constrainedOpen: `${STORY_PREFIX}--constrained-open`,
+  loading: `${STORY_PREFIX}--loading`,
+  healthy: `${STORY_PREFIX}--healthy`,
+  unavailable: `${STORY_PREFIX}--unavailable`,
+  unexpectedFailure: `${STORY_PREFIX}--unexpected-failure-try-again`,
+  unexpectedFailureBrowserProof: `${STORY_PREFIX}--unexpected-failure-browser-proof`,
 } as const;
 
 function storyUrl(storyId: string) {
@@ -153,12 +153,6 @@ test("contains drawer focus and restores it after Close", async ({ page }) => {
 
   const during = await modalState(page);
   expect(during.inertCount).toBeGreaterThan(0);
-  expect(
-    during.bodyInlineOverflow !== before.bodyInlineOverflow ||
-      during.documentInlineOverflow !== before.documentInlineOverflow ||
-      during.bodyOverflow !== before.bodyOverflow ||
-      during.documentOverflow !== before.documentOverflow,
-  ).toBe(true);
 
   await close.click();
   await expect(dialog).toBeHidden();

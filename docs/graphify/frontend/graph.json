@@ -90366,6 +90366,18 @@
     },
     {
       "_origin": "semantic",
+      "community": 18,
+      "community_name": "Community 18",
+      "external": true,
+      "file_type": "concept",
+      "id": "src_features_board_adapter_positiondescription_boardorientation",
+      "label": "src_features_board_adapter_positiondescription_boardorientation",
+      "norm_label": "src_features_board_adapter_positiondescription_boardorientation",
+      "source_file": "",
+      "type": "external"
+    },
+    {
+      "_origin": "semantic",
       "community": 2,
       "community_name": "Community 2",
       "external": true,
@@ -90793,17 +90805,6 @@
       "id": "src_api_client_positioninsightresponse",
       "label": "src_api_client_positioninsightresponse",
       "norm_label": "src_api_client_positioninsightresponse",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "community": 18,
-      "community_name": "Community 18",
-      "external": true,
-      "file_type": "concept",
-      "id": "src_features_board_adapter_positiondescription_boardorientation",
-      "label": "src_features_board_adapter_positiondescription_boardorientation",
-      "norm_label": "src_features_board_adapter_positiondescription_boardorientation",
       "source_file": "",
       "type": "external"
     }

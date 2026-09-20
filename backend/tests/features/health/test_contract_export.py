@@ -22,6 +22,7 @@ EXPECTED_OPERATION_IDS: dict[str, dict[str, str]] = {
         "put": "putPreferredMoves",
         "delete": "deletePreferredMoves",
     },
+    "/api/statistics/overview": {"get": "getStatisticsOverview"},
 }
 
 

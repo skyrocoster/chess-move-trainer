@@ -628,5 +628,35 @@
     "seen": 1789896431.4058163,
     "ast_hash": "52d57f44b051f62e38c8605818e14788",
     "semantic_hash": "52d57f44b051f62e38c8605818e14788"
+  },
+  "chess_move_trainer/database/reporting/__init__.py": {
+    "mtime": 1789926030.208929,
+    "seen": 1789930628.3662205,
+    "ast_hash": "20b8a8bad9bec588605c44b004660ec8",
+    "semantic_hash": "20b8a8bad9bec588605c44b004660ec8"
+  },
+  "chess_move_trainer/database/reporting/game_aggregates.py": {
+    "mtime": 1789926065.431955,
+    "seen": 1789930628.3662205,
+    "ast_hash": "6d0eb9e1618ab2c1f599be163252b998",
+    "semantic_hash": "6d0eb9e1618ab2c1f599be163252b998"
+  },
+  "chess_move_trainer/database/reporting/models.py": {
+    "mtime": 1789923089.319231,
+    "seen": 1789930628.3662205,
+    "ast_hash": "eabcfa24b4e69ebded8c56297d315638",
+    "semantic_hash": "eabcfa24b4e69ebded8c56297d315638"
+  },
+  "chess_move_trainer/database/reporting/repository.py": {
+    "mtime": 1789926065.431955,
+    "seen": 1789930628.3662205,
+    "ast_hash": "3d56451243ee1947bd5018a2a3630e33",
+    "semantic_hash": "3d56451243ee1947bd5018a2a3630e33"
+  },
+  "chess_move_trainer/database/reporting/scope_readers.py": {
+    "mtime": 1789926065.431955,
+    "seen": 1789930628.3662205,
+    "ast_hash": "fd14dab0ad4fe6e255a1a9f5e02112bf",
+    "semantic_hash": "fd14dab0ad4fe6e255a1a9f5e02112bf"
   }
 }

@@ -11,6 +11,7 @@ from backend.app.features.position_training_requirements.router import (
     router as position_training_requirements_router,
 )
 from backend.app.features.preferred_moves.router import router as preferred_moves_router
+from backend.app.features.statistics.router import router as statistics_router
 
 
 def create_app() -> FastAPI:
@@ -31,6 +32,7 @@ def create_app() -> FastAPI:
     app.include_router(position_insight_router)
     app.include_router(position_training_requirements_router)
     app.include_router(openings_router)
+    app.include_router(statistics_router)
     return app
 
 

@@ -3,15 +3,15 @@ import AxeBuilder from "@axe-core/playwright";
 import { retryAxeWhenBusy } from "./axe-busy-retry";
 
 const STORYBOOK_URL = "http://127.0.0.1:6006";
+const STORY_PREFIX = "production-application-board-read-only-board";
 const STORY_IDS = {
-  starting:
-    "application-board-read-only-board--default-valid-starting-position",
-  rich: "application-board-read-only-board--rich-position",
-  black: "application-board-read-only-board--black-orientation",
-  hidden: "application-board-read-only-board--hidden-coordinates",
-  constrained: "application-board-read-only-board--constrained-width",
-  invalid: "application-board-read-only-board--invalid-fen",
-  expanded: "application-board-read-only-board--expanded-position-description",
+  starting: `${STORY_PREFIX}--default-valid-starting-position`,
+  rich: `${STORY_PREFIX}--rich-position`,
+  black: `${STORY_PREFIX}--black-orientation`,
+  hidden: `${STORY_PREFIX}--hidden-coordinates`,
+  constrained: `${STORY_PREFIX}--constrained-width`,
+  invalid: `${STORY_PREFIX}--invalid-fen`,
+  expanded: `${STORY_PREFIX}--expanded-position-description`,
 } as const;
 const CANONICAL_STORY_COUNT = 7;
 
