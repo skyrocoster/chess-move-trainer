@@ -1,4 +1,4 @@
-import { Chess } from "chess.js";
+import { Chess, type PieceSymbol, type Square } from "chess.js";
 
 export type ChessSide = "white" | "black";
 
@@ -7,6 +7,26 @@ export type Fen = string;
 export type Ply = number;
 
 export type San = string | null;
+
+export type UciMove = {
+  from: Square;
+  to: Square;
+  promotion?: PieceSymbol;
+};
+
+const UCI_PATTERN = /^([a-h][1-8])([a-h][1-8])([qrbn])?$/;
+
+export function parseUciMove(uci: string): UciMove {
+  const match = UCI_PATTERN.exec(uci);
+  if (match === null) {
+    throw new Error(`Invalid UCI move: ${uci}`);
+  }
+
+  const from = match[1] as Square;
+  const to = match[2] as Square;
+  const promotion = match[3] as PieceSymbol | undefined;
+  return promotion === undefined ? { from, to } : { from, to, promotion };
+}
 
 /**
  * The part of a FEN that identifies a position for server reads.

@@ -1,6 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { getOpenings, getPositionTrainingRequirements } from "../../api/client";
+import {
+  getOpenings,
+  getPositionTrainingRequirements,
+  submitPositionTrainingAnswer,
+} from "../../api/client";
 import type {
   OpeningCatalogueItemResponse,
   TrainingRequirementItemResponse,
@@ -16,6 +20,7 @@ import {
   queryOpeningChoices,
   queryOpeningCatalogueSnapshot,
   queryTrainingRequirements,
+  submitTrainingAnswer,
   TrainerPracticeQueryError,
   type TrainerPracticeFilters,
 } from "./trainerPracticeApi";
@@ -24,6 +29,7 @@ import type { OpeningCatalogueStorage } from "./openingCatalogueStorage";
 vi.mock("../../api/client", () => ({
   getOpenings: vi.fn(),
   getPositionTrainingRequirements: vi.fn(),
+  submitPositionTrainingAnswer: vi.fn(),
 }));
 
 const TODAY = "2026-09-14";
@@ -396,6 +402,81 @@ describe("fetchTrainingRequirements", () => {
 
     controller.abort();
     resolveRequest({ data: page(1, 1, [item("aborted")]) });
+    await expect(request).rejects.toMatchObject({ name: "AbortError" });
+  });
+});
+
+describe("submitTrainingAnswer", () => {
+  it("submits the generated answer contract and returns the backend verdict", async () => {
+    const response = {
+      as_of: TODAY,
+      correct: true,
+      item: item("answered", { training_requirement: 0, correct_answers_needed: 0 }),
+    };
+    vi.mocked(submitPositionTrainingAnswer).mockResolvedValue({ data: response } as never);
+    const controller = new AbortController();
+
+    await expect(
+      submitTrainingAnswer(
+        {
+          fen: response.item.fen,
+          trainerColor: "white",
+          asOf: TODAY,
+          playedMoveUci: "e2e4",
+        },
+        controller.signal,
+      ),
+    ).resolves.toEqual({ status: "success", data: response });
+    expect(submitPositionTrainingAnswer).toHaveBeenCalledWith({
+      body: {
+        fen: response.item.fen,
+        trainer_color: "white",
+        as_of: TODAY,
+        played_move_uci: "e2e4",
+      },
+      signal: controller.signal,
+    });
+  });
+
+  it.each([
+    [409, "training_requirements_stale", "stale_date"],
+    [404, "training_requirement_not_found", "requirement_not_found"],
+    [503, "position_training_requirements_unavailable", "submission_error"],
+  ] as const)("maps answer failure %s/%s", async (status, code, expected) => {
+    vi.mocked(submitPositionTrainingAnswer).mockResolvedValue({
+      error: { code, message: "safe detail" },
+      response: { status },
+    } as never);
+
+    await expect(
+      submitTrainingAnswer({
+        fen: item("answer").fen,
+        trainerColor: "white",
+        asOf: TODAY,
+        playedMoveUci: "e2e4",
+      }),
+    ).resolves.toEqual({ status: expected });
+  });
+
+  it("does not turn an aborted answer into a retryable result", async () => {
+    let resolveRequest!: (value: unknown) => void;
+    const pending = new Promise((resolve) => {
+      resolveRequest = resolve;
+    });
+    vi.mocked(submitPositionTrainingAnswer).mockReturnValue(pending as never);
+    const controller = new AbortController();
+    const request = submitTrainingAnswer(
+      {
+        fen: item("answer").fen,
+        trainerColor: "white",
+        asOf: TODAY,
+        playedMoveUci: "e2e4",
+      },
+      controller.signal,
+    );
+
+    controller.abort();
+    resolveRequest({ data: { as_of: TODAY, correct: true, item: item("answer") } });
     await expect(request).rejects.toMatchObject({ name: "AbortError" });
   });
 });

@@ -1,9 +1,14 @@
-import { getOpenings, getPositionTrainingRequirements } from "../../api/client";
+import {
+  getOpenings,
+  getPositionTrainingRequirements,
+  submitPositionTrainingAnswer,
+} from "../../api/client";
 import type {
   GetOpeningsData,
   GetPositionTrainingRequirementsData,
   OpeningCatalogueItemResponse,
   OpeningCatalogueResponse,
+  TrainingAnswerResponse,
   TrainingRequirementItemResponse,
   TrainingRequirementResponse,
 } from "../../api/client";
@@ -42,6 +47,17 @@ export type OpeningChoicesResult =
 export type TrainingRequirementsResult =
   | { status: "success"; data: TrainingRequirementResponse }
   | { status: Exclude<TrainerPracticeFailureCode, "catalogue_error"> };
+
+export type TrainingAnswerInput = {
+  fen: string;
+  trainerColor: TrainerColor;
+  asOf: string;
+  playedMoveUci: string;
+};
+
+export type TrainingAnswerResult =
+  | { status: "success"; data: TrainingAnswerResponse }
+  | { status: "stale_date" | "requirement_not_found" | "submission_error" };
 
 export class TrainerPracticeQueryError extends Error {
   constructor(readonly status: TrainerPracticeFailureCode) {
@@ -331,6 +347,17 @@ function mapRequirementsFailure(error: unknown, status: number | null): Training
   return { status: "retrieval_error" };
 }
 
+function mapAnswerFailure(error: unknown, status: number | null): TrainingAnswerResult {
+  const code = errorCode(error);
+  if (status === 409 && code === "training_requirements_stale") {
+    return { status: "stale_date" };
+  }
+  if (status === 404 && code === "training_requirement_not_found") {
+    return { status: "requirement_not_found" };
+  }
+  return { status: "submission_error" };
+}
+
 function itemKey(item: TrainingRequirementItemResponse): string {
   return `${item.fen}\u0000${item.trainer_color}\u0000${item.preferred_move_uci}`;
 }
@@ -408,6 +435,34 @@ export async function fetchTrainingRequirements(
   };
 }
 
+export async function submitTrainingAnswer(
+  input: TrainingAnswerInput,
+  signal?: AbortSignal,
+): Promise<TrainingAnswerResult> {
+  throwIfAborted(signal);
+  try {
+    const result = await submitPositionTrainingAnswer({
+      body: {
+        fen: input.fen,
+        trainer_color: input.trainerColor,
+        as_of: input.asOf,
+        played_move_uci: input.playedMoveUci,
+      },
+      signal,
+    });
+    throwIfAborted(signal);
+    if (result.data === undefined || result.error !== undefined) {
+      return mapAnswerFailure(result.error, result.response?.status ?? null);
+    }
+    return { status: "success", data: result.data };
+  } catch (error) {
+    if (signal?.aborted || isAbortError(error)) {
+      throw error;
+    }
+    return { status: "submission_error" };
+  }
+}
+
 export async function queryOpeningChoices(
   loadOpenings: (signal?: AbortSignal, search?: string) => Promise<OpeningChoicesResult>,
   signal: AbortSignal,
@@ -438,4 +493,5 @@ export async function queryTrainingRequirements(
 export const defaultTrainerPracticeApi = {
   loadCatalogue: fetchOpeningCatalogueSnapshot,
   loadRequirements: fetchTrainingRequirements,
+  submitAnswer: submitTrainingAnswer,
 };

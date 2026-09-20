@@ -1,0 +1,352 @@
+.session,
+.complete {
+  display: grid;
+  gap: var(--cmt-spacing-24);
+  min-inline-size: 0;
+  padding-block-start: var(--cmt-spacing-24);
+  border-block-start: 1px solid var(--md-sys-color-outline-variant);
+}
+
+.sessionHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  justify-content: space-between;
+  gap: var(--cmt-spacing-12) var(--cmt-spacing-24);
+}
+
+.sessionHeader h2,
+.complete h2,
+.feedbackCard h3 {
+  margin: 0;
+  color: var(--md-sys-color-on-surface);
+}
+
+.sessionHeader h2,
+.complete h2 {
+  font-family: var(--md-sys-typescale-headline-small-font);
+  font-size: var(--md-sys-typescale-headline-small-size);
+  font-weight: var(--md-sys-typescale-headline-small-weight);
+  letter-spacing: var(--md-sys-typescale-headline-small-letter-spacing);
+  line-height: var(--md-sys-typescale-headline-small-line-height);
+}
+
+.feedbackCard h3,
+.progressValue {
+  font-family: var(--md-sys-typescale-title-large-font);
+  font-size: var(--md-sys-typescale-title-large-size);
+  font-weight: var(--md-sys-typescale-title-large-weight);
+  letter-spacing: var(--md-sys-typescale-title-large-letter-spacing);
+  line-height: var(--md-sys-typescale-title-large-line-height);
+}
+
+.eyebrow,
+.scope,
+.positionPrompt p,
+.feedbackCard p,
+.scoreNote,
+.complete > p {
+  margin: 0;
+}
+
+.eyebrow,
+.progressHeading {
+  font-family: var(--md-sys-typescale-label-large-font);
+  font-size: var(--md-sys-typescale-label-large-size);
+  font-weight: var(--md-sys-typescale-label-large-weight);
+  letter-spacing: var(--md-sys-typescale-label-large-letter-spacing);
+  line-height: var(--md-sys-typescale-label-large-line-height);
+}
+
+.eyebrow {
+  color: var(--md-sys-color-primary);
+  text-transform: uppercase;
+}
+
+.scope,
+.positionPrompt p,
+.feedbackCard p,
+.scoreNote,
+.complete > p {
+  color: var(--md-sys-color-on-surface-variant);
+  font-family: var(--md-sys-typescale-body-medium-font);
+  font-size: var(--md-sys-typescale-body-medium-size);
+  font-weight: var(--md-sys-typescale-body-medium-weight);
+  letter-spacing: var(--md-sys-typescale-body-medium-letter-spacing);
+  line-height: var(--md-sys-typescale-body-medium-line-height);
+}
+
+.scope {
+  max-inline-size: 28rem;
+  text-align: end;
+  overflow-wrap: anywhere;
+}
+
+.sessionLayout {
+  display: grid;
+  grid-template-columns: minmax(20rem, var(--cmt-board-max-inline-size)) minmax(18rem, 1fr);
+  gap: var(--cmt-spacing-24);
+  align-items: start;
+  min-inline-size: 0;
+}
+
+.boardColumn {
+  display: grid;
+  gap: var(--cmt-spacing-12);
+  min-inline-size: 0;
+  padding: var(--cmt-spacing-16);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--cmt-radius-12);
+  background: var(--md-sys-color-surface-container-low);
+}
+
+.positionPrompt {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  justify-content: space-between;
+  gap: var(--cmt-spacing-8) var(--cmt-spacing-16);
+}
+
+.positionPrompt > div {
+  display: grid;
+  gap: var(--cmt-spacing-4);
+}
+
+.positionPrompt span {
+  color: var(--md-sys-color-on-surface-variant);
+  font-family: var(--md-sys-typescale-label-medium-font);
+  font-size: var(--md-sys-typescale-label-medium-size);
+  font-weight: var(--md-sys-typescale-label-medium-weight);
+  letter-spacing: var(--md-sys-typescale-label-medium-letter-spacing);
+  line-height: var(--md-sys-typescale-label-medium-line-height);
+}
+
+.positionPrompt strong {
+  color: var(--md-sys-color-on-surface);
+  font-family: var(--md-sys-typescale-title-medium-font);
+  font-size: var(--md-sys-typescale-title-medium-size);
+  font-weight: var(--md-sys-typescale-title-medium-weight);
+  letter-spacing: var(--md-sys-typescale-title-medium-letter-spacing);
+  line-height: var(--md-sys-typescale-title-medium-line-height);
+}
+
+.sessionRail,
+.feedbackStack,
+.feedbackCard,
+.progressCard,
+.complete {
+  align-content: start;
+}
+
+.sessionRail,
+.feedbackStack {
+  display: grid;
+  gap: var(--cmt-spacing-12);
+  min-inline-size: 0;
+}
+
+.sessionRail > button,
+.feedbackStack > button,
+.feedbackCard > button,
+.complete > button {
+  justify-self: start;
+}
+
+.progressCard,
+.feedbackCard {
+  display: grid;
+  gap: var(--cmt-spacing-16);
+  padding: var(--cmt-spacing-16);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--cmt-radius-12);
+  background: var(--md-sys-color-surface-container);
+}
+
+.progressCard {
+  border-block-start: var(--cmt-spacing-4) solid var(--md-sys-color-primary);
+}
+
+.progressHeading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--cmt-spacing-16);
+  color: var(--md-sys-color-on-surface);
+}
+
+.progressTrack {
+  display: block;
+  inline-size: 100%;
+  block-size: var(--cmt-spacing-8);
+  overflow: hidden;
+  border-radius: var(--cmt-radius-default);
+  background: var(--md-sys-color-surface-container-highest);
+}
+
+.progressIndicator {
+  display: block;
+  block-size: 100%;
+  background: var(--md-sys-color-primary);
+}
+
+.positionFacts,
+.answerComparison,
+.summaryGrid {
+  display: grid;
+  gap: var(--cmt-spacing-12);
+  margin: 0;
+}
+
+.positionFacts {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.positionFacts > div,
+.answerComparison > div,
+.summaryGrid > div {
+  min-inline-size: 0;
+}
+
+.positionFacts dt,
+.answerComparison dt,
+.summaryGrid dt {
+  color: var(--md-sys-color-on-surface-variant);
+  font-family: var(--md-sys-typescale-label-medium-font);
+  font-size: var(--md-sys-typescale-label-medium-size);
+  font-weight: var(--md-sys-typescale-label-medium-weight);
+  letter-spacing: var(--md-sys-typescale-label-medium-letter-spacing);
+  line-height: var(--md-sys-typescale-label-medium-line-height);
+}
+
+.positionFacts dd,
+.answerComparison dd,
+.summaryGrid dd {
+  margin: var(--cmt-spacing-4) 0 0;
+  color: var(--md-sys-color-on-surface);
+  font-family: var(--md-sys-typescale-title-medium-font);
+  font-size: var(--md-sys-typescale-title-medium-size);
+  font-weight: var(--md-sys-typescale-title-medium-weight);
+  letter-spacing: var(--md-sys-typescale-title-medium-letter-spacing);
+  line-height: var(--md-sys-typescale-title-medium-line-height);
+  overflow-wrap: anywhere;
+}
+
+.answerComparison {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding: var(--cmt-spacing-16);
+  border-inline-start: var(--cmt-spacing-4) solid var(--md-sys-color-primary);
+  background: var(--md-sys-color-surface-container-low);
+}
+
+.answerComparison dd span {
+  display: block;
+  color: var(--md-sys-color-on-surface-variant);
+  font-family: var(--md-sys-typescale-body-small-font);
+  font-size: var(--md-sys-typescale-body-small-size);
+  font-weight: var(--md-sys-typescale-body-small-weight);
+  letter-spacing: var(--md-sys-typescale-body-small-letter-spacing);
+  line-height: var(--md-sys-typescale-body-small-line-height);
+}
+
+.complete {
+  max-inline-size: 48rem;
+  padding: var(--cmt-spacing-24);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-block-start: var(--cmt-spacing-4) solid var(--md-sys-color-primary);
+  border-radius: var(--cmt-radius-12);
+  background: var(--md-sys-color-surface-container);
+}
+
+.summaryGrid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.summaryGrid > div {
+  padding-inline-end: var(--cmt-spacing-12);
+  border-inline-end: 1px solid var(--md-sys-color-outline-variant);
+}
+
+.summaryGrid > div:last-child {
+  border-inline-end: 0;
+}
+
+@media (max-width: 64rem) {
+  .sessionLayout {
+    grid-template-columns: minmax(18rem, 1.25fr) minmax(16rem, 0.75fr);
+  }
+}
+
+@media (max-width: 48rem) {
+  .sessionLayout,
+  .summaryGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .scope {
+    text-align: start;
+  }
+
+  .summaryGrid > div {
+    padding-block-end: var(--cmt-spacing-12);
+    padding-inline-end: 0;
+    border-block-end: 1px solid var(--md-sys-color-outline-variant);
+    border-inline-end: 0;
+  }
+
+  .summaryGrid > div:last-child {
+    padding-block-end: 0;
+    border-block-end: 0;
+  }
+}
+
+@media (max-width: 30rem) {
+  .boardColumn,
+  .complete {
+    padding: var(--cmt-spacing-12);
+  }
+
+  .positionFacts,
+  .answerComparison {
+    grid-template-columns: 1fr;
+  }
+
+  .sessionRail > button,
+  .feedbackStack > button,
+  .feedbackCard > button,
+  .complete > button {
+    justify-self: stretch;
+  }
+}
+
+@media (forced-colors: active) {
+  .boardColumn,
+  .progressCard,
+  .feedbackCard,
+  .complete,
+  .answerComparison {
+    border-color: CanvasText;
+    background: Canvas;
+  }
+
+  .progressTrack {
+    border: 1px solid CanvasText;
+    background: Canvas;
+  }
+
+  .progressIndicator {
+    background: Highlight;
+  }
+
+  .eyebrow,
+  .sessionHeader h2,
+  .complete h2,
+  .feedbackCard h3,
+  .positionPrompt strong,
+  .progressHeading,
+  .positionFacts dd,
+  .answerComparison dd,
+  .summaryGrid dd {
+    color: CanvasText;
+  }
+}

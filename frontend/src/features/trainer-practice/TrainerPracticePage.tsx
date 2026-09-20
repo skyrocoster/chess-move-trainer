@@ -1,8 +1,8 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useState } from "react";
 
 import type { OpeningCatalogueItemResponse, TrainingRequirementResponse } from "../../api/client";
-import { queryKeys } from "../../api/queryKeys";
+import { queryKeyPrefixes, queryKeys } from "../../api/queryKeys";
 import { readOpeningCatalogueSnapshot } from "./openingCatalogueStorage";
 import {
   formatUtcDate,
@@ -19,6 +19,8 @@ import {
   type OpeningCatalogueSnapshotResult,
   type TrainerColor,
   type TrainerPracticeFilters,
+  type TrainingAnswerInput,
+  type TrainingAnswerResult,
   type TrainingRequirementsResult,
 } from "./trainerPracticeApi";
 import type { OpeningSelection } from "./OpeningSearchCombobox";
@@ -30,6 +32,7 @@ export type TrainerPracticeApi = {
     filters: TrainerPracticeFilters,
     signal?: AbortSignal,
   ) => Promise<TrainingRequirementsResult>;
+  submitAnswer: (input: TrainingAnswerInput, signal?: AbortSignal) => Promise<TrainingAnswerResult>;
 };
 
 type CatalogueState = {
@@ -62,6 +65,7 @@ export function TrainerPracticePage({
 }: {
   api?: TrainerPracticeApi;
 }) {
+  const queryClient = useQueryClient();
   const [catalogueSearch, setCatalogueSearch] = useState("");
   const [openingSelection, setOpeningSelection] = useState<OpeningSelection>(null);
   const [trainerColor, setTrainerColor] = useState<"" | TrainerColor>("");
@@ -69,6 +73,7 @@ export function TrainerPracticePage({
     toUtcMidnight(getUtcCalendarDay(new Date())),
   );
   const [submittedFilters, setSubmittedFilters] = useState<TrainerPracticeFilters | null>(null);
+  const [sessionRevision, setSessionRevision] = useState(0);
   const [invalidDateSubmitted, setInvalidDateSubmitted] = useState(false);
   const [storedCatalogue] = useState(readOpeningCatalogueSnapshot);
 
@@ -159,9 +164,11 @@ export function TrainerPracticePage({
         submittedFilters.openingKey === filters.openingKey &&
         submittedFilters.trainerColor === filters.trainerColor
       ) {
-        if (requirementsResult.isError) {
-          void requirementsResult.refetch();
-        }
+        void requirementsResult.refetch().then((result) => {
+          if (result.data !== undefined) {
+            setSessionRevision((current) => current + 1);
+          }
+        });
         return;
       }
       setSubmittedFilters(filters);
@@ -178,6 +185,28 @@ export function TrainerPracticePage({
     setCatalogueSearch("");
   }, []);
 
+  const handleSubmitAnswer = useCallback(
+    async (input: TrainingAnswerInput, signal?: AbortSignal) => {
+      const result = await api.submitAnswer(input, signal);
+      if (result.status === "success") {
+        await queryClient.invalidateQueries({
+          queryKey: queryKeyPrefixes.trainingRequirements(),
+          refetchType: "none",
+        });
+      }
+      return result;
+    },
+    [api, queryClient],
+  );
+
+  const handleRefreshRequirements = useCallback(() => {
+    void requirementsResult.refetch().then((result) => {
+      if (result.data !== undefined) {
+        setSessionRevision((current) => current + 1);
+      }
+    });
+  }, [requirementsResult]);
+
   return (
     <TrainerPracticePanel
       values={{ openingSelection, trainerColor, asOf }}
@@ -185,6 +214,8 @@ export function TrainerPracticePage({
       openings={openings}
       catalogueStatus={catalogueStatus}
       retrieval={retrieval}
+      submittedFilters={submittedFilters}
+      sessionRevision={sessionRevision}
       onOpeningSelectionChange={setOpeningSelection}
       onCatalogueSearchChange={setCatalogueSearch}
       onMissingOpeningSelection={handleMissingOpeningSelection}
@@ -192,6 +223,8 @@ export function TrainerPracticePage({
       onAsOfChange={setAsOf}
       onSubmit={handleSubmit}
       onRetryCatalogue={handleRetryCatalogue}
+      onSubmitAnswer={handleSubmitAnswer}
+      onRefreshRequirements={handleRefreshRequirements}
     />
   );
 }

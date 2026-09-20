@@ -6,7 +6,13 @@ import { CalendarDate, type CalendarDateValue } from "../design-system/CalendarD
 import { Field } from "../design-system/form-controls/Field";
 import { RadioGroup } from "../design-system/form-controls/RadioGroup";
 import { OpeningSearchCombobox, type OpeningSelection } from "./OpeningSearchCombobox";
-import type { TrainerColor } from "./trainerPracticeApi";
+import { TrainerSession } from "./TrainerSession";
+import type {
+  TrainerColor,
+  TrainerPracticeFilters,
+  TrainingAnswerInput,
+  TrainingAnswerResult,
+} from "./trainerPracticeApi";
 import styles from "./TrainerPracticePanel.module.css";
 
 export type TrainerPracticeFormValues = {
@@ -24,6 +30,8 @@ export type TrainerPracticePanelProps = {
     | { status: "idle" | "loading" }
     | { status: "catalogue-error" | "retrieval-error" | "invalid-date" | "stale-date" }
     | { status: "empty" | "success"; data: TrainingRequirementResponse };
+  submittedFilters: TrainerPracticeFilters | null;
+  sessionRevision: number;
   onOpeningSelectionChange: (selection: OpeningSelection) => void;
   onCatalogueSearchChange: (value: string) => void;
   onMissingOpeningSelection: () => void;
@@ -31,156 +39,35 @@ export type TrainerPracticePanelProps = {
   onAsOfChange: (value: CalendarDateValue) => void;
   onSubmit: (values: TrainerPracticeFormValues) => void;
   onRetryCatalogue: () => void;
+  onSubmitAnswer: (
+    input: TrainingAnswerInput,
+    signal?: AbortSignal,
+  ) => Promise<TrainingAnswerResult>;
+  onRefreshRequirements: () => void;
 };
 
-function displayValue(value: string | number | boolean | null): string {
-  return value === null ? "null" : String(value);
+function sessionKey(
+  data: TrainingRequirementResponse,
+  submittedFilters: TrainerPracticeFilters | null,
+) {
+  return JSON.stringify([
+    submittedFilters,
+    data.items.map((item) => [
+      item.fen,
+      item.trainer_color,
+      item.preferred_move_uci,
+      item.training_requirement,
+    ]),
+  ]);
 }
 
-function Metadata({ data }: { data: TrainingRequirementResponse }) {
+function EmptyResults() {
   return (
-    <>
-      <h3>response metadata</h3>
-      <dl>
-        <div>
-          <dt>as_of</dt>
-          <dd>{data.as_of}</dd>
-        </div>
-        <div>
-          <dt>page</dt>
-          <dd>{data.page}</dd>
-        </div>
-        <div>
-          <dt>page_size</dt>
-          <dd>{data.page_size}</dd>
-        </div>
-        <div>
-          <dt>total</dt>
-          <dd>{data.total}</dd>
-        </div>
-      </dl>
-
-      <h3>scoring_policy</h3>
-      <dl>
-        <div>
-          <dt>target_success_rate</dt>
-          <dd>{data.scoring_policy.target_success_rate}</dd>
-        </div>
-        <div>
-          <dt>game_hit_weight</dt>
-          <dd>{data.scoring_policy.game_hit_weight}</dd>
-        </div>
-        <div>
-          <dt>game_miss_weight</dt>
-          <dd>{data.scoring_policy.game_miss_weight}</dd>
-        </div>
-        <div>
-          <dt>training_curve</dt>
-          <dd>{data.scoring_policy.training_curve}</dd>
-        </div>
-        <div>
-          <dt>training_credit_half_life_days</dt>
-          <dd>{data.scoring_policy.training_credit_half_life_days}</dd>
-        </div>
-      </dl>
-    </>
-  );
-}
-
-function PositionItem({
-  item,
-  index,
-}: {
-  item: TrainingRequirementResponse["items"][number];
-  index: number;
-}) {
-  return (
-    <li>
-      <h3>position {index + 1}</h3>
-      <dl>
-        <div>
-          <dt>fen</dt>
-          <dd>{item.fen}</dd>
-        </div>
-        <div>
-          <dt>trainer_color</dt>
-          <dd>{item.trainer_color}</dd>
-        </div>
-        <div>
-          <dt>preferred_move_uci</dt>
-          <dd>{item.preferred_move_uci}</dd>
-        </div>
-        <div>
-          <dt>encounters</dt>
-          <dd>{item.encounters}</dd>
-        </div>
-        <div>
-          <dt>hits</dt>
-          <dd>{item.hits}</dd>
-        </div>
-        <div>
-          <dt>misses</dt>
-          <dd>{item.misses}</dd>
-        </div>
-        <div>
-          <dt>observed_success_rate</dt>
-          <dd>{item.observed_success_rate}</dd>
-        </div>
-        <div>
-          <dt>game_balance</dt>
-          <dd>{item.game_balance}</dd>
-        </div>
-        <div>
-          <dt>effective_training_balance</dt>
-          <dd>{item.effective_training_balance}</dd>
-        </div>
-        <div>
-          <dt>training_adjustment</dt>
-          <dd>{item.training_adjustment}</dd>
-        </div>
-        <div>
-          <dt>training_updated_on</dt>
-          <dd>{displayValue(item.training_updated_on)}</dd>
-        </div>
-        <div>
-          <dt>training_requirement</dt>
-          <dd>{item.training_requirement}</dd>
-        </div>
-        <div>
-          <dt>training_required</dt>
-          <dd>{displayValue(item.training_required)}</dd>
-        </div>
-        <div>
-          <dt>correct_answers_needed</dt>
-          <dd>{item.correct_answers_needed}</dd>
-        </div>
-      </dl>
-    </li>
-  );
-}
-
-function Results({ data }: { data: TrainingRequirementResponse }) {
-  return (
-    <section className={styles.results} aria-labelledby="training-requirements-heading">
-      <h2 id="training-requirements-heading">training-required positions</h2>
-      <div className={styles.metadata}>
-        <Metadata data={data} />
-      </div>
-      {data.items.length === 0 ? (
-        <p role="status" aria-live="polite">
-          No positions currently require training for these filters.
-        </p>
-      ) : (
-        <ol className={styles.positionList} aria-label="training-required positions">
-          {data.items.map((item, index) => (
-            <PositionItem
-              key={`${item.fen}-${item.trainer_color}-${item.preferred_move_uci}`}
-              item={item}
-              index={index}
-            />
-          ))}
-        </ol>
-      )}
+    <section className={styles.emptyResults} aria-labelledby="training-session-empty-heading">
+      <h2 id="training-session-empty-heading">Nothing to practise right now</h2>
+      <p role="status" aria-live="polite">
+        No positions currently require training for these filters.
+      </p>
     </section>
   );
 }
@@ -191,11 +78,15 @@ export function TrainerPracticePanel({
   openings,
   catalogueStatus,
   retrieval,
+  submittedFilters,
+  sessionRevision,
   onCatalogueSearchChange,
   onTrainerColorChange,
   onAsOfChange,
   onSubmit,
   onRetryCatalogue,
+  onSubmitAnswer,
+  onRefreshRequirements,
   onOpeningSelectionChange,
   onMissingOpeningSelection,
 }: TrainerPracticePanelProps) {
@@ -203,6 +94,21 @@ export function TrainerPracticePanel({
     event.preventDefault();
     onSubmit(values);
   }
+
+  const specificOpeningKey = submittedFilters?.openingKey ?? null;
+  const selectedOpening =
+    specificOpeningKey === null
+      ? null
+      : openings.find((opening) => opening.key === specificOpeningKey);
+  const openingScopeLabel =
+    submittedFilters?.openingKey === null
+      ? "All openings"
+      : (selectedOpening?.name ?? "Selected opening");
+  const scopeLabel = submittedFilters?.trainerColor
+    ? `${openingScopeLabel} · ${
+        submittedFilters.trainerColor === "white" ? "White" : "Black"
+      } repertoire`
+    : openingScopeLabel;
 
   return (
     <section className={styles.page} aria-labelledby="trainer-practice-heading">
@@ -229,6 +135,10 @@ export function TrainerPracticePanel({
       ) : null}
 
       <form className={styles.form} onSubmit={handleSubmit} noValidate>
+        <div className={styles.formIntro}>
+          <h2>Build a practice set</h2>
+          <p>Choose where to focus. Positions appear only when their current score needs work.</p>
+        </div>
         <div className={styles.openingField}>
           <Field label="Opening" description="Search by opening name, ECO, or stable key.">
             <OpeningSearchCombobox
@@ -288,8 +198,15 @@ export function TrainerPracticePanel({
           Training requirements changed after this date. Choose a newer date and try again.
         </p>
       ) : null}
-      {retrieval.status === "empty" || retrieval.status === "success" ? (
-        <Results data={retrieval.data} />
+      {retrieval.status === "empty" ? <EmptyResults /> : null}
+      {retrieval.status === "success" ? (
+        <TrainerSession
+          key={`${sessionRevision}:${sessionKey(retrieval.data, submittedFilters)}`}
+          data={retrieval.data}
+          scopeLabel={scopeLabel}
+          onSubmitAnswer={onSubmitAnswer}
+          onRefreshRequirements={onRefreshRequirements}
+        />
       ) : null}
     </section>
   );

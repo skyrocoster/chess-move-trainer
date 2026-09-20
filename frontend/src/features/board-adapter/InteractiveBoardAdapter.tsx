@@ -60,6 +60,7 @@ export type InteractiveBoardAdapterProps = {
   promotionSourceElement: HTMLElement | null;
   promotionAnchorElement: HTMLElement | null;
   showBranchPanel?: boolean;
+  showRejectedMoveNotice?: boolean;
   onMoveIntent: (intent: InteractiveBoardMoveIntent) => boolean;
   onPromotionSelect: (promotion: PromotionPiece) => void;
   onPromotionCancel: () => void;
@@ -154,6 +155,7 @@ export function InteractiveBoardAdapter({
   promotionSourceElement,
   promotionAnchorElement,
   showBranchPanel = true,
+  showRejectedMoveNotice = false,
   onMoveIntent,
   onPromotionSelect,
   onPromotionCancel,
@@ -256,6 +258,11 @@ export function InteractiveBoardAdapter({
           data-answer-status={answer.status}
         >
           {answerMessage(answer)}
+        </p>
+      ) : null}
+      {!showBranchPanel && showRejectedMoveNotice && rejectedMove ? (
+        <p className={styles.notice} role="status" aria-live="polite">
+          {notice}
         </p>
       ) : null}
       {showBranchPanel ? (

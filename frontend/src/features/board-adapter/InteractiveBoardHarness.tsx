@@ -14,6 +14,7 @@ import {
 import type { BoardAnswerPresentation } from "./answerPresentation";
 import type { BranchSnapshot } from "./branchModel";
 import { lastMoveFromSquares, type LastMove } from "./lastMove";
+import type { BoardOrientation } from "./BoardAdapter";
 
 export type InteractiveBoardHarnessProps = {
   viewKey: string;
@@ -22,6 +23,9 @@ export type InteractiveBoardHarnessProps = {
   label: string;
   onBranchChange?: (snapshot: BranchSnapshot) => void;
   answer?: BoardAnswerPresentation | null;
+  orientation?: BoardOrientation;
+  showBranchPanel?: boolean;
+  showRejectedMoveNotice?: boolean;
 };
 
 function terminalDescription(chess: Chess) {
@@ -47,6 +51,9 @@ export function InteractiveBoardHarness({
   label,
   onBranchChange,
   answer,
+  orientation,
+  showBranchPanel,
+  showRejectedMoveNotice,
 }: InteractiveBoardHarnessProps) {
   const chess = useMemo(() => new Chess(originFen), [originFen]);
   const [branchSnapshot, setBranchSnapshot] = useState<BranchSnapshot>(() => ({
@@ -198,6 +205,9 @@ export function InteractiveBoardHarness({
       label={label}
       notice={notice}
       answer={answer}
+      orientation={orientation}
+      showBranchPanel={showBranchPanel}
+      showRejectedMoveNotice={showRejectedMoveNotice}
       terminal={terminalDescription(chess)}
       promotionPending={pending}
       promotionColor={promotionColor}

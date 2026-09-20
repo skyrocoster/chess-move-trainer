@@ -30,6 +30,7 @@ export {
   getPositionTrainingRequirements,
   putPreferredMoves,
   requestAnalysis,
+  submitPositionTrainingAnswer,
 } from "./generated/index";
 export type {
   AnalysisRequestBody,
@@ -134,5 +135,6 @@ export type {
   TrainingRequirementItemResponse,
   TrainingRequirementPolicyResponse,
   TrainingRequirementResponse,
+  TrainingAnswerResponse,
   UnconfiguredPreferenceResponse,
 } from "./generated/index";

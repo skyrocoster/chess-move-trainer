@@ -18,6 +18,47 @@ import {
   type TrainingRequirementsResult,
 } from "./trainerPracticeApi";
 
+vi.mock("react-chessboard", () => ({
+  defaultPieces: Object.fromEntries(
+    ["wP", "wR", "wN", "wB", "wQ", "wK", "bP", "bR", "bN", "bB", "bQ", "bK"].map((pieceType) => [
+      pieceType,
+      () => <svg data-default-piece={pieceType} />,
+    ]),
+  ),
+  Chessboard: ({
+    options,
+  }: {
+    options: {
+      position: string;
+      onPieceDrop: (args: { sourceSquare: string; targetSquare: string }) => boolean;
+    };
+  }) => (
+    <div data-testid="mock-chessboard" data-position={options.position}>
+      <button
+        type="button"
+        data-testid="move-e2-e4"
+        onClick={() => options.onPieceDrop({ sourceSquare: "e2", targetSquare: "e4" })}
+      >
+        Play e4
+      </button>
+      <button
+        type="button"
+        data-testid="move-d2-d4"
+        onClick={() => options.onPieceDrop({ sourceSquare: "d2", targetSquare: "d4" })}
+      >
+        Play d4
+      </button>
+      <button
+        type="button"
+        data-testid="move-e2-e5"
+        onClick={() => options.onPieceDrop({ sourceSquare: "e2", targetSquare: "e5" })}
+      >
+        Try illegal e5
+      </button>
+    </div>
+  ),
+}));
+
 const TODAY = "2026-09-14";
 const OPENING_KEY = "B10:Caro-Kann Defense";
 const OPENING: OpeningCatalogueItemResponse = {
@@ -28,10 +69,12 @@ const OPENING: OpeningCatalogueItemResponse = {
   games_reached: 12,
   games_deepest: 9,
 };
+const STARTING_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+const AFTER_E4_FEN = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1";
 
 function item(id: string, overrides: Partial<TrainingRequirementItemResponse> = {}) {
   return {
-    fen: `fen-${id}`,
+    fen: id === "newer" ? AFTER_E4_FEN : STARTING_FEN,
     trainer_color: "white" as const,
     preferred_move_uci: "e2e4",
     encounters: 4,
@@ -82,6 +125,20 @@ function createApi(
   return {
     loadCatalogue: vi.fn().mockResolvedValue(successfulCatalogue()),
     loadRequirements: vi.fn().mockResolvedValue(requirements),
+    submitAnswer: vi.fn<TrainerPracticeApi["submitAnswer"]>(async (input) => ({
+      status: "success",
+      data: {
+        as_of: input.asOf,
+        correct: input.playedMoveUci === "e2e4",
+        item: item("answered", {
+          fen: input.fen,
+          trainer_color: input.trainerColor,
+          training_requirement: 0,
+          training_required: false,
+          correct_answers_needed: 0,
+        }),
+      },
+    })),
   };
 }
 
@@ -127,6 +184,7 @@ describe("TrainerPracticePage", () => {
     const api: TrainerPracticeApi = {
       loadCatalogue: vi.fn(() => catalogue),
       loadRequirements: vi.fn().mockResolvedValue(successfulRequirements()),
+      submitAnswer: vi.fn(),
     };
 
     renderPage(api);
@@ -188,7 +246,11 @@ describe("TrainerPracticePage", () => {
 
   it("filters the complete catalogue locally without a request per keystroke", async () => {
     const loadCatalogue = vi.fn().mockResolvedValue(successfulCatalogue());
-    const api: TrainerPracticeApi = { loadCatalogue, loadRequirements: vi.fn() };
+    const api: TrainerPracticeApi = {
+      loadCatalogue,
+      loadRequirements: vi.fn(),
+      submitAnswer: vi.fn(),
+    };
     const user = await renderReady(api);
 
     const opening = screen.getByRole("combobox", { name: "Opening" });
@@ -234,6 +296,7 @@ describe("TrainerPracticePage", () => {
     const api: TrainerPracticeApi = {
       loadCatalogue,
       loadRequirements: vi.fn().mockResolvedValue(successfulRequirements()),
+      submitAnswer: vi.fn(),
     };
     const client = createTestQueryClient();
     const user = userEvent.setup();
@@ -258,7 +321,7 @@ describe("TrainerPracticePage", () => {
     });
     await user.click(retrieveButtons[0]!);
     await user.click(retrieveButtons[1]!);
-    await screen.findAllByText("fen-one");
+    await screen.findAllByRole("heading", { name: "Position 1 of 1" });
     expect(loadCatalogue).toHaveBeenCalledTimes(1);
     expect(api.loadRequirements).toHaveBeenCalledTimes(1);
   });
@@ -272,7 +335,7 @@ describe("TrainerPracticePage", () => {
     await chooseOpening(user, "All openings");
     expect(screen.getByRole("combobox", { name: "Opening" })).toHaveValue("All openings");
     await user.click(screen.getByRole("button", { name: "Find training positions" }));
-    await screen.findByText("fen-one");
+    await screen.findByRole("heading", { name: "Position 1 of 1" });
     expect(api.loadRequirements).toHaveBeenCalledWith(
       { asOf: currentUtcDate(), openingKey: null, trainerColor: null },
       expect.any(AbortSignal),
@@ -316,7 +379,7 @@ describe("TrainerPracticePage", () => {
     await screen.findByRole("combobox", { name: "Opening" });
     await chooseOpening(firstUser, /B10 Caro-Kann Defense/);
     await firstUser.click(screen.getByRole("button", { name: "Find training positions" }));
-    await screen.findByText("fen-one");
+    await screen.findByRole("heading", { name: "Position 1 of 1" });
     firstRender.unmount();
 
     const secondUser = userEvent.setup();
@@ -324,13 +387,13 @@ describe("TrainerPracticePage", () => {
     await screen.findByRole("combobox", { name: "Opening" });
     await chooseOpening(secondUser, /B10 Caro-Kann Defense/);
     await secondUser.click(screen.getByRole("button", { name: "Find training positions" }));
-    await screen.findByText("fen-one");
+    await screen.findByRole("heading", { name: "Position 1 of 1" });
 
     expect(api.loadCatalogue).toHaveBeenCalledTimes(1);
     expect(api.loadRequirements).toHaveBeenCalledTimes(1);
   });
 
-  it("shows retrieval loading and the complete minimal response fields", async () => {
+  it("starts a board session and keeps the saved move hidden until the answer is judged", async () => {
     let resolveRequirements!: (value: TrainingRequirementsResult) => void;
     const requirements = new Promise<TrainingRequirementsResult>((resolve) => {
       resolveRequirements = resolve;
@@ -338,6 +401,19 @@ describe("TrainerPracticePage", () => {
     const api: TrainerPracticeApi = {
       loadCatalogue: vi.fn().mockResolvedValue(successfulCatalogue()),
       loadRequirements: vi.fn(() => requirements),
+      submitAnswer: vi.fn().mockResolvedValue({
+        status: "success",
+        data: {
+          as_of: TODAY,
+          correct: true,
+          item: item("complete", {
+            preferred_move_uci: "d2d4",
+            training_requirement: 0,
+            training_required: false,
+            correct_answers_needed: 0,
+          }),
+        },
+      }),
     };
     const user = await renderReady(api);
 
@@ -348,51 +424,126 @@ describe("TrainerPracticePage", () => {
     resolveRequirements(
       successfulRequirements([
         item("complete", {
-          trainer_color: "black",
           preferred_move_uci: "d2d4",
           training_updated_on: "2026-09-01",
           training_required: false,
         }),
       ]),
     );
-    await screen.findByRole("heading", { name: "training-required positions" });
+    await screen.findByRole("heading", { name: "Position 1 of 1" });
+    expect(screen.getByRole("group", { name: "Training position 1 of 1" })).toBeVisible();
+    expect(screen.getByRole("progressbar", { name: "Session progress" })).toHaveAttribute(
+      "aria-valuenow",
+      "0",
+    );
+    expect(screen.queryByText("d2d4", { exact: false })).not.toBeInTheDocument();
 
-    for (const field of [
-      "as_of",
-      "page",
-      "page_size",
-      "total",
-      "target_success_rate",
-      "game_hit_weight",
-      "game_miss_weight",
-      "training_curve",
-      "training_credit_half_life_days",
-      "fen",
-      "trainer_color",
-      "preferred_move_uci",
-      "encounters",
-      "hits",
-      "misses",
-      "observed_success_rate",
-      "game_balance",
-      "effective_training_balance",
-      "training_adjustment",
-      "training_updated_on",
-      "training_requirement",
-      "training_required",
-      "correct_answers_needed",
-    ]) {
-      expect(screen.getAllByText(field).length).toBeGreaterThan(0);
-    }
-    expect(screen.getByText("fen-complete")).toBeVisible();
-    expect(screen.getByText("d2d4")).toBeVisible();
-    expect(screen.getByText("2026-09-01")).toBeVisible();
-    expect(screen.getByText("false")).toBeVisible();
-    expect(screen.queryByRole("link")).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /board|session/i })).not.toBeInTheDocument();
+    await user.click(screen.getByTestId("move-d2-d4"));
+
+    expect(await screen.findByText("Saved move found")).toBeVisible();
+    expect(api.submitAnswer).toHaveBeenCalledWith(
+      {
+        fen: STARTING_FEN,
+        trainerColor: "white",
+        asOf: TODAY,
+        playedMoveUci: "d2d4",
+      },
+      expect.any(AbortSignal),
+    );
+    expect(screen.getAllByText("d2d4", { exact: false })).toHaveLength(2);
+
+    await user.click(screen.getByRole("button", { name: "Continue" }));
+    expect(screen.getByRole("heading", { name: "Practice recorded" })).toBeVisible();
+
+    await user.click(screen.getByRole("button", { name: "Practice updated set" }));
+    expect(await screen.findByRole("heading", { name: "Position 1 of 1" })).toBeVisible();
+    expect(api.loadRequirements).toHaveBeenCalledTimes(2);
   });
 
-  it("shows a valid empty response with its metadata", async () => {
+  it("keeps illegal input in the open position without submitting an answer", async () => {
+    const api = createApi();
+    const user = await renderReady(api);
+    await chooseOpening(user, "All openings");
+    await user.click(screen.getByRole("button", { name: "Find training positions" }));
+    await screen.findByRole("heading", { name: "Position 1 of 1" });
+
+    await user.click(screen.getByTestId("move-e2-e5"));
+
+    expect(screen.getByText("Move rejected because it is illegal.")).toBeVisible();
+    expect(screen.getByTestId("interactive-board")).toHaveAttribute("data-locked", "false");
+    expect(api.submitAnswer).not.toHaveBeenCalled();
+  });
+
+  it("reveals a saved move for review without changing the training score", async () => {
+    const api = createApi();
+    const user = await renderReady(api);
+    await chooseOpening(user, "All openings");
+    await user.click(screen.getByRole("button", { name: "Find training positions" }));
+    await screen.findByRole("heading", { name: "Position 1 of 1" });
+
+    await user.click(screen.getByRole("button", { name: "Show saved move" }));
+
+    expect(screen.getByText("Saved move revealed")).toBeVisible();
+    expect(screen.getByText("e2e4", { exact: false })).toBeVisible();
+    expect(api.submitAnswer).not.toHaveBeenCalled();
+    await user.click(screen.getByRole("button", { name: "Continue" }));
+    expect(screen.getByText("Saved moves reviewed").nextElementSibling).toHaveTextContent("1");
+  });
+
+  it("starts a fresh session when returning to a cached filter", async () => {
+    const api = createApi();
+    const user = await renderReady(api);
+    await chooseOpening(user, "All openings");
+    await user.click(screen.getByRole("button", { name: "Find training positions" }));
+    await screen.findByRole("heading", { name: "Position 1 of 1" });
+
+    await user.click(screen.getByRole("radio", { name: "White" }));
+    await user.click(screen.getByRole("button", { name: "Find training positions" }));
+    await waitFor(() => expect(api.loadRequirements).toHaveBeenCalledTimes(2));
+    expect(screen.getByText("All openings · White repertoire", { exact: false })).toBeVisible();
+
+    await user.click(screen.getByTestId("move-e2-e4"));
+    expect(await screen.findByText("Saved move found")).toBeVisible();
+
+    await user.click(screen.getByRole("radio", { name: "All colours" }));
+    await user.click(screen.getByRole("button", { name: "Find training positions" }));
+    await waitFor(() => expect(api.loadRequirements).toHaveBeenCalledTimes(3));
+
+    expect(screen.getByText("Find the move you saved")).toBeVisible();
+    expect(screen.queryByText("Saved move found")).not.toBeInTheDocument();
+    expect(screen.getByTestId("interactive-board")).toHaveAttribute("data-locked", "false");
+  });
+
+  it("records an incorrect legal move once and shows the saved repertoire move", async () => {
+    const api = createApi();
+    const user = await renderReady(api);
+    await chooseOpening(user, "All openings");
+    await user.click(screen.getByRole("button", { name: "Find training positions" }));
+    await screen.findByRole("heading", { name: "Position 1 of 1" });
+
+    await user.click(screen.getByTestId("move-d2-d4"));
+
+    expect(await screen.findByText("Different from your saved move")).toBeVisible();
+    expect(screen.getByText(/Your saved move is e4\./)).toBeVisible();
+    expect(api.submitAnswer).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not automatically retry an answer whose response is uncertain", async () => {
+    const api = createApi();
+    api.submitAnswer = vi.fn().mockResolvedValue({ status: "submission_error" });
+    const user = await renderReady(api);
+    await chooseOpening(user, "All openings");
+    await user.click(screen.getByRole("button", { name: "Find training positions" }));
+    await screen.findByRole("heading", { name: "Position 1 of 1" });
+
+    await user.click(screen.getByTestId("move-e2-e4"));
+
+    expect(await screen.findByText("Answer not confirmed")).toBeVisible();
+    expect(screen.getByText(/will not be sent again automatically/)).toBeVisible();
+    await waitFor(() => expect(api.submitAnswer).toHaveBeenCalledTimes(1));
+  });
+
+  it("shows a valid empty response as a directed empty state", async () => {
     const api = createApi(successfulRequirements([]));
     const user = await renderReady(api);
 
@@ -401,10 +552,8 @@ describe("TrainerPracticePage", () => {
     expect(
       await screen.findByText("No positions currently require training for these filters."),
     ).toBeVisible();
-    expect(screen.getByText("0")).toBeVisible();
-    expect(
-      screen.queryByRole("list", { name: "training-required positions" }),
-    ).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Nothing to practise right now" })).toBeVisible();
+    expect(screen.queryByRole("group", { name: /Training position/ })).not.toBeInTheDocument();
   });
 
   it("shows a catalogue error and can retry the catalogue request", async () => {
@@ -415,6 +564,7 @@ describe("TrainerPracticePage", () => {
     const api: TrainerPracticeApi = {
       loadCatalogue,
       loadRequirements: vi.fn().mockResolvedValue(successfulRequirements()),
+      submitAnswer: vi.fn(),
     };
     const user = userEvent.setup();
     renderPage(api);
@@ -448,6 +598,7 @@ describe("TrainerPracticePage", () => {
     const api: TrainerPracticeApi = {
       loadCatalogue: vi.fn().mockResolvedValue(successfulCatalogue()),
       loadRequirements,
+      submitAnswer: vi.fn(),
     };
     const user = await renderReady(api);
 
@@ -455,7 +606,7 @@ describe("TrainerPracticePage", () => {
     await user.click(screen.getByRole("button", { name: "Find training positions" }));
     await screen.findByText("Training-required positions could not be loaded.");
     await user.click(screen.getByRole("button", { name: "Find training positions" }));
-    await screen.findByText("fen-one");
+    await screen.findByRole("heading", { name: "Position 1 of 1" });
 
     expect(loadRequirements).toHaveBeenCalledTimes(2);
   });
@@ -476,6 +627,7 @@ describe("TrainerPracticePage", () => {
     const api: TrainerPracticeApi = {
       loadCatalogue: vi.fn().mockResolvedValue(successfulCatalogue()),
       loadRequirements,
+      submitAnswer: vi.fn(),
     };
     const user = await renderReady(api);
 
@@ -486,11 +638,14 @@ describe("TrainerPracticePage", () => {
     const firstSignal = loadRequirements.mock.calls[0]?.[1] as AbortSignal;
     expect(firstSignal.aborted).toBe(true);
 
-    resolveSecond(successfulRequirements([item("newer")]));
-    await screen.findByText("fen-newer");
+    resolveSecond(successfulRequirements([item("newer", { preferred_move_uci: "e7e5" })]));
+    await waitFor(() =>
+      expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", AFTER_E4_FEN),
+    );
     resolveFirst(successfulRequirements([item("older")]));
-    await waitFor(() => expect(screen.queryByText("fen-older")).not.toBeInTheDocument());
-    expect(screen.getByText("fen-newer")).toBeVisible();
+    await waitFor(() =>
+      expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", AFTER_E4_FEN),
+    );
   });
 
   it("aborts an active retrieval when the page unmounts", async () => {
@@ -502,6 +657,7 @@ describe("TrainerPracticePage", () => {
     const api: TrainerPracticeApi = {
       loadCatalogue: vi.fn().mockResolvedValue(successfulCatalogue()),
       loadRequirements,
+      submitAnswer: vi.fn(),
     };
     const user = userEvent.setup();
     const rendered = renderPage(api);

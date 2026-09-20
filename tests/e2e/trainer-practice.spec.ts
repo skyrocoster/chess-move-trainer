@@ -30,7 +30,7 @@ const OPENING_ITEMS = [
 ];
 
 const TRAINING_ITEM = {
-  fen: "fen-e2e",
+  fen: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
   trainer_color: "white",
   preferred_move_uci: "e2e4",
   encounters: 4,
@@ -108,12 +108,17 @@ async function navigateToTrainer(page: Page) {
   await page.goto("http://localhost:8444/");
   await page.getByRole("link", { name: "Trainer Practice" }).click();
   await expect(page).toHaveURL(/\/trainer$/);
-  await expect(page.getByRole("heading", { name: "Trainer Practice", level: 1 })).toBeVisible({
+  await expect(
+    page.getByRole("heading", { name: "Trainer Practice", level: 1 }),
+  ).toBeVisible({
     timeout: 30_000,
   });
 }
 
-async function chooseSpecificOpening(page: Page, name: RegExp | string = /B10 Caro-Kann Defense/) {
+async function chooseSpecificOpening(
+  page: Page,
+  name: RegExp | string = /B10 Caro-Kann Defense/,
+) {
   const opening = page.getByRole("combobox", { name: "Opening" });
   await opening.click();
   await page.getByRole("option", { name }).click();
@@ -134,7 +139,9 @@ async function chooseAsOfDate(page: Page, dayName = /September 14th, 2026/) {
   await dialog.getByRole("button", { name: dayName }).click();
 }
 
-test("retrieves live Caro-Kann training positions from shell navigation", async ({ page }) => {
+test("retrieves live Caro-Kann training positions from shell navigation", async ({
+  page,
+}) => {
   const catalogueRequests = await mockCatalogue(page, true);
   const trainingRequests: URL[] = [];
   page.on("request", (request) => {
@@ -149,13 +156,19 @@ test("retrieves live Caro-Kann training positions from shell navigation", async 
 
   const opening = page.getByRole("combobox", { name: "Opening" });
   await opening.click();
-  await expect(page.getByRole("option", { name: /B10 Caro-Kann Defense/ })).toBeVisible({
+  await expect(
+    page.getByRole("option", { name: /B10 Caro-Kann Defense/ }),
+  ).toBeVisible({
     timeout: 30_000,
   });
   const catalogueRequestCountAfterCompleteLoad = catalogueRequests.length;
   await opening.fill("Caro-Kann Defense");
-  await expect(page.getByRole("option", { name: /B10 Caro-Kann Defense/ })).toBeVisible();
-  expect(catalogueRequests).toHaveLength(catalogueRequestCountAfterCompleteLoad);
+  await expect(
+    page.getByRole("option", { name: /B10 Caro-Kann Defense/ }),
+  ).toBeVisible();
+  expect(catalogueRequests).toHaveLength(
+    catalogueRequestCountAfterCompleteLoad,
+  );
   await page.getByRole("option", { name: /B10 Caro-Kann Defense/ }).click();
 
   await page.getByRole("radio", { name: "Black" }).click();
@@ -179,46 +192,59 @@ test("retrieves live Caro-Kann training positions from shell navigation", async 
   expect(requestUrl.searchParams.get("trainer_color")).toBe("black");
   expect(requestUrl.searchParams.get("page")).toBe("1");
   expect(requestUrl.searchParams.get("page_size")).toBe("100");
-  expect(catalogueRequests.every((url) => url.searchParams.get("search") === null)).toBe(true);
+  expect(
+    catalogueRequests.every((url) => url.searchParams.get("search") === null),
+  ).toBe(true);
 
-  await expect(page.getByRole("heading", { name: "training-required positions" })).toBeVisible({
+  await expect(
+    page.getByRole("heading", { name: /Position 1 of \d+/ }),
+  ).toBeVisible({
     timeout: 75_000,
   });
-  await expect(page.getByRole("list", { name: "training-required positions" })).toBeVisible({
+  await expect(
+    page.getByRole("group", { name: /Training position 1 of \d+/ }),
+  ).toBeVisible({
     timeout: 75_000,
   });
-  await expect(page.getByText(REPRESENTATIVE_FEN, { exact: true })).toBeVisible({
-    timeout: 75_000,
-  });
-  await expect(page.getByText("g8f6", { exact: true })).toBeVisible({ timeout: 75_000 });
+  await expect(page.getByText(REPRESENTATIVE_FEN, { exact: true })).toHaveCount(
+    0,
+  );
+  await expect(page.getByText("g8f6", { exact: true })).toHaveCount(0);
 
-  const total = Number(
-    await page.locator("dt").filter({ hasText: "total" }).locator("xpath=..").locator("dd").innerText(),
-  );
-  expect(await page.getByRole("list", { name: "training-required positions" }).getByRole("listitem").count()).toBe(
-    total,
-  );
+  const positionHeading = await page
+    .getByRole("heading", { name: /Position 1 of \d+/ })
+    .innerText();
+  const total = Number(positionHeading.match(/of (\d+)/)?.[1]);
+  expect(total).toBeGreaterThan(0);
   const retrievedPages = [
     ...new Set(
       trainingRequests.map((url) => Number(url.searchParams.get("page"))),
     ),
   ].sort((left, right) => left - right);
-  expect(retrievedPages).toEqual(Array.from({ length: Math.ceil(total / 100) }, (_, index) => index + 1));
+  expect(retrievedPages).toEqual(
+    Array.from({ length: Math.ceil(total / 100) }, (_, index) => index + 1),
+  );
 
-  await expect(page.getByRole("heading", { name: /board|session/i })).toHaveCount(0);
-  await expect(page.getByRole("button", { name: /board|session/i })).toHaveCount(0);
-  await expect(page.getByRole("link", { name: /board|session/i })).toHaveCount(0);
+  await expect(page.getByText("Find the move you saved")).toBeVisible();
 });
 
-test("loads every catalogue page and filters locally without per-keystroke requests", async ({ page }) => {
+test("loads every catalogue page and filters locally without per-keystroke requests", async ({
+  page,
+}) => {
   const catalogueRequests = await mockCatalogue(page, true);
   await navigateToTrainer(page);
 
   const opening = page.getByRole("combobox", { name: "Opening" });
   await opening.click();
-  await expect(page.getByRole("option", { name: /B10 Caro-Kann Defense/ })).toBeVisible();
-  expect(catalogueRequests.map((url) => Number(url.searchParams.get("page")))).toEqual([1, 2]);
-  expect(catalogueRequests.every((url) => url.searchParams.get("search") === null)).toBe(true);
+  await expect(
+    page.getByRole("option", { name: /B10 Caro-Kann Defense/ }),
+  ).toBeVisible();
+  expect(
+    catalogueRequests.map((url) => Number(url.searchParams.get("page"))),
+  ).toEqual([1, 2]);
+  expect(
+    catalogueRequests.every((url) => url.searchParams.get("search") === null),
+  ).toBe(true);
   const completeLoadRequestCount = catalogueRequests.length;
   const findButton = page.locator("form").getByRole("button", {
     name: "Find training positions",
@@ -226,12 +252,16 @@ test("loads every catalogue page and filters locally without per-keystroke reque
   });
 
   await opening.pressSequentially("Italian");
-  await expect(page.getByRole("option", { name: /C20 Italian Game/ })).toBeVisible();
+  await expect(
+    page.getByRole("option", { name: /C20 Italian Game/ }),
+  ).toBeVisible();
   expect(catalogueRequests).toHaveLength(completeLoadRequestCount);
   await expect(findButton).toBeDisabled();
 });
 
-test("selects committed text on focus or click, then typing replaces it", async ({ page }) => {
+test("selects committed text on focus or click, then typing replaces it", async ({
+  page,
+}) => {
   const catalogueRequests = await mockCatalogue(page);
   await navigateToTrainer(page);
 
@@ -239,7 +269,12 @@ test("selects committed text on focus or click, then typing replaces it", async 
   await expect(opening).toHaveValue("Caro-Kann Defense");
   await opening.click();
   await expect
-    .poll(async () => opening.evaluate((input: HTMLInputElement) => [input.selectionStart, input.selectionEnd]))
+    .poll(async () =>
+      opening.evaluate((input: HTMLInputElement) => [
+        input.selectionStart,
+        input.selectionEnd,
+      ]),
+    )
     .toEqual([0, "Caro-Kann Defense".length]);
   await opening.pressSequentially("no-match");
   await expect(opening).toHaveValue("no-match");
@@ -252,12 +287,16 @@ test("selects committed text on focus or click, then typing replaces it", async 
   expect(catalogueRequests).toHaveLength(1);
 });
 
-test("clearing a specific opening is uncommitted rather than All openings", async ({ page }) => {
+test("clearing a specific opening is uncommitted rather than All openings", async ({
+  page,
+}) => {
   await mockCatalogue(page);
   await navigateToTrainer(page);
 
   const opening = await chooseSpecificOpening(page);
-  const findButton = page.getByRole("button", { name: "Find training positions" });
+  const findButton = page.getByRole("button", {
+    name: "Find training positions",
+  });
   await expect(findButton).toBeEnabled();
   await page.getByRole("button", { name: "Clear selection" }).click();
   await expect(opening).toHaveValue("");
@@ -270,13 +309,18 @@ test("clearing a specific opening is uncommitted rather than All openings", asyn
   await expect(allOption).not.toHaveAttribute("data-selected");
 });
 
-test("keeps All openings and Learner colour independent in the request", async ({ page }) => {
+test("keeps All openings and Learner colour independent in the request", async ({
+  page,
+}) => {
   await mockCatalogue(page);
   const trainingRequests: URL[] = [];
-  await page.route("**/api/positions/training-requirements**", async (route) => {
-    trainingRequests.push(new URL(route.request().url()));
-    await fulfillJson(route, trainingResponse());
-  });
+  await page.route(
+    "**/api/positions/training-requirements**",
+    async (route) => {
+      trainingRequests.push(new URL(route.request().url()));
+      await fulfillJson(route, trainingResponse());
+    },
+  );
   await navigateToTrainer(page);
 
   const opening = await chooseAllOpenings(page);
@@ -284,7 +328,9 @@ test("keeps All openings and Learner colour independent in the request", async (
   await expect(opening).toHaveValue("All openings");
   await chooseAsOfDate(page);
   await page.getByRole("button", { name: "Find training positions" }).click();
-  await expect(page.getByText("fen-e2e", { exact: true })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Position 1 of 1" }),
+  ).toBeVisible();
 
   const requestUrl = trainingRequests[0];
   expect(requestUrl).toBeDefined();
@@ -303,54 +349,88 @@ test("keeps loading and empty training results in place", async ({ page }) => {
   const trainingGate = new Promise<void>((resolve) => {
     releaseTraining = resolve;
   });
-  await page.route("**/api/positions/training-requirements**", async (route) => {
-    await trainingGate;
-    await fulfillJson(route, trainingResponse());
-  });
+  await page.route(
+    "**/api/positions/training-requirements**",
+    async (route) => {
+      await trainingGate;
+      await fulfillJson(route, trainingResponse());
+    },
+  );
   await navigateToTrainer(page);
 
   await chooseAllOpenings(page);
   await page.getByRole("button", { name: "Find training positions" }).click();
-  await expect(page.getByRole("status")).toHaveText("Loading training-required positions...");
-  await expect(page.getByRole("heading", { name: "Trainer Practice", level: 1 })).toBeVisible();
+  await expect(page.getByRole("status")).toHaveText(
+    "Loading training-required positions...",
+  );
+  await expect(
+    page.getByRole("heading", { name: "Trainer Practice", level: 1 }),
+  ).toBeVisible();
   await expect(page.getByRole("combobox", { name: "Opening" })).toBeVisible();
   releaseTraining();
-  await expect(page.getByText("fen-e2e", { exact: true })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Position 1 of 1" }),
+  ).toBeVisible();
 
   await page.unroute("**/api/positions/training-requirements**");
-  await page.route("**/api/positions/training-requirements**", async (route) => {
-    await fulfillJson(route, trainingResponse([], 0));
-  });
+  await page.route(
+    "**/api/positions/training-requirements**",
+    async (route) => {
+      await fulfillJson(route, trainingResponse([], 0));
+    },
+  );
   await page.getByRole("radio", { name: "Black" }).click();
   await page.getByRole("button", { name: "Find training positions" }).click();
-  await expect(page.getByText("No positions currently require training for these filters.")).toBeVisible();
-  await expect(page.getByRole("heading", { name: "training-required positions" })).toBeVisible();
-  await expect(page.getByRole("list", { name: "training-required positions" })).toHaveCount(0);
+  await expect(
+    page.getByText(
+      "No positions currently require training for these filters.",
+    ),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Nothing to practise right now" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("group", { name: /Training position/ }),
+  ).toHaveCount(0);
 });
 
-test("keeps stale-date and retrieval-error feedback in place", async ({ page }) => {
+test("keeps stale-date and retrieval-error feedback in place", async ({
+  page,
+}) => {
   await mockCatalogue(page);
   let responseStatus = 409;
-  await page.route("**/api/positions/training-requirements**", async (route) => {
-    await fulfillJson(
-      route,
-      responseStatus === 409
-        ? { code: "training_requirements_stale", message: "stale test response" }
-        : TRAINING_ERROR,
-      responseStatus,
-    );
-  });
+  await page.route(
+    "**/api/positions/training-requirements**",
+    async (route) => {
+      await fulfillJson(
+        route,
+        responseStatus === 409
+          ? {
+              code: "training_requirements_stale",
+              message: "stale test response",
+            }
+          : TRAINING_ERROR,
+        responseStatus,
+      );
+    },
+  );
   await navigateToTrainer(page);
 
   await chooseAllOpenings(page);
   await page.getByRole("button", { name: "Find training positions" }).click();
-  await expect(page.getByRole("alert")).toContainText("Training requirements changed after this date.");
-  await expect(page.getByRole("heading", { name: "Trainer Practice", level: 1 })).toBeVisible();
+  await expect(page.getByRole("alert")).toContainText(
+    "Training requirements changed after this date.",
+  );
+  await expect(
+    page.getByRole("heading", { name: "Trainer Practice", level: 1 }),
+  ).toBeVisible();
   await expect(page.getByRole("combobox", { name: "Opening" })).toBeVisible();
 
   responseStatus = 503;
   await page.getByRole("radio", { name: "Black" }).click();
   await page.getByRole("button", { name: "Find training positions" }).click();
-  await expect(page.getByRole("alert")).toContainText("Training-required positions could not be loaded.");
+  await expect(page.getByRole("alert")).toContainText(
+    "Training-required positions could not be loaded.",
+  );
   await expect(page.getByRole("combobox", { name: "Opening" })).toBeVisible();
 });

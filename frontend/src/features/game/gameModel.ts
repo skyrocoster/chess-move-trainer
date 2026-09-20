@@ -1,7 +1,13 @@
-import { Chess, type PieceSymbol, type Square } from "chess.js";
+import { Chess } from "chess.js";
 
 import type { GameDetailResponse } from "../../api/client";
-import type { ChessSide, Fen, Ply, San } from "../chess/chessPrimitives";
+import {
+  parseUciMove,
+  type ChessSide,
+  type Fen,
+  type Ply,
+  type San,
+} from "../chess/chessPrimitives";
 
 export type GameMainLineOccurrence = {
   readonly ply: Ply;
@@ -17,21 +23,8 @@ export type GameMainLineModel = {
   readonly occurrences: readonly GameMainLineOccurrence[];
 };
 
-const UCI_PATTERN = /^([a-h][1-8])([a-h][1-8])([qrbn])?$/;
-
 export function sanFromFenAndUci(fen: Fen, uci: string): string {
-  const match = UCI_PATTERN.exec(uci);
-  if (match === null) {
-    throw new Error(`Invalid UCI move: ${uci}`);
-  }
-
-  const from = match[1] as Square;
-  const to = match[2] as Square;
-  const promotion = match[3];
-  const move =
-    promotion === undefined ? { from, to } : { from, to, promotion: promotion as PieceSymbol };
-
-  return new Chess(fen).move(move).san;
+  return new Chess(fen).move(parseUciMove(uci)).san;
 }
 
 export function mapGameDetailResponse(response: GameDetailResponse): GameMainLineModel {
