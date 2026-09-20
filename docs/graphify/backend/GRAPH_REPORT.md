@@ -306,12 +306,12 @@ Nodes (4): health(), get, HealthResponse, BaseModel
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `AnalysisValidationError` connect `Community 4` to `Community 16`, `Community 26`, `Community 14`, `Community 23`?**
-  _High betweenness centrality (0.026) - this node is a cross-community bridge._
-- **Why does `run_session()` connect `Community 18` to `Community 9`, `Community 13`, `Community 17`, `Community 23`, `Community 30`?**
-  _High betweenness centrality (0.026) - this node is a cross-community bridge._
 - **Why does `get_or_compute()` connect `Community 10` to `Community 3`, `Community 6`, `Community 7`, `Community 40`, `Community 11`, `Community 45`, `Community 20`, `Community 27`, `Community 31`?**
-  _High betweenness centrality (0.020) - this node is a cross-community bridge._
+  _High betweenness centrality (0.019) - this node is a cross-community bridge._
+- **Why does `AnalysisRunLock` connect `Community 30` to `Community 16`, `Community 18`, `Community 15`, `Community 23`?**
+  _High betweenness centrality (0.017) - this node is a cross-community bridge._
+- **Why does `position_key_from_fen()` connect `Community 14` to `Community 9`, `Community 12`, `Community 13`, `Community 15`, `Community 16`, `Community 23`, `Community 25`, `Community 26`?**
+  _High betweenness centrality (0.017) - this node is a cross-community bridge._
 - **Are the 3 inferred relationships involving `AnalysisValidationError` (e.g. with `AnalysisCandidate` and `AnalysisProfile`) actually correct?**
   _`AnalysisValidationError` has 3 INFERRED edges - model-reasoned connections that need verification._
 - **Are the 14 inferred relationships involving `AnalysisProfile` (e.g. with `_run_budget()` and `AnalysisValidationError`) actually correct?**

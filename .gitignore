@@ -1,6 +1,7 @@
 # Python
 __pycache__/
 *.py[cod]
+*.egg-info/
 .pytest_cache/
 test-results/
 .playwright-mcp/
@@ -39,12 +40,17 @@ Thumbs.db
 *.db-wal
 *.db.backup.*
 *.db.analysis.lock
+*.db.stockfish.lock
+
+# Generated benchmark reports
+docs/benchmarks/API/*Z-*.json
 
 # Tool-local configuration and dependencies
 .claude/
 .cursor/skills/
 .agents/skills/*
 .opencode/*
+!.opencode/README.md
 !.opencode/package.json
 !.opencode/package-lock.json
 !.opencode/commands/

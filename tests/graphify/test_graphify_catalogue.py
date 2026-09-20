@@ -448,7 +448,7 @@ def test_real_catalogue_has_six_exact_five_artifact_bundles() -> None:
     assert any(path.endswith(".sql") for path in core_manifest)
 
 
-def test_stage_two_signpost_links_every_bundle_artifact() -> None:
+def test_stage_two_signpost_is_a_thin_bundle_index() -> None:
     readme = (PROJECT_ROOT / "docs/graphify/README.md").read_text(encoding="utf-8")
     bundles = (
         "repository",
@@ -458,21 +458,11 @@ def test_stage_two_signpost_links_every_bundle_artifact() -> None:
         "tests",
         "agent-workflow",
     )
-    artifacts = (
-        "GRAPH_REPORT.md",
-        "graph.html",
-        "graph.json",
-        ".graphify_analysis.json",
-        "manifest.json",
-    )
     for bundle in bundles:
-        assert f"docs/graphify/{bundle}/" in readme
-        for artifact in artifacts:
-            assert f"]({bundle}/{artifact})" in readme
-    assert "complete `src/` core/worker Python package" in readme
-    assert "Markdown and YAML" in readme
-    assert "data/database/chess.db" in readme
-    assert "A small edit in a known" in readme
+        assert f"]({bundle}/GRAPH_REPORT.md)" in readme
+    assert "AGENTS.md" in readme
+    assert "src/tools/graphify_catalogue.py" in readme
+    assert len(readme.splitlines()) <= 20
 
 
 def test_stage_two_authority_and_commit_fail_closed_ordering() -> None:
