@@ -83,21 +83,21 @@ const createQueryKey = <TOptions extends Options>(
   return [params];
 };
 
-export const getAnalysisQueryKey = (options: Options<GetAnalysisData>) =>
-  createQueryKey("getAnalysis", options);
+export const getHealthQueryKey = (options?: Options<GetHealthData>) =>
+  createQueryKey("getHealth", options);
 
 /**
- * Get Analysis
+ * Health
  */
-export const getAnalysisOptions = (options: Options<GetAnalysisData>) =>
+export const getHealthOptions = (options?: Options<GetHealthData>) =>
   queryOptions<
-    GetAnalysisResponse,
-    GetAnalysisError,
-    GetAnalysisResponse,
-    ReturnType<typeof getAnalysisQueryKey>
+    GetHealthResponse,
+    DefaultError,
+    GetHealthResponse,
+    ReturnType<typeof getHealthQueryKey>
   >({
     queryFn: async ({ queryKey, signal }) => {
-      const { data } = await getAnalysis({
+      const { data } = await getHealth({
         ...options,
         ...queryKey[0],
         signal,
@@ -105,7 +105,7 @@ export const getAnalysisOptions = (options: Options<GetAnalysisData>) =>
       });
       return data;
     },
-    queryKey: getAnalysisQueryKey(options),
+    queryKey: getHealthQueryKey(options),
   });
 
 export const getGamesQueryKey = (options?: Options<GetGamesData>) =>
@@ -153,21 +153,21 @@ export const getGameOptions = (options: Options<GetGameData>) =>
     queryKey: getGameQueryKey(options),
   });
 
-export const getHealthQueryKey = (options?: Options<GetHealthData>) =>
-  createQueryKey("getHealth", options);
+export const getAnalysisQueryKey = (options: Options<GetAnalysisData>) =>
+  createQueryKey("getAnalysis", options);
 
 /**
- * Health
+ * Get Analysis
  */
-export const getHealthOptions = (options?: Options<GetHealthData>) =>
+export const getAnalysisOptions = (options: Options<GetAnalysisData>) =>
   queryOptions<
-    GetHealthResponse,
-    DefaultError,
-    GetHealthResponse,
-    ReturnType<typeof getHealthQueryKey>
+    GetAnalysisResponse,
+    GetAnalysisError,
+    GetAnalysisResponse,
+    ReturnType<typeof getAnalysisQueryKey>
   >({
     queryFn: async ({ queryKey, signal }) => {
-      const { data } = await getHealth({
+      const { data } = await getAnalysis({
         ...options,
         ...queryKey[0],
         signal,
@@ -175,24 +175,24 @@ export const getHealthOptions = (options?: Options<GetHealthData>) =>
       });
       return data;
     },
-    queryKey: getHealthQueryKey(options),
+    queryKey: getAnalysisQueryKey(options),
   });
 
-export const getOpeningsQueryKey = (options?: Options<GetOpeningsData>) =>
-  createQueryKey("getOpenings", options);
+export const getPreferredMovesQueryKey = (options: Options<GetPreferredMovesData>) =>
+  createQueryKey("getPreferredMoves", options);
 
 /**
- * Get Openings
+ * Get Preferred Moves
  */
-export const getOpeningsOptions = (options?: Options<GetOpeningsData>) =>
+export const getPreferredMovesOptions = (options: Options<GetPreferredMovesData>) =>
   queryOptions<
-    GetOpeningsResponse,
-    GetOpeningsError,
-    GetOpeningsResponse,
-    ReturnType<typeof getOpeningsQueryKey>
+    GetPreferredMovesResponse,
+    GetPreferredMovesError,
+    GetPreferredMovesResponse,
+    ReturnType<typeof getPreferredMovesQueryKey>
   >({
     queryFn: async ({ queryKey, signal }) => {
-      const { data } = await getOpenings({
+      const { data } = await getPreferredMoves({
         ...options,
         ...queryKey[0],
         signal,
@@ -200,32 +200,7 @@ export const getOpeningsOptions = (options?: Options<GetOpeningsData>) =>
       });
       return data;
     },
-    queryKey: getOpeningsQueryKey(options),
-  });
-
-export const getOpeningByKeyQueryKey = (options: Options<GetOpeningByKeyData>) =>
-  createQueryKey("getOpeningByKey", options);
-
-/**
- * Get Opening By Key
- */
-export const getOpeningByKeyOptions = (options: Options<GetOpeningByKeyData>) =>
-  queryOptions<
-    GetOpeningByKeyResponse,
-    GetOpeningByKeyError,
-    GetOpeningByKeyResponse,
-    ReturnType<typeof getOpeningByKeyQueryKey>
-  >({
-    queryFn: async ({ queryKey, signal }) => {
-      const { data } = await getOpeningByKey({
-        ...options,
-        ...queryKey[0],
-        signal,
-        throwOnError: true,
-      });
-      return data;
-    },
-    queryKey: getOpeningByKeyQueryKey(options),
+    queryKey: getPreferredMovesQueryKey(options),
   });
 
 export const getPositionInsightQueryKey = (options: Options<GetPositionInsightData>) =>
@@ -281,21 +256,21 @@ export const getPositionTrainingRequirementsOptions = (
     queryKey: getPositionTrainingRequirementsQueryKey(options),
   });
 
-export const getPreferredMovesQueryKey = (options: Options<GetPreferredMovesData>) =>
-  createQueryKey("getPreferredMoves", options);
+export const getOpeningsQueryKey = (options?: Options<GetOpeningsData>) =>
+  createQueryKey("getOpenings", options);
 
 /**
- * Get Preferred Moves
+ * Get Openings
  */
-export const getPreferredMovesOptions = (options: Options<GetPreferredMovesData>) =>
+export const getOpeningsOptions = (options?: Options<GetOpeningsData>) =>
   queryOptions<
-    GetPreferredMovesResponse,
-    GetPreferredMovesError,
-    GetPreferredMovesResponse,
-    ReturnType<typeof getPreferredMovesQueryKey>
+    GetOpeningsResponse,
+    GetOpeningsError,
+    GetOpeningsResponse,
+    ReturnType<typeof getOpeningsQueryKey>
   >({
     queryFn: async ({ queryKey, signal }) => {
-      const { data } = await getPreferredMoves({
+      const { data } = await getOpenings({
         ...options,
         ...queryKey[0],
         signal,
@@ -303,5 +278,30 @@ export const getPreferredMovesOptions = (options: Options<GetPreferredMovesData>
       });
       return data;
     },
-    queryKey: getPreferredMovesQueryKey(options),
+    queryKey: getOpeningsQueryKey(options),
+  });
+
+export const getOpeningByKeyQueryKey = (options: Options<GetOpeningByKeyData>) =>
+  createQueryKey("getOpeningByKey", options);
+
+/**
+ * Get Opening By Key
+ */
+export const getOpeningByKeyOptions = (options: Options<GetOpeningByKeyData>) =>
+  queryOptions<
+    GetOpeningByKeyResponse,
+    GetOpeningByKeyError,
+    GetOpeningByKeyResponse,
+    ReturnType<typeof getOpeningByKeyQueryKey>
+  >({
+    queryFn: async ({ queryKey, signal }) => {
+      const { data } = await getOpeningByKey({
+        ...options,
+        ...queryKey[0],
+        signal,
+        throwOnError: true,
+      });
+      return data;
+    },
+    queryKey: getOpeningByKeyQueryKey(options),
   });

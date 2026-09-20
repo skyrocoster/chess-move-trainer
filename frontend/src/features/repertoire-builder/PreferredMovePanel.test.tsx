@@ -254,9 +254,7 @@ describe("PreferredMovePanel selected-transition composition", () => {
       />,
     );
 
-    expect(screen.getByTestId("preferred-status")).toHaveTextContent(
-      "Loading position context...",
-    );
+    expect(screen.getByTestId("preferred-status")).toHaveTextContent("Loading position context...");
     expect(screen.queryByTestId("preferred-context")).not.toBeInTheDocument();
   });
 

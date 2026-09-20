@@ -1,17 +1,11 @@
 from __future__ import annotations
 
-from fastapi.routing import APIRoute
-
 from backend.app.main import app
 
 
 def test_plural_route_exists_without_singular_routes() -> None:
-    routes = {
-        (route.path, method)
-        for route in app.routes
-        if isinstance(route, APIRoute)
-        for method in route.methods
-    }
+    paths = app.openapi()["paths"]
+    routes = {(path, method.upper()) for path, item in paths.items() for method in item}
 
     assert ("/api/preferred-moves", "GET") in routes
     assert ("/api/preferred-move", "GET") not in routes
@@ -20,28 +14,7 @@ def test_plural_route_exists_without_singular_routes() -> None:
 
 
 def test_routes_use_expected_operation_names() -> None:
-    get_route = next(
-        route
-        for route in app.routes
-        if isinstance(route, APIRoute)
-        and route.path == "/api/preferred-moves"
-        and "GET" in route.methods
-    )
-    put_route = next(
-        route
-        for route in app.routes
-        if isinstance(route, APIRoute)
-        and route.path == "/api/preferred-moves"
-        and "PUT" in route.methods
-    )
-    delete_route = next(
-        route
-        for route in app.routes
-        if isinstance(route, APIRoute)
-        and route.path == "/api/preferred-moves"
-        and "DELETE" in route.methods
-    )
-
-    assert get_route.operation_id == "getPreferredMoves"
-    assert put_route.operation_id == "putPreferredMoves"
-    assert delete_route.operation_id == "deletePreferredMoves"
+    operations = app.openapi()["paths"]["/api/preferred-moves"]
+    assert operations["get"]["operationId"] == "getPreferredMoves"
+    assert operations["put"]["operationId"] == "putPreferredMoves"
+    assert operations["delete"]["operationId"] == "deletePreferredMoves"

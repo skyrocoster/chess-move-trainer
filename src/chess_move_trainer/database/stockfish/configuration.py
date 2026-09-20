@@ -9,7 +9,7 @@ from types import MappingProxyType
 from ..analysis import AnalysisQuality
 
 STOCKFISH_NAME = "Stockfish"
-STOCKFISH_VERSION = "18"
+STOCKFISH_VERSION = "19"
 CONFIGURATION_VERSION = 1
 MULTI_PV = 5
 THREADS = 6

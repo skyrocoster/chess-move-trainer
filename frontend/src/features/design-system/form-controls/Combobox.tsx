@@ -1,11 +1,6 @@
 import { Combobox as BaseCombobox } from "@base-ui/react/combobox";
 import { ChevronDown, X } from "lucide-react";
-import type {
-  CSSProperties,
-  FocusEventHandler,
-  MouseEventHandler,
-  ReactNode,
-} from "react";
+import type { CSSProperties, FocusEventHandler, MouseEventHandler, ReactNode } from "react";
 import { useCallback, useMemo } from "react";
 
 import styles from "./FormControls.module.css";
@@ -56,10 +51,7 @@ export function Combobox({
   ariaLabel,
   preferredPopupWidth,
 }: ComboboxProps) {
-  const visibleOptions = useMemo(
-    () => (loading ? [] : options),
-    [loading, options],
-  );
+  const visibleOptions = useMemo(() => (loading ? [] : options), [loading, options]);
   const optionByValue = useMemo(
     () => new Map(visibleOptions.map((option) => [option.value, option] as const)),
     [visibleOptions],
@@ -68,10 +60,7 @@ export function Combobox({
     (optionValue: string) => optionByValue.get(optionValue)?.label ?? optionValue,
     [optionByValue],
   );
-  const items = useMemo(
-    () => visibleOptions.map((option) => option.value),
-    [visibleOptions],
-  );
+  const items = useMemo(() => visibleOptions.map((option) => option.value), [visibleOptions]);
   const filterOption = useCallback(
     (optionValue: string, query: string) =>
       labelFor(optionValue).toLocaleLowerCase().includes(query.toLocaleLowerCase()),

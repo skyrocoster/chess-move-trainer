@@ -12,7 +12,7 @@ export interface CatalogueLink {
 
 export interface CatalogueSection {
   heading: string;
-  body: ReactNode;
+  body?: ReactNode;
   links?: CatalogueLink[];
 }
 
@@ -41,7 +41,7 @@ export function FamilyPage({ family, intro, caution, sections }: FamilyPageProps
       {sections.map((section) => (
         <section className={styles.section} key={section.heading}>
           <h2 className={styles.sectionTitle}>{section.heading}</h2>
-          <p className={styles.sectionBody}>{section.body}</p>
+          {section.body ? <p className={styles.sectionBody}>{section.body}</p> : null}
           {section.links && section.links.length > 0 ? (
             <ul className={styles.linkList}>
               {section.links.map((link) => (

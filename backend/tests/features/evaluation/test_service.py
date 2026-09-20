@@ -126,7 +126,7 @@ def test_outdated_result_stays_readable(connection: sqlite3.Connection, profile)
     stale_profile = AnalysisProfile(
         profile_id=QUALIFIED_PROFILE_ID,
         engine_binary_sha256="b" * 64,
-        engine_name="Stockfish 18 fake",
+        engine_name="Stockfish 19 fake",
         engine_version="18-test",
         node_budget=200_000,
     )
@@ -286,7 +286,7 @@ def test_run_session_rejects_too_many_workers_and_wrong_profile(
     other = AnalysisProfile(
         profile_id="some-other-profile",
         engine_binary_sha256="a" * 64,
-        engine_name="Stockfish 18 fake",
+        engine_name="Stockfish 19 fake",
         engine_version="18-test",
         node_budget=200_000,
     )

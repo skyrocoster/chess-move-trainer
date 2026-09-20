@@ -69,6 +69,21 @@ one is already occupied. The containers have no automatic restart policy: `resta
   unless you run `rebuild`.
 - Avoid `docker compose down`; it removes the persistent containers and is unnecessary for normal development.
 
+## Container users and caches
+
+The backend and worker images run as the non-root `app` user and the
+frontend/Storybook images run as `node`. Two leftovers from the older
+root-based images can break a first start after that hardening:
+
+- The `frontend-node-modules` and `storybook-node-modules` volumes may still
+  hold root-owned files, which makes the entrypoint's lockfile refresh fail
+  with `Permission denied`. Reset only those regenerable caches once with
+  `docker compose down -v` and then `dev.ps1 start`; no user data is stored in
+  them.
+- A stale root-owned `data/database/chess.db.stockfish.lock` blocks the worker
+  the same way. Deleting that abandoned 0-byte lock file lets the worker
+  recreate it on its next poll.
+
 ## AI agent behavior
 
 The stack is shared development infrastructure, not temporary setup for each task. Repository agents manage these

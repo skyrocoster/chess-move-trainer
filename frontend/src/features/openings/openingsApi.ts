@@ -11,12 +11,7 @@ import type {
 
 export type OpeningLineLibraryScalar = string | number | boolean | null;
 export type OpeningLineLibraryFilterType =
-  | "search"
-  | "select"
-  | "multiselect"
-  | "toggle"
-  | "range"
-  | "custom";
+  "search" | "select" | "multiselect" | "toggle" | "range" | "custom";
 export type OpeningLineLibraryNodeKind = "group" | "line" | "reference";
 
 export interface OpeningLineLibraryFilterOption {
@@ -66,9 +61,7 @@ export interface OpeningLineLibraryReferenceNode extends OpeningLineLibraryNodeB
 }
 
 export type OpeningLineLibraryNode =
-  | OpeningLineLibraryGroupNode
-  | OpeningLineLibraryLineNode
-  | OpeningLineLibraryReferenceNode;
+  OpeningLineLibraryGroupNode | OpeningLineLibraryLineNode | OpeningLineLibraryReferenceNode;
 
 export interface OpeningLineLibraryResponse {
   roots: readonly string[];
@@ -80,9 +73,7 @@ export interface OpeningLineLibraryResponse {
 }
 
 export type OpeningLineLibraryErrorCode =
-  | "invalid_filter"
-  | "line_library_unavailable"
-  | "unexpected_failure";
+  "invalid_filter" | "line_library_unavailable" | "unexpected_failure";
 
 export interface OpeningLineLibraryErrorResponse {
   code: OpeningLineLibraryErrorCode;
@@ -95,8 +86,7 @@ export type OpeningLineLibraryFailure = {
 };
 
 export type OpeningLineLibraryResult =
-  | { status: "success"; data: OpeningLineLibraryResponse }
-  | OpeningLineLibraryFailure;
+  { status: "success"; data: OpeningLineLibraryResponse } | OpeningLineLibraryFailure;
 
 function filterKind(type: OpeningLineLibraryFilterType): LineLibraryFilterKind {
   if (type === "search") return "search";

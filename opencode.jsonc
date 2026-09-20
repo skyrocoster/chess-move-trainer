@@ -12,7 +12,7 @@
   "mcp": {
     "playwright": {
       "type": "local",
-      "command": ["npx", "-y", "@playwright/mcp@latest"],
+      "command": ["npx", "--no-install", "playwright-mcp"],
       "enabled": true
     }
   }

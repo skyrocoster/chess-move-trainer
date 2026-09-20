@@ -11,10 +11,7 @@ export const ALL_OPENINGS_VALUE = "__cmt_all_openings__";
  * openings, and mounting them all makes the first click feel stuck. */
 export const OPENING_SEARCH_VISIBLE_LIMIT = 100;
 
-export type OpeningSelection =
-  | null
-  | { kind: "specific"; key: string }
-  | { kind: "all" };
+export type OpeningSelection = null | { kind: "specific"; key: string } | { kind: "all" };
 
 export type OpeningSearchComboboxProps = {
   openings: OpeningCatalogueItemResponse[];

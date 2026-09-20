@@ -21,8 +21,8 @@ export const Docs: Story = {
         <>
           The existing design-token layer that every production component consumes. Foundations are
           defined as CSS custom properties and are already fully documented by three reference
-          specimen stories; this page gives plain-English notes and points at the specimens
-          instead of duplicating them.
+          specimen stories; this page gives plain-English notes and points at the specimens instead
+          of duplicating them.
         </>
       }
       sections={[
@@ -30,12 +30,11 @@ export const Docs: Story = {
           heading: "Colours and surface tokens",
           body: (
             <>
-              Base colours come from the exported Material dark theme
-              (--md-sys-color-* roles); it is what the Storybook preview applies via the
-              `&quot;dark&quot;` wrapper class. Semantic feedback accents (information, success,
-              warning, error) come from cmt-tokens.css (--cmt-*). There is currently only a dark
-              theme in the Storybook preview; light variants exist as theme files but are not
-              exercised by stories.
+              Base colours come from the exported Material dark theme (--md-sys-color-* roles); it
+              is what the Storybook preview applies via the `&quot;dark&quot;` wrapper class.
+              Semantic feedback accents (information, success, warning, error) come from
+              cmt-tokens.css (--cmt-*). There is currently only a dark theme in the Storybook
+              preview; light variants exist as theme files but are not exercised by stories.
             </>
           ),
           links: [
@@ -83,14 +82,15 @@ export const Docs: Story = {
           body: (
             <>
               The responsive accessibility review walks the specimens through the shared viewport
-              catalogue; the responsive boundary checks for actual components live with their
-              owning stories (see Surfaces and Layout).
+              catalogue; the responsive boundary checks for actual components live with their owning
+              stories (see Surfaces and Layout).
             </>
           ),
           links: [
             {
               label: "Reference/Reviews/Responsive Accessibility — Responsive Accessibility Review",
-              storyId: "reference-reviews-responsive-accessibility--responsive-accessibility-review",
+              storyId:
+                "reference-reviews-responsive-accessibility--responsive-accessibility-review",
             },
           ],
         },

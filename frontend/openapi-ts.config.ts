@@ -9,8 +9,10 @@ import { defineConfig } from "@hey-api/openapi-ts";
  * The client-fetch plugin runs in its default bundled (self-contained) mode:
  * the runtime client is vendored into the output directory, so no separate
  * client package is needed. Output cleaning is confined to `src/api/generated/`
- * and never touches the handwritten `src/api/client.ts`. Log files are
- * disabled so generation leaves no artifact outside the output directory.
+ * and never touches the handwritten `src/api/client.ts`. Cleaning is disabled
+ * because the checked-in `openapi.json` input intentionally lives beside the
+ * generated files. Log files are disabled so generation leaves no artifact
+ * outside the output directory.
  *
  * The CONSUMER-01 TanStack Query plugin emits only query keys and query
  * options. Mutation and infinite-query machinery is explicitly disabled;
@@ -24,7 +26,10 @@ export default defineConfig({
   logs: {
     file: false,
   },
-  output: "src/api/generated",
+  output: {
+    path: "src/api/generated",
+    clean: false,
+  },
   plugins: [
     "@hey-api/typescript",
     "@hey-api/sdk",

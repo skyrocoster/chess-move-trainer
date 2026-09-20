@@ -223,7 +223,11 @@ describe("LineLibrary", () => {
     expect(required).toBeChecked();
 
     await user.click(screen.getByRole("button", { name: "Apply filters" }));
-    expect(onFiltersChange).toHaveBeenLastCalledWith({ query: "", scope: "recent", required: true });
+    expect(onFiltersChange).toHaveBeenLastCalledWith({
+      query: "",
+      scope: "recent",
+      required: true,
+    });
   });
 
   it("provides initial loading and empty states and keeps tree keyboard focus", async () => {

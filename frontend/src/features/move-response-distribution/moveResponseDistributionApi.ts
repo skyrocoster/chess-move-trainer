@@ -21,18 +21,14 @@ export type MoveResponseDistributionResponse = {
 };
 
 export type MoveResponseDistributionFailureCode =
-  | "invalid_fen"
-  | "invalid_color"
-  | "move_response_distribution_unavailable"
-  | "unexpected_failure";
+  "invalid_fen" | "invalid_color" | "move_response_distribution_unavailable" | "unexpected_failure";
 
 export type MoveResponseDistributionFailure = {
   status: MoveResponseDistributionFailureCode;
 };
 
 export type MoveResponseDistributionResult =
-  | { status: "success"; data: MoveResponseDistributionResponse }
-  | MoveResponseDistributionFailure;
+  { status: "success"; data: MoveResponseDistributionResponse } | MoveResponseDistributionFailure;
 
 export type MoveResponseDistributionClient = (
   fen: Fen,

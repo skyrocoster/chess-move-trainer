@@ -12,8 +12,7 @@ import type {
 export const LINE_LIBRARY_ROOT_ID = "__line-library-root__";
 
 export type LineLibraryTreeItem =
-  | { kind: "root"; id: typeof LINE_LIBRARY_ROOT_ID }
-  | LineLibraryNode;
+  { kind: "root"; id: typeof LINE_LIBRARY_ROOT_ID } | LineLibraryNode;
 
 export function isSelectableNode(node: LineLibraryNode): boolean {
   return (

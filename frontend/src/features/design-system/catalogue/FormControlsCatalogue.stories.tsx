@@ -67,19 +67,20 @@ function shell(children: React.ReactNode) {
 function ControlledSelectHarness() {
   const [value, setValue] = useState<string | null>("repertoire");
   return (
-    <Select
-      ariaLabel="Analysis mode"
-      options={OPTIONS}
-      value={value}
-      onValueChange={setValue}
-    />
+    <Select ariaLabel="Analysis mode" options={OPTIONS} value={value} onValueChange={setValue} />
   );
 }
 
 function ControlledSelectLoadingHarness() {
   const [value, setValue] = useState<string | null>(null);
   return (
-    <Select ariaLabel="Loading analysis mode" options={OPTIONS} loading value={value} onValueChange={setValue} />
+    <Select
+      ariaLabel="Loading analysis mode"
+      options={OPTIONS}
+      loading
+      value={value}
+      onValueChange={setValue}
+    />
   );
 }
 
@@ -106,7 +107,12 @@ function ControlledComboboxHarness() {
 function ControlledAutocompleteHarness() {
   const [value, setValue] = useState<string>("repertoire");
   return (
-    <Autocomplete ariaLabel="Opening suggestion" options={OPTIONS} value={value} onValueChange={setValue} />
+    <Autocomplete
+      ariaLabel="Opening suggestion"
+      options={OPTIONS}
+      value={value}
+      onValueChange={setValue}
+    />
   );
 }
 
@@ -147,8 +153,8 @@ export const Docs: Story = {
               Presentation-only field scaffolding around the Base UI Field: label (with an optional
               required mark), optional description, optional error text, and disabled/invalid
               wiring. It owns no validation timing or form state; pass the error and invalid props
-              from the caller. The Base Field association connects the label, description, and
-              error to the child control for accessibility.
+              from the caller. The Base Field association connects the label, description, and error
+              to the child control for accessibility.
             </>
           ),
         },
@@ -167,12 +173,12 @@ export const Docs: Story = {
           body: (
             <>
               Dropdown controls sharing one presentation: Select for plain choice lists, Combobox
-              for filterable search with typed input and a clear action, Autocomplete for free
-              text backed by suggestions. All three accept loading (options hidden with a loading
+              for filterable search with typed input and a clear action, Autocomplete for free text
+              backed by suggestions. All three accept loading (options hidden with a loading
               message) and empty states, and the popup options can be rich compositions via
-              DropdownOptionContent. Note the Base UI popup renders in a portal, so popup styling
-              is visible only while a popup is open. Provide ariaLabel on every control: the
-              controls rely on it for the accessible name.
+              DropdownOptionContent. Note the Base UI popup renders in a portal, so popup styling is
+              visible only while a popup is open. Provide ariaLabel on every control: the controls
+              rely on it for the accessible name.
             </>
           ),
         },

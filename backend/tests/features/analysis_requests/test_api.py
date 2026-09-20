@@ -5,7 +5,6 @@ import sqlite3
 from pathlib import Path
 
 import pytest
-from fastapi.routing import APIRoute
 
 import backend.app.features.analysis_requests.router as router_module
 from backend.app.dependencies import REBUILT_DATABASE_PATH_ENV, get_rebuilt_database_path
@@ -236,13 +235,9 @@ def test_unexpected_failures_stay_safe_without_leaking_details(monkeypatch, api_
 
 
 def test_request_route_coexists_with_observation_and_uses_expected_name() -> None:
-    routes = {
-        (route.path, tuple(sorted(route.methods))): route
-        for route in app.routes
-        if isinstance(route, APIRoute)
-    }
+    routes = app.openapi()["paths"]
 
-    request_route = routes[("/api/analysis-requests", ("POST",))]
-    assert request_route.operation_id == "requestAnalysis"
-    assert ("/api/analysis", ("GET",)) in routes
-    assert ("/api/evaluation", ("POST",)) not in routes
+    assert set(routes["/api/analysis-requests"]) == {"post"}
+    assert routes["/api/analysis-requests"]["post"]["operationId"] == "requestAnalysis"
+    assert set(routes["/api/analysis"]) == {"get"}
+    assert "/api/evaluation" not in routes

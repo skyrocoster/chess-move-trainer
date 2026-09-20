@@ -49,8 +49,12 @@ import {
 } from "./repertoireBuilderWorkspaceHandlers";
 import { useMoveResponseSelection } from "./moveResponseSelection";
 
-import type { PositionPickerMove, RepertoireBuilderWorkspaceProps } from "./RepertoireBuilderWorkspaceTypes";
+import type {
+  PositionPickerMove,
+  RepertoireBuilderWorkspaceProps,
+} from "./RepertoireBuilderWorkspaceTypes";
 import { loadFailure, moveToSessionMove } from "./RepertoireBuilderWorkspaceTypes";
+export type { GameDetailClient } from "./RepertoireBuilderWorkspaceTypes";
 
 export default function RepertoireBuilderWorkspace({
   gameClient = getGame,
@@ -101,10 +105,7 @@ export default function RepertoireBuilderWorkspace({
       const sessionMove = moveToSessionMove(session, move);
       if (sessionMove === null) {
         setRejectedMove(
-          lastMoveFromSquares(
-            move.sourceSquare as Square,
-            move.targetSquare as Square,
-          ),
+          lastMoveFromSquares(move.sourceSquare as Square, move.targetSquare as Square),
         );
         setSessionStatus("Move rejected because it is illegal.");
         return false;

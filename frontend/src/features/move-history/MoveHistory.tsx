@@ -11,7 +11,8 @@ import type {
 } from "./moveHistoryTypes";
 
 export interface MoveHistoryProps
-  extends Omit<ComponentPropsWithoutRef<"nav">, "aria-label" | "children">,
+  extends
+    Omit<ComponentPropsWithoutRef<"nav">, "aria-label" | "children">,
     MoveHistoryInput,
     MoveHistoryControlledState {
   ariaLabel?: string;

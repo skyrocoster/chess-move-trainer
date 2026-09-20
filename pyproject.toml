@@ -1,11 +1,33 @@
 [build-system]
-requires = ["setuptools>=75.0"]
+requires = ["setuptools==84.0.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "chess-move-trainer"
 version = "0.1.0"
 requires-python = ">=3.12,<3.13"
+dependencies = [
+    "cachetools==7.2.0",
+    "chess==1.11.2",
+    "fastapi==0.141.1",
+    "httpx==0.28.1",
+    "pydantic==2.13.5",
+    "PyYAML==6.0.3",
+    "SQLAlchemy==2.0.54",
+    "typer==0.27.2",
+    "uvicorn[standard]==0.53.0",
+]
+
+[dependency-groups]
+dev = [
+    "graphifyy[sql,svg]==0.9.64",
+    "pip-audit==2.10.1",
+    "pytest==9.1.1",
+    "ruff==0.16.8",
+]
+
+[tool.uv.workspace]
+members = ["experiments"]
 
 [tool.pytest.ini_options]
 pythonpath = ["."]

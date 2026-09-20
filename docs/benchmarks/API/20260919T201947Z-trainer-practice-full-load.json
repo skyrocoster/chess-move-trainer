@@ -1,0 +1,32 @@
+{
+  "name": "trainer-practice-full-load",
+  "measured_at_utc": "2026-09-19T20:19:47.818284+00:00",
+  "endpoint": "/api/positions/training-requirements",
+  "params": {
+    "as_of": "2026-01-15",
+    "page_size": 50
+  },
+  "database": {
+    "kind": "synthetic",
+    "file_name": "api-benchmark.db",
+    "size_bytes": 102400
+  },
+  "repeats": 1,
+  "timeout_s": 30.0,
+  "samples_ms": [
+    9.826
+  ],
+  "stats": {
+    "count": 1,
+    "min_ms": 9.826,
+    "median_ms": 9.826,
+    "mean_ms": 9.826,
+    "max_ms": 9.826
+  },
+  "threshold_median_ms": 10000.0,
+  "pages_read": 1,
+  "total_reported": 2,
+  "full_load_total_ms": 9.857,
+  "cache_cleared_before_load": true,
+  "warm_page1_ms": 4.049
+}

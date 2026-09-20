@@ -6,7 +6,6 @@ from pathlib import Path
 from urllib.parse import quote
 
 import pytest
-from fastapi.routing import APIRoute
 from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
@@ -455,22 +454,14 @@ def test_openings_unexpected_failures_stay_safe_without_leaking_details(
 
 
 def test_openings_and_games_routes_stay_registered() -> None:
-    routes = {
-        (route.path, route.operation_id)
-        for route in app.routes
-        if isinstance(route, APIRoute)
-    }
+    routes = app.openapi()["paths"]
 
-    assert ("/api/openings", "getOpenings") in routes
-    assert ("/api/openings/{opening_key}", "getOpeningByKey") in routes
-    opening_routes = [
-        route.path
-        for route in app.routes
-        if isinstance(route, APIRoute) and route.path.startswith("/api/openings")
-    ]
+    assert routes["/api/openings"]["get"]["operationId"] == "getOpenings"
+    assert routes["/api/openings/{opening_key}"]["get"]["operationId"] == "getOpeningByKey"
+    opening_routes = [path for path in routes if path.startswith("/api/openings")]
     assert "/api/openings/line-library" not in opening_routes
-    assert ("/api/games", "getGames") in routes
-    assert ("/api/games/{game_uuid}", "getGame") in routes
+    assert routes["/api/games"]["get"]["operationId"] == "getGames"
+    assert routes["/api/games/{game_uuid}"]["get"]["operationId"] == "getGame"
 
 
 def test_catalogue_response_rejects_extra_fields() -> None:

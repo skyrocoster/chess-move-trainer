@@ -1,7 +1,4 @@
-import {
-  getOpenings,
-  getPositionTrainingRequirements,
-} from "../../api/client";
+import { getOpenings, getPositionTrainingRequirements } from "../../api/client";
 import type {
   GetOpeningsData,
   GetPositionTrainingRequirementsData,
@@ -32,10 +29,7 @@ export type TrainerPracticeFilters = {
 };
 
 export type TrainerPracticeFailureCode =
-  | "invalid_date"
-  | "stale_date"
-  | "catalogue_error"
-  | "retrieval_error";
+  "invalid_date" | "stale_date" | "catalogue_error" | "retrieval_error";
 
 export type OpeningChoicesResult =
   | {
@@ -230,10 +224,7 @@ export type OpeningCatalogueSnapshotResult =
     }
   | { status: "catalogue_error" };
 
-function hasValidCataloguePage(
-  page: OpeningCatalogueResponse,
-  expectedPage: number,
-): boolean {
+function hasValidCataloguePage(page: OpeningCatalogueResponse, expectedPage: number): boolean {
   return (
     Number.isInteger(page.page) &&
     page.page === expectedPage &&
@@ -319,9 +310,7 @@ export async function fetchOpeningCatalogueSnapshot(
 }
 
 export async function queryOpeningCatalogueSnapshot(
-  loadSnapshot: (
-    signal?: AbortSignal,
-  ) => Promise<OpeningCatalogueSnapshotResult>,
+  loadSnapshot: (signal?: AbortSignal) => Promise<OpeningCatalogueSnapshotResult>,
   signal: AbortSignal,
 ): Promise<OpeningCatalogueItemResponse[]> {
   const result = await loadSnapshot(signal);

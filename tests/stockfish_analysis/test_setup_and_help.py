@@ -20,7 +20,7 @@ def _archive(path: Path, members: dict[str, bytes]) -> str:
 
 def _fake_verifier(path: Path) -> EngineIdentity:
     checksum = hashlib.sha256(path.read_bytes()).hexdigest()
-    return EngineIdentity("Stockfish 18 fake", "18", checksum)
+    return EngineIdentity("Stockfish 19 fake", "19", checksum)
 
 
 def test_pinned_setup_is_checksum_first_atomic_and_cleans_staging(
@@ -31,7 +31,7 @@ def test_pinned_setup_is_checksum_first_atomic_and_cleans_staging(
     def download(url: str, target: Path, timeout: float) -> None:
         assert url == provisioning.STOCKFISH_URL
         assert timeout == 7
-        checksum = _archive(target, {"stockfish/stockfish-windows-x86-64-avx2.exe": b"fake"})
+        checksum = _archive(target, {"stockfish/stockfish-windows-x86-64-universal.exe": b"fake"})
         monkeypatch.setattr(provisioning, "STOCKFISH_ARCHIVE_SHA256", checksum)
 
     result = provisioning.provision_stockfish(

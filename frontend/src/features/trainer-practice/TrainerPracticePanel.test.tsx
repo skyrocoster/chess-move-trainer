@@ -96,10 +96,7 @@ function renderPage(
   );
 }
 
-async function renderReady(
-  api = createApi(),
-  client?: ReturnType<typeof createTestQueryClient>,
-) {
+async function renderReady(api = createApi(), client?: ReturnType<typeof createTestQueryClient>) {
   const user = userEvent.setup();
   renderPage(api, client);
   await screen.findByRole("combobox", { name: "Opening" });
@@ -122,7 +119,8 @@ afterEach(() => {
 });
 
 describe("TrainerPracticePage", () => {
-  it("shows catalogue loading and then exposes native labelled controls", async () => {    let resolveCatalogue!: (value: OpeningCatalogueSnapshotResult) => void;
+  it("shows catalogue loading and then exposes native labelled controls", async () => {
+    let resolveCatalogue!: (value: OpeningCatalogueSnapshotResult) => void;
     const catalogue = new Promise<OpeningCatalogueSnapshotResult>((resolve) => {
       resolveCatalogue = resolve;
     });
@@ -404,7 +402,9 @@ describe("TrainerPracticePage", () => {
       await screen.findByText("No positions currently require training for these filters."),
     ).toBeVisible();
     expect(screen.getByText("0")).toBeVisible();
-    expect(screen.queryByRole("list", { name: "training-required positions" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("list", { name: "training-required positions" }),
+    ).not.toBeInTheDocument();
   });
 
   it("shows a catalogue error and can retry the catalogue request", async () => {
@@ -419,7 +419,9 @@ describe("TrainerPracticePage", () => {
     const user = userEvent.setup();
     renderPage(api);
 
-    expect(await screen.findByRole("alert")).toHaveTextContent("Opening catalogue could not be loaded");
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Opening catalogue could not be loaded",
+    );
     await user.click(screen.getByRole("button", { name: "Retry opening catalogue" }));
     await screen.findByRole("combobox", { name: "Opening" });
     expect(loadCatalogue).toHaveBeenCalledTimes(2);
@@ -496,7 +498,7 @@ describe("TrainerPracticePage", () => {
     const pending = new Promise<TrainingRequirementsResult>((resolve) => {
       resolveRequirements = resolve;
     });
-    const loadRequirements = vi.fn(() => pending);
+    const loadRequirements = vi.fn<TrainerPracticeApi["loadRequirements"]>(() => pending);
     const api: TrainerPracticeApi = {
       loadCatalogue: vi.fn().mockResolvedValue(successfulCatalogue()),
       loadRequirements,
@@ -506,10 +508,10 @@ describe("TrainerPracticePage", () => {
     await screen.findByRole("combobox", { name: "Opening" });
     await chooseOpening(user, /B10 Caro-Kann Defense/);
     await user.click(screen.getByRole("button", { name: "Find training positions" }));
-    const signal = loadRequirements.mock.calls[0]?.[1] as AbortSignal;
+    const signal = loadRequirements.mock.calls[0]?.[1];
 
     rendered.unmount();
-    expect(signal.aborted).toBe(true);
+    expect(signal?.aborted).toBe(true);
     resolveRequirements(successfulRequirements());
   });
 });

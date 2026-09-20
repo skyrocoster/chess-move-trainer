@@ -37,12 +37,15 @@ export function Field({
         {label}
         {required ? (
           <span className={styles.requiredMark} aria-hidden="true">
-            {" "}*
+            {" "}
+            *
           </span>
         ) : null}
       </BaseField.Label>
       {description ? (
-        <BaseField.Description className={styles.fieldDescription}>{description}</BaseField.Description>
+        <BaseField.Description className={styles.fieldDescription}>
+          {description}
+        </BaseField.Description>
       ) : null}
       {children}
       {error ? (

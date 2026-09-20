@@ -42,7 +42,7 @@ def profile() -> AnalysisProfile:
     return AnalysisProfile(
         profile_id=QUALIFIED_PROFILE_ID,
         engine_binary_sha256="a" * 64,
-        engine_name="Stockfish 18 fake",
+        engine_name="Stockfish 19 fake",
         engine_version="18-test",
         node_budget=200_000,
     )

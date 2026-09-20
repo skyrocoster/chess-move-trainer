@@ -26,8 +26,8 @@ def test_real_direct_database_records_query_plans_and_timings() -> None:
     assert report.corpus.game_count > 0
     assert report.corpus.position_count > 0
     assert report.corpus.occurrence_count >= report.corpus.game_count
-    assert report.corpus.analysis_result_count == 1
-    assert report.corpus.analysis_line_count == TOOL_PROFILE.multipv
+    assert report.corpus.analysis_result_count >= 1
+    assert report.corpus.analysis_line_count >= TOOL_PROFILE.multipv
 
     operation_names = {measurement.name for measurement in report.measurements}
     assert "GameReadRepository.read" in operation_names

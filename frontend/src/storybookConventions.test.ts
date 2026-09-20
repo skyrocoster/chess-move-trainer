@@ -50,11 +50,14 @@ function propertyValue(
   const property = object.properties.find(
     (candidate) => ts.isPropertyAssignment(candidate) && propertyName(candidate) === name,
   );
-  return property && ts.isPropertyAssignment(property) ? unwrapExpression(property.initializer) : undefined;
+  return property && ts.isPropertyAssignment(property)
+    ? unwrapExpression(property.initializer)
+    : undefined;
 }
 
 function stringValue(expression: ts.Expression | undefined): string | undefined {
-  return expression && (ts.isStringLiteral(expression) || ts.isNoSubstitutionTemplateLiteral(expression))
+  return expression &&
+    (ts.isStringLiteral(expression) || ts.isNoSubstitutionTemplateLiteral(expression))
     ? expression.text
     : undefined;
 }

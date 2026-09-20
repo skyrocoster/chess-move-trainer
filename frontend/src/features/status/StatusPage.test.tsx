@@ -25,7 +25,7 @@ function mockHealthyFetch() {
   // header says so (as the real backend does), so the mock must carry it. A
   // fresh Response per call keeps repeated requests independent.
   return vi.spyOn(globalThis, "fetch").mockImplementation(
-    () =>
+    async () =>
       new Response(JSON.stringify({ status: "ok" }), {
         status: 200,
         headers: { "Content-Type": "application/json" },
@@ -71,7 +71,7 @@ describe("StatusPage", () => {
 
   it("shows the exact stable error on a malformed HTTP 200 and never shows healthy", async () => {
     vi.spyOn(globalThis, "fetch").mockImplementation(
-      () =>
+      async () =>
         new Response(JSON.stringify({ status: "maintenance" }), {
           status: 200,
           headers: { "Content-Type": "application/json" },

@@ -1,0 +1,46 @@
+{
+  "name": "openings-detail",
+  "measured_at_utc": "2026-09-19T20:19:47.117590+00:00",
+  "endpoint": "/api/openings/A00%3ABench%20Opening",
+  "params": {},
+  "database": {
+    "kind": "synthetic",
+    "file_name": "api-benchmark.db",
+    "size_bytes": 102400
+  },
+  "repeats": 5,
+  "timeout_s": 30.0,
+  "samples_ms": [
+    6.379,
+    5.165,
+    5.834,
+    6.552,
+    5.702
+  ],
+  "stats": {
+    "count": 5,
+    "min_ms": 5.165,
+    "median_ms": 5.834,
+    "mean_ms": 5.926,
+    "max_ms": 6.552
+  },
+  "threshold_median_ms": 2000.0,
+  "items_returned": null,
+  "total_reported": null,
+  "cache_cleared_between_samples": true,
+  "warm_repeats": 5,
+  "warm_samples_ms": [
+    3.226,
+    2.991,
+    2.825,
+    2.944,
+    2.883
+  ],
+  "warm_stats": {
+    "count": 5,
+    "min_ms": 2.825,
+    "median_ms": 2.944,
+    "mean_ms": 2.974,
+    "max_ms": 3.226
+  }
+}

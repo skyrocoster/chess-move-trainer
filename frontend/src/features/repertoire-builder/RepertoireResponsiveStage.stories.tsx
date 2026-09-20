@@ -21,6 +21,14 @@ function lane(testId: string, name: string): ReactNode {
     >
       <h2>{name}</h2>
       <p>Representative {name.toLowerCase()} fixture.</p>
+      {/*
+        Wide-mode lanes scroll independently (overflow-y: auto), so axe
+        requires keyboard access. Production lanes always contain interactive
+        controls; give the fixture one so the boundary stories represent that.
+      */}
+      <button type="button" style={{ marginBlockStart: "var(--cmt-spacing-8)" }}>
+        Representative {name.toLowerCase()} action
+      </button>
     </section>
   );
 }

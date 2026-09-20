@@ -13,10 +13,8 @@ import {
 } from "./positionInsightQuery";
 
 const FEN: Fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-const COUNTER_VARIANT_FEN: Fen =
-  "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 17 42";
-const AFTER_E4_FEN: Fen =
-  "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1";
+const COUNTER_VARIANT_FEN: Fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 17 42";
+const AFTER_E4_FEN: Fen = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1";
 
 function insight(fen: string, color: ChessSide, asOf: string): Record<string, unknown> {
   return {
@@ -52,7 +50,11 @@ function Consumers({ fen, color }: { fen: Fen; color: ChessSide }) {
   return (
     <>
       <output data-testid="context">
-        {JSON.stringify({ loading: context.loading, error: context.error, fen: context.context?.fen })}
+        {JSON.stringify({
+          loading: context.loading,
+          error: context.error,
+          fen: context.context?.fen,
+        })}
       </output>
       <output data-testid="distribution">
         {JSON.stringify({ status: distribution.status, error: distribution.error })}
@@ -61,11 +63,7 @@ function Consumers({ fen, color }: { fen: Fen; color: ChessSide }) {
   );
 }
 
-function renderConsumers(
-  client: QueryClient,
-  fen: Fen = FEN,
-  color: ChessSide = "white",
-) {
+function renderConsumers(client: QueryClient, fen: Fen = FEN, color: ChessSide = "white") {
   return render(
     <QueryClientTestProvider client={client}>
       <Consumers fen={fen} color={color} />
@@ -87,13 +85,17 @@ describe("shared position insight query", () => {
   it("deduplicates context and distribution reads and treats counter fields as equivalent", async () => {
     const fetchMock = vi.fn().mockImplementation(async (request: Request) => {
       const query = new URL(request.url).searchParams;
-      return jsonResponse(insight(query.get("fen")!, query.get("trainer_color") as ChessSide, query.get("as_of")!));
+      return jsonResponse(
+        insight(query.get("fen")!, query.get("trainer_color") as ChessSide, query.get("as_of")!),
+      );
     });
     vi.stubGlobal("fetch", fetchMock);
     const client = new QueryClient();
 
     const view = renderConsumers(client);
-    await waitFor(() => expect(screen.getByTestId("distribution")).toHaveTextContent('"status":"available"'));
+    await waitFor(() =>
+      expect(screen.getByTestId("distribution")).toHaveTextContent('"status":"available"'),
+    );
     expect(fetchMock).toHaveBeenCalledOnce();
 
     view.rerender(
@@ -111,7 +113,9 @@ describe("shared position insight query", () => {
     vi.setSystemTime(new Date("2026-09-10T23:59:00.000Z"));
     const fetchMock = vi.fn().mockImplementation(async (request: Request) => {
       const query = new URL(request.url).searchParams;
-      return jsonResponse(insight(query.get("fen")!, query.get("trainer_color") as ChessSide, query.get("as_of")!));
+      return jsonResponse(
+        insight(query.get("fen")!, query.get("trainer_color") as ChessSide, query.get("as_of")!),
+      );
     });
     vi.stubGlobal("fetch", fetchMock);
     const client = new QueryClient();
@@ -150,7 +154,9 @@ describe("shared position insight query", () => {
     await waitFor(() => expect(fetchMock).toHaveBeenCalledOnce());
 
     const query = client.getQueryCache().find({ queryKey: positionInsightQueryKey(FEN, "white") });
-    expect(query?.options.staleTime).toBe(POSITION_INSIGHT_STALE_TIME);
+    expect((query?.options as { staleTime?: number } | undefined)?.staleTime).toBe(
+      POSITION_INSIGHT_STALE_TIME,
+    );
     expect(query?.options.gcTime).toBe(POSITION_INSIGHT_GC_TIME);
   });
 
@@ -163,7 +169,9 @@ describe("shared position insight query", () => {
     const client = new QueryClient();
     renderConsumers(client, AFTER_E4_FEN);
 
-    await waitFor(() => expect(screen.getByTestId("distribution")).toHaveTextContent('"status":"unavailable"'));
+    await waitFor(() =>
+      expect(screen.getByTestId("distribution")).toHaveTextContent('"status":"unavailable"'),
+    );
     expect(client.getQueryData(positionInsightQueryKey(AFTER_E4_FEN, "white"))).toBeUndefined();
   });
 });

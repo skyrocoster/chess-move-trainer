@@ -38,6 +38,9 @@ import type {
   RequestAnalysisData,
   RequestAnalysisErrors,
   RequestAnalysisResponses,
+  SubmitPositionTrainingAnswerData,
+  SubmitPositionTrainingAnswerErrors,
+  SubmitPositionTrainingAnswerResponses,
 } from "./types.gen";
 
 export type Options<
@@ -57,6 +60,39 @@ export type Options<
    */
   meta?: keyof ClientMeta extends never ? Record<string, unknown> : ClientMeta;
 };
+
+/**
+ * Health
+ */
+export const getHealth = <ThrowOnError extends boolean = false>(
+  options?: Options<GetHealthData, ThrowOnError>,
+): RequestResult<GetHealthResponses, unknown, ThrowOnError> =>
+  (options?.client ?? client).get<GetHealthResponses, unknown, ThrowOnError>({
+    url: "/api/health",
+    ...options,
+  });
+
+/**
+ * Get Games
+ */
+export const getGames = <ThrowOnError extends boolean = false>(
+  options?: Options<GetGamesData, ThrowOnError>,
+): RequestResult<GetGamesResponses, GetGamesErrors, ThrowOnError> =>
+  (options?.client ?? client).get<GetGamesResponses, GetGamesErrors, ThrowOnError>({
+    url: "/api/games",
+    ...options,
+  });
+
+/**
+ * Get Game
+ */
+export const getGame = <ThrowOnError extends boolean = false>(
+  options: Options<GetGameData, ThrowOnError>,
+): RequestResult<GetGameResponses, GetGameErrors, ThrowOnError> =>
+  (options.client ?? client).get<GetGameResponses, GetGameErrors, ThrowOnError>({
+    url: "/api/games/{game_uuid}",
+    ...options,
+  });
 
 /**
  * Get Analysis
@@ -83,89 +119,6 @@ export const requestAnalysis = <ThrowOnError extends boolean = false>(
       ...options.headers,
     },
   });
-
-/**
- * Get Games
- */
-export const getGames = <ThrowOnError extends boolean = false>(
-  options?: Options<GetGamesData, ThrowOnError>,
-): RequestResult<GetGamesResponses, GetGamesErrors, ThrowOnError> =>
-  (options?.client ?? client).get<GetGamesResponses, GetGamesErrors, ThrowOnError>({
-    url: "/api/games",
-    ...options,
-  });
-
-/**
- * Get Game
- */
-export const getGame = <ThrowOnError extends boolean = false>(
-  options: Options<GetGameData, ThrowOnError>,
-): RequestResult<GetGameResponses, GetGameErrors, ThrowOnError> =>
-  (options.client ?? client).get<GetGameResponses, GetGameErrors, ThrowOnError>({
-    url: "/api/games/{game_uuid}",
-    ...options,
-  });
-
-/**
- * Health
- */
-export const getHealth = <ThrowOnError extends boolean = false>(
-  options?: Options<GetHealthData, ThrowOnError>,
-): RequestResult<GetHealthResponses, unknown, ThrowOnError> =>
-  (options?.client ?? client).get<GetHealthResponses, unknown, ThrowOnError>({
-    url: "/api/health",
-    ...options,
-  });
-
-/**
- * Get Openings
- */
-export const getOpenings = <ThrowOnError extends boolean = false>(
-  options?: Options<GetOpeningsData, ThrowOnError>,
-): RequestResult<GetOpeningsResponses, GetOpeningsErrors, ThrowOnError> =>
-  (options?.client ?? client).get<GetOpeningsResponses, GetOpeningsErrors, ThrowOnError>({
-    url: "/api/openings",
-    ...options,
-  });
-
-/**
- * Get Opening By Key
- */
-export const getOpeningByKey = <ThrowOnError extends boolean = false>(
-  options: Options<GetOpeningByKeyData, ThrowOnError>,
-): RequestResult<GetOpeningByKeyResponses, GetOpeningByKeyErrors, ThrowOnError> =>
-  (options.client ?? client).get<GetOpeningByKeyResponses, GetOpeningByKeyErrors, ThrowOnError>({
-    url: "/api/openings/{opening_key}",
-    ...options,
-  });
-
-/**
- * Get Position Insight
- */
-export const getPositionInsight = <ThrowOnError extends boolean = false>(
-  options: Options<GetPositionInsightData, ThrowOnError>,
-): RequestResult<GetPositionInsightResponses, GetPositionInsightErrors, ThrowOnError> =>
-  (options.client ?? client).get<
-    GetPositionInsightResponses,
-    GetPositionInsightErrors,
-    ThrowOnError
-  >({ url: "/api/positions/insight", ...options });
-
-/**
- * Get Position Training Requirements
- */
-export const getPositionTrainingRequirements = <ThrowOnError extends boolean = false>(
-  options: Options<GetPositionTrainingRequirementsData, ThrowOnError>,
-): RequestResult<
-  GetPositionTrainingRequirementsResponses,
-  GetPositionTrainingRequirementsErrors,
-  ThrowOnError
-> =>
-  (options.client ?? client).get<
-    GetPositionTrainingRequirementsResponses,
-    GetPositionTrainingRequirementsErrors,
-    ThrowOnError
-  >({ url: "/api/positions/training-requirements", ...options });
 
 /**
  * Delete Preferred Moves
@@ -212,3 +165,76 @@ export const putPreferredMoves = <ThrowOnError extends boolean = false>(
       },
     },
   );
+
+/**
+ * Get Position Insight
+ */
+export const getPositionInsight = <ThrowOnError extends boolean = false>(
+  options: Options<GetPositionInsightData, ThrowOnError>,
+): RequestResult<GetPositionInsightResponses, GetPositionInsightErrors, ThrowOnError> =>
+  (options.client ?? client).get<
+    GetPositionInsightResponses,
+    GetPositionInsightErrors,
+    ThrowOnError
+  >({ url: "/api/positions/insight", ...options });
+
+/**
+ * Get Position Training Requirements
+ */
+export const getPositionTrainingRequirements = <ThrowOnError extends boolean = false>(
+  options: Options<GetPositionTrainingRequirementsData, ThrowOnError>,
+): RequestResult<
+  GetPositionTrainingRequirementsResponses,
+  GetPositionTrainingRequirementsErrors,
+  ThrowOnError
+> =>
+  (options.client ?? client).get<
+    GetPositionTrainingRequirementsResponses,
+    GetPositionTrainingRequirementsErrors,
+    ThrowOnError
+  >({ url: "/api/positions/training-requirements", ...options });
+
+/**
+ * Submit Position Training Answer
+ */
+export const submitPositionTrainingAnswer = <ThrowOnError extends boolean = false>(
+  options: Options<SubmitPositionTrainingAnswerData, ThrowOnError>,
+): RequestResult<
+  SubmitPositionTrainingAnswerResponses,
+  SubmitPositionTrainingAnswerErrors,
+  ThrowOnError
+> =>
+  (options.client ?? client).post<
+    SubmitPositionTrainingAnswerResponses,
+    SubmitPositionTrainingAnswerErrors,
+    ThrowOnError
+  >({
+    url: "/api/positions/training-requirements/answers",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+/**
+ * Get Openings
+ */
+export const getOpenings = <ThrowOnError extends boolean = false>(
+  options?: Options<GetOpeningsData, ThrowOnError>,
+): RequestResult<GetOpeningsResponses, GetOpeningsErrors, ThrowOnError> =>
+  (options?.client ?? client).get<GetOpeningsResponses, GetOpeningsErrors, ThrowOnError>({
+    url: "/api/openings",
+    ...options,
+  });
+
+/**
+ * Get Opening By Key
+ */
+export const getOpeningByKey = <ThrowOnError extends boolean = false>(
+  options: Options<GetOpeningByKeyData, ThrowOnError>,
+): RequestResult<GetOpeningByKeyResponses, GetOpeningByKeyErrors, ThrowOnError> =>
+  (options.client ?? client).get<GetOpeningByKeyResponses, GetOpeningByKeyErrors, ThrowOnError>({
+    url: "/api/openings/{opening_key}",
+    ...options,
+  });

@@ -14,14 +14,11 @@ export type PositionContextResponse = {
 };
 
 export type PositionContextFailureCode =
-  | "invalid_fen"
-  | "position_context_unavailable"
-  | "unexpected_failure";
+  "invalid_fen" | "position_context_unavailable" | "unexpected_failure";
 
 export type PositionContextFailure = { status: PositionContextFailureCode };
 export type PositionContextResult =
-  | { status: "success"; data: PositionContextResponse }
-  | PositionContextFailure;
+  { status: "success"; data: PositionContextResponse } | PositionContextFailure;
 
 export type PositionContextClient = (
   fen: Fen,

@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 from typer.testing import CliRunner
 
-from chess_move_trainer.database import cli as database_cli
+from chess_move_trainer.database import cli_preferred as database_cli
 from chess_move_trainer.database.preferred_moves.repository import PreferredMoveSchemaError
 from chess_move_trainer.database.preferred_moves.setup import (
     PreferredMoveSetupError,

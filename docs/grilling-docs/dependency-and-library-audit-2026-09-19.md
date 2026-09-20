@@ -15,6 +15,21 @@ The most important findings are:
 
 No product source or dependency version was changed during this audit.
 
+## Implementation progress
+
+Implementation started on 2026-09-19. This section is updated as each group is completed and proved.
+
+- **Completed 2026-09-19:** Python locking/runtime separation, container hardening, Stockfish 19, declaration cleanup, the audited security refreshes, the Phase 4 major migrations (TypeScript 6, ESLint 10 with the preserved pre-v7 hooks contract, Vite 8, jsdom 30/jest-dom 7), and the complete verification runbook below. Deferred latest majors remain Vitest 5 (blocked by Storybook peer support) and TypeScript 7 (blocked by `typescript-eslint`).
+- **Completed:** the npm security/current-line refresh and declaration cleanup are installed in the root lock. Vitest/Playwright/Vite/ESLint are on the audited safe lines; React, Storybook, TanStack Query, and the listed same-major packages are refreshed; Mermaid CLI, the direct Temporal declaration, the duplicate frontend Axe declaration, and direct TypeScript-ESLint internals are removed. Node's floor is `24.15`, npm is declared as `12.0.2`, Playwright MCP is lock-backed, and `npm audit --json` now reports **zero vulnerabilities**.
+- **Hey API decision:** the `0.97.0` trial was rejected after regeneration exposed a newer direct advisory and incompatible generated-client types. The repository remains on `0.99.0` with `js-yaml@4.3.2` forced at the lock root. Regeneration succeeds and npm audit is clean; generated/API tests are being repaired against the current backend contract before this mitigation is called proved.
+- **Python lock/security completed:** runtime requirements now live in `pyproject.toml`; pytest, Ruff, Graphify, and the newly pinned `pip-audit` are in the development group. `uv.lock` locks the root and experiments projects, and `requirements.txt` is now a generated, hashed runtime-only export. FastAPI `0.141.1`, Starlette `1.6.0`, Pydantic `2.13.5`, Uvicorn `0.53.0`, pytest `9.1.1`, and the audited patch/current lines are installed. `pip-audit` reports **no known vulnerabilities** in the runtime export. A focused 124-test Python run passed 120 tests; one FastAPI route-introspection assertion has been adapted to the new lazy-router API, one Windows abandoned-mutex check is being rerun as a suspected timing flake, and the two real-engine tests were waiting for provisioning.
+- **Stockfish checkpoint:** source constants, identity validation, CLI help, fixtures, and both platform assets now target Stockfish 19 without changing `CONFIGURATION_VERSION`. The Windows universal archive was downloaded, matched SHA-256 `3c8bf1f9...30b48a7`, reported `Stockfish 19`, and replaced the local Stockfish 18 runtime (the old generated runtime was retained under the approved temporary directory). The Linux Docker stage now verifies SHA-256 `9defc0d4...e03611f` before copying only the engine into the final image.
+- **Container/reproducibility checkpoint:** Python and Node base tags are digest-pinned, Node moved to Trixie, npm `12.0.2` is installed explicitly, build-only Stockfish download tools no longer enter the backend final image, hashed runtime requirements are enforced, and both images now declare non-root users. The OpenCode plugin manifest/lock are intentionally tracked and refreshed to `1.18.31`.
+- **Verification (final, 2026-09-19):** frontend unit 597/597, Storybook browser project 235/235, `tsc -b && vite build` green, ESLint 0 errors (5 pre-existing warnings), Prettier clean, `npm audit` zero vulnerabilities (root and `.opencode/`), `pip-audit` clean on the runtime export, Python `backend/tests tests` 952 passed / 9 skipped plus Graphify catalogue 17/17, rebuilt-service smoke (`/api/health` ok, frontend/Storybook 200), app Playwright specs 10/10 (status, shell routing, trainer practice incl. live Caro-Kann retrieval), backend runs as `app` with Linux Stockfish 19 (`id name Stockfish 19`) and the worker polls quietly as `app`, frontend runs as `node`.
+- **Storybook upgrade maintenance (same date):** the Playwright 1.63/Chromium 153 + axe-core 4.13 stack required four test-only adjustments, no product changes: exact 88px choice-box heights became `>= 88` minimums, the save/remove request-log assertions now allow duplicate refreshing GETs (invalidation plus refresh-key refetch no longer dedupe to one), the Storybook canvas wrapper paints the dark application background (opaque `100vh` so axe measures real contrast), and the responsive-stage lane fixtures gained a representative button so the independently scrolling wide-mode lanes contain keyboard-focusable content. The React Hooks plugin moved 5 -> 7 with only `rules-of-hooks` + `exhaustive-deps` enabled to preserve the pre-v7 lint contract; the new compiler ruleset needs a separate refactor.
+- **Pre-existing breakage found, not caused by this audit:** the 13 `repertoire-builder-storybook-behaviors` E2E specs address story IDs under `application-repertoire-builder-workspace--*`, but the catalogue holds 235 stories and none use that prefix (current IDs start `production-application-...`). `tests/e2e/` is otherwise unmodified. Remapping those stale IDs is separate test maintenance.
+- **Preserved unrelated work:** the pre-existing edit to `.opencode/agents/jesus.md` has not been changed.
+
 ## Scope and interpretation
 
 ### Sources inspected
@@ -375,3 +390,25 @@ The repository can reasonably call dependencies “up to date” when:
 - Stockfish, MCP, image digests, npm, and Graphify's browser asset are exact and reviewable rather than floating.
 - unused and duplicate declarations are removed.
 - the full Python transitive graph and all npm workspaces are reproducible from committed locks.
+
+## Final image scan and accepted-risk record — 2026-09-19
+
+Scanned with `docker run --rm -v //var/run/docker.sock:/var/run/docker.sock aquasec/trivy:0.74.0 image
+--scanners vuln --severity HIGH,CRITICAL --format json <image>` (the socket mount is required to
+reach local images; without it Trivy reports the image cannot be found).
+
+- **Backend image** (`chess-move-trainer-backend:latest`): 44 HIGH, 0 CRITICAL, 0 with a fixed
+  version available. All 44 are Debian Trixie OS packages (util-linux family, ncurses, perl-base,
+  libacl1, libsystemd0/libudev1) with no upstream fix; zero Python package findings.
+- **Frontend image** (`chess-move-trainer-frontend:latest`): 47 HIGH, 0 CRITICAL. 43 are the same
+  unfixed Debian OS packages. The remaining 4 sit in the "Node.js" target, i.e. the bundled
+  `node_modules` of the pinned global `npm@12.0.2` toolchain, not the audited lock tree
+  (`npm audit` is clean and the workspace's own brace-expansion copies are unflagged):
+  brace-expansion 5.0.7 (CVE-2026-14257, CVE-2026-69152), ip-address 10.2.0 (CVE-2026-69192),
+  tar 7.5.19 (CVE-2026-73566). `npm view npm versions` confirms 12.0.2 is the newest 12.x, so no
+  toolchain patch exists.
+- **Accepted with review date 2026-10-19 (owner: repository maintainers):** all 44 + 43 unfixed
+  Debian findings and the 4 npm-toolchain findings. Exposure is limited: the Debian packages are
+  base-layer utilities with no fix published, and the npm bundle is exercised only at image build
+  time and by the `npm run` dev-server launcher on localhost-only ports, never by served traffic.
+  Re-scan monthly; upgrade the npm pin when a fixed 12.x ships and re-run this section's command.

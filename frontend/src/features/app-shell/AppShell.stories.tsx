@@ -72,7 +72,7 @@ export const Healthy: Story = {
 export const Unavailable: Story = {
   render: () => (
     <AppShell>
-      <StatusView state={{ kind: "error", message: "Health request failed with HTTP 503" }} />
+      <StatusView state={{ kind: "error" }} />
     </AppShell>
   ),
 };

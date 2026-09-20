@@ -1,1917 +1,58 @@
 {
-  "components": {
-    "schemas": {
-      "AnalysisObservationErrorResponse": {
-        "additionalProperties": false,
-        "properties": {
-          "code": {
-            "enum": ["invalid_fen", "analysis_unavailable", "unexpected_failure"],
-            "title": "Code",
-            "type": "string"
-          },
-          "message": {
-            "title": "Message",
-            "type": "string"
-          }
-        },
-        "required": ["code", "message"],
-        "title": "AnalysisObservationErrorResponse",
-        "type": "object"
-      },
-      "AnalysisObservationLineResponse": {
-        "additionalProperties": false,
-        "properties": {
-          "depth": {
-            "minimum": 0.0,
-            "title": "Depth",
-            "type": "integer"
-          },
-          "pv_uci": {
-            "items": {
-              "type": "string"
-            },
-            "title": "Pv Uci",
-            "type": "array"
-          },
-          "rank": {
-            "minimum": 1.0,
-            "title": "Rank",
-            "type": "integer"
-          },
-          "score_kind": {
-            "enum": ["cp", "mate"],
-            "title": "Score Kind",
-            "type": "string"
-          },
-          "score_value": {
-            "title": "Score Value",
-            "type": "integer"
-          },
-          "wdl_draws": {
-            "minimum": 0.0,
-            "title": "Wdl Draws",
-            "type": "integer"
-          },
-          "wdl_losses": {
-            "minimum": 0.0,
-            "title": "Wdl Losses",
-            "type": "integer"
-          },
-          "wdl_wins": {
-            "minimum": 0.0,
-            "title": "Wdl Wins",
-            "type": "integer"
-          }
-        },
-        "required": [
-          "rank",
-          "score_kind",
-          "score_value",
-          "wdl_wins",
-          "wdl_draws",
-          "wdl_losses",
-          "pv_uci",
-          "depth"
-        ],
-        "title": "AnalysisObservationLineResponse",
-        "type": "object"
-      },
-      "AnalysisObservationResponse": {
-        "additionalProperties": false,
-        "properties": {
-          "fen": {
-            "title": "Fen",
-            "type": "string"
-          },
-          "result": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/AnalysisObservationResultResponse"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "state": {
-            "enum": ["not_requested", "queued", "running", "ready"],
-            "title": "State",
-            "type": "string"
-          }
-        },
-        "required": ["fen", "state", "result"],
-        "title": "AnalysisObservationResponse",
-        "type": "object"
-      },
-      "AnalysisObservationResultResponse": {
-        "additionalProperties": false,
-        "properties": {
-          "configuration_version": {
-            "minimum": 1.0,
-            "title": "Configuration Version",
-            "type": "integer"
-          },
-          "engine_name": {
-            "title": "Engine Name",
-            "type": "string"
-          },
-          "engine_version": {
-            "title": "Engine Version",
-            "type": "string"
-          },
-          "lines": {
-            "items": {
-              "$ref": "#/components/schemas/AnalysisObservationLineResponse"
-            },
-            "title": "Lines",
-            "type": "array"
-          },
-          "quality": {
-            "enum": ["browser", "tool"],
-            "title": "Quality",
-            "type": "string"
-          },
-          "settings": {
-            "title": "Settings",
-            "type": "object"
-          },
-          "terminal_kind": {
-            "anyOf": [
-              {
-                "enum": ["checkmate", "stalemate", "insufficient_material"],
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Terminal Kind"
-          }
-        },
-        "required": [
-          "quality",
-          "configuration_version",
-          "settings",
-          "engine_name",
-          "engine_version",
-          "terminal_kind",
-          "lines"
-        ],
-        "title": "AnalysisObservationResultResponse",
-        "type": "object"
-      },
-      "AnalysisRequestBody": {
-        "description": "Strict known request fields while tolerating future client fields.",
-        "properties": {
-          "fen": {
-            "title": "Fen",
-            "type": "string"
-          },
-          "quality": {
-            "default": "browser",
-            "enum": ["browser", "tool"],
-            "title": "Quality",
-            "type": "string"
-          }
-        },
-        "required": ["fen"],
-        "title": "AnalysisRequestBody",
-        "type": "object"
-      },
-      "AnalysisRequestErrorResponse": {
-        "additionalProperties": false,
-        "description": "Stable error body for the desired-analysis operation.",
-        "properties": {
-          "code": {
-            "enum": [
-              "invalid_fen",
-              "invalid_quality",
-              "analysis_unavailable",
-              "unexpected_failure"
-            ],
-            "title": "Code",
-            "type": "string"
-          },
-          "message": {
-            "title": "Message",
-            "type": "string"
-          }
-        },
-        "required": ["code", "message"],
-        "title": "AnalysisRequestErrorResponse",
-        "type": "object"
-      },
-      "GameCoverageResponse": {
-        "additionalProperties": false,
-        "properties": {
-          "analysis_coverage": {
-            "enum": ["none", "partial", "complete"],
-            "title": "Analysis Coverage",
-            "type": "string"
-          },
-          "analyzed_position_count": {
-            "title": "Analyzed Position Count",
-            "type": "integer"
-          },
-          "distinct_position_count": {
-            "title": "Distinct Position Count",
-            "type": "integer"
-          },
-          "preferred_coverage": {
-            "enum": ["none", "partial", "complete"],
-            "title": "Preferred Coverage",
-            "type": "string"
-          },
-          "preferred_position_count": {
-            "title": "Preferred Position Count",
-            "type": "integer"
-          }
-        },
-        "required": [
-          "distinct_position_count",
-          "analyzed_position_count",
-          "preferred_position_count",
-          "analysis_coverage",
-          "preferred_coverage"
-        ],
-        "title": "GameCoverageResponse",
-        "type": "object"
-      },
-      "GameDetailOccurrenceResponse": {
-        "additionalProperties": false,
-        "properties": {
-          "fen": {
-            "title": "Fen",
-            "type": "string"
-          },
-          "move_uci": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Move Uci"
-          },
-          "ply": {
-            "title": "Ply",
-            "type": "integer"
-          }
-        },
-        "required": ["ply", "fen", "move_uci"],
-        "title": "GameDetailOccurrenceResponse",
-        "type": "object"
-      },
-      "GameDetailResponse": {
-        "additionalProperties": false,
-        "properties": {
-          "ended_at_utc": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Ended At Utc"
-          },
-          "game_uuid": {
-            "format": "uuid",
-            "title": "Game Uuid",
-            "type": "string"
-          },
-          "occurrences": {
-            "items": {
-              "$ref": "#/components/schemas/GameDetailOccurrenceResponse"
-            },
-            "title": "Occurrences",
-            "type": "array"
-          },
-          "opponent_chesscom_uuid": {
-            "anyOf": [
-              {
-                "format": "uuid",
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Opponent Chesscom Uuid"
-          },
-          "opponent_rating": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Opponent Rating"
-          },
-          "original_pgn": {
-            "title": "Original Pgn",
-            "type": "string"
-          },
-          "source_url": {
-            "title": "Source Url",
-            "type": "string"
-          },
-          "started_at_utc": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Started At Utc"
-          },
-          "termination_reason": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Termination Reason"
-          },
-          "time_class": {
-            "anyOf": [
-              {
-                "enum": ["bullet", "blitz", "rapid", "daily"],
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Time Class"
-          },
-          "time_control": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Time Control"
-          },
-          "trainer_chesscom_uuid": {
-            "format": "uuid",
-            "title": "Trainer Chesscom Uuid",
-            "type": "string"
-          },
-          "trainer_color": {
-            "enum": ["white", "black"],
-            "title": "Trainer Color",
-            "type": "string"
-          },
-          "trainer_outcome": {
-            "anyOf": [
-              {
-                "enum": ["win", "loss", "draw"],
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Trainer Outcome"
-          },
-          "trainer_rating": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Trainer Rating"
-          }
-        },
-        "required": [
-          "game_uuid",
-          "source_url",
-          "original_pgn",
-          "trainer_color",
-          "trainer_chesscom_uuid",
-          "opponent_chesscom_uuid",
-          "trainer_rating",
-          "opponent_rating",
-          "started_at_utc",
-          "ended_at_utc",
-          "trainer_outcome",
-          "termination_reason",
-          "time_control",
-          "time_class",
-          "occurrences"
-        ],
-        "title": "GameDetailResponse",
-        "type": "object"
-      },
-      "GameSummaryResponse": {
-        "additionalProperties": false,
-        "properties": {
-          "coverage": {
-            "$ref": "#/components/schemas/GameCoverageResponse"
-          },
-          "deepest_opening": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/OpeningSummaryResponse"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "ended_at_utc": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Ended At Utc"
-          },
-          "game_uuid": {
-            "format": "uuid",
-            "title": "Game Uuid",
-            "type": "string"
-          },
-          "length_plies": {
-            "title": "Length Plies",
-            "type": "integer"
-          },
-          "occurrence_count": {
-            "title": "Occurrence Count",
-            "type": "integer"
-          },
-          "opponent_chesscom_uuid": {
-            "anyOf": [
-              {
-                "format": "uuid",
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Opponent Chesscom Uuid"
-          },
-          "opponent_rating": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Opponent Rating"
-          },
-          "source_url": {
-            "title": "Source Url",
-            "type": "string"
-          },
-          "started_at_utc": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Started At Utc"
-          },
-          "termination_reason": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Termination Reason"
-          },
-          "time_class": {
-            "anyOf": [
-              {
-                "enum": ["bullet", "blitz", "rapid", "daily"],
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Time Class"
-          },
-          "time_control": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Time Control"
-          },
-          "trainer_chesscom_uuid": {
-            "format": "uuid",
-            "title": "Trainer Chesscom Uuid",
-            "type": "string"
-          },
-          "trainer_color": {
-            "enum": ["white", "black"],
-            "title": "Trainer Color",
-            "type": "string"
-          },
-          "trainer_outcome": {
-            "anyOf": [
-              {
-                "enum": ["win", "loss", "draw"],
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Trainer Outcome"
-          },
-          "trainer_rating": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Trainer Rating"
-          }
-        },
-        "required": [
-          "game_uuid",
-          "source_url",
-          "trainer_color",
-          "trainer_chesscom_uuid",
-          "opponent_chesscom_uuid",
-          "trainer_rating",
-          "opponent_rating",
-          "started_at_utc",
-          "ended_at_utc",
-          "trainer_outcome",
-          "termination_reason",
-          "time_control",
-          "time_class",
-          "occurrence_count",
-          "length_plies",
-          "deepest_opening",
-          "coverage"
-        ],
-        "title": "GameSummaryResponse",
-        "type": "object"
-      },
-      "GamesErrorResponse": {
-        "additionalProperties": false,
-        "properties": {
-          "code": {
-            "enum": ["invalid_filter", "game_not_found", "games_unavailable", "unexpected_failure"],
-            "title": "Code",
-            "type": "string"
-          },
-          "message": {
-            "title": "Message",
-            "type": "string"
-          }
-        },
-        "required": ["code", "message"],
-        "title": "GamesErrorResponse",
-        "type": "object"
-      },
-      "GamesResponse": {
-        "additionalProperties": false,
-        "properties": {
-          "has_next": {
-            "title": "Has Next",
-            "type": "boolean"
-          },
-          "items": {
-            "items": {
-              "$ref": "#/components/schemas/GameSummaryResponse"
-            },
-            "title": "Items",
-            "type": "array"
-          },
-          "page": {
-            "title": "Page",
-            "type": "integer"
-          },
-          "page_size": {
-            "title": "Page Size",
-            "type": "integer"
-          },
-          "total": {
-            "title": "Total",
-            "type": "integer"
-          },
-          "total_pages": {
-            "title": "Total Pages",
-            "type": "integer"
-          }
-        },
-        "required": ["items", "page", "page_size", "total", "total_pages", "has_next"],
-        "title": "GamesResponse",
-        "type": "object"
-      },
-      "HTTPValidationError": {
-        "properties": {
-          "detail": {
-            "items": {
-              "$ref": "#/components/schemas/ValidationError"
-            },
-            "title": "Detail",
-            "type": "array"
-          }
-        },
-        "title": "HTTPValidationError",
-        "type": "object"
-      },
-      "HealthResponse": {
-        "additionalProperties": false,
-        "properties": {
-          "status": {
-            "title": "Status",
-            "type": "string"
-          }
-        },
-        "required": ["status"],
-        "title": "HealthResponse",
-        "type": "object"
-      },
-      "MovePreferenceResponse": {
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "move",
-            "title": "Kind",
-            "type": "string"
-          },
-          "uci": {
-            "title": "Uci",
-            "type": "string"
-          }
-        },
-        "required": ["kind", "uci"],
-        "title": "MovePreferenceResponse",
-        "type": "object"
-      },
-      "MutationMovePreferenceRequest": {
-        "properties": {
-          "kind": {
-            "const": "move",
-            "title": "Kind",
-            "type": "string"
-          },
-          "uci": {
-            "title": "Uci",
-            "type": "string"
-          }
-        },
-        "required": ["kind", "uci"],
-        "title": "MutationMovePreferenceRequest",
-        "type": "object"
-      },
-      "MutationNoPreferenceRequest": {
-        "properties": {
-          "kind": {
-            "const": "no_preference",
-            "title": "Kind",
-            "type": "string"
-          },
-          "uci": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Uci"
-          }
-        },
-        "required": ["kind"],
-        "title": "MutationNoPreferenceRequest",
-        "type": "object"
-      },
-      "NoPreferenceResponse": {
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "no_preference",
-            "title": "Kind",
-            "type": "string"
-          }
-        },
-        "required": ["kind"],
-        "title": "NoPreferenceResponse",
-        "type": "object"
-      },
-      "OpeningCatalogueErrorResponse": {
-        "additionalProperties": false,
-        "properties": {
-          "code": {
-            "enum": ["invalid_filter", "openings_unavailable", "unexpected_failure"],
-            "title": "Code",
-            "type": "string"
-          },
-          "message": {
-            "title": "Message",
-            "type": "string"
-          }
-        },
-        "required": ["code", "message"],
-        "title": "OpeningCatalogueErrorResponse",
-        "type": "object"
-      },
-      "OpeningCatalogueItemResponse": {
-        "additionalProperties": false,
-        "properties": {
-          "eco": {
-            "title": "Eco",
-            "type": "string"
-          },
-          "games_deepest": {
-            "title": "Games Deepest",
-            "type": "integer"
-          },
-          "games_reached": {
-            "title": "Games Reached",
-            "type": "integer"
-          },
-          "key": {
-            "title": "Key",
-            "type": "string"
-          },
-          "name": {
-            "title": "Name",
-            "type": "string"
-          },
-          "route_count": {
-            "title": "Route Count",
-            "type": "integer"
-          }
-        },
-        "required": ["key", "eco", "name", "route_count", "games_reached", "games_deepest"],
-        "title": "OpeningCatalogueItemResponse",
-        "type": "object"
-      },
-      "OpeningCatalogueResponse": {
-        "additionalProperties": false,
-        "properties": {
-          "has_next": {
-            "title": "Has Next",
-            "type": "boolean"
-          },
-          "items": {
-            "items": {
-              "$ref": "#/components/schemas/OpeningCatalogueItemResponse"
-            },
-            "title": "Items",
-            "type": "array"
-          },
-          "page": {
-            "title": "Page",
-            "type": "integer"
-          },
-          "page_size": {
-            "title": "Page Size",
-            "type": "integer"
-          },
-          "total": {
-            "title": "Total",
-            "type": "integer"
-          },
-          "total_pages": {
-            "title": "Total Pages",
-            "type": "integer"
-          }
-        },
-        "required": ["items", "page", "page_size", "total", "total_pages", "has_next"],
-        "title": "OpeningCatalogueResponse",
-        "type": "object"
-      },
-      "OpeningDetailErrorResponse": {
-        "additionalProperties": false,
-        "properties": {
-          "code": {
-            "enum": [
-              "invalid_opening_key",
-              "opening_not_found",
-              "openings_unavailable",
-              "unexpected_failure"
-            ],
-            "title": "Code",
-            "type": "string"
-          },
-          "message": {
-            "title": "Message",
-            "type": "string"
-          }
-        },
-        "required": ["code", "message"],
-        "title": "OpeningDetailErrorResponse",
-        "type": "object"
-      },
-      "OpeningSummaryResponse": {
-        "additionalProperties": false,
-        "properties": {
-          "eco": {
-            "title": "Eco",
-            "type": "string"
-          },
-          "key": {
-            "title": "Key",
-            "type": "string"
-          },
-          "name": {
-            "title": "Name",
-            "type": "string"
-          },
-          "ply": {
-            "title": "Ply",
-            "type": "integer"
-          }
-        },
-        "required": ["key", "eco", "name", "ply"],
-        "title": "OpeningSummaryResponse",
-        "type": "object"
-      },
-      "PositionInsightAnalysisResponse": {
-        "additionalProperties": false,
-        "properties": {
-          "result": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/PositionInsightResultResponse"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "state": {
-            "enum": ["not_requested", "queued", "running", "ready"],
-            "title": "State",
-            "type": "string"
-          }
-        },
-        "required": ["state", "result"],
-        "title": "PositionInsightAnalysisResponse",
-        "type": "object"
-      },
-      "PositionInsightErrorResponse": {
-        "additionalProperties": false,
-        "properties": {
-          "code": {
-            "enum": [
-              "invalid_fen",
-              "invalid_trainer_color",
-              "invalid_as_of",
-              "position_insight_unavailable",
-              "unexpected_failure"
-            ],
-            "title": "Code",
-            "type": "string"
-          },
-          "message": {
-            "title": "Message",
-            "type": "string"
-          }
-        },
-        "required": ["code", "message"],
-        "title": "PositionInsightErrorResponse",
-        "type": "object"
-      },
-      "PositionInsightExperienceResponse": {
-        "additionalProperties": false,
-        "properties": {
-          "distinct_game_count": {
-            "minimum": 0.0,
-            "title": "Distinct Game Count",
-            "type": "integer"
-          },
-          "occurrence_count": {
-            "minimum": 0.0,
-            "title": "Occurrence Count",
-            "type": "integer"
-          },
-          "total_game_count": {
-            "minimum": 0.0,
-            "title": "Total Game Count",
-            "type": "integer"
-          }
-        },
-        "required": ["distinct_game_count", "occurrence_count", "total_game_count"],
-        "title": "PositionInsightExperienceResponse",
-        "type": "object"
-      },
-      "PositionInsightLineResponse": {
-        "additionalProperties": false,
-        "properties": {
-          "depth": {
-            "minimum": 0.0,
-            "title": "Depth",
-            "type": "integer"
-          },
-          "pv_uci": {
-            "items": {
-              "type": "string"
-            },
-            "title": "Pv Uci",
-            "type": "array"
-          },
-          "rank": {
-            "minimum": 1.0,
-            "title": "Rank",
-            "type": "integer"
-          },
-          "score_kind": {
-            "enum": ["cp", "mate"],
-            "title": "Score Kind",
-            "type": "string"
-          },
-          "score_value": {
-            "title": "Score Value",
-            "type": "integer"
-          },
-          "wdl_draws": {
-            "minimum": 0.0,
-            "title": "Wdl Draws",
-            "type": "integer"
-          },
-          "wdl_losses": {
-            "minimum": 0.0,
-            "title": "Wdl Losses",
-            "type": "integer"
-          },
-          "wdl_wins": {
-            "minimum": 0.0,
-            "title": "Wdl Wins",
-            "type": "integer"
-          }
-        },
-        "required": [
-          "rank",
-          "score_kind",
-          "score_value",
-          "wdl_wins",
-          "wdl_draws",
-          "wdl_losses",
-          "pv_uci",
-          "depth"
-        ],
-        "title": "PositionInsightLineResponse",
-        "type": "object"
-      },
-      "PositionInsightObservedMoveResponse": {
-        "additionalProperties": false,
-        "properties": {
-          "distinct_game_count": {
-            "minimum": 0.0,
-            "title": "Distinct Game Count",
-            "type": "integer"
-          },
-          "move_uci": {
-            "title": "Move Uci",
-            "type": "string"
-          },
-          "occurrence_count": {
-            "minimum": 0.0,
-            "title": "Occurrence Count",
-            "type": "integer"
-          }
-        },
-        "required": ["move_uci", "distinct_game_count", "occurrence_count"],
-        "title": "PositionInsightObservedMoveResponse",
-        "type": "object"
-      },
-      "PositionInsightObservedMoveTotalsResponse": {
-        "additionalProperties": false,
-        "properties": {
-          "distinct_game_count": {
-            "minimum": 0.0,
-            "title": "Distinct Game Count",
-            "type": "integer"
-          },
-          "occurrence_count": {
-            "minimum": 0.0,
-            "title": "Occurrence Count",
-            "type": "integer"
-          },
-          "terminal": {
-            "$ref": "#/components/schemas/PositionInsightTerminalTotalsResponse"
-          }
-        },
-        "required": ["distinct_game_count", "occurrence_count", "terminal"],
-        "title": "PositionInsightObservedMoveTotalsResponse",
-        "type": "object"
-      },
-      "PositionInsightOpeningResponse": {
-        "additionalProperties": false,
-        "properties": {
-          "eco": {
-            "title": "Eco",
-            "type": "string"
-          },
-          "key": {
-            "title": "Key",
-            "type": "string"
-          },
-          "match": {
-            "enum": ["route", "transposition"],
-            "title": "Match",
-            "type": "string"
-          },
-          "name": {
-            "title": "Name",
-            "type": "string"
-          },
-          "ply": {
-            "minimum": 0.0,
-            "title": "Ply",
-            "type": "integer"
-          }
-        },
-        "required": ["key", "eco", "name", "ply", "match"],
-        "title": "PositionInsightOpeningResponse",
-        "type": "object"
-      },
-      "PositionInsightResponse": {
-        "additionalProperties": false,
-        "properties": {
-          "analysis": {
-            "$ref": "#/components/schemas/PositionInsightAnalysisResponse"
-          },
-          "as_of": {
-            "title": "As Of",
-            "type": "string"
-          },
-          "experience": {
-            "$ref": "#/components/schemas/PositionInsightExperienceResponse"
-          },
-          "fen": {
-            "title": "Fen",
-            "type": "string"
-          },
-          "observed_in_games": {
-            "title": "Observed In Games",
-            "type": "boolean"
-          },
-          "observed_move_totals": {
-            "$ref": "#/components/schemas/PositionInsightObservedMoveTotalsResponse"
-          },
-          "observed_moves": {
-            "items": {
-              "$ref": "#/components/schemas/PositionInsightObservedMoveResponse"
-            },
-            "title": "Observed Moves",
-            "type": "array"
-          },
-          "opening": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/PositionInsightOpeningResponse"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "preference": {
-            "discriminator": {
-              "mapping": {
-                "move": "#/components/schemas/MovePreferenceResponse",
-                "no_preference": "#/components/schemas/NoPreferenceResponse",
-                "unconfigured": "#/components/schemas/UnconfiguredPreferenceResponse"
-              },
-              "propertyName": "kind"
-            },
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/MovePreferenceResponse"
-              },
-              {
-                "$ref": "#/components/schemas/NoPreferenceResponse"
-              },
-              {
-                "$ref": "#/components/schemas/UnconfiguredPreferenceResponse"
-              }
-            ],
-            "title": "Preference"
-          },
-          "trainer_color": {
-            "enum": ["white", "black"],
-            "title": "Trainer Color",
-            "type": "string"
-          }
-        },
-        "required": [
-          "fen",
-          "trainer_color",
-          "as_of",
-          "observed_in_games",
-          "opening",
-          "experience",
-          "observed_moves",
-          "observed_move_totals",
-          "analysis",
-          "preference"
-        ],
-        "title": "PositionInsightResponse",
-        "type": "object"
-      },
-      "PositionInsightResultResponse": {
-        "additionalProperties": false,
-        "properties": {
-          "configuration_version": {
-            "minimum": 1.0,
-            "title": "Configuration Version",
-            "type": "integer"
-          },
-          "engine_name": {
-            "title": "Engine Name",
-            "type": "string"
-          },
-          "engine_version": {
-            "title": "Engine Version",
-            "type": "string"
-          },
-          "lines": {
-            "items": {
-              "$ref": "#/components/schemas/PositionInsightLineResponse"
-            },
-            "title": "Lines",
-            "type": "array"
-          },
-          "quality": {
-            "enum": ["browser", "tool"],
-            "title": "Quality",
-            "type": "string"
-          },
-          "settings": {
-            "title": "Settings",
-            "type": "object"
-          },
-          "terminal_kind": {
-            "anyOf": [
-              {
-                "enum": ["checkmate", "stalemate", "insufficient_material"],
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Terminal Kind"
-          }
-        },
-        "required": [
-          "quality",
-          "configuration_version",
-          "settings",
-          "engine_name",
-          "engine_version",
-          "terminal_kind",
-          "lines"
-        ],
-        "title": "PositionInsightResultResponse",
-        "type": "object"
-      },
-      "PositionInsightTerminalTotalsResponse": {
-        "additionalProperties": false,
-        "properties": {
-          "distinct_game_count": {
-            "minimum": 0.0,
-            "title": "Distinct Game Count",
-            "type": "integer"
-          },
-          "occurrence_count": {
-            "minimum": 0.0,
-            "title": "Occurrence Count",
-            "type": "integer"
-          }
-        },
-        "required": ["distinct_game_count", "occurrence_count"],
-        "title": "PositionInsightTerminalTotalsResponse",
-        "type": "object"
-      },
-      "PreferredMovesErrorResponse": {
-        "additionalProperties": false,
-        "properties": {
-          "code": {
-            "enum": [
-              "invalid_fen",
-              "invalid_from",
-              "invalid_until",
-              "invalid_window",
-              "invalid_effective_from",
-              "invalid_effective_until",
-              "invalid_preference",
-              "invalid_uci",
-              "illegal_move",
-              "preferred_moves_unavailable",
-              "unexpected_failure"
-            ],
-            "title": "Code",
-            "type": "string"
-          },
-          "message": {
-            "title": "Message",
-            "type": "string"
-          }
-        },
-        "required": ["code", "message"],
-        "title": "PreferredMovesErrorResponse",
-        "type": "object"
-      },
-      "PreferredMovesMutationRequest": {
-        "properties": {
-          "effective_from": {
-            "title": "Effective From",
-            "type": "string"
-          },
-          "effective_until": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Effective Until"
-          },
-          "fen": {
-            "title": "Fen",
-            "type": "string"
-          },
-          "preference": {
-            "discriminator": {
-              "mapping": {
-                "move": "#/components/schemas/MutationMovePreferenceRequest",
-                "no_preference": "#/components/schemas/MutationNoPreferenceRequest"
-              },
-              "propertyName": "kind"
-            },
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/MutationMovePreferenceRequest"
-              },
-              {
-                "$ref": "#/components/schemas/MutationNoPreferenceRequest"
-              }
-            ],
-            "title": "Preference"
-          }
-        },
-        "required": ["fen", "effective_from", "preference"],
-        "title": "PreferredMovesMutationRequest",
-        "type": "object"
-      },
-      "PreferredMovesMutationResponse": {
-        "additionalProperties": false,
-        "properties": {
-          "effective_from": {
-            "title": "Effective From",
-            "type": "string"
-          },
-          "effective_until": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Effective Until"
-          },
-          "fen": {
-            "title": "Fen",
-            "type": "string"
-          },
-          "periods": {
-            "items": {
-              "$ref": "#/components/schemas/PreferredMovesPeriodResponse"
-            },
-            "title": "Periods",
-            "type": "array"
-          },
-          "preference": {
-            "discriminator": {
-              "mapping": {
-                "move": "#/components/schemas/MovePreferenceResponse",
-                "no_preference": "#/components/schemas/NoPreferenceResponse"
-              },
-              "propertyName": "kind"
-            },
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/MovePreferenceResponse"
-              },
-              {
-                "$ref": "#/components/schemas/NoPreferenceResponse"
-              }
-            ],
-            "title": "Preference"
-          }
-        },
-        "required": ["fen", "effective_from", "effective_until", "preference", "periods"],
-        "title": "PreferredMovesMutationResponse",
-        "type": "object"
-      },
-      "PreferredMovesPeriodResponse": {
-        "additionalProperties": false,
-        "properties": {
-          "effective_from": {
-            "title": "Effective From",
-            "type": "string"
-          },
-          "effective_until": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Effective Until"
-          },
-          "preference": {
-            "discriminator": {
-              "mapping": {
-                "move": "#/components/schemas/MovePreferenceResponse",
-                "no_preference": "#/components/schemas/NoPreferenceResponse"
-              },
-              "propertyName": "kind"
-            },
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/MovePreferenceResponse"
-              },
-              {
-                "$ref": "#/components/schemas/NoPreferenceResponse"
-              }
-            ],
-            "title": "Preference"
-          }
-        },
-        "required": ["effective_from", "effective_until", "preference"],
-        "title": "PreferredMovesPeriodResponse",
-        "type": "object"
-      },
-      "PreferredMovesRemovalRequest": {
-        "properties": {
-          "effective_from": {
-            "title": "Effective From",
-            "type": "string"
-          },
-          "effective_until": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Effective Until"
-          },
-          "fen": {
-            "title": "Fen",
-            "type": "string"
-          }
-        },
-        "required": ["fen", "effective_from"],
-        "title": "PreferredMovesRemovalRequest",
-        "type": "object"
-      },
-      "PreferredMovesRemovalResponse": {
-        "additionalProperties": false,
-        "properties": {
-          "effective_from": {
-            "title": "Effective From",
-            "type": "string"
-          },
-          "effective_until": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Effective Until"
-          },
-          "fen": {
-            "title": "Fen",
-            "type": "string"
-          },
-          "periods": {
-            "items": {
-              "$ref": "#/components/schemas/PreferredMovesPeriodResponse"
-            },
-            "title": "Periods",
-            "type": "array"
-          }
-        },
-        "required": ["fen", "effective_from", "effective_until", "periods"],
-        "title": "PreferredMovesRemovalResponse",
-        "type": "object"
-      },
-      "PreferredMovesResponse": {
-        "additionalProperties": false,
-        "properties": {
-          "fen": {
-            "title": "Fen",
-            "type": "string"
-          },
-          "from": {
-            "title": "From",
-            "type": "string"
-          },
-          "segments": {
-            "items": {
-              "$ref": "#/components/schemas/PreferredMovesSegmentResponse"
-            },
-            "title": "Segments",
-            "type": "array"
-          },
-          "until": {
-            "title": "Until",
-            "type": "string"
-          }
-        },
-        "required": ["fen", "from", "until", "segments"],
-        "title": "PreferredMovesResponse",
-        "type": "object"
-      },
-      "PreferredMovesSegmentResponse": {
-        "additionalProperties": false,
-        "properties": {
-          "from": {
-            "title": "From",
-            "type": "string"
-          },
-          "preference": {
-            "discriminator": {
-              "mapping": {
-                "move": "#/components/schemas/MovePreferenceResponse",
-                "no_preference": "#/components/schemas/NoPreferenceResponse",
-                "unconfigured": "#/components/schemas/UnconfiguredPreferenceResponse"
-              },
-              "propertyName": "kind"
-            },
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/MovePreferenceResponse"
-              },
-              {
-                "$ref": "#/components/schemas/NoPreferenceResponse"
-              },
-              {
-                "$ref": "#/components/schemas/UnconfiguredPreferenceResponse"
-              }
-            ],
-            "title": "Preference"
-          },
-          "until": {
-            "title": "Until",
-            "type": "string"
-          }
-        },
-        "required": ["from", "until", "preference"],
-        "title": "PreferredMovesSegmentResponse",
-        "type": "object"
-      },
-      "TrainingRequirementErrorResponse": {
-        "properties": {
-          "code": {
-            "type": "string",
-            "enum": [
-              "invalid_as_of",
-              "invalid_fen",
-              "invalid_opening_filter",
-              "invalid_played_move_uci",
-              "invalid_requirement_range",
-              "invalid_trainer_color",
-              "invalid_pagination",
-              "training_requirement_not_found",
-              "training_requirements_stale",
-              "position_training_requirements_unavailable",
-              "unexpected_failure"
-            ],
-            "title": "Code"
-          },
-          "message": {
-            "type": "string",
-            "title": "Message"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": ["code", "message"],
-        "title": "TrainingRequirementErrorResponse"
-      },
-      "TrainingRequirementItemResponse": {
-        "properties": {
-          "fen": {
-            "type": "string",
-            "title": "Fen"
-          },
-          "trainer_color": {
-            "type": "string",
-            "enum": ["white", "black"],
-            "title": "Trainer Color"
-          },
-          "preferred_move_uci": {
-            "type": "string",
-            "title": "Preferred Move Uci"
-          },
-          "encounters": {
-            "type": "integer",
-            "minimum": 0.0,
-            "title": "Encounters"
-          },
-          "hits": {
-            "type": "integer",
-            "minimum": 0.0,
-            "title": "Hits"
-          },
-          "misses": {
-            "type": "integer",
-            "minimum": 0.0,
-            "title": "Misses"
-          },
-          "observed_success_rate": {
-            "type": "number",
-            "title": "Observed Success Rate"
-          },
-          "game_balance": {
-            "type": "number",
-            "title": "Game Balance"
-          },
-          "effective_training_balance": {
-            "type": "number",
-            "title": "Effective Training Balance"
-          },
-          "training_adjustment": {
-            "type": "number",
-            "title": "Training Adjustment"
-          },
-          "training_updated_on": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Training Updated On"
-          },
-          "training_requirement": {
-            "type": "number",
-            "title": "Training Requirement"
-          },
-          "training_required": {
-            "type": "boolean",
-            "title": "Training Required"
-          },
-          "correct_answers_needed": {
-            "type": "integer",
-            "minimum": 0.0,
-            "title": "Correct Answers Needed"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "fen",
-          "trainer_color",
-          "preferred_move_uci",
-          "encounters",
-          "hits",
-          "misses",
-          "observed_success_rate",
-          "game_balance",
-          "effective_training_balance",
-          "training_adjustment",
-          "training_updated_on",
-          "training_requirement",
-          "training_required",
-          "correct_answers_needed"
-        ],
-        "title": "TrainingRequirementItemResponse"
-      },
-      "TrainingRequirementPolicyResponse": {
-        "properties": {
-          "target_success_rate": {
-            "type": "number",
-            "title": "Target Success Rate"
-          },
-          "game_hit_weight": {
-            "type": "number",
-            "title": "Game Hit Weight"
-          },
-          "game_miss_weight": {
-            "type": "number",
-            "title": "Game Miss Weight"
-          },
-          "training_curve": {
-            "type": "string",
-            "title": "Training Curve"
-          },
-          "training_credit_half_life_days": {
-            "type": "number",
-            "title": "Training Credit Half Life Days"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "target_success_rate",
-          "game_hit_weight",
-          "game_miss_weight",
-          "training_curve",
-          "training_credit_half_life_days"
-        ],
-        "title": "TrainingRequirementPolicyResponse"
-      },
-      "TrainingRequirementResponse": {
-        "properties": {
-          "as_of": {
-            "type": "string",
-            "title": "As Of"
-          },
-          "scoring_policy": {
-            "$ref": "#/components/schemas/TrainingRequirementPolicyResponse"
-          },
-          "items": {
-            "items": {
-              "$ref": "#/components/schemas/TrainingRequirementItemResponse"
-            },
-            "type": "array",
-            "title": "Items"
-          },
-          "page": {
-            "type": "integer",
-            "minimum": 1.0,
-            "title": "Page"
-          },
-          "page_size": {
-            "type": "integer",
-            "maximum": 100.0,
-            "minimum": 1.0,
-            "title": "Page Size"
-          },
-          "total": {
-            "type": "integer",
-            "minimum": 0.0,
-            "title": "Total"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": ["as_of", "scoring_policy", "items", "page", "page_size", "total"],
-        "title": "TrainingRequirementResponse"
-      },
-      "UnconfiguredPreferenceResponse": {
-        "additionalProperties": false,
-        "properties": {
-          "kind": {
-            "const": "unconfigured",
-            "title": "Kind",
-            "type": "string"
-          }
-        },
-        "required": ["kind"],
-        "title": "UnconfiguredPreferenceResponse",
-        "type": "object"
-      },
-      "ValidationError": {
-        "properties": {
-          "loc": {
-            "items": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "integer"
-                }
-              ]
-            },
-            "title": "Location",
-            "type": "array"
-          },
-          "msg": {
-            "title": "Message",
-            "type": "string"
-          },
-          "type": {
-            "title": "Error Type",
-            "type": "string"
-          }
-        },
-        "required": ["loc", "msg", "type"],
-        "title": "ValidationError",
-        "type": "object"
-      }
-    }
-  },
+  "openapi": "3.1.0",
   "info": {
     "title": "Chess Move Trainer",
     "version": "0.1.0"
   },
-  "openapi": "3.1.0",
   "paths": {
-    "/api/analysis": {
+    "/api/health": {
       "get": {
-        "operationId": "getAnalysis",
-        "parameters": [
-          {
-            "in": "query",
-            "name": "fen",
-            "required": true,
-            "schema": {
-              "title": "Fen",
-              "type": "string"
-            }
-          }
-        ],
+        "tags": ["health"],
+        "summary": "Health",
+        "operationId": "getHealth",
         "responses": {
           "200": {
+            "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AnalysisObservationResponse"
+                  "$ref": "#/components/schemas/HealthResponse"
                 }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AnalysisObservationErrorResponse"
-                }
-              }
-            },
-            "description": "Unprocessable Entity"
-          },
-          "500": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AnalysisObservationErrorResponse"
-                }
-              }
-            },
-            "description": "Internal Server Error"
-          },
-          "503": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AnalysisObservationErrorResponse"
-                }
-              }
-            },
-            "description": "Service Unavailable"
-          }
-        },
-        "summary": "Get Analysis",
-        "tags": ["analysis"]
-      }
-    },
-    "/api/analysis-requests": {
-      "post": {
-        "operationId": "requestAnalysis",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AnalysisRequestBody"
               }
             }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AnalysisObservationResponse"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "202": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AnalysisObservationResponse"
-                }
-              }
-            },
-            "description": "Accepted"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AnalysisRequestErrorResponse"
-                }
-              }
-            },
-            "description": "Unprocessable Entity"
-          },
-          "500": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AnalysisRequestErrorResponse"
-                }
-              }
-            },
-            "description": "Internal Server Error"
-          },
-          "503": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AnalysisRequestErrorResponse"
-                }
-              }
-            },
-            "description": "Service Unavailable"
           }
-        },
-        "summary": "Post Analysis Request",
-        "tags": ["analysis"]
+        }
       }
     },
     "/api/games": {
       "get": {
+        "tags": ["games"],
+        "summary": "Get Games",
         "operationId": "getGames",
         "parameters": [
           {
-            "in": "query",
             "name": "page",
+            "in": "query",
             "required": false,
             "schema": {
+              "type": "integer",
               "default": 1,
-              "title": "Page",
-              "type": "integer"
+              "title": "Page"
             }
           },
           {
-            "in": "query",
             "name": "page_size",
+            "in": "query",
             "required": false,
             "schema": {
+              "type": "integer",
               "default": 50,
-              "title": "Page Size",
-              "type": "integer"
+              "title": "Page Size"
             }
           },
           {
-            "in": "query",
             "name": "started_at_from",
+            "in": "query",
             "required": false,
             "schema": {
               "anyOf": [
@@ -1926,8 +67,8 @@
             }
           },
           {
-            "in": "query",
             "name": "started_at_to",
+            "in": "query",
             "required": false,
             "schema": {
               "anyOf": [
@@ -1942,8 +83,8 @@
             }
           },
           {
-            "in": "query",
             "name": "ended_at_from",
+            "in": "query",
             "required": false,
             "schema": {
               "anyOf": [
@@ -1958,8 +99,8 @@
             }
           },
           {
-            "in": "query",
             "name": "ended_at_to",
+            "in": "query",
             "required": false,
             "schema": {
               "anyOf": [
@@ -1974,8 +115,8 @@
             }
           },
           {
-            "in": "query",
             "name": "trainer_color",
+            "in": "query",
             "required": false,
             "schema": {
               "anyOf": [
@@ -1990,8 +131,8 @@
             }
           },
           {
-            "in": "query",
             "name": "trainer_outcome",
+            "in": "query",
             "required": false,
             "schema": {
               "anyOf": [
@@ -2006,8 +147,8 @@
             }
           },
           {
-            "in": "query",
             "name": "termination_reason",
+            "in": "query",
             "required": false,
             "schema": {
               "anyOf": [
@@ -2022,8 +163,8 @@
             }
           },
           {
-            "in": "query",
             "name": "trainer_rating_min",
+            "in": "query",
             "required": false,
             "schema": {
               "anyOf": [
@@ -2038,8 +179,8 @@
             }
           },
           {
-            "in": "query",
             "name": "trainer_rating_max",
+            "in": "query",
             "required": false,
             "schema": {
               "anyOf": [
@@ -2054,8 +195,8 @@
             }
           },
           {
-            "in": "query",
             "name": "opponent_rating_min",
+            "in": "query",
             "required": false,
             "schema": {
               "anyOf": [
@@ -2070,8 +211,8 @@
             }
           },
           {
-            "in": "query",
             "name": "opponent_rating_max",
+            "in": "query",
             "required": false,
             "schema": {
               "anyOf": [
@@ -2086,8 +227,8 @@
             }
           },
           {
-            "in": "query",
             "name": "opponent_chesscom_uuid",
+            "in": "query",
             "required": false,
             "schema": {
               "anyOf": [
@@ -2102,8 +243,8 @@
             }
           },
           {
-            "in": "query",
             "name": "time_class",
+            "in": "query",
             "required": false,
             "schema": {
               "anyOf": [
@@ -2118,8 +259,8 @@
             }
           },
           {
-            "in": "query",
             "name": "time_control",
+            "in": "query",
             "required": false,
             "schema": {
               "anyOf": [
@@ -2134,8 +275,8 @@
             }
           },
           {
-            "in": "query",
             "name": "opening_key",
+            "in": "query",
             "required": false,
             "schema": {
               "anyOf": [
@@ -2150,8 +291,8 @@
             }
           },
           {
-            "in": "query",
             "name": "opening_match",
+            "in": "query",
             "required": false,
             "schema": {
               "anyOf": [
@@ -2166,8 +307,8 @@
             }
           },
           {
-            "in": "query",
             "name": "contains_fen",
+            "in": "query",
             "required": false,
             "schema": {
               "anyOf": [
@@ -2182,8 +323,8 @@
             }
           },
           {
-            "in": "query",
             "name": "move_fen",
+            "in": "query",
             "required": false,
             "schema": {
               "anyOf": [
@@ -2198,8 +339,8 @@
             }
           },
           {
-            "in": "query",
             "name": "move_uci",
+            "in": "query",
             "required": false,
             "schema": {
               "anyOf": [
@@ -2214,8 +355,8 @@
             }
           },
           {
-            "in": "query",
             "name": "min_length_plies",
+            "in": "query",
             "required": false,
             "schema": {
               "anyOf": [
@@ -2230,8 +371,8 @@
             }
           },
           {
-            "in": "query",
             "name": "max_length_plies",
+            "in": "query",
             "required": false,
             "schema": {
               "anyOf": [
@@ -2246,8 +387,8 @@
             }
           },
           {
-            "in": "query",
             "name": "analysis_coverage",
+            "in": "query",
             "required": false,
             "schema": {
               "anyOf": [
@@ -2262,8 +403,8 @@
             }
           },
           {
-            "in": "query",
             "name": "preferred_coverage",
+            "in": "query",
             "required": false,
             "schema": {
               "anyOf": [
@@ -2278,26 +419,26 @@
             }
           },
           {
-            "in": "query",
             "name": "sort",
+            "in": "query",
             "required": false,
             "schema": {
+              "type": "string",
               "default": "started_at_desc",
-              "title": "Sort",
-              "type": "string"
+              "title": "Sort"
             }
           }
         ],
         "responses": {
           "200": {
+            "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/GamesResponse"
                 }
               }
-            },
-            "description": "Successful Response"
+            }
           },
           "422": {
             "content": {
@@ -2329,36 +470,36 @@
             },
             "description": "Service Unavailable"
           }
-        },
-        "summary": "Get Games",
-        "tags": ["games"]
+        }
       }
     },
     "/api/games/{game_uuid}": {
       "get": {
+        "tags": ["games"],
+        "summary": "Get Game",
         "operationId": "getGame",
         "parameters": [
           {
-            "in": "path",
             "name": "game_uuid",
+            "in": "path",
             "required": true,
             "schema": {
+              "type": "string",
               "format": "uuid",
-              "title": "Game Uuid",
-              "type": "string"
+              "title": "Game Uuid"
             }
           }
         ],
         "responses": {
           "200": {
+            "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/GameDetailResponse"
                 }
               }
-            },
-            "description": "Successful Response"
+            }
           },
           "404": {
             "content": {
@@ -2370,229 +511,71 @@
             },
             "description": "Not Found"
           },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GamesErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GamesErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          },
           "422": {
+            "description": "Validation Error",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
-            },
-            "description": "Validation Error"
-          },
-          "500": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/GamesErrorResponse"
-                }
-              }
-            },
-            "description": "Internal Server Error"
-          },
-          "503": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/GamesErrorResponse"
-                }
-              }
-            },
-            "description": "Service Unavailable"
+            }
           }
-        },
-        "summary": "Get Game",
-        "tags": ["games"]
+        }
       }
     },
-    "/api/health": {
+    "/api/analysis": {
       "get": {
-        "operationId": "getHealth",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HealthResponse"
-                }
-              }
-            },
-            "description": "Successful Response"
-          }
-        },
-        "summary": "Health",
-        "tags": ["health"]
-      }
-    },
-    "/api/openings": {
-      "get": {
-        "operationId": "getOpenings",
+        "tags": ["analysis"],
+        "summary": "Get Analysis",
+        "operationId": "getAnalysis",
         "parameters": [
           {
+            "name": "fen",
             "in": "query",
-            "name": "page",
-            "required": false,
-            "schema": {
-              "default": 1,
-              "title": "Page",
-              "type": "integer"
-            }
-          },
-          {
-            "in": "query",
-            "name": "page_size",
-            "required": false,
-            "schema": {
-              "default": 50,
-              "title": "Page Size",
-              "type": "integer"
-            }
-          },
-          {
-            "in": "query",
-            "name": "search",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Search"
-            }
-          },
-          {
-            "in": "query",
-            "name": "eco_from",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Eco From"
-            }
-          },
-          {
-            "in": "query",
-            "name": "eco_to",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Eco To"
-            }
-          },
-          {
-            "in": "query",
-            "name": "sort",
-            "required": false,
-            "schema": {
-              "default": "eco_asc",
-              "title": "Sort",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/OpeningCatalogueResponse"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/OpeningCatalogueErrorResponse"
-                }
-              }
-            },
-            "description": "Unprocessable Entity"
-          },
-          "500": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/OpeningCatalogueErrorResponse"
-                }
-              }
-            },
-            "description": "Internal Server Error"
-          },
-          "503": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/OpeningCatalogueErrorResponse"
-                }
-              }
-            },
-            "description": "Service Unavailable"
-          }
-        },
-        "summary": "Get Openings",
-        "tags": ["openings"]
-      }
-    },
-    "/api/openings/{opening_key}": {
-      "get": {
-        "operationId": "getOpeningByKey",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "opening_key",
             "required": true,
             "schema": {
-              "title": "Opening Key",
-              "type": "string"
+              "type": "string",
+              "title": "Fen"
             }
           }
         ],
         "responses": {
           "200": {
+            "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/OpeningCatalogueItemResponse"
+                  "$ref": "#/components/schemas/AnalysisObservationResponse"
                 }
               }
-            },
-            "description": "Successful Response"
-          },
-          "404": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/OpeningDetailErrorResponse"
-                }
-              }
-            },
-            "description": "Not Found"
+            }
           },
           "422": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/OpeningDetailErrorResponse"
+                  "$ref": "#/components/schemas/AnalysisObservationErrorResponse"
                 }
               }
             },
@@ -2602,7 +585,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/OpeningDetailErrorResponse"
+                  "$ref": "#/components/schemas/AnalysisObservationErrorResponse"
                 }
               }
             },
@@ -2612,59 +595,320 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/OpeningDetailErrorResponse"
+                  "$ref": "#/components/schemas/AnalysisObservationErrorResponse"
                 }
               }
             },
             "description": "Service Unavailable"
           }
+        }
+      }
+    },
+    "/api/analysis-requests": {
+      "post": {
+        "tags": ["analysis"],
+        "summary": "Post Analysis Request",
+        "operationId": "requestAnalysis",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnalysisRequestBody"
+              }
+            }
+          },
+          "required": true
         },
-        "summary": "Get Opening By Key",
-        "tags": ["openings"]
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalysisObservationResponse"
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "Accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalysisObservationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalysisRequestErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalysisRequestErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalysisRequestErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/preferred-moves": {
+      "get": {
+        "tags": ["preferred-moves"],
+        "summary": "Get Preferred Moves",
+        "operationId": "getPreferredMoves",
+        "parameters": [
+          {
+            "name": "fen",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Fen"
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "From"
+            }
+          },
+          {
+            "name": "until",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Until"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreferredMovesResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreferredMovesErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreferredMovesErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreferredMovesErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        }
+      },
+      "put": {
+        "tags": ["preferred-moves"],
+        "summary": "Put Preferred Moves",
+        "operationId": "putPreferredMoves",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PreferredMovesMutationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreferredMovesMutationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreferredMovesErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreferredMovesErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreferredMovesErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        }
+      },
+      "delete": {
+        "tags": ["preferred-moves"],
+        "summary": "Delete Preferred Moves",
+        "operationId": "deletePreferredMoves",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PreferredMovesRemovalRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreferredMovesRemovalResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreferredMovesErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreferredMovesErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreferredMovesErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        }
       }
     },
     "/api/positions/insight": {
       "get": {
+        "tags": ["position-insight"],
+        "summary": "Get Position Insight",
         "operationId": "getPositionInsight",
         "parameters": [
           {
-            "in": "query",
             "name": "fen",
+            "in": "query",
             "required": true,
             "schema": {
-              "title": "Fen",
-              "type": "string"
+              "type": "string",
+              "title": "Fen"
             }
           },
           {
-            "in": "query",
             "name": "trainer_color",
+            "in": "query",
             "required": true,
             "schema": {
-              "title": "Trainer Color",
-              "type": "string"
+              "type": "string",
+              "title": "Trainer Color"
             }
           },
           {
-            "in": "query",
             "name": "as_of",
+            "in": "query",
             "required": true,
             "schema": {
-              "title": "As Of",
-              "type": "string"
+              "type": "string",
+              "title": "As Of"
             }
           }
         ],
         "responses": {
           "200": {
+            "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/PositionInsightResponse"
                 }
               }
-            },
-            "description": "Successful Response"
+            }
           },
           "422": {
             "content": {
@@ -2696,9 +940,7 @@
             },
             "description": "Service Unavailable"
           }
-        },
-        "summary": "Get Position Insight",
-        "tags": ["position-insight"]
+        }
       }
     },
     "/api/positions/training-requirements": {
@@ -2903,14 +1145,16 @@
         }
       }
     },
-    "/api/preferred-moves": {
-      "delete": {
-        "operationId": "deletePreferredMoves",
+    "/api/positions/training-requirements/answers": {
+      "post": {
+        "tags": ["position-training-requirements"],
+        "summary": "Submit Position Training Answer",
+        "operationId": "submitPositionTrainingAnswer",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/PreferredMovesRemovalRequest"
+                "$ref": "#/components/schemas/TrainingAnswerRequest"
               }
             }
           },
@@ -2918,153 +1162,169 @@
         },
         "responses": {
           "200": {
+            "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PreferredMovesRemovalResponse"
+                  "$ref": "#/components/schemas/TrainingAnswerResponse"
                 }
               }
-            },
-            "description": "Successful Response"
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrainingRequirementErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrainingRequirementErrorResponse"
+                }
+              }
+            }
           },
           "422": {
+            "description": "Unprocessable Entity",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PreferredMovesErrorResponse"
+                  "$ref": "#/components/schemas/TrainingRequirementErrorResponse"
                 }
               }
-            },
-            "description": "Unprocessable Entity"
+            }
           },
           "500": {
+            "description": "Internal Server Error",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PreferredMovesErrorResponse"
+                  "$ref": "#/components/schemas/TrainingRequirementErrorResponse"
                 }
               }
-            },
-            "description": "Internal Server Error"
+            }
           },
           "503": {
+            "description": "Service Unavailable",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PreferredMovesErrorResponse"
+                  "$ref": "#/components/schemas/TrainingRequirementErrorResponse"
                 }
               }
-            },
-            "description": "Service Unavailable"
+            }
           }
-        },
-        "summary": "Delete Preferred Moves",
-        "tags": ["preferred-moves"]
-      },
+        }
+      }
+    },
+    "/api/openings": {
       "get": {
-        "operationId": "getPreferredMoves",
+        "tags": ["openings"],
+        "summary": "Get Openings",
+        "operationId": "getOpenings",
         "parameters": [
           {
+            "name": "page",
             "in": "query",
-            "name": "fen",
-            "required": true,
+            "required": false,
             "schema": {
-              "title": "Fen",
-              "type": "string"
+              "type": "integer",
+              "default": 1,
+              "title": "Page"
             }
           },
           {
+            "name": "page_size",
             "in": "query",
-            "name": "from",
-            "required": true,
+            "required": false,
             "schema": {
-              "title": "From",
-              "type": "string"
+              "type": "integer",
+              "default": 50,
+              "title": "Page Size"
             }
           },
           {
+            "name": "search",
             "in": "query",
-            "name": "until",
-            "required": true,
+            "required": false,
             "schema": {
-              "title": "Until",
-              "type": "string"
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Search"
+            }
+          },
+          {
+            "name": "eco_from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Eco From"
+            }
+          },
+          {
+            "name": "eco_to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Eco To"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "eco_asc",
+              "title": "Sort"
             }
           }
         ],
         "responses": {
           "200": {
+            "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PreferredMovesResponse"
+                  "$ref": "#/components/schemas/OpeningCatalogueResponse"
                 }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PreferredMovesErrorResponse"
-                }
-              }
-            },
-            "description": "Unprocessable Entity"
-          },
-          "500": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PreferredMovesErrorResponse"
-                }
-              }
-            },
-            "description": "Internal Server Error"
-          },
-          "503": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PreferredMovesErrorResponse"
-                }
-              }
-            },
-            "description": "Service Unavailable"
-          }
-        },
-        "summary": "Get Preferred Moves",
-        "tags": ["preferred-moves"]
-      },
-      "put": {
-        "operationId": "putPreferredMoves",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/PreferredMovesMutationRequest"
               }
             }
           },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PreferredMovesMutationResponse"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
           "422": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PreferredMovesErrorResponse"
+                  "$ref": "#/components/schemas/OpeningCatalogueErrorResponse"
                 }
               }
             },
@@ -3074,7 +1334,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PreferredMovesErrorResponse"
+                  "$ref": "#/components/schemas/OpeningCatalogueErrorResponse"
                 }
               }
             },
@@ -3084,15 +1344,1886 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PreferredMovesErrorResponse"
+                  "$ref": "#/components/schemas/OpeningCatalogueErrorResponse"
                 }
               }
             },
             "description": "Service Unavailable"
           }
+        }
+      }
+    },
+    "/api/openings/{opening_key}": {
+      "get": {
+        "tags": ["openings"],
+        "summary": "Get Opening By Key",
+        "operationId": "getOpeningByKey",
+        "parameters": [
+          {
+            "name": "opening_key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Opening Key"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpeningCatalogueItemResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpeningDetailErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpeningDetailErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpeningDetailErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpeningDetailErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AnalysisObservationErrorResponse": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "enum": ["invalid_fen", "analysis_unavailable", "unexpected_failure"],
+            "title": "Code"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
         },
-        "summary": "Put Preferred Moves",
-        "tags": ["preferred-moves"]
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["code", "message"],
+        "title": "AnalysisObservationErrorResponse"
+      },
+      "AnalysisObservationLineResponse": {
+        "properties": {
+          "rank": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Rank"
+          },
+          "score_kind": {
+            "type": "string",
+            "enum": ["cp", "mate"],
+            "title": "Score Kind"
+          },
+          "score_value": {
+            "type": "integer",
+            "title": "Score Value"
+          },
+          "wdl_wins": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Wdl Wins"
+          },
+          "wdl_draws": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Wdl Draws"
+          },
+          "wdl_losses": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Wdl Losses"
+          },
+          "pv_uci": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Pv Uci"
+          },
+          "depth": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Depth"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "rank",
+          "score_kind",
+          "score_value",
+          "wdl_wins",
+          "wdl_draws",
+          "wdl_losses",
+          "pv_uci",
+          "depth"
+        ],
+        "title": "AnalysisObservationLineResponse"
+      },
+      "AnalysisObservationResponse": {
+        "properties": {
+          "fen": {
+            "type": "string",
+            "title": "Fen"
+          },
+          "state": {
+            "type": "string",
+            "enum": ["not_requested", "queued", "running", "ready"],
+            "title": "State"
+          },
+          "result": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AnalysisObservationResultResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["fen", "state", "result"],
+        "title": "AnalysisObservationResponse"
+      },
+      "AnalysisObservationResultResponse": {
+        "properties": {
+          "quality": {
+            "type": "string",
+            "enum": ["browser", "tool"],
+            "title": "Quality"
+          },
+          "configuration_version": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Configuration Version"
+          },
+          "settings": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Settings"
+          },
+          "engine_name": {
+            "type": "string",
+            "title": "Engine Name"
+          },
+          "engine_version": {
+            "type": "string",
+            "title": "Engine Version"
+          },
+          "terminal_kind": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": ["checkmate", "stalemate", "insufficient_material"]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Terminal Kind"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/AnalysisObservationLineResponse"
+            },
+            "type": "array",
+            "title": "Lines"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "quality",
+          "configuration_version",
+          "settings",
+          "engine_name",
+          "engine_version",
+          "terminal_kind",
+          "lines"
+        ],
+        "title": "AnalysisObservationResultResponse"
+      },
+      "AnalysisRequestBody": {
+        "properties": {
+          "fen": {
+            "type": "string",
+            "title": "Fen"
+          },
+          "quality": {
+            "type": "string",
+            "enum": ["browser", "tool"],
+            "title": "Quality",
+            "default": "browser"
+          }
+        },
+        "type": "object",
+        "required": ["fen"],
+        "title": "AnalysisRequestBody",
+        "description": "Strict known request fields while tolerating future client fields."
+      },
+      "AnalysisRequestErrorResponse": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "enum": [
+              "invalid_fen",
+              "invalid_quality",
+              "analysis_unavailable",
+              "unexpected_failure"
+            ],
+            "title": "Code"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["code", "message"],
+        "title": "AnalysisRequestErrorResponse",
+        "description": "Stable error body for the desired-analysis operation."
+      },
+      "GameCoverageResponse": {
+        "properties": {
+          "distinct_position_count": {
+            "type": "integer",
+            "title": "Distinct Position Count"
+          },
+          "analyzed_position_count": {
+            "type": "integer",
+            "title": "Analyzed Position Count"
+          },
+          "preferred_position_count": {
+            "type": "integer",
+            "title": "Preferred Position Count"
+          },
+          "analysis_coverage": {
+            "type": "string",
+            "enum": ["none", "partial", "complete"],
+            "title": "Analysis Coverage"
+          },
+          "preferred_coverage": {
+            "type": "string",
+            "enum": ["none", "partial", "complete"],
+            "title": "Preferred Coverage"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "distinct_position_count",
+          "analyzed_position_count",
+          "preferred_position_count",
+          "analysis_coverage",
+          "preferred_coverage"
+        ],
+        "title": "GameCoverageResponse"
+      },
+      "GameDetailOccurrenceResponse": {
+        "properties": {
+          "ply": {
+            "type": "integer",
+            "title": "Ply"
+          },
+          "fen": {
+            "type": "string",
+            "title": "Fen"
+          },
+          "move_uci": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Move Uci"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["ply", "fen", "move_uci"],
+        "title": "GameDetailOccurrenceResponse"
+      },
+      "GameDetailResponse": {
+        "properties": {
+          "game_uuid": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Game Uuid"
+          },
+          "source_url": {
+            "type": "string",
+            "title": "Source Url"
+          },
+          "original_pgn": {
+            "type": "string",
+            "title": "Original Pgn"
+          },
+          "trainer_color": {
+            "type": "string",
+            "enum": ["white", "black"],
+            "title": "Trainer Color"
+          },
+          "trainer_chesscom_uuid": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Trainer Chesscom Uuid"
+          },
+          "opponent_chesscom_uuid": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Opponent Chesscom Uuid"
+          },
+          "trainer_rating": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trainer Rating"
+          },
+          "opponent_rating": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Opponent Rating"
+          },
+          "started_at_utc": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At Utc"
+          },
+          "ended_at_utc": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ended At Utc"
+          },
+          "trainer_outcome": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": ["win", "loss", "draw"]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trainer Outcome"
+          },
+          "termination_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Termination Reason"
+          },
+          "time_control": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Time Control"
+          },
+          "time_class": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": ["bullet", "blitz", "rapid", "daily"]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Time Class"
+          },
+          "occurrences": {
+            "items": {
+              "$ref": "#/components/schemas/GameDetailOccurrenceResponse"
+            },
+            "type": "array",
+            "title": "Occurrences"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "game_uuid",
+          "source_url",
+          "original_pgn",
+          "trainer_color",
+          "trainer_chesscom_uuid",
+          "opponent_chesscom_uuid",
+          "trainer_rating",
+          "opponent_rating",
+          "started_at_utc",
+          "ended_at_utc",
+          "trainer_outcome",
+          "termination_reason",
+          "time_control",
+          "time_class",
+          "occurrences"
+        ],
+        "title": "GameDetailResponse"
+      },
+      "GameSummaryResponse": {
+        "properties": {
+          "game_uuid": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Game Uuid"
+          },
+          "source_url": {
+            "type": "string",
+            "title": "Source Url"
+          },
+          "trainer_color": {
+            "type": "string",
+            "enum": ["white", "black"],
+            "title": "Trainer Color"
+          },
+          "trainer_chesscom_uuid": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Trainer Chesscom Uuid"
+          },
+          "opponent_chesscom_uuid": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Opponent Chesscom Uuid"
+          },
+          "trainer_rating": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trainer Rating"
+          },
+          "opponent_rating": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Opponent Rating"
+          },
+          "started_at_utc": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At Utc"
+          },
+          "ended_at_utc": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ended At Utc"
+          },
+          "trainer_outcome": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": ["win", "loss", "draw"]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trainer Outcome"
+          },
+          "termination_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Termination Reason"
+          },
+          "time_control": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Time Control"
+          },
+          "time_class": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": ["bullet", "blitz", "rapid", "daily"]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Time Class"
+          },
+          "occurrence_count": {
+            "type": "integer",
+            "title": "Occurrence Count"
+          },
+          "length_plies": {
+            "type": "integer",
+            "title": "Length Plies"
+          },
+          "deepest_opening": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OpeningSummaryResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "coverage": {
+            "$ref": "#/components/schemas/GameCoverageResponse"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "game_uuid",
+          "source_url",
+          "trainer_color",
+          "trainer_chesscom_uuid",
+          "opponent_chesscom_uuid",
+          "trainer_rating",
+          "opponent_rating",
+          "started_at_utc",
+          "ended_at_utc",
+          "trainer_outcome",
+          "termination_reason",
+          "time_control",
+          "time_class",
+          "occurrence_count",
+          "length_plies",
+          "deepest_opening",
+          "coverage"
+        ],
+        "title": "GameSummaryResponse"
+      },
+      "GamesErrorResponse": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "enum": ["invalid_filter", "game_not_found", "games_unavailable", "unexpected_failure"],
+            "title": "Code"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["code", "message"],
+        "title": "GamesErrorResponse"
+      },
+      "GamesResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/GameSummaryResponse"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "page": {
+            "type": "integer",
+            "title": "Page"
+          },
+          "page_size": {
+            "type": "integer",
+            "title": "Page Size"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "total_pages": {
+            "type": "integer",
+            "title": "Total Pages"
+          },
+          "has_next": {
+            "type": "boolean",
+            "title": "Has Next"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["items", "page", "page_size", "total", "total_pages", "has_next"],
+        "title": "GamesResponse"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "HealthResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["status"],
+        "title": "HealthResponse"
+      },
+      "MovePreferenceResponse": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "move",
+            "title": "Kind"
+          },
+          "uci": {
+            "type": "string",
+            "title": "Uci"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["kind", "uci"],
+        "title": "MovePreferenceResponse"
+      },
+      "MutationMovePreferenceRequest": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "move",
+            "title": "Kind"
+          },
+          "uci": {
+            "type": "string",
+            "title": "Uci"
+          }
+        },
+        "type": "object",
+        "required": ["kind", "uci"],
+        "title": "MutationMovePreferenceRequest"
+      },
+      "MutationNoPreferenceRequest": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "no_preference",
+            "title": "Kind"
+          },
+          "uci": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Uci"
+          }
+        },
+        "type": "object",
+        "required": ["kind"],
+        "title": "MutationNoPreferenceRequest"
+      },
+      "NoPreferenceResponse": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "no_preference",
+            "title": "Kind"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["kind"],
+        "title": "NoPreferenceResponse"
+      },
+      "OpeningCatalogueErrorResponse": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "enum": ["invalid_filter", "openings_unavailable", "unexpected_failure"],
+            "title": "Code"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["code", "message"],
+        "title": "OpeningCatalogueErrorResponse"
+      },
+      "OpeningCatalogueItemResponse": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "eco": {
+            "type": "string",
+            "title": "Eco"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "route_count": {
+            "type": "integer",
+            "title": "Route Count"
+          },
+          "games_reached": {
+            "type": "integer",
+            "title": "Games Reached"
+          },
+          "games_deepest": {
+            "type": "integer",
+            "title": "Games Deepest"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["key", "eco", "name", "route_count", "games_reached", "games_deepest"],
+        "title": "OpeningCatalogueItemResponse"
+      },
+      "OpeningCatalogueResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/OpeningCatalogueItemResponse"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "page": {
+            "type": "integer",
+            "title": "Page"
+          },
+          "page_size": {
+            "type": "integer",
+            "title": "Page Size"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "total_pages": {
+            "type": "integer",
+            "title": "Total Pages"
+          },
+          "has_next": {
+            "type": "boolean",
+            "title": "Has Next"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["items", "page", "page_size", "total", "total_pages", "has_next"],
+        "title": "OpeningCatalogueResponse"
+      },
+      "OpeningDetailErrorResponse": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "enum": [
+              "invalid_opening_key",
+              "opening_not_found",
+              "openings_unavailable",
+              "unexpected_failure"
+            ],
+            "title": "Code"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["code", "message"],
+        "title": "OpeningDetailErrorResponse"
+      },
+      "OpeningSummaryResponse": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "eco": {
+            "type": "string",
+            "title": "Eco"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "ply": {
+            "type": "integer",
+            "title": "Ply"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["key", "eco", "name", "ply"],
+        "title": "OpeningSummaryResponse"
+      },
+      "PositionInsightAnalysisResponse": {
+        "properties": {
+          "state": {
+            "type": "string",
+            "enum": ["not_requested", "queued", "running", "ready"],
+            "title": "State"
+          },
+          "result": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PositionInsightResultResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["state", "result"],
+        "title": "PositionInsightAnalysisResponse"
+      },
+      "PositionInsightErrorResponse": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "enum": [
+              "invalid_fen",
+              "invalid_trainer_color",
+              "invalid_as_of",
+              "position_insight_unavailable",
+              "unexpected_failure"
+            ],
+            "title": "Code"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["code", "message"],
+        "title": "PositionInsightErrorResponse"
+      },
+      "PositionInsightExperienceResponse": {
+        "properties": {
+          "distinct_game_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Distinct Game Count"
+          },
+          "occurrence_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Occurrence Count"
+          },
+          "total_game_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Total Game Count"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["distinct_game_count", "occurrence_count", "total_game_count"],
+        "title": "PositionInsightExperienceResponse"
+      },
+      "PositionInsightLineResponse": {
+        "properties": {
+          "rank": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Rank"
+          },
+          "score_kind": {
+            "type": "string",
+            "enum": ["cp", "mate"],
+            "title": "Score Kind"
+          },
+          "score_value": {
+            "type": "integer",
+            "title": "Score Value"
+          },
+          "wdl_wins": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Wdl Wins"
+          },
+          "wdl_draws": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Wdl Draws"
+          },
+          "wdl_losses": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Wdl Losses"
+          },
+          "pv_uci": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Pv Uci"
+          },
+          "depth": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Depth"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "rank",
+          "score_kind",
+          "score_value",
+          "wdl_wins",
+          "wdl_draws",
+          "wdl_losses",
+          "pv_uci",
+          "depth"
+        ],
+        "title": "PositionInsightLineResponse"
+      },
+      "PositionInsightObservedMoveResponse": {
+        "properties": {
+          "move_uci": {
+            "type": "string",
+            "title": "Move Uci"
+          },
+          "distinct_game_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Distinct Game Count"
+          },
+          "occurrence_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Occurrence Count"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["move_uci", "distinct_game_count", "occurrence_count"],
+        "title": "PositionInsightObservedMoveResponse"
+      },
+      "PositionInsightObservedMoveTotalsResponse": {
+        "properties": {
+          "distinct_game_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Distinct Game Count"
+          },
+          "occurrence_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Occurrence Count"
+          },
+          "terminal": {
+            "$ref": "#/components/schemas/PositionInsightTerminalTotalsResponse"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["distinct_game_count", "occurrence_count", "terminal"],
+        "title": "PositionInsightObservedMoveTotalsResponse"
+      },
+      "PositionInsightOpeningResponse": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "eco": {
+            "type": "string",
+            "title": "Eco"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "ply": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Ply"
+          },
+          "match": {
+            "type": "string",
+            "enum": ["route", "transposition"],
+            "title": "Match"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["key", "eco", "name", "ply", "match"],
+        "title": "PositionInsightOpeningResponse"
+      },
+      "PositionInsightResponse": {
+        "properties": {
+          "fen": {
+            "type": "string",
+            "title": "Fen"
+          },
+          "trainer_color": {
+            "type": "string",
+            "enum": ["white", "black"],
+            "title": "Trainer Color"
+          },
+          "as_of": {
+            "type": "string",
+            "title": "As Of"
+          },
+          "observed_in_games": {
+            "type": "boolean",
+            "title": "Observed In Games"
+          },
+          "opening": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PositionInsightOpeningResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "experience": {
+            "$ref": "#/components/schemas/PositionInsightExperienceResponse"
+          },
+          "observed_moves": {
+            "items": {
+              "$ref": "#/components/schemas/PositionInsightObservedMoveResponse"
+            },
+            "type": "array",
+            "title": "Observed Moves"
+          },
+          "observed_move_totals": {
+            "$ref": "#/components/schemas/PositionInsightObservedMoveTotalsResponse"
+          },
+          "analysis": {
+            "$ref": "#/components/schemas/PositionInsightAnalysisResponse"
+          },
+          "preference": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/MovePreferenceResponse"
+              },
+              {
+                "$ref": "#/components/schemas/NoPreferenceResponse"
+              },
+              {
+                "$ref": "#/components/schemas/UnconfiguredPreferenceResponse"
+              }
+            ],
+            "title": "Preference",
+            "discriminator": {
+              "propertyName": "kind",
+              "mapping": {
+                "move": "#/components/schemas/MovePreferenceResponse",
+                "no_preference": "#/components/schemas/NoPreferenceResponse",
+                "unconfigured": "#/components/schemas/UnconfiguredPreferenceResponse"
+              }
+            }
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "fen",
+          "trainer_color",
+          "as_of",
+          "observed_in_games",
+          "opening",
+          "experience",
+          "observed_moves",
+          "observed_move_totals",
+          "analysis",
+          "preference"
+        ],
+        "title": "PositionInsightResponse"
+      },
+      "PositionInsightResultResponse": {
+        "properties": {
+          "quality": {
+            "type": "string",
+            "enum": ["browser", "tool"],
+            "title": "Quality"
+          },
+          "configuration_version": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Configuration Version"
+          },
+          "settings": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Settings"
+          },
+          "engine_name": {
+            "type": "string",
+            "title": "Engine Name"
+          },
+          "engine_version": {
+            "type": "string",
+            "title": "Engine Version"
+          },
+          "terminal_kind": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": ["checkmate", "stalemate", "insufficient_material"]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Terminal Kind"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/PositionInsightLineResponse"
+            },
+            "type": "array",
+            "title": "Lines"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "quality",
+          "configuration_version",
+          "settings",
+          "engine_name",
+          "engine_version",
+          "terminal_kind",
+          "lines"
+        ],
+        "title": "PositionInsightResultResponse"
+      },
+      "PositionInsightTerminalTotalsResponse": {
+        "properties": {
+          "distinct_game_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Distinct Game Count"
+          },
+          "occurrence_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Occurrence Count"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["distinct_game_count", "occurrence_count"],
+        "title": "PositionInsightTerminalTotalsResponse"
+      },
+      "PreferredMovesErrorResponse": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "enum": [
+              "invalid_fen",
+              "invalid_from",
+              "invalid_until",
+              "invalid_window",
+              "invalid_effective_from",
+              "invalid_effective_until",
+              "invalid_preference",
+              "invalid_uci",
+              "illegal_move",
+              "preferred_moves_unavailable",
+              "unexpected_failure"
+            ],
+            "title": "Code"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["code", "message"],
+        "title": "PreferredMovesErrorResponse"
+      },
+      "PreferredMovesMutationRequest": {
+        "properties": {
+          "fen": {
+            "type": "string",
+            "title": "Fen"
+          },
+          "effective_from": {
+            "type": "string",
+            "title": "Effective From"
+          },
+          "effective_until": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Effective Until"
+          },
+          "preference": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/MutationMovePreferenceRequest"
+              },
+              {
+                "$ref": "#/components/schemas/MutationNoPreferenceRequest"
+              }
+            ],
+            "title": "Preference",
+            "discriminator": {
+              "propertyName": "kind",
+              "mapping": {
+                "move": "#/components/schemas/MutationMovePreferenceRequest",
+                "no_preference": "#/components/schemas/MutationNoPreferenceRequest"
+              }
+            }
+          }
+        },
+        "type": "object",
+        "required": ["fen", "effective_from", "preference"],
+        "title": "PreferredMovesMutationRequest"
+      },
+      "PreferredMovesMutationResponse": {
+        "properties": {
+          "fen": {
+            "type": "string",
+            "title": "Fen"
+          },
+          "effective_from": {
+            "type": "string",
+            "title": "Effective From"
+          },
+          "effective_until": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Effective Until"
+          },
+          "preference": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/MovePreferenceResponse"
+              },
+              {
+                "$ref": "#/components/schemas/NoPreferenceResponse"
+              }
+            ],
+            "title": "Preference",
+            "discriminator": {
+              "propertyName": "kind",
+              "mapping": {
+                "move": "#/components/schemas/MovePreferenceResponse",
+                "no_preference": "#/components/schemas/NoPreferenceResponse"
+              }
+            }
+          },
+          "periods": {
+            "items": {
+              "$ref": "#/components/schemas/PreferredMovesPeriodResponse"
+            },
+            "type": "array",
+            "title": "Periods"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["fen", "effective_from", "effective_until", "preference", "periods"],
+        "title": "PreferredMovesMutationResponse"
+      },
+      "PreferredMovesPeriodResponse": {
+        "properties": {
+          "effective_from": {
+            "type": "string",
+            "title": "Effective From"
+          },
+          "effective_until": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Effective Until"
+          },
+          "preference": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/MovePreferenceResponse"
+              },
+              {
+                "$ref": "#/components/schemas/NoPreferenceResponse"
+              }
+            ],
+            "title": "Preference",
+            "discriminator": {
+              "propertyName": "kind",
+              "mapping": {
+                "move": "#/components/schemas/MovePreferenceResponse",
+                "no_preference": "#/components/schemas/NoPreferenceResponse"
+              }
+            }
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["effective_from", "effective_until", "preference"],
+        "title": "PreferredMovesPeriodResponse"
+      },
+      "PreferredMovesRemovalRequest": {
+        "properties": {
+          "fen": {
+            "type": "string",
+            "title": "Fen"
+          },
+          "effective_from": {
+            "type": "string",
+            "title": "Effective From"
+          },
+          "effective_until": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Effective Until"
+          }
+        },
+        "type": "object",
+        "required": ["fen", "effective_from"],
+        "title": "PreferredMovesRemovalRequest"
+      },
+      "PreferredMovesRemovalResponse": {
+        "properties": {
+          "fen": {
+            "type": "string",
+            "title": "Fen"
+          },
+          "effective_from": {
+            "type": "string",
+            "title": "Effective From"
+          },
+          "effective_until": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Effective Until"
+          },
+          "periods": {
+            "items": {
+              "$ref": "#/components/schemas/PreferredMovesPeriodResponse"
+            },
+            "type": "array",
+            "title": "Periods"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["fen", "effective_from", "effective_until", "periods"],
+        "title": "PreferredMovesRemovalResponse"
+      },
+      "PreferredMovesResponse": {
+        "properties": {
+          "fen": {
+            "type": "string",
+            "title": "Fen"
+          },
+          "from": {
+            "type": "string",
+            "title": "From"
+          },
+          "until": {
+            "type": "string",
+            "title": "Until"
+          },
+          "segments": {
+            "items": {
+              "$ref": "#/components/schemas/PreferredMovesSegmentResponse"
+            },
+            "type": "array",
+            "title": "Segments"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["fen", "from", "until", "segments"],
+        "title": "PreferredMovesResponse"
+      },
+      "PreferredMovesSegmentResponse": {
+        "properties": {
+          "from": {
+            "type": "string",
+            "title": "From"
+          },
+          "until": {
+            "type": "string",
+            "title": "Until"
+          },
+          "preference": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/MovePreferenceResponse"
+              },
+              {
+                "$ref": "#/components/schemas/NoPreferenceResponse"
+              },
+              {
+                "$ref": "#/components/schemas/UnconfiguredPreferenceResponse"
+              }
+            ],
+            "title": "Preference",
+            "discriminator": {
+              "propertyName": "kind",
+              "mapping": {
+                "move": "#/components/schemas/MovePreferenceResponse",
+                "no_preference": "#/components/schemas/NoPreferenceResponse",
+                "unconfigured": "#/components/schemas/UnconfiguredPreferenceResponse"
+              }
+            }
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["from", "until", "preference"],
+        "title": "PreferredMovesSegmentResponse"
+      },
+      "TrainingAnswerRequest": {
+        "properties": {
+          "fen": {
+            "type": "string",
+            "title": "Fen"
+          },
+          "trainer_color": {
+            "type": "string",
+            "enum": ["white", "black"],
+            "title": "Trainer Color"
+          },
+          "as_of": {
+            "type": "string",
+            "title": "As Of"
+          },
+          "played_move_uci": {
+            "type": "string",
+            "title": "Played Move Uci"
+          }
+        },
+        "type": "object",
+        "required": ["fen", "trainer_color", "as_of", "played_move_uci"],
+        "title": "TrainingAnswerRequest"
+      },
+      "TrainingAnswerResponse": {
+        "properties": {
+          "as_of": {
+            "type": "string",
+            "title": "As Of"
+          },
+          "correct": {
+            "type": "boolean",
+            "title": "Correct"
+          },
+          "item": {
+            "$ref": "#/components/schemas/TrainingRequirementItemResponse"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["as_of", "correct", "item"],
+        "title": "TrainingAnswerResponse"
+      },
+      "TrainingRequirementErrorResponse": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "enum": [
+              "invalid_as_of",
+              "invalid_fen",
+              "invalid_opening_filter",
+              "invalid_played_move_uci",
+              "invalid_requirement_range",
+              "invalid_trainer_color",
+              "invalid_pagination",
+              "training_requirement_not_found",
+              "training_requirements_stale",
+              "position_training_requirements_unavailable",
+              "unexpected_failure"
+            ],
+            "title": "Code"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["code", "message"],
+        "title": "TrainingRequirementErrorResponse"
+      },
+      "TrainingRequirementItemResponse": {
+        "properties": {
+          "fen": {
+            "type": "string",
+            "title": "Fen"
+          },
+          "trainer_color": {
+            "type": "string",
+            "enum": ["white", "black"],
+            "title": "Trainer Color"
+          },
+          "preferred_move_uci": {
+            "type": "string",
+            "title": "Preferred Move Uci"
+          },
+          "encounters": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Encounters"
+          },
+          "hits": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Hits"
+          },
+          "misses": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Misses"
+          },
+          "observed_success_rate": {
+            "type": "number",
+            "title": "Observed Success Rate"
+          },
+          "game_balance": {
+            "type": "number",
+            "title": "Game Balance"
+          },
+          "effective_training_balance": {
+            "type": "number",
+            "title": "Effective Training Balance"
+          },
+          "training_adjustment": {
+            "type": "number",
+            "title": "Training Adjustment"
+          },
+          "training_updated_on": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Training Updated On"
+          },
+          "training_requirement": {
+            "type": "number",
+            "title": "Training Requirement"
+          },
+          "training_required": {
+            "type": "boolean",
+            "title": "Training Required"
+          },
+          "correct_answers_needed": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Correct Answers Needed"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "fen",
+          "trainer_color",
+          "preferred_move_uci",
+          "encounters",
+          "hits",
+          "misses",
+          "observed_success_rate",
+          "game_balance",
+          "effective_training_balance",
+          "training_adjustment",
+          "training_updated_on",
+          "training_requirement",
+          "training_required",
+          "correct_answers_needed"
+        ],
+        "title": "TrainingRequirementItemResponse"
+      },
+      "TrainingRequirementPolicyResponse": {
+        "properties": {
+          "target_success_rate": {
+            "type": "number",
+            "title": "Target Success Rate"
+          },
+          "game_hit_weight": {
+            "type": "number",
+            "title": "Game Hit Weight"
+          },
+          "game_miss_weight": {
+            "type": "number",
+            "title": "Game Miss Weight"
+          },
+          "training_curve": {
+            "type": "string",
+            "title": "Training Curve"
+          },
+          "training_credit_half_life_days": {
+            "type": "number",
+            "title": "Training Credit Half Life Days"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "target_success_rate",
+          "game_hit_weight",
+          "game_miss_weight",
+          "training_curve",
+          "training_credit_half_life_days"
+        ],
+        "title": "TrainingRequirementPolicyResponse"
+      },
+      "TrainingRequirementResponse": {
+        "properties": {
+          "as_of": {
+            "type": "string",
+            "title": "As Of"
+          },
+          "scoring_policy": {
+            "$ref": "#/components/schemas/TrainingRequirementPolicyResponse"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/TrainingRequirementItemResponse"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Page"
+          },
+          "page_size": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 1.0,
+            "title": "Page Size"
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Total"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["as_of", "scoring_policy", "items", "page", "page_size", "total"],
+        "title": "TrainingRequirementResponse"
+      },
+      "UnconfiguredPreferenceResponse": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "unconfigured",
+            "title": "Kind"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["kind"],
+        "title": "UnconfiguredPreferenceResponse"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": ["loc", "msg", "type"],
+        "title": "ValidationError"
       }
     }
   }

@@ -107,7 +107,13 @@ function statusLabel({
   }
 }
 
-import { PanelError, RemoveConfirmation, RuntimeChoiceBox, RuntimeConnector, selectedEmptyDescription } from "./PreferredMovePanelSections";
+import {
+  PanelError,
+  RemoveConfirmation,
+  RuntimeChoiceBox,
+  RuntimeConnector,
+  selectedEmptyDescription,
+} from "./PreferredMovePanelSections";
 export function PreferredMovePanel({
   model,
   date,
@@ -173,7 +179,7 @@ export function PreferredMovePanel({
         : "empty";
   const savedEmptyTitle = preferredKnown
     ? savedMove
-      ? undefined
+      ? "Saved choice"
       : "None yet"
     : preferredError
       ? "Saved choice unavailable."

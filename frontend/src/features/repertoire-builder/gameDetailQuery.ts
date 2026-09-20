@@ -26,10 +26,7 @@ export async function queryGameDetail(
   return result.data as GameDetailResponse;
 }
 
-export function useGameDetailQuery(
-  gameUuid: string | null,
-  client: GameDetailClient,
-) {
+export function useGameDetailQuery(gameUuid: string | null, client: GameDetailClient) {
   const normalizedUuid = gameUuid?.trim() || null;
   return useQuery({
     queryKey: queryKeys.gameDetail({ gameUuid: normalizedUuid ?? "" }),

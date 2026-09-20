@@ -2,7 +2,10 @@ import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
 import { createElement } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { createTestQueryClient, QueryClientTestProvider } from "../../test-utils/QueryClientTestProvider";
+import {
+  createTestQueryClient,
+  QueryClientTestProvider,
+} from "../../test-utils/QueryClientTestProvider";
 import type {
   PreferredMoveReader,
   PreferredMoveResponse,
@@ -12,8 +15,7 @@ import { usePreferredMoveState } from "./preferredMoveState";
 import type { Fen } from "../chess/chessPrimitives";
 
 const FEN: Fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-const COUNTER_VARIANT_FEN: Fen =
-  "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 17 42";
+const COUNTER_VARIANT_FEN: Fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 17 42";
 const NEXT_FEN: Fen = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1";
 
 function response(fen: Fen): PreferredMoveResponse {

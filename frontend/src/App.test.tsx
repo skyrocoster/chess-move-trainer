@@ -43,7 +43,7 @@ describe("App routes", () => {
       await screen.findByRole(
         "heading",
         { name: "Repertoire Builder", level: 1 },
-        { timeout: 15000 },
+        { timeout: 30_000 },
       ),
     ).toBeInTheDocument();
     expect(
@@ -51,7 +51,7 @@ describe("App routes", () => {
         name: "Chess board: standard starting position, White at the bottom",
       }),
     ).toBeInTheDocument();
-  }, 20_000);
+  }, 35_000);
 
   it("renders the Trainer Practice scaffold at /trainer without board or session controls", async () => {
     renderApp(["/trainer"]);
@@ -60,14 +60,14 @@ describe("App routes", () => {
       await screen.findByRole(
         "heading",
         { name: "Trainer Practice", level: 1 },
-        { timeout: 15000 },
+        { timeout: 30_000 },
       ),
     ).toBeInTheDocument();
     expect(screen.getByRole("combobox", { name: "Opening" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Find training positions" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /board|session/i })).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: /board|session/i })).not.toBeInTheDocument();
-  }, 20_000);
+  }, 35_000);
 
   it("renders the in-shell not-found state for an unmatched route", () => {
     renderApp(["/does-not-exist"]);

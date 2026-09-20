@@ -193,9 +193,7 @@ export function InteractiveBoardHarness({
   return (
     <InteractiveBoardAdapter
       branchSnapshot={branchSnapshot}
-      lastMove={
-        lastBranchMove ? lastMoveFromSquares(lastBranchMove.from, lastBranchMove.to) : null
-      }
+      lastMove={lastBranchMove ? lastMoveFromSquares(lastBranchMove.from, lastBranchMove.to) : null}
       rejectedMove={rejectedMove}
       label={label}
       notice={notice}

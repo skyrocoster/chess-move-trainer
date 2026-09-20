@@ -96,7 +96,7 @@ class _FakeProcess:
             except queue.Empty:
                 continue
             if command == "uci":
-                name = "Not Stockfish 18" if self._wrong_identity else "Stockfish 18"
+                name = "Not Stockfish 19" if self._wrong_identity else "Stockfish 19"
                 self.stdout.put(f"id name {name}")
                 self.stdout.put("uciok")
             elif command == "isready":
@@ -164,7 +164,7 @@ def test_fixed_profiles_and_identity_contract_are_explicit() -> None:
         assert profile.hash_mb == HASH_MB == 1024
         assert profile.multipv == MULTI_PV == 5
         assert profile.configuration_version == CONFIGURATION_VERSION == 1
-    assert STOCKFISH_VERSION == "18"
+    assert STOCKFISH_VERSION == "19"
     assert "Nodes" in TOOL_PROFILE.settings
 
 

@@ -1,17 +1,11 @@
 import type { FormEvent } from "react";
 
-import type {
-  OpeningCatalogueItemResponse,
-  TrainingRequirementResponse,
-} from "../../api/client";
+import type { OpeningCatalogueItemResponse, TrainingRequirementResponse } from "../../api/client";
 import { Button } from "../design-system/Button";
 import { CalendarDate, type CalendarDateValue } from "../design-system/CalendarDate";
 import { Field } from "../design-system/form-controls/Field";
 import { RadioGroup } from "../design-system/form-controls/RadioGroup";
-import {
-  OpeningSearchCombobox,
-  type OpeningSelection,
-} from "./OpeningSearchCombobox";
+import { OpeningSearchCombobox, type OpeningSelection } from "./OpeningSearchCombobox";
 import type { TrainerColor } from "./trainerPracticeApi";
 import styles from "./TrainerPracticePanel.module.css";
 
@@ -177,7 +171,7 @@ function Results({ data }: { data: TrainingRequirementResponse }) {
           No positions currently require training for these filters.
         </p>
       ) : (
-          <ol className={styles.positionList} aria-label="training-required positions">
+        <ol className={styles.positionList} aria-label="training-required positions">
           {data.items.map((item, index) => (
             <PositionItem
               key={`${item.fen}-${item.trainer_color}-${item.preferred_move_uci}`}
@@ -218,9 +212,7 @@ export function TrainerPracticePanel({
 
       {catalogueStatus === "loading" ? (
         <p role="status" aria-live="polite">
-          {openings.length > 0
-            ? "Checking opening catalogue..."
-            : "Loading opening catalogue..."}
+          {openings.length > 0 ? "Checking opening catalogue..." : "Loading opening catalogue..."}
         </p>
       ) : null}
       {catalogueStatus === "error" ? (
@@ -265,11 +257,7 @@ export function TrainerPracticePanel({
           </Field>
 
           <Field label="as_of" required>
-            <CalendarDate
-              value={values.asOf}
-              onChange={onAsOfChange}
-              label="as_of"
-            />
+            <CalendarDate value={values.asOf} onChange={onAsOfChange} label="as_of" />
           </Field>
         </div>
 

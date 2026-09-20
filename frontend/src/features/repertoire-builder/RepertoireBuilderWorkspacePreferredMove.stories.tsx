@@ -114,13 +114,18 @@ export const CleanPreferredTimelineNovelParent: Story = {
     );
     await expectPreferredMoveState(canvasElement, "matching");
     await expect(canvas.getByTestId("saved-move")).toHaveTextContent(/^Saved\s*e4\s*e2e4$/);
-    await expect(requestLog).toHaveTextContent(
-      JSON.stringify([
-        { method: "GET", fen: expectedFen, from: today, until: tomorrow },
+    // A save issues exactly one PUT and then refreshes. The refresh is one or
+    // more GETs: invalidation plus the refresh-key refetch can each trigger a
+    // read, and TanStack dedup behavior may vary across patch upgrades, so
+    // assert the mutation sequence rather than an exact GET count.
+    await waitFor(() => {
+      const logged = JSON.parse(requestLog.textContent ?? "[]") as StoryPreferredMoveRequest[];
+      expect(logged[0]).toEqual({ method: "GET", fen: expectedFen, from: today, until: tomorrow });
+      expect(logged.filter((request) => request.method !== "GET")).toEqual([
         { method: "PUT", fen: expectedFen, move_uci: "e2e4", effective_from: today },
-        { method: "GET", fen: expectedFen, from: today, until: tomorrow },
-      ]),
-    );
+      ]);
+      expect(logged.filter((request) => request.method === "GET").length).toBeGreaterThanOrEqual(2);
+    });
 
     await userEvent.click(canvas.getByRole("button", { name: "Remove" }));
     const dialog = await within(canvasElement.ownerDocument.body).findByRole("alertdialog", {
@@ -135,15 +140,17 @@ export const CleanPreferredTimelineNovelParent: Story = {
     await expect(canvas.getByTestId("selected-move")).toHaveTextContent(/^Selected\s*e4\s*e2e4$/);
     await expectPreferredActions(canvasElement, ["Save e4"]);
     await expectDateFreePreferredPanel(canvasElement);
-    await expect(requestLog).toHaveTextContent(
-      JSON.stringify([
-        { method: "GET", fen: expectedFen, from: today, until: tomorrow },
+    // Same tolerance as the post-save check: exactly one PUT and one DELETE,
+    // with one or more refreshing GETs around them.
+    await waitFor(() => {
+      const logged = JSON.parse(requestLog.textContent ?? "[]") as StoryPreferredMoveRequest[];
+      expect(logged[0]).toEqual({ method: "GET", fen: expectedFen, from: today, until: tomorrow });
+      expect(logged.filter((request) => request.method !== "GET")).toEqual([
         { method: "PUT", fen: expectedFen, move_uci: "e2e4", effective_from: today },
-        { method: "GET", fen: expectedFen, from: today, until: tomorrow },
         { method: "DELETE", fen: expectedFen, effective_from: today },
-        { method: "GET", fen: expectedFen, from: today, until: tomorrow },
-      ]),
-    );
+      ]);
+      expect(logged.filter((request) => request.method === "GET").length).toBeGreaterThanOrEqual(3);
+    });
   },
 };
 
@@ -218,9 +225,7 @@ export const SavedBoxKeyboard: Story = {
     await expectPositionSquares(canvasElement, "e4", 1);
     await expectSessionHistory(canvasElement, ["Initial position", "White, move 1, e4"]);
     await expectActiveSessionHistoryEntry(canvasElement, "White, move 1, e4");
-    await expect(canvas.getByTestId("branch-status")).toHaveTextContent(
-      "Move played locally: e4.",
-    );
+    await expect(canvas.getByTestId("branch-status")).toHaveTextContent("Move played locally: e4.");
     await savedBox.focus();
     await userEvent.keyboard(" ");
     await expect(canvas.getByTestId("branch-status")).toHaveTextContent(
@@ -289,9 +294,7 @@ export const PendingSave: Story = {
     const canvas = within(canvasElement);
     await userEvent.click(await canvas.findByRole("button", { name: "1. d4" }));
     await userEvent.click(canvas.getByRole("button", { name: "Save d4" }));
-    await expect(canvas.getByTestId("branch-status")).toHaveTextContent(
-      "Move played locally: d4.",
-    );
+    await expect(canvas.getByTestId("branch-status")).toHaveTextContent("Move played locally: d4.");
     await expect(canvas.getByText("Saving preferred move...")).toBeVisible();
     await expect(canvas.getByTestId("saved-move")).toHaveTextContent(/^Saved\s*e4\s*e2e4$/);
     await expect(canvas.getByTestId("selected-move")).toHaveTextContent(/^Selected\s*d4\s*d2d4$/);
@@ -522,9 +525,7 @@ export const SavedChoiceStagesMove: Story = {
     await expectPositionSquares(canvasElement, "e4", 1);
     await expectSessionHistory(canvasElement, ["Initial position", "White, move 1, e4"]);
     await expectActiveSessionHistoryEntry(canvasElement, "White, move 1, e4");
-    await expect(canvas.getByTestId("branch-status")).toHaveTextContent(
-      "Move played locally: e4.",
-    );
+    await expect(canvas.getByTestId("branch-status")).toHaveTextContent("Move played locally: e4.");
     await expectPreferredMoveState(canvasElement, "matching");
     await expect(canvas.getByTestId("selected-move")).toHaveTextContent(/^Selected\s*e4\s*e2e4$/);
     await expect(canvas.getByTestId("saved-move")).toBeVisible();

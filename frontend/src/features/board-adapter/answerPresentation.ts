@@ -8,12 +8,7 @@ import { LAST_MOVE_SQUARE_STYLE, type LastMove } from "./lastMove";
  * decides which state the board is in; the board only renders it.
  */
 export type BoardAnswerStatus =
-  | "awaiting-input"
-  | "illegal"
-  | "incorrect"
-  | "correct"
-  | "revealed"
-  | "disabled";
+  "awaiting-input" | "illegal" | "incorrect" | "correct" | "revealed" | "disabled";
 
 /**
  * A board-level answer presentation: the semantic status plus the attempted

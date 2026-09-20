@@ -28,8 +28,7 @@ export type PreferredMoveResponse = {
 
 /** Clean mutation responses are returned for transport purposes only. */
 export type PreferredMoveMutationResponse =
-  | PreferredMovesMutationResponse
-  | PreferredMovesRemovalResponse;
+  PreferredMovesMutationResponse | PreferredMovesRemovalResponse;
 
 export type PreferredMoveFailureCode =
   | "invalid_fen"
@@ -46,11 +45,9 @@ export type PreferredMoveFailureCode =
 
 export type PreferredMoveFailure = { status: PreferredMoveFailureCode };
 export type PreferredMoveResult =
-  | { status: "success"; data: PreferredMoveResponse }
-  | PreferredMoveFailure;
+  { status: "success"; data: PreferredMoveResponse } | PreferredMoveFailure;
 export type PreferredMoveMutationResult =
-  | { status: "success"; data: PreferredMoveMutationResponse }
-  | PreferredMoveFailure;
+  { status: "success"; data: PreferredMoveMutationResponse } | PreferredMoveFailure;
 
 export type PreferredMoveRequest = {
   fen: Fen;

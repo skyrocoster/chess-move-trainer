@@ -40,8 +40,7 @@ function useDefaultMoveResponseDistributionState(
     query.data === undefined || fen === null || color === null
       ? null
       : narrowInsightResponse(query.data, fen, color);
-  const loading =
-    fen !== null && color !== null && (query.isPending || query.isFetching);
+  const loading = fen !== null && color !== null && (query.isPending || query.isFetching);
   const error = query.isError
     ? query.error instanceof PositionInsightQueryError
       ? failureFromInsight(query.error.insightError, query.error.httpStatus).status

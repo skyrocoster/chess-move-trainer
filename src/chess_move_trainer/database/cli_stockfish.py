@@ -68,7 +68,7 @@ def benchmark_stockfish(
     executable: Path = typer.Option(
         ...,
         "--executable",
-        help="Explicit Stockfish 18 executable path.",
+        help="Explicit Stockfish 19 executable path.",
     ),
     position_input: Path = typer.Option(
         ...,
@@ -148,7 +148,7 @@ def benchmark_stockfish(
 def bulk_stockfish(
     database: Path = typer.Option(..., "--database", help="Explicit SQLite database path."),
     executable: Path = typer.Option(
-        ..., "--executable", help="Explicit Stockfish 18 executable path."
+        ..., "--executable", help="Explicit Stockfish 19 executable path."
     ),
     limit: int | None = typer.Option(
         None,
@@ -210,7 +210,7 @@ def bulk_stockfish(
 def worker_stockfish(
     database: Path = typer.Option(..., "--database", help="Explicit SQLite database path."),
     executable: Path = typer.Option(
-        ..., "--executable", help="Explicit Stockfish 18 executable path."
+        ..., "--executable", help="Explicit Stockfish 19 executable path."
     ),
     lock_timeout: float = typer.Option(
         DEFAULT_LOCK_TIMEOUT_SECONDS,

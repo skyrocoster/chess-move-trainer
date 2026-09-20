@@ -17,18 +17,19 @@ describe("generated SDK surface", () => {
       (key) => typeof (generatedSdk as Record<string, unknown>)[key] === "function",
     );
     expect(functionExports).toEqual([
-      "getAnalysis",
-      "requestAnalysis",
+      "getHealth",
       "getGames",
       "getGame",
-      "getHealth",
-      "getOpenings",
-      "getOpeningByKey",
-      "getPositionInsight",
-      "getPositionTrainingRequirements",
+      "getAnalysis",
+      "requestAnalysis",
       "deletePreferredMoves",
       "getPreferredMoves",
       "putPreferredMoves",
+      "getPositionInsight",
+      "getPositionTrainingRequirements",
+      "submitPositionTrainingAnswer",
+      "getOpenings",
+      "getOpeningByKey",
     ]);
     expect(getPositionTrainingRequirements).toBe(generatedSdk.getPositionTrainingRequirements);
   });
@@ -43,16 +44,17 @@ describe("generated SDK surface", () => {
     };
 
     expect(Object.keys(contract.paths)).toEqual([
-      "/api/analysis",
-      "/api/analysis-requests",
+      "/api/health",
       "/api/games",
       "/api/games/{game_uuid}",
-      "/api/health",
-      "/api/openings",
-      "/api/openings/{opening_key}",
+      "/api/analysis",
+      "/api/analysis-requests",
+      "/api/preferred-moves",
       "/api/positions/insight",
       "/api/positions/training-requirements",
-      "/api/preferred-moves",
+      "/api/positions/training-requirements/answers",
+      "/api/openings",
+      "/api/openings/{opening_key}",
     ]);
     expect(Object.keys(contract.paths["/api/analysis"])).toEqual(["get"]);
     expect(contract.paths["/api/analysis"].get?.operationId).toBe("getAnalysis");
@@ -74,16 +76,20 @@ describe("generated SDK surface", () => {
     expect(contract.paths["/api/positions/training-requirements"].get?.operationId).toBe(
       "getPositionTrainingRequirements",
     );
+    expect(contract.paths["/api/positions/training-requirements/answers"].post?.operationId).toBe(
+      "submitPositionTrainingAnswer",
+    );
     expect(
       Object.keys(contract.paths["/api/positions/training-requirements"].get?.responses ?? {}),
     ).toEqual(["200", "409", "422", "500", "503"]);
     for (const status of ["422", "409", "500", "503"]) {
       expect(
-        contract.paths["/api/positions/training-requirements"].get?.responses?.[status]
-          ?.content?.["application/json"]?.schema,
+        contract.paths["/api/positions/training-requirements"].get?.responses?.[status]?.content?.[
+          "application/json"
+        ]?.schema,
       ).toEqual({ $ref: "#/components/schemas/TrainingRequirementErrorResponse" });
     }
-    expect(Object.keys(contract.paths["/api/preferred-moves"])).toEqual(["delete", "get", "put"]);
+    expect(Object.keys(contract.paths["/api/preferred-moves"])).toEqual(["get", "put", "delete"]);
     expect(contract.paths["/api/preferred-moves"].get?.operationId).toBe("getPreferredMoves");
     expect(contract.paths["/api/preferred-moves"].put?.operationId).toBe("putPreferredMoves");
     expect(contract.paths["/api/preferred-moves"].delete?.operationId).toBe("deletePreferredMoves");
@@ -129,6 +135,8 @@ describe("generated SDK surface", () => {
       "PreferredMovesRemovalResponse",
       "PreferredMovesResponse",
       "PreferredMovesSegmentResponse",
+      "TrainingAnswerRequest",
+      "TrainingAnswerResponse",
       "TrainingRequirementErrorResponse",
       "TrainingRequirementItemResponse",
       "TrainingRequirementPolicyResponse",

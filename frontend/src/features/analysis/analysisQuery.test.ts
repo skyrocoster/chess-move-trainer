@@ -2,7 +2,10 @@ import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
 import { createElement } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { createTestQueryClient, QueryClientTestProvider } from "../../test-utils/QueryClientTestProvider";
+import {
+  createTestQueryClient,
+  QueryClientTestProvider,
+} from "../../test-utils/QueryClientTestProvider";
 import type {
   AnalysisClient,
   AnalysisObservation,
@@ -21,8 +24,7 @@ import { useAnalysisState } from "./analysisState";
 import { positionKeyFromFen, type Fen } from "../chess/chessPrimitives";
 
 const FEN: Fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-const COUNTER_VARIANT_FEN: Fen =
-  "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 17 42";
+const COUNTER_VARIANT_FEN: Fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 17 42";
 const NEXT_FEN: Fen = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1";
 
 const RESULT: AnalysisResult = {
@@ -95,7 +97,11 @@ function StateProbe({ fen, pollIntervalMs = 5 }: { fen: Fen; pollIntervalMs?: nu
         requestError: state.requestError,
       }),
     ),
-    createElement("button", { type: "button", onClick: state.retryObservation }, "retry observation"),
+    createElement(
+      "button",
+      { type: "button", onClick: state.retryObservation },
+      "retry observation",
+    ),
     createElement(
       "button",
       { type: "button", onClick: () => void state.requestAnalysis() },
@@ -125,9 +131,9 @@ afterEach(() => {
 
 describe("analysisQuery", () => {
   it("deduplicates observers under the canonical position key and sends the full FEN", async () => {
-    const observe = vi.fn<AnalysisClient["observe"]>().mockResolvedValue(
-      success(observation(FEN, "ready", RESULT)),
-    );
+    const observe = vi
+      .fn<AnalysisClient["observe"]>()
+      .mockResolvedValue(success(observation(FEN, "ready", RESULT)));
     const client = clientFor(observe);
     const queryClient = createTestQueryClient();
 
@@ -144,7 +150,7 @@ describe("analysisQuery", () => {
     expect(observe).toHaveBeenCalledWith(FEN, expect.any(AbortSignal));
     expect(queryClient.getQueryCache().findAll()).toHaveLength(1);
     const query = queryClient.getQueryCache().find({ queryKey: analysisObservationQueryKey(FEN) });
-    expect(query?.options.staleTime).toBe(0);
+    expect((query?.options as { staleTime?: number } | undefined)?.staleTime).toBe(0);
     expect(query?.options.gcTime).toBe(ANALYSIS_OBSERVATION_GC_TIME);
   });
 
@@ -174,9 +180,9 @@ describe("analysisQuery", () => {
     expect(readState().state).toBe("ready");
     expect(observe).toHaveBeenCalledTimes(3);
 
-    const notRequested = vi.fn<AnalysisClient["observe"]>().mockResolvedValue(
-      success(observation(NEXT_FEN, "not_requested")),
-    );
+    const notRequested = vi
+      .fn<AnalysisClient["observe"]>()
+      .mockResolvedValue(success(observation(NEXT_FEN, "not_requested")));
     const view = render(
       createElement(
         QueryClientTestProvider,
@@ -194,9 +200,9 @@ describe("analysisQuery", () => {
 
   it("caps active polling at sixty poll attempts", async () => {
     vi.useFakeTimers();
-    const observe = vi.fn<AnalysisClient["observe"]>().mockResolvedValue(
-      success(observation(FEN, "queued")),
-    );
+    const observe = vi
+      .fn<AnalysisClient["observe"]>()
+      .mockResolvedValue(success(observation(FEN, "queued")));
     render(
       createElement(
         QueryClientTestProvider,
@@ -239,8 +245,7 @@ describe("analysisQuery", () => {
 describe("default analysis state", () => {
   it("retains results during active polling, invalidates only real transitions, and retries", async () => {
     vi.useFakeTimers();
-    vi
-      .spyOn(defaultAnalysisClient, "observe")
+    vi.spyOn(defaultAnalysisClient, "observe")
       .mockResolvedValueOnce(success(observation(FEN, "ready", RESULT)))
       .mockResolvedValueOnce(success(observation(FEN, "running")))
       .mockResolvedValueOnce(success(observation(FEN, "running")))
@@ -299,7 +304,7 @@ describe("default analysis state", () => {
 
     await waitFor(() => expect(request).toHaveBeenCalledOnce());
     expect(invalidate).toHaveBeenCalledTimes(2);
-    expect(invalidate.mock.calls.map(([filters]) => filters.queryKey)).toEqual([
+    expect(invalidate.mock.calls.map(([filters]) => filters?.queryKey)).toEqual([
       analysisObservationQueryKey(FEN),
       ["positionInsight", positionKeyFromFen(FEN)],
     ]);
@@ -336,6 +341,6 @@ describe("default analysis state", () => {
     await act(async () => {
       resolveFirst(success(observation(FEN, "ready", RESULT)));
     });
-    expect(readState("analysis-state").state).toBe("ready");
+    await waitFor(() => expect(readState("analysis-state").state).toBe("ready"));
   });
 });

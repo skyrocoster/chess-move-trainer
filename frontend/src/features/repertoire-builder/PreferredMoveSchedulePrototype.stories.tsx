@@ -63,9 +63,7 @@ export const CalendarWithDraft: Story = {
   name: "Calendar with a draft range",
   play: async ({ args, canvasElement }) => {
     const canvas = within(canvasElement);
-    await expect(
-      canvas.getByRole("heading", { name: "Effective-date schedule" }),
-    ).toBeVisible();
+    await expect(canvas.getByRole("heading", { name: "Effective-date schedule" })).toBeVisible();
     await expect(
       canvas.getByRole("region", { name: "Preferred move effective-date calendar" }),
     ).toBeVisible();

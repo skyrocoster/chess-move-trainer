@@ -76,10 +76,7 @@ function changedObservation(
   );
 }
 
-function useDefaultAnalysisState(
-  fen: Fen | null,
-  pollIntervalMs: number,
-): AnalysisState {
+function useDefaultAnalysisState(fen: Fen | null, pollIntervalMs: number): AnalysisState {
   const queryClient = useQueryClient();
   const positionKey = fen === null ? null : positionKeyFromFen(fen);
   const [pollResetToken, setPollResetToken] = useState(0);
@@ -119,7 +116,8 @@ function useDefaultAnalysisState(
           : { positionKey: null, observation: null };
       }
       const existing = current.positionKey === positionKey ? current.observation : null;
-      const observation = query.data === undefined ? existing : mergeObservation(existing, query.data);
+      const observation =
+        query.data === undefined ? existing : mergeObservation(existing, query.data);
       if (current.positionKey === positionKey && current.observation === observation) {
         return current;
       }

@@ -92,8 +92,10 @@ export interface LineLibraryRowSlots {
   trailing?: (context: LineLibraryRowContext) => ReactNode;
 }
 
-export interface LineLibraryProps
-  extends Omit<ComponentPropsWithoutRef<"div">, "children" | "title"> {
+export interface LineLibraryProps extends Omit<
+  ComponentPropsWithoutRef<"div">,
+  "children" | "title"
+> {
   data?: LineLibraryData | null;
   loading?: boolean;
   status?: "loading" | "ready" | "error";

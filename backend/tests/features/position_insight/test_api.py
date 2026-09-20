@@ -5,7 +5,6 @@ import sqlite3
 from pathlib import Path
 
 import pytest
-from fastapi.routing import APIRoute
 
 import backend.app.features.position_insight.router as router_module
 from backend.app.dependencies import REBUILT_DATABASE_PATH_ENV, get_rebuilt_database_path
@@ -89,7 +88,7 @@ def test_known_position_returns_full_insight_and_ignores_unknown_filters(
                 "configuration_version": 7,
                 "settings": {"Hash": 16},
                 "engine_name": "Stockfish",
-                "engine_version": "18",
+                "engine_version": "19",
                 "terminal_kind": None,
                 "lines": [
                     {
@@ -361,7 +360,7 @@ def test_unexpected_failures_stay_safe_without_leaking_details(api_context, monk
 
 
 def test_insight_route_coexists_with_games_and_openings() -> None:
-    routes = {route.path for route in app.routes if isinstance(route, APIRoute)}
+    routes = set(app.openapi()["paths"])
 
     assert "/api/positions/insight" in routes
     assert "/api/games" in routes
@@ -373,10 +372,5 @@ def test_insight_route_coexists_with_games_and_openings() -> None:
 
 
 def test_insight_route_uses_expected_operation_name() -> None:
-    route = next(
-        route
-        for route in app.routes
-        if isinstance(route, APIRoute) and route.path == "/api/positions/insight"
-    )
-
-    assert route.operation_id == "getPositionInsight"
+    operation = app.openapi()["paths"]["/api/positions/insight"]["get"]
+    assert operation["operationId"] == "getPositionInsight"

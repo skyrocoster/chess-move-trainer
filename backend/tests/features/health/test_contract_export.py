@@ -2,9 +2,6 @@
 
 from __future__ import annotations
 
-import re
-
-from fastapi.routing import APIRoute
 from fastapi.testclient import TestClient
 
 from backend.app.main import app
@@ -18,6 +15,9 @@ EXPECTED_OPERATION_IDS: dict[str, dict[str, str]] = {
     "/api/positions/insight": {"get": "getPositionInsight"},
     "/api/positions/training-requirements": {
         "get": "getPositionTrainingRequirements"
+    },
+    "/api/positions/training-requirements/answers": {
+        "post": "submitPositionTrainingAnswer"
     },
     "/api/analysis": {"get": "getAnalysis"},
     "/api/analysis-requests": {"post": "requestAnalysis"},
@@ -39,27 +39,8 @@ def _assert_expected_operation_ids(paths: dict) -> None:
 def test_served_schema_remains_full_with_only_clean_operationid_changes() -> None:
     spec = app.openapi()
 
-    current_api_routes = [
-        route for route in app.routes if isinstance(route, APIRoute)
-    ]
-    assert current_api_routes, "expected the real application routes"
-    for route in current_api_routes:
-        assert route.path in spec["paths"], f"served schema lost {route.path}"
-
+    assert set(spec["paths"]) == set(EXPECTED_OPERATION_IDS)
     _assert_expected_operation_ids(spec["paths"])
-
-    # No other drift: every other operation keeps the
-    # FastAPI-generated default operation id.
-    for route in current_api_routes:
-        if route.path in EXPECTED_OPERATION_IDS:
-            continue
-        path_item = spec["paths"][route.path]
-        for method, operation in path_item.items():
-            if method not in route.methods or method.lower() == "head":
-                continue
-            expected_default = re.sub(r"\W", "_", f"{route.name}_{route.path}")
-            assert operation["operationId"] == expected_default
-            assert operation["operationId"] != "getHealth"
 
 
 def test_docs_and_served_openapi_remain_available() -> None:
@@ -78,6 +59,7 @@ def test_docs_and_served_openapi_remain_available() -> None:
     assert "/api/openings/line-library" not in served_spec["paths"]
     assert "/api/positions/insight" in served_spec["paths"]
     assert "/api/positions/training-requirements" in served_spec["paths"]
+    assert "/api/positions/training-requirements/answers" in served_spec["paths"]
     assert "trainer_color" in {
         parameter["name"]
         for parameter in served_spec["paths"]["/api/positions/training-requirements"]["get"][

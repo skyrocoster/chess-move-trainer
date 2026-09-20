@@ -14,11 +14,14 @@ from typing import Any, Protocol
 
 import chess
 import chess.engine
+from chess_move_trainer.database.stockfish.configuration import STOCKFISH_VERSION
 
 from .errors import AnalysisTimeoutError, AnalysisValidationError, EngineLifecycleError
 from .models import AnalysisCandidate, AnalysisProfile, AnalysisResult, canonical_fen
 
-EXPECTED_ENGINE_PATTERN = re.compile(r"^Stockfish 18(?:\s|$)", re.IGNORECASE)
+EXPECTED_ENGINE_PATTERN = re.compile(
+    rf"^Stockfish {re.escape(STOCKFISH_VERSION)}(?:\s|$)", re.IGNORECASE
+)
 
 
 @dataclass(frozen=True)
@@ -58,8 +61,10 @@ def sha256_file(path: Path) -> str:
 def _identity(reported_name: object, checksum: str) -> EngineIdentity:
     name = str(reported_name).strip()
     if not EXPECTED_ENGINE_PATTERN.match(name):
-        raise EngineLifecycleError(f"expected reported Stockfish 18 identity, got {name!r}")
-    return EngineIdentity(name, "18", checksum)
+        raise EngineLifecycleError(
+            f"expected reported Stockfish {STOCKFISH_VERSION} identity, got {name!r}"
+        )
+    return EngineIdentity(name, STOCKFISH_VERSION, checksum)
 
 
 def _engine_shutdown_poll(engine: chess.engine.SimpleEngine, timeout: float) -> bool:
@@ -105,7 +110,9 @@ class PythonChessProcess:
                     raise EngineLifecycleError(
                         "failed engine launch did not leave a provably closed child"
                     ) from error
-            raise EngineLifecycleError(f"Stockfish 18 verification failed: {error}") from error
+            raise EngineLifecycleError(
+                f"Stockfish {STOCKFISH_VERSION} verification failed: {error}"
+            ) from error
 
     def configure(self, options: Mapping[str, object]) -> None:
         self._engine.configure(options)

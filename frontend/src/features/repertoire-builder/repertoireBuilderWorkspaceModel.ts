@@ -2,7 +2,6 @@ import { Chess, type PieceSymbol, type Square } from "chess.js";
 
 import type { BoardOrientation } from "../board-adapter/BoardAdapter";
 import type { BranchMove } from "../board-adapter/branchModel";
-import type { ChessSide } from "../chess/chessPrimitives";
 import type {
   PositionPickerSessionBoundary,
   SessionPosition,
@@ -39,10 +38,6 @@ function moveFromUci(uci: string) {
   };
 }
 
-function sideFromColor(color: "w" | "b"): ChessSide {
-  return color === "w" ? "white" : "black";
-}
-
 export function branchMoves(session: PositionPickerSessionBoundary): readonly BranchMove[] {
   if (session.branch === null) {
     return [];
@@ -54,7 +49,7 @@ export function branchMoves(session: PositionPickerSessionBoundary): readonly Br
     const move = chess.move(moveFromUci(transition.outgoingUCI));
     const position: SessionPosition | undefined = session.branch?.positions[index];
     return {
-      color: sideFromColor(move.color),
+      color: move.color,
       from: move.from,
       to: move.to,
       san: position?.san ?? move.san,

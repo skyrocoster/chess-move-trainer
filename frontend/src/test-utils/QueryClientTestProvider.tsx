@@ -28,7 +28,7 @@ export function createTestQueryClient(): QueryClient {
 }
 
 type QueryClientTestProviderProps = {
-  children: ReactNode;
+  children?: ReactNode;
   /**
    * Optional explicitly shared client. When omitted, the provider lazily
    * creates one fresh client per mounted instance.

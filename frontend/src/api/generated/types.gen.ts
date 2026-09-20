@@ -23,14 +23,6 @@ export type AnalysisObservationErrorResponse = {
  */
 export type AnalysisObservationLineResponse = {
   /**
-   * Depth
-   */
-  depth: number;
-  /**
-   * Pv Uci
-   */
-  pv_uci: Array<string>;
-  /**
    * Rank
    */
   rank: number;
@@ -43,6 +35,10 @@ export type AnalysisObservationLineResponse = {
    */
   score_value: number;
   /**
+   * Wdl Wins
+   */
+  wdl_wins: number;
+  /**
    * Wdl Draws
    */
   wdl_draws: number;
@@ -51,9 +47,13 @@ export type AnalysisObservationLineResponse = {
    */
   wdl_losses: number;
   /**
-   * Wdl Wins
+   * Pv Uci
    */
-  wdl_wins: number;
+  pv_uci: Array<string>;
+  /**
+   * Depth
+   */
+  depth: number;
 };
 
 /**
@@ -64,11 +64,11 @@ export type AnalysisObservationResponse = {
    * Fen
    */
   fen: string;
-  result: AnalysisObservationResultResponse | null;
   /**
    * State
    */
   state: "not_requested" | "queued" | "running" | "ready";
+  result: AnalysisObservationResultResponse | null;
 };
 
 /**
@@ -76,9 +76,19 @@ export type AnalysisObservationResponse = {
  */
 export type AnalysisObservationResultResponse = {
   /**
+   * Quality
+   */
+  quality: "browser" | "tool";
+  /**
    * Configuration Version
    */
   configuration_version: number;
+  /**
+   * Settings
+   */
+  settings: {
+    [key: string]: unknown;
+  };
   /**
    * Engine Name
    */
@@ -88,23 +98,13 @@ export type AnalysisObservationResultResponse = {
    */
   engine_version: string;
   /**
-   * Lines
-   */
-  lines: Array<AnalysisObservationLineResponse>;
-  /**
-   * Quality
-   */
-  quality: "browser" | "tool";
-  /**
-   * Settings
-   */
-  settings: {
-    [key: string]: unknown;
-  };
-  /**
    * Terminal Kind
    */
   terminal_kind: "checkmate" | "stalemate" | "insufficient_material" | null;
+  /**
+   * Lines
+   */
+  lines: Array<AnalysisObservationLineResponse>;
 };
 
 /**
@@ -144,31 +144,35 @@ export type AnalysisRequestErrorResponse = {
  */
 export type GameCoverageResponse = {
   /**
-   * Analysis Coverage
+   * Distinct Position Count
    */
-  analysis_coverage: "none" | "partial" | "complete";
+  distinct_position_count: number;
   /**
    * Analyzed Position Count
    */
   analyzed_position_count: number;
   /**
-   * Distinct Position Count
+   * Preferred Position Count
    */
-  distinct_position_count: number;
+  preferred_position_count: number;
+  /**
+   * Analysis Coverage
+   */
+  analysis_coverage: "none" | "partial" | "complete";
   /**
    * Preferred Coverage
    */
   preferred_coverage: "none" | "partial" | "complete";
-  /**
-   * Preferred Position Count
-   */
-  preferred_position_count: number;
 };
 
 /**
  * GameDetailOccurrenceResponse
  */
 export type GameDetailOccurrenceResponse = {
+  /**
+   * Ply
+   */
+  ply: number;
   /**
    * Fen
    */
@@ -177,10 +181,6 @@ export type GameDetailOccurrenceResponse = {
    * Move Uci
    */
   move_uci: string | null;
-  /**
-   * Ply
-   */
-  ply: number;
 };
 
 /**
@@ -188,133 +188,133 @@ export type GameDetailOccurrenceResponse = {
  */
 export type GameDetailResponse = {
   /**
-   * Ended At Utc
-   */
-  ended_at_utc: string | null;
-  /**
    * Game Uuid
    */
   game_uuid: string;
-  /**
-   * Occurrences
-   */
-  occurrences: Array<GameDetailOccurrenceResponse>;
-  /**
-   * Opponent Chesscom Uuid
-   */
-  opponent_chesscom_uuid: string | null;
-  /**
-   * Opponent Rating
-   */
-  opponent_rating: number | null;
-  /**
-   * Original Pgn
-   */
-  original_pgn: string;
   /**
    * Source Url
    */
   source_url: string;
   /**
-   * Started At Utc
+   * Original Pgn
    */
-  started_at_utc: string | null;
-  /**
-   * Termination Reason
-   */
-  termination_reason: string | null;
-  /**
-   * Time Class
-   */
-  time_class: "bullet" | "blitz" | "rapid" | "daily" | null;
-  /**
-   * Time Control
-   */
-  time_control: string | null;
-  /**
-   * Trainer Chesscom Uuid
-   */
-  trainer_chesscom_uuid: string;
+  original_pgn: string;
   /**
    * Trainer Color
    */
   trainer_color: "white" | "black";
   /**
-   * Trainer Outcome
+   * Trainer Chesscom Uuid
    */
-  trainer_outcome: "win" | "loss" | "draw" | null;
+  trainer_chesscom_uuid: string;
+  /**
+   * Opponent Chesscom Uuid
+   */
+  opponent_chesscom_uuid: string | null;
   /**
    * Trainer Rating
    */
   trainer_rating: number | null;
+  /**
+   * Opponent Rating
+   */
+  opponent_rating: number | null;
+  /**
+   * Started At Utc
+   */
+  started_at_utc: string | null;
+  /**
+   * Ended At Utc
+   */
+  ended_at_utc: string | null;
+  /**
+   * Trainer Outcome
+   */
+  trainer_outcome: "win" | "loss" | "draw" | null;
+  /**
+   * Termination Reason
+   */
+  termination_reason: string | null;
+  /**
+   * Time Control
+   */
+  time_control: string | null;
+  /**
+   * Time Class
+   */
+  time_class: "bullet" | "blitz" | "rapid" | "daily" | null;
+  /**
+   * Occurrences
+   */
+  occurrences: Array<GameDetailOccurrenceResponse>;
 };
 
 /**
  * GameSummaryResponse
  */
 export type GameSummaryResponse = {
-  coverage: GameCoverageResponse;
-  deepest_opening: OpeningSummaryResponse | null;
-  /**
-   * Ended At Utc
-   */
-  ended_at_utc: string | null;
   /**
    * Game Uuid
    */
   game_uuid: string;
   /**
-   * Length Plies
-   */
-  length_plies: number;
-  /**
-   * Occurrence Count
-   */
-  occurrence_count: number;
-  /**
-   * Opponent Chesscom Uuid
-   */
-  opponent_chesscom_uuid: string | null;
-  /**
-   * Opponent Rating
-   */
-  opponent_rating: number | null;
-  /**
    * Source Url
    */
   source_url: string;
-  /**
-   * Started At Utc
-   */
-  started_at_utc: string | null;
-  /**
-   * Termination Reason
-   */
-  termination_reason: string | null;
-  /**
-   * Time Class
-   */
-  time_class: "bullet" | "blitz" | "rapid" | "daily" | null;
-  /**
-   * Time Control
-   */
-  time_control: string | null;
-  /**
-   * Trainer Chesscom Uuid
-   */
-  trainer_chesscom_uuid: string;
   /**
    * Trainer Color
    */
   trainer_color: "white" | "black";
   /**
-   * Trainer Outcome
+   * Trainer Chesscom Uuid
    */
-  trainer_outcome: "win" | "loss" | "draw" | null;
+  trainer_chesscom_uuid: string;
+  /**
+   * Opponent Chesscom Uuid
+   */
+  opponent_chesscom_uuid: string | null;
   /**
    * Trainer Rating
    */
   trainer_rating: number | null;
+  /**
+   * Opponent Rating
+   */
+  opponent_rating: number | null;
+  /**
+   * Started At Utc
+   */
+  started_at_utc: string | null;
+  /**
+   * Ended At Utc
+   */
+  ended_at_utc: string | null;
+  /**
+   * Trainer Outcome
+   */
+  trainer_outcome: "win" | "loss" | "draw" | null;
+  /**
+   * Termination Reason
+   */
+  termination_reason: string | null;
+  /**
+   * Time Control
+   */
+  time_control: string | null;
+  /**
+   * Time Class
+   */
+  time_class: "bullet" | "blitz" | "rapid" | "daily" | null;
+  /**
+   * Occurrence Count
+   */
+  occurrence_count: number;
+  /**
+   * Length Plies
+   */
+  length_plies: number;
+  deepest_opening: OpeningSummaryResponse | null;
+  coverage: GameCoverageResponse;
 };
 
 /**
@@ -336,10 +336,6 @@ export type GamesErrorResponse = {
  */
 export type GamesResponse = {
   /**
-   * Has Next
-   */
-  has_next: boolean;
-  /**
    * Items
    */
   items: Array<GameSummaryResponse>;
@@ -359,6 +355,10 @@ export type GamesResponse = {
    * Total Pages
    */
   total_pages: number;
+  /**
+   * Has Next
+   */
+  has_next: boolean;
 };
 
 /**
@@ -452,21 +452,13 @@ export type OpeningCatalogueErrorResponse = {
  */
 export type OpeningCatalogueItemResponse = {
   /**
-   * Eco
-   */
-  eco: string;
-  /**
-   * Games Deepest
-   */
-  games_deepest: number;
-  /**
-   * Games Reached
-   */
-  games_reached: number;
-  /**
    * Key
    */
   key: string;
+  /**
+   * Eco
+   */
+  eco: string;
   /**
    * Name
    */
@@ -475,16 +467,20 @@ export type OpeningCatalogueItemResponse = {
    * Route Count
    */
   route_count: number;
+  /**
+   * Games Reached
+   */
+  games_reached: number;
+  /**
+   * Games Deepest
+   */
+  games_deepest: number;
 };
 
 /**
  * OpeningCatalogueResponse
  */
 export type OpeningCatalogueResponse = {
-  /**
-   * Has Next
-   */
-  has_next: boolean;
   /**
    * Items
    */
@@ -505,6 +501,10 @@ export type OpeningCatalogueResponse = {
    * Total Pages
    */
   total_pages: number;
+  /**
+   * Has Next
+   */
+  has_next: boolean;
 };
 
 /**
@@ -526,13 +526,13 @@ export type OpeningDetailErrorResponse = {
  */
 export type OpeningSummaryResponse = {
   /**
-   * Eco
-   */
-  eco: string;
-  /**
    * Key
    */
   key: string;
+  /**
+   * Eco
+   */
+  eco: string;
   /**
    * Name
    */
@@ -547,11 +547,11 @@ export type OpeningSummaryResponse = {
  * PositionInsightAnalysisResponse
  */
 export type PositionInsightAnalysisResponse = {
-  result: PositionInsightResultResponse | null;
   /**
    * State
    */
   state: "not_requested" | "queued" | "running" | "ready";
+  result: PositionInsightResultResponse | null;
 };
 
 /**
@@ -596,14 +596,6 @@ export type PositionInsightExperienceResponse = {
  */
 export type PositionInsightLineResponse = {
   /**
-   * Depth
-   */
-  depth: number;
-  /**
-   * Pv Uci
-   */
-  pv_uci: Array<string>;
-  /**
    * Rank
    */
   rank: number;
@@ -616,6 +608,10 @@ export type PositionInsightLineResponse = {
    */
   score_value: number;
   /**
+   * Wdl Wins
+   */
+  wdl_wins: number;
+  /**
    * Wdl Draws
    */
   wdl_draws: number;
@@ -624,9 +620,13 @@ export type PositionInsightLineResponse = {
    */
   wdl_losses: number;
   /**
-   * Wdl Wins
+   * Pv Uci
    */
-  wdl_wins: number;
+  pv_uci: Array<string>;
+  /**
+   * Depth
+   */
+  depth: number;
 };
 
 /**
@@ -634,13 +634,13 @@ export type PositionInsightLineResponse = {
  */
 export type PositionInsightObservedMoveResponse = {
   /**
-   * Distinct Game Count
-   */
-  distinct_game_count: number;
-  /**
    * Move Uci
    */
   move_uci: string;
+  /**
+   * Distinct Game Count
+   */
+  distinct_game_count: number;
   /**
    * Occurrence Count
    */
@@ -667,17 +667,13 @@ export type PositionInsightObservedMoveTotalsResponse = {
  */
 export type PositionInsightOpeningResponse = {
   /**
-   * Eco
-   */
-  eco: string;
-  /**
    * Key
    */
   key: string;
   /**
-   * Match
+   * Eco
    */
-  match: "route" | "transposition";
+  eco: string;
   /**
    * Name
    */
@@ -686,32 +682,40 @@ export type PositionInsightOpeningResponse = {
    * Ply
    */
   ply: number;
+  /**
+   * Match
+   */
+  match: "route" | "transposition";
 };
 
 /**
  * PositionInsightResponse
  */
 export type PositionInsightResponse = {
-  analysis: PositionInsightAnalysisResponse;
-  /**
-   * As Of
-   */
-  as_of: string;
-  experience: PositionInsightExperienceResponse;
   /**
    * Fen
    */
   fen: string;
   /**
+   * Trainer Color
+   */
+  trainer_color: "white" | "black";
+  /**
+   * As Of
+   */
+  as_of: string;
+  /**
    * Observed In Games
    */
   observed_in_games: boolean;
-  observed_move_totals: PositionInsightObservedMoveTotalsResponse;
+  opening: PositionInsightOpeningResponse | null;
+  experience: PositionInsightExperienceResponse;
   /**
    * Observed Moves
    */
   observed_moves: Array<PositionInsightObservedMoveResponse>;
-  opening: PositionInsightOpeningResponse | null;
+  observed_move_totals: PositionInsightObservedMoveTotalsResponse;
+  analysis: PositionInsightAnalysisResponse;
   /**
    * Preference
    */
@@ -725,10 +729,6 @@ export type PositionInsightResponse = {
     | ({
         kind: "unconfigured";
       } & UnconfiguredPreferenceResponse);
-  /**
-   * Trainer Color
-   */
-  trainer_color: "white" | "black";
 };
 
 /**
@@ -736,9 +736,19 @@ export type PositionInsightResponse = {
  */
 export type PositionInsightResultResponse = {
   /**
+   * Quality
+   */
+  quality: "browser" | "tool";
+  /**
    * Configuration Version
    */
   configuration_version: number;
+  /**
+   * Settings
+   */
+  settings: {
+    [key: string]: unknown;
+  };
   /**
    * Engine Name
    */
@@ -748,23 +758,13 @@ export type PositionInsightResultResponse = {
    */
   engine_version: string;
   /**
-   * Lines
-   */
-  lines: Array<PositionInsightLineResponse>;
-  /**
-   * Quality
-   */
-  quality: "browser" | "tool";
-  /**
-   * Settings
-   */
-  settings: {
-    [key: string]: unknown;
-  };
-  /**
    * Terminal Kind
    */
   terminal_kind: "checkmate" | "stalemate" | "insufficient_material" | null;
+  /**
+   * Lines
+   */
+  lines: Array<PositionInsightLineResponse>;
 };
 
 /**
@@ -811,6 +811,10 @@ export type PreferredMovesErrorResponse = {
  */
 export type PreferredMovesMutationRequest = {
   /**
+   * Fen
+   */
+  fen: string;
+  /**
    * Effective From
    */
   effective_from: string;
@@ -818,10 +822,6 @@ export type PreferredMovesMutationRequest = {
    * Effective Until
    */
   effective_until?: string | null;
-  /**
-   * Fen
-   */
-  fen: string;
   /**
    * Preference
    */
@@ -839,6 +839,10 @@ export type PreferredMovesMutationRequest = {
  */
 export type PreferredMovesMutationResponse = {
   /**
+   * Fen
+   */
+  fen: string;
+  /**
    * Effective From
    */
   effective_from: string;
@@ -846,14 +850,6 @@ export type PreferredMovesMutationResponse = {
    * Effective Until
    */
   effective_until: string | null;
-  /**
-   * Fen
-   */
-  fen: string;
-  /**
-   * Periods
-   */
-  periods: Array<PreferredMovesPeriodResponse>;
   /**
    * Preference
    */
@@ -864,6 +860,10 @@ export type PreferredMovesMutationResponse = {
     | ({
         kind: "no_preference";
       } & NoPreferenceResponse);
+  /**
+   * Periods
+   */
+  periods: Array<PreferredMovesPeriodResponse>;
 };
 
 /**
@@ -895,6 +895,10 @@ export type PreferredMovesPeriodResponse = {
  */
 export type PreferredMovesRemovalRequest = {
   /**
+   * Fen
+   */
+  fen: string;
+  /**
    * Effective From
    */
   effective_from: string;
@@ -902,16 +906,16 @@ export type PreferredMovesRemovalRequest = {
    * Effective Until
    */
   effective_until?: string | null;
-  /**
-   * Fen
-   */
-  fen: string;
 };
 
 /**
  * PreferredMovesRemovalResponse
  */
 export type PreferredMovesRemovalResponse = {
+  /**
+   * Fen
+   */
+  fen: string;
   /**
    * Effective From
    */
@@ -920,10 +924,6 @@ export type PreferredMovesRemovalResponse = {
    * Effective Until
    */
   effective_until: string | null;
-  /**
-   * Fen
-   */
-  fen: string;
   /**
    * Periods
    */
@@ -943,13 +943,13 @@ export type PreferredMovesResponse = {
    */
   from: string;
   /**
-   * Segments
-   */
-  segments: Array<PreferredMovesSegmentResponse>;
-  /**
    * Until
    */
   until: string;
+  /**
+   * Segments
+   */
+  segments: Array<PreferredMovesSegmentResponse>;
 };
 
 /**
@@ -960,6 +960,10 @@ export type PreferredMovesSegmentResponse = {
    * From
    */
   from: string;
+  /**
+   * Until
+   */
+  until: string;
   /**
    * Preference
    */
@@ -973,10 +977,43 @@ export type PreferredMovesSegmentResponse = {
     | ({
         kind: "unconfigured";
       } & UnconfiguredPreferenceResponse);
+};
+
+/**
+ * TrainingAnswerRequest
+ */
+export type TrainingAnswerRequest = {
   /**
-   * Until
+   * Fen
    */
-  until: string;
+  fen: string;
+  /**
+   * Trainer Color
+   */
+  trainer_color: "white" | "black";
+  /**
+   * As Of
+   */
+  as_of: string;
+  /**
+   * Played Move Uci
+   */
+  played_move_uci: string;
+};
+
+/**
+ * TrainingAnswerResponse
+ */
+export type TrainingAnswerResponse = {
+  /**
+   * As Of
+   */
+  as_of: string;
+  /**
+   * Correct
+   */
+  correct: boolean;
+  item: TrainingRequirementItemResponse;
 };
 
 /**
@@ -1145,82 +1182,33 @@ export type ValidationError = {
    * Error Type
    */
   type: string;
+  /**
+   * Input
+   */
+  input?: unknown;
+  /**
+   * Context
+   */
+  ctx?: {
+    [key: string]: unknown;
+  };
 };
 
-export type GetAnalysisData = {
+export type GetHealthData = {
   body?: never;
   path?: never;
-  query: {
-    /**
-     * Fen
-     */
-    fen: string;
-  };
-  url: "/api/analysis";
-};
-
-export type GetAnalysisErrors = {
-  /**
-   * Unprocessable Entity
-   */
-  422: AnalysisObservationErrorResponse;
-  /**
-   * Internal Server Error
-   */
-  500: AnalysisObservationErrorResponse;
-  /**
-   * Service Unavailable
-   */
-  503: AnalysisObservationErrorResponse;
-};
-
-export type GetAnalysisError = GetAnalysisErrors[keyof GetAnalysisErrors];
-
-export type GetAnalysisResponses = {
-  /**
-   * Successful Response
-   */
-  200: AnalysisObservationResponse;
-};
-
-export type GetAnalysisResponse = GetAnalysisResponses[keyof GetAnalysisResponses];
-
-export type RequestAnalysisData = {
-  body: AnalysisRequestBody;
-  path?: never;
   query?: never;
-  url: "/api/analysis-requests";
+  url: "/api/health";
 };
 
-export type RequestAnalysisErrors = {
-  /**
-   * Unprocessable Entity
-   */
-  422: AnalysisRequestErrorResponse;
-  /**
-   * Internal Server Error
-   */
-  500: AnalysisRequestErrorResponse;
-  /**
-   * Service Unavailable
-   */
-  503: AnalysisRequestErrorResponse;
-};
-
-export type RequestAnalysisError = RequestAnalysisErrors[keyof RequestAnalysisErrors];
-
-export type RequestAnalysisResponses = {
+export type GetHealthResponses = {
   /**
    * Successful Response
    */
-  200: AnalysisObservationResponse;
-  /**
-   * Accepted
-   */
-  202: AnalysisObservationResponse;
+  200: HealthResponse;
 };
 
-export type RequestAnalysisResponse = RequestAnalysisResponses[keyof RequestAnalysisResponses];
+export type GetHealthResponse = GetHealthResponses[keyof GetHealthResponses];
 
 export type GetGamesData = {
   body?: never;
@@ -1402,121 +1390,196 @@ export type GetGameResponses = {
 
 export type GetGameResponse = GetGameResponses[keyof GetGameResponses];
 
-export type GetHealthData = {
+export type GetAnalysisData = {
   body?: never;
   path?: never;
-  query?: never;
-  url: "/api/health";
-};
-
-export type GetHealthResponses = {
-  /**
-   * Successful Response
-   */
-  200: HealthResponse;
-};
-
-export type GetHealthResponse = GetHealthResponses[keyof GetHealthResponses];
-
-export type GetOpeningsData = {
-  body?: never;
-  path?: never;
-  query?: {
+  query: {
     /**
-     * Page
+     * Fen
      */
-    page?: number;
-    /**
-     * Page Size
-     */
-    page_size?: number;
-    /**
-     * Search
-     */
-    search?: string | null;
-    /**
-     * Eco From
-     */
-    eco_from?: string | null;
-    /**
-     * Eco To
-     */
-    eco_to?: string | null;
-    /**
-     * Sort
-     */
-    sort?: string;
+    fen: string;
   };
-  url: "/api/openings";
+  url: "/api/analysis";
 };
 
-export type GetOpeningsErrors = {
+export type GetAnalysisErrors = {
   /**
    * Unprocessable Entity
    */
-  422: OpeningCatalogueErrorResponse;
+  422: AnalysisObservationErrorResponse;
   /**
    * Internal Server Error
    */
-  500: OpeningCatalogueErrorResponse;
+  500: AnalysisObservationErrorResponse;
   /**
    * Service Unavailable
    */
-  503: OpeningCatalogueErrorResponse;
+  503: AnalysisObservationErrorResponse;
 };
 
-export type GetOpeningsError = GetOpeningsErrors[keyof GetOpeningsErrors];
+export type GetAnalysisError = GetAnalysisErrors[keyof GetAnalysisErrors];
 
-export type GetOpeningsResponses = {
+export type GetAnalysisResponses = {
   /**
    * Successful Response
    */
-  200: OpeningCatalogueResponse;
+  200: AnalysisObservationResponse;
 };
 
-export type GetOpeningsResponse = GetOpeningsResponses[keyof GetOpeningsResponses];
+export type GetAnalysisResponse = GetAnalysisResponses[keyof GetAnalysisResponses];
 
-export type GetOpeningByKeyData = {
-  body?: never;
-  path: {
-    /**
-     * Opening Key
-     */
-    opening_key: string;
-  };
+export type RequestAnalysisData = {
+  body: AnalysisRequestBody;
+  path?: never;
   query?: never;
-  url: "/api/openings/{opening_key}";
+  url: "/api/analysis-requests";
 };
 
-export type GetOpeningByKeyErrors = {
-  /**
-   * Not Found
-   */
-  404: OpeningDetailErrorResponse;
+export type RequestAnalysisErrors = {
   /**
    * Unprocessable Entity
    */
-  422: OpeningDetailErrorResponse;
+  422: AnalysisRequestErrorResponse;
   /**
    * Internal Server Error
    */
-  500: OpeningDetailErrorResponse;
+  500: AnalysisRequestErrorResponse;
   /**
    * Service Unavailable
    */
-  503: OpeningDetailErrorResponse;
+  503: AnalysisRequestErrorResponse;
 };
 
-export type GetOpeningByKeyError = GetOpeningByKeyErrors[keyof GetOpeningByKeyErrors];
+export type RequestAnalysisError = RequestAnalysisErrors[keyof RequestAnalysisErrors];
 
-export type GetOpeningByKeyResponses = {
+export type RequestAnalysisResponses = {
   /**
    * Successful Response
    */
-  200: OpeningCatalogueItemResponse;
+  200: AnalysisObservationResponse;
+  /**
+   * Accepted
+   */
+  202: AnalysisObservationResponse;
 };
 
-export type GetOpeningByKeyResponse = GetOpeningByKeyResponses[keyof GetOpeningByKeyResponses];
+export type RequestAnalysisResponse = RequestAnalysisResponses[keyof RequestAnalysisResponses];
+
+export type DeletePreferredMovesData = {
+  body: PreferredMovesRemovalRequest;
+  path?: never;
+  query?: never;
+  url: "/api/preferred-moves";
+};
+
+export type DeletePreferredMovesErrors = {
+  /**
+   * Unprocessable Entity
+   */
+  422: PreferredMovesErrorResponse;
+  /**
+   * Internal Server Error
+   */
+  500: PreferredMovesErrorResponse;
+  /**
+   * Service Unavailable
+   */
+  503: PreferredMovesErrorResponse;
+};
+
+export type DeletePreferredMovesError =
+  DeletePreferredMovesErrors[keyof DeletePreferredMovesErrors];
+
+export type DeletePreferredMovesResponses = {
+  /**
+   * Successful Response
+   */
+  200: PreferredMovesRemovalResponse;
+};
+
+export type DeletePreferredMovesResponse =
+  DeletePreferredMovesResponses[keyof DeletePreferredMovesResponses];
+
+export type GetPreferredMovesData = {
+  body?: never;
+  path?: never;
+  query: {
+    /**
+     * Fen
+     */
+    fen: string;
+    /**
+     * From
+     */
+    from: string;
+    /**
+     * Until
+     */
+    until: string;
+  };
+  url: "/api/preferred-moves";
+};
+
+export type GetPreferredMovesErrors = {
+  /**
+   * Unprocessable Entity
+   */
+  422: PreferredMovesErrorResponse;
+  /**
+   * Internal Server Error
+   */
+  500: PreferredMovesErrorResponse;
+  /**
+   * Service Unavailable
+   */
+  503: PreferredMovesErrorResponse;
+};
+
+export type GetPreferredMovesError = GetPreferredMovesErrors[keyof GetPreferredMovesErrors];
+
+export type GetPreferredMovesResponses = {
+  /**
+   * Successful Response
+   */
+  200: PreferredMovesResponse;
+};
+
+export type GetPreferredMovesResponse =
+  GetPreferredMovesResponses[keyof GetPreferredMovesResponses];
+
+export type PutPreferredMovesData = {
+  body: PreferredMovesMutationRequest;
+  path?: never;
+  query?: never;
+  url: "/api/preferred-moves";
+};
+
+export type PutPreferredMovesErrors = {
+  /**
+   * Unprocessable Entity
+   */
+  422: PreferredMovesErrorResponse;
+  /**
+   * Internal Server Error
+   */
+  500: PreferredMovesErrorResponse;
+  /**
+   * Service Unavailable
+   */
+  503: PreferredMovesErrorResponse;
+};
+
+export type PutPreferredMovesError = PutPreferredMovesErrors[keyof PutPreferredMovesErrors];
+
+export type PutPreferredMovesResponses = {
+  /**
+   * Successful Response
+   */
+  200: PreferredMovesMutationResponse;
+};
+
+export type PutPreferredMovesResponse =
+  PutPreferredMovesResponses[keyof PutPreferredMovesResponses];
 
 export type GetPositionInsightData = {
   body?: never;
@@ -1645,118 +1708,145 @@ export type GetPositionTrainingRequirementsResponses = {
 export type GetPositionTrainingRequirementsResponse =
   GetPositionTrainingRequirementsResponses[keyof GetPositionTrainingRequirementsResponses];
 
-export type DeletePreferredMovesData = {
-  body: PreferredMovesRemovalRequest;
+export type SubmitPositionTrainingAnswerData = {
+  body: TrainingAnswerRequest;
   path?: never;
   query?: never;
-  url: "/api/preferred-moves";
+  url: "/api/positions/training-requirements/answers";
 };
 
-export type DeletePreferredMovesErrors = {
+export type SubmitPositionTrainingAnswerErrors = {
+  /**
+   * Not Found
+   */
+  404: TrainingRequirementErrorResponse;
+  /**
+   * Conflict
+   */
+  409: TrainingRequirementErrorResponse;
   /**
    * Unprocessable Entity
    */
-  422: PreferredMovesErrorResponse;
+  422: TrainingRequirementErrorResponse;
   /**
    * Internal Server Error
    */
-  500: PreferredMovesErrorResponse;
+  500: TrainingRequirementErrorResponse;
   /**
    * Service Unavailable
    */
-  503: PreferredMovesErrorResponse;
+  503: TrainingRequirementErrorResponse;
 };
 
-export type DeletePreferredMovesError =
-  DeletePreferredMovesErrors[keyof DeletePreferredMovesErrors];
+export type SubmitPositionTrainingAnswerError =
+  SubmitPositionTrainingAnswerErrors[keyof SubmitPositionTrainingAnswerErrors];
 
-export type DeletePreferredMovesResponses = {
+export type SubmitPositionTrainingAnswerResponses = {
   /**
    * Successful Response
    */
-  200: PreferredMovesRemovalResponse;
+  200: TrainingAnswerResponse;
 };
 
-export type DeletePreferredMovesResponse =
-  DeletePreferredMovesResponses[keyof DeletePreferredMovesResponses];
+export type SubmitPositionTrainingAnswerResponse =
+  SubmitPositionTrainingAnswerResponses[keyof SubmitPositionTrainingAnswerResponses];
 
-export type GetPreferredMovesData = {
+export type GetOpeningsData = {
   body?: never;
   path?: never;
-  query: {
+  query?: {
     /**
-     * Fen
+     * Page
      */
-    fen: string;
+    page?: number;
     /**
-     * From
+     * Page Size
      */
-    from: string;
+    page_size?: number;
     /**
-     * Until
+     * Search
      */
-    until: string;
+    search?: string | null;
+    /**
+     * Eco From
+     */
+    eco_from?: string | null;
+    /**
+     * Eco To
+     */
+    eco_to?: string | null;
+    /**
+     * Sort
+     */
+    sort?: string;
   };
-  url: "/api/preferred-moves";
+  url: "/api/openings";
 };
 
-export type GetPreferredMovesErrors = {
+export type GetOpeningsErrors = {
   /**
    * Unprocessable Entity
    */
-  422: PreferredMovesErrorResponse;
+  422: OpeningCatalogueErrorResponse;
   /**
    * Internal Server Error
    */
-  500: PreferredMovesErrorResponse;
+  500: OpeningCatalogueErrorResponse;
   /**
    * Service Unavailable
    */
-  503: PreferredMovesErrorResponse;
+  503: OpeningCatalogueErrorResponse;
 };
 
-export type GetPreferredMovesError = GetPreferredMovesErrors[keyof GetPreferredMovesErrors];
+export type GetOpeningsError = GetOpeningsErrors[keyof GetOpeningsErrors];
 
-export type GetPreferredMovesResponses = {
+export type GetOpeningsResponses = {
   /**
    * Successful Response
    */
-  200: PreferredMovesResponse;
+  200: OpeningCatalogueResponse;
 };
 
-export type GetPreferredMovesResponse =
-  GetPreferredMovesResponses[keyof GetPreferredMovesResponses];
+export type GetOpeningsResponse = GetOpeningsResponses[keyof GetOpeningsResponses];
 
-export type PutPreferredMovesData = {
-  body: PreferredMovesMutationRequest;
-  path?: never;
+export type GetOpeningByKeyData = {
+  body?: never;
+  path: {
+    /**
+     * Opening Key
+     */
+    opening_key: string;
+  };
   query?: never;
-  url: "/api/preferred-moves";
+  url: "/api/openings/{opening_key}";
 };
 
-export type PutPreferredMovesErrors = {
+export type GetOpeningByKeyErrors = {
+  /**
+   * Not Found
+   */
+  404: OpeningDetailErrorResponse;
   /**
    * Unprocessable Entity
    */
-  422: PreferredMovesErrorResponse;
+  422: OpeningDetailErrorResponse;
   /**
    * Internal Server Error
    */
-  500: PreferredMovesErrorResponse;
+  500: OpeningDetailErrorResponse;
   /**
    * Service Unavailable
    */
-  503: PreferredMovesErrorResponse;
+  503: OpeningDetailErrorResponse;
 };
 
-export type PutPreferredMovesError = PutPreferredMovesErrors[keyof PutPreferredMovesErrors];
+export type GetOpeningByKeyError = GetOpeningByKeyErrors[keyof GetOpeningByKeyErrors];
 
-export type PutPreferredMovesResponses = {
+export type GetOpeningByKeyResponses = {
   /**
    * Successful Response
    */
-  200: PreferredMovesMutationResponse;
+  200: OpeningCatalogueItemResponse;
 };
 
-export type PutPreferredMovesResponse =
-  PutPreferredMovesResponses[keyof PutPreferredMovesResponses];
+export type GetOpeningByKeyResponse = GetOpeningByKeyResponses[keyof GetOpeningByKeyResponses];

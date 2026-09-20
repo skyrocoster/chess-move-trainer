@@ -10,7 +10,8 @@ import {
 } from "../analysis/analysisStoryClients";
 import { GAME, GAME_UUID } from "../game/gameFixtures";
 import { storyViewport } from "../../storybook/viewports";
-import RepertoireBuilderWorkspace from "./RepertoireBuilderWorkspace";import {
+import RepertoireBuilderWorkspace from "./RepertoireBuilderWorkspace";
+import {
   expectActiveSessionHistoryEntry,
   expectPositionReachFrequency,
   expectPositionSquares,
@@ -20,7 +21,8 @@ import RepertoireBuilderWorkspace from "./RepertoireBuilderWorkspace";import {
   expectSingleStagedStatus,
   sharedPositionSummary,
 } from "./repertoireBuilderStoryAssertions";
-import { workspace } from "./repertoireBuilderStoryRender";import {
+import { workspace } from "./repertoireBuilderStoryRender";
+import {
   STORY_BLACK_SUBJECT_GAME_DETAIL,
   STORY_PROMOTION_GAME_DETAIL,
   expectNoHorizontalOverflow,
@@ -288,9 +290,7 @@ export const SelectedPositionAnalysisLifecycle: Story = {
     ).not.toBeInTheDocument();
 
     await userEvent.click(analysisQueries.getByRole("button", { name: "1. e4" }));
-    await expect(canvas.getByTestId("branch-status")).toHaveTextContent(
-      "Move played locally: e4.",
-    );
+    await expect(canvas.getByTestId("branch-status")).toHaveTextContent("Move played locally: e4.");
     await expectSessionHistory(canvasElement, ["Initial position", "White, move 1, e4"]);
     await expectActiveSessionHistoryEntry(canvasElement, "White, move 1, e4");
     await waitFor(() => expect(proof).toHaveTextContent("observe:not_requested"));
@@ -361,9 +361,7 @@ export const CandidateActivation: Story = {
     await expectPositionSquares(canvasElement, "e4", 1);
     await expectSessionHistory(canvasElement, ["Initial position", "White, move 1, e4"]);
     await expectActiveSessionHistoryEntry(canvasElement, "White, move 1, e4");
-    await expect(canvas.getByTestId("branch-status")).toHaveTextContent(
-      "Move played locally: e4.",
-    );
+    await expect(canvas.getByTestId("branch-status")).toHaveTextContent("Move played locally: e4.");
     await expectPreferredMoveState(canvasElement, "empty");
     await expectPositionReachFrequency(canvasElement, "available", "Black", "2 / 10 games", "20%");
   },

@@ -138,8 +138,11 @@ def _classify_terminal(board: chess.Board) -> AnalysisTerminalKind | None:
     return None
 
 
-def _is_stockfish_18(reported_name: str) -> bool:
-    return re.match(r"^Stockfish\s+18(?:\b|$)", reported_name) is not None
+def _is_expected_stockfish(reported_name: str) -> bool:
+    return (
+        re.match(rf"^Stockfish\s+{re.escape(STOCKFISH_VERSION)}(?:\b|$)", reported_name)
+        is not None
+    )
 
 
 def _finite_timeout(value: float, label: str) -> float:

@@ -41,7 +41,7 @@ def _result(
     *,
     quality: AnalysisQuality = AnalysisQuality.BROWSER,
     configuration_version: int = 1,
-    engine_version: str = "18",
+    engine_version: str = "19",
 ):
     return validate_analysis_result(
         quality=quality,
@@ -76,7 +76,7 @@ def _position_with_result(
     *,
     quality: AnalysisQuality = AnalysisQuality.BROWSER,
     configuration_version: int = 1,
-    engine_version: str = "18",
+    engine_version: str = "19",
 ) -> int:
     position_id = PositionRepository(database).resolve_fen(STARTING_FEN)
     assert AnalysisRepository(database).publish(

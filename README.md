@@ -23,6 +23,20 @@ It has a Python API, a React browser interface, and automated tests for both.
 
 Dependency versions are pinned in `requirements.txt`, `pyproject.toml`, and the root `package-lock.json`.
 
+## Dependency policy
+
+Python runtime versions are locked in `uv.lock` with a hashed `requirements.txt` export; npm
+workspaces resolve from the root `package-lock.json`; Docker bases are digest-pinned. Re-check
+them monthly with finite local commands (no application CI, no update bot):
+
+- `npx -y npm@12.0.2 audit --json` from the root and from `.opencode/`
+- `.venv/Scripts/python.exe -m pip_audit -r requirements.txt`
+- Trivy `aquasec/trivy:0.74.0` scans of the final backend and frontend images
+
+The full audit, scan results, and accepted-risk records live in
+`docs/grilling-docs/dependency-and-library-audit-2026-09-19.md` (next review due 2026-10-19).
+Apply upgrades manually in small groups using that document's verification runbook.
+
 ## Code-review inventory
 
 An implementation-focused review, including prioritized improvement candidates

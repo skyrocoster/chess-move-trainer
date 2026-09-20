@@ -11,7 +11,10 @@ export default tseslint.config(
     files: ["**/*.{ts,tsx}"],
     plugins: { "react-hooks": reactHooks, "react-refresh": reactRefresh },
     rules: {
-      ...reactHooks.configs.recommended.rules,
+      // Preserve the pre-v7 lint contract. The v7 recommended preset enables
+      // React Compiler rules that require a separate application refactor.
+      "react-hooks/rules-of-hooks": "error",
+      "react-hooks/exhaustive-deps": "warn",
       "react-refresh/only-export-components": ["warn", { allowConstantExport: true }],
     },
   },

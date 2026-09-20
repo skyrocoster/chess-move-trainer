@@ -5,7 +5,7 @@ import { InteractiveBoardAdapter } from "./InteractiveBoardAdapter";
 import { InteractiveBoardHarness } from "./InteractiveBoardHarness";
 import type { BoardAnswerPresentation } from "./answerPresentation";
 import type { BranchSnapshot } from "./branchModel";
-import { lastMoveFromSquares } from "./lastMove";
+import { lastMoveFromSquares, type LastMove } from "./lastMove";
 
 vi.mock("react-chessboard", () => ({
   defaultPieces: Object.fromEntries(
@@ -369,7 +369,10 @@ describe("InteractiveBoardAdapter", () => {
   });
 });
 
-function renderAdapterWithAnswer(answer: BoardAnswerPresentation | null, lastMove = null) {
+function renderAdapterWithAnswer(
+  answer: BoardAnswerPresentation | null,
+  lastMove: LastMove | null = null,
+) {
   const branchSnapshot: BranchSnapshot = {
     viewKey: "game:answer",
     resetToken: 0,

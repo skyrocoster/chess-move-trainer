@@ -67,7 +67,7 @@ def test_profile_serialization_and_eligibility_identity_are_deterministic() -> N
         profile_id="balanced-v1",
         engine_binary_sha256="b" * 64,
         engine_name="Stockfish",
-        engine_version="18",
+        engine_version="19",
         node_budget=100_000,
     )
     first = AnalysisProfile(**common, options={"Skill Level": 20, "Clear Hash": True})

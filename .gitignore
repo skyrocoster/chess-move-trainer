@@ -45,6 +45,8 @@ Thumbs.db
 .cursor/skills/
 .agents/skills/*
 .opencode/*
+!.opencode/package.json
+!.opencode/package-lock.json
 !.opencode/commands/
 !.opencode/commands/commit.md
 !.opencode/plugin/

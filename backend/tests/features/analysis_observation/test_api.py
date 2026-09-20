@@ -5,7 +5,6 @@ import sqlite3
 from pathlib import Path
 
 import pytest
-from fastapi.routing import APIRoute
 
 import backend.app.features.analysis_observation.router as router_module
 from backend.app.dependencies import REBUILT_DATABASE_PATH_ENV, get_rebuilt_database_path
@@ -81,7 +80,7 @@ def test_finished_analysis_returns_full_detail_and_ignores_unknown_filters(api_c
             "configuration_version": 7,
             "settings": {"Hash": 16},
             "engine_name": "Stockfish",
-            "engine_version": "18",
+            "engine_version": "19",
             "terminal_kind": None,
             "lines": [
                 {
@@ -264,13 +263,9 @@ def test_unexpected_failures_stay_safe_without_leaking_details(api_context, monk
 
 
 def test_analysis_route_uses_expected_name_and_old_evaluation_stays_gone() -> None:
-    routes = {
-        route.path: route
-        for route in app.routes
-        if isinstance(route, APIRoute)
-    }
+    routes = app.openapi()["paths"]
 
     assert "/api/analysis" in routes
     assert "/api/evaluation" not in routes
-    assert routes["/api/analysis"].methods == {"GET"}
-    assert routes["/api/analysis"].operation_id == "getAnalysis"
+    assert set(routes["/api/analysis"]) == {"get"}
+    assert routes["/api/analysis"]["get"]["operationId"] == "getAnalysis"

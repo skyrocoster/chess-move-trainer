@@ -1,13 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
 import { useCallback, useState } from "react";
 
-import type {
-  OpeningCatalogueItemResponse,
-  TrainingRequirementResponse,
-} from "../../api/client";
+import type { OpeningCatalogueItemResponse, TrainingRequirementResponse } from "../../api/client";
 import { queryKeys } from "../../api/queryKeys";
 import { readOpeningCatalogueSnapshot } from "./openingCatalogueStorage";
-import { formatUtcDate, getUtcCalendarDay, toUtcMidnight } from "../design-system/CalendarDateUtils";
+import {
+  formatUtcDate,
+  getUtcCalendarDay,
+  toUtcMidnight,
+} from "../design-system/CalendarDateUtils";
 import type { CalendarDateValue } from "../design-system/CalendarDate";
 import {
   defaultTrainerPracticeApi,
@@ -21,10 +22,7 @@ import {
   type TrainingRequirementsResult,
 } from "./trainerPracticeApi";
 import type { OpeningSelection } from "./OpeningSearchCombobox";
-import {
-  TrainerPracticePanel,
-  type TrainerPracticeFormValues,
-} from "./TrainerPracticePanel";
+import { TrainerPracticePanel, type TrainerPracticeFormValues } from "./TrainerPracticePanel";
 
 export type TrainerPracticeApi = {
   loadCatalogue: (signal?: AbortSignal) => Promise<OpeningCatalogueSnapshotResult>;
@@ -46,7 +44,12 @@ type RetrievalState =
 
 function retrievalStateFromResult(result: TrainingRequirementsResult): RetrievalState {
   if (result.status !== "success") {
-    return { status: result.status.replace("_", "-") as Exclude<RetrievalState["status"], "idle" | "loading" | "empty" | "success"> };
+    return {
+      status: result.status.replace("_", "-") as Exclude<
+        RetrievalState["status"],
+        "idle" | "loading" | "empty" | "success"
+      >,
+    };
   }
   return {
     status: result.data.items.length === 0 ? "empty" : "success",
@@ -117,10 +120,9 @@ export function TrainerPracticePage({
         ? { status: "loading" }
         : requirementsResult.isError
           ? {
-              status: (
-                requirementsResult.error instanceof TrainerPracticeQueryError
-                  ? requirementsResult.error.status
-                  : "retrieval_error"
+              status: (requirementsResult.error instanceof TrainerPracticeQueryError
+                ? requirementsResult.error.status
+                : "retrieval_error"
               ).replace("_", "-") as Exclude<
                 RetrievalState["status"],
                 "idle" | "loading" | "empty" | "success"
@@ -147,9 +149,7 @@ export function TrainerPracticePage({
       const filters: TrainerPracticeFilters = {
         asOf: asOfString,
         openingKey:
-          values.openingSelection?.kind === "specific"
-            ? values.openingSelection.key
-            : null,
+          values.openingSelection?.kind === "specific" ? values.openingSelection.key : null,
         trainerColor: values.trainerColor === "" ? null : values.trainerColor,
       };
       setInvalidDateSubmitted(false);
@@ -179,19 +179,19 @@ export function TrainerPracticePage({
   }, []);
 
   return (
-      <TrainerPracticePanel
-        values={{ openingSelection, trainerColor, asOf }}
-        catalogueSearch={catalogueSearch}
-        openings={openings}
-        catalogueStatus={catalogueStatus}
+    <TrainerPracticePanel
+      values={{ openingSelection, trainerColor, asOf }}
+      catalogueSearch={catalogueSearch}
+      openings={openings}
+      catalogueStatus={catalogueStatus}
       retrieval={retrieval}
-        onOpeningSelectionChange={setOpeningSelection}
-        onCatalogueSearchChange={setCatalogueSearch}
-        onMissingOpeningSelection={handleMissingOpeningSelection}
-        onTrainerColorChange={setTrainerColor}
-        onAsOfChange={setAsOf}
-        onSubmit={handleSubmit}
-        onRetryCatalogue={handleRetryCatalogue}
+      onOpeningSelectionChange={setOpeningSelection}
+      onCatalogueSearchChange={setCatalogueSearch}
+      onMissingOpeningSelection={handleMissingOpeningSelection}
+      onTrainerColorChange={setTrainerColor}
+      onAsOfChange={setAsOf}
+      onSubmit={handleSubmit}
+      onRetryCatalogue={handleRetryCatalogue}
     />
   );
 }

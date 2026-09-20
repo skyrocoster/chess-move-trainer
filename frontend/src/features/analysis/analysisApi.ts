@@ -15,10 +15,7 @@ export type AnalysisTerminalKind = "checkmate" | "stalemate" | "insufficient_mat
 export type PositionKey = string;
 
 export type AnalysisFailureCode =
-  | "invalid_fen"
-  | "invalid_quality"
-  | "analysis_unavailable"
-  | "unexpected_failure";
+  "invalid_fen" | "invalid_quality" | "analysis_unavailable" | "unexpected_failure";
 
 export type AnalysisLine = {
   rank: number;

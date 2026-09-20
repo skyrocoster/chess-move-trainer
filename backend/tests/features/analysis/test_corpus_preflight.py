@@ -23,7 +23,7 @@ def _profile(checksum: str = "a" * 64) -> AnalysisProfile:
     return AnalysisProfile(
         profile_id="mp09-balanced-nodes-v2-200000",
         engine_binary_sha256=checksum,
-        engine_name="Stockfish 18 fake",
+        engine_name="Stockfish 19 fake",
         engine_version="18-test",
         node_budget=200_000,
         options={"UCI_ShowWDL": True},

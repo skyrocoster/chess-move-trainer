@@ -23,7 +23,7 @@ from backend.app.features.analysis.engine import (
 
 class FakeProcess:
     def __init__(self, checksum: str, version: str, *, mode: str = "normal") -> None:
-        self.identity = EngineIdentity("Stockfish 18 fake", version, checksum)
+        self.identity = EngineIdentity("Stockfish 19 fake", version, checksum)
         self.pid = 4242
         self.mode = mode
         self.events: list[tuple[str, object]] = []
@@ -242,7 +242,7 @@ class _SimpleEngineStub:
 
 def _real_python_chess_process() -> tuple[PythonChessProcess, _SimpleEngineStub]:
     engine = _SimpleEngineStub()
-    process = PythonChessProcess(engine, EngineIdentity("Stockfish 18 fake", "18", "0" * 64))
+    process = PythonChessProcess(engine, EngineIdentity("Stockfish 19 fake", "19", "0" * 64))
     return process, engine
 
 

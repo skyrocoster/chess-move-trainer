@@ -27,7 +27,8 @@ if (typeof HTMLCanvasElement !== "undefined") {
 // pseudo-class; all other selectors keep using jsdom's normal matching.
 // The Storybook project runs in a real browser and is unaffected.
 const topLayerPseudoSelectors = new Set([":modal", ":fullscreen"]);
-const elementProto = Element.prototype as Element & {
+const elementProto = Element.prototype as unknown as {
+  matches?: (selector: string) => boolean;
   webkitMatchesSelector?: (selector: string) => boolean;
 };
 

@@ -14,6 +14,7 @@ export {
   type Options,
   putPreferredMoves,
   requestAnalysis,
+  submitPositionTrainingAnswer,
 } from "./sdk.gen";
 export type {
   AnalysisObservationErrorResponse,
@@ -116,6 +117,13 @@ export type {
   RequestAnalysisErrors,
   RequestAnalysisResponse,
   RequestAnalysisResponses,
+  SubmitPositionTrainingAnswerData,
+  SubmitPositionTrainingAnswerError,
+  SubmitPositionTrainingAnswerErrors,
+  SubmitPositionTrainingAnswerResponse,
+  SubmitPositionTrainingAnswerResponses,
+  TrainingAnswerRequest,
+  TrainingAnswerResponse,
   TrainingRequirementErrorResponse,
   TrainingRequirementItemResponse,
   TrainingRequirementPolicyResponse,

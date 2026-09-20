@@ -1,17 +1,22 @@
 import { Chess, type Square } from "chess.js";
 
-import { getGame } from "../../api/client";
+import type { GameDetailResponse } from "../../api/client";
+import type { AnalysisClient } from "../analysis/analysisApi";
 import type { GameLoaderStatus } from "../game/GameLoader";
+import type { MoveResponseDistributionClient } from "../move-response-distribution/moveResponseDistributionApi";
+import type { PositionContextClient } from "../position-context/positionContextApi";
 import type { PromotionPiece } from "../board-adapter/PromotionPicker";
-import type {
-  PositionPickerSessionBoundary,
-  SessionMove,
-} from "./positionPickerSessionBoundary";
+import type { PreferredMoveClient } from "./preferredMoveApi";
+import type { PositionPickerSessionBoundary, SessionMove } from "./positionPickerSessionBoundary";
 
 export type GameDetailClient = (options: {
   path: { game_uuid: string };
   signal?: AbortSignal;
-}) => ReturnType<typeof getGame>;
+}) => Promise<{
+  data?: GameDetailResponse;
+  error?: unknown;
+  response?: Response;
+}>;
 
 export type RepertoireBuilderWorkspaceProps = {
   gameClient?: GameDetailClient;
@@ -61,7 +66,7 @@ export function failureCode(value: unknown): string | null {
 export function loadFailure(
   result: Awaited<ReturnType<GameDetailClient>>,
 ): Exclude<GameLoaderStatus, "idle" | "loading"> {
-  const code = failureCode(result.error);
+  const code = "error" in result ? failureCode(result.error) : null;
   const status = result.response?.status;
   if (code === "game_not_found" || status === 404) {
     return "game_not_found";

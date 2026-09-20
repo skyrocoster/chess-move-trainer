@@ -163,8 +163,8 @@ def test_eligibility_includes_missing_browser_and_stale_tool_but_skips_current_t
     repository = AnalysisRepository(database)
     for fen, quality, version, engine in (
         (E4_FEN, AnalysisQuality.BROWSER, 1, "anything"),
-        (D4_FEN, AnalysisQuality.TOOL, 1, "18"),
-        (E4_E5_FEN, AnalysisQuality.TOOL, 2, "18"),
+        (D4_FEN, AnalysisQuality.TOOL, 1, "19"),
+        (E4_E5_FEN, AnalysisQuality.TOOL, 2, "19"),
     ):
         position_id = ids[fen]
         result = _valid_result(database, position_id, quality, version, engine)

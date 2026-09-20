@@ -52,7 +52,7 @@ describe("PageContentBoundary", () => {
   it("keeps expected StatusView health errors out of the boundary fallback", () => {
     render(
       <PageContentBoundary>
-        <StatusView state={{ kind: "error", message: "Health request failed with HTTP 503" }} />
+        <StatusView state={{ kind: "error" }} />
       </PageContentBoundary>,
     );
 

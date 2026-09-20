@@ -177,10 +177,7 @@ export function RepertoireResponsiveStage({
       return;
     }
 
-    const layout = defaultLayout(
-      mode,
-      panelSpaceForStage(stageWidth, mode === "wide" ? 2 : 1),
-    );
+    const layout = defaultLayout(mode, panelSpaceForStage(stageWidth, mode === "wide" ? 2 : 1));
     if (layout) {
       (mode === "wide" ? wideGroupRef : mediumGroupRef).current?.setLayout(layout);
     }

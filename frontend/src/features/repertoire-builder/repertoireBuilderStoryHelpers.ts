@@ -16,6 +16,7 @@ import type {
 import type {
   PreferredMoveClient,
   PreferredMoveFailureCode,
+  PreferredMoveMutationResult,
   PreferredMoveResponse,
   PreferredMoveValue,
 } from "./preferredMoveApi";
@@ -189,10 +190,39 @@ export function storyMoveResponseDistributionClient(): MoveResponseDistributionC
   }));
 }
 
-function mutationResponse(fen: Fen, effectiveAt: string) {
+function saveMutationResponse(
+  fen: Fen,
+  effectiveAt: string,
+  selectedMove: PreferredMoveValue,
+): PreferredMoveMutationResult {
+  const preference = { kind: "move" as const, uci: selectedMove.uci };
   return {
-    status: "success" as const,
-    data: { fen, changed: true, effective_at: effectiveAt },
+    status: "success",
+    data: {
+      fen,
+      effective_from: effectiveAt.slice(0, 10),
+      effective_until: null,
+      preference,
+      periods: [
+        {
+          effective_from: effectiveAt.slice(0, 10),
+          effective_until: null,
+          preference,
+        },
+      ],
+    },
+  };
+}
+
+function removalMutationResponse(fen: Fen, effectiveAt: string): PreferredMoveMutationResult {
+  return {
+    status: "success",
+    data: {
+      fen,
+      effective_from: effectiveAt.slice(0, 10),
+      effective_until: null,
+      periods: [],
+    },
   };
 }
 
@@ -255,7 +285,7 @@ export function storyPreferredMoveClient(
       assignedFen = fen;
       const { today: effectiveToday } = storyPreferredMoveDateWindow();
       effectiveAt = `${effectiveToday}T00:00:00.000000Z`;
-      return mutationResponse(fen, effectiveAt);
+      return saveMutationResponse(fen, effectiveAt, move);
     }),
     remove: fn(async ({ fen }) => {
       const { today } = storyPreferredMoveDateWindow();
@@ -268,7 +298,7 @@ export function storyPreferredMoveClient(
       }
       state = "unassigned";
       effectiveAt = null;
-      return mutationResponse(fen, `${today}T00:00:00.000000Z`);
+      return removalMutationResponse(fen, `${today}T00:00:00.000000Z`);
     }),
   };
 }
@@ -279,7 +309,7 @@ const DEFAULT_TOTAL_GAME_COUNT = 10;
 export function storyPositionContextClient(
   options: StoryPositionContextOptions = {},
 ): PositionContextClient {
-  return fn(async (fen, trainerColor) => {
+  return fn(async (fen: Fen, trainerColor: "white" | "black") => {
     if (options.pending) {
       return new Promise<never>(() => undefined);
     }

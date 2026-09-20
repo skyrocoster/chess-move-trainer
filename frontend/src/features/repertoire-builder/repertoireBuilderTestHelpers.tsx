@@ -188,7 +188,7 @@ export function testClients(
       return mutationResponse(fen, "no_preference");
     }),
   };
-  const positionContextClient: PositionContextClient = vi.fn(async (fen, trainerColor) => ({
+  const positionContextClient = vi.fn<PositionContextClient>(async (fen, trainerColor) => ({
     status: "success" as const,
     data: { fen, trainerColor, ...CONTEXT },
   }));

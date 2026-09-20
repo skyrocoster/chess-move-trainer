@@ -1,0 +1,34 @@
+{
+  "name": "position-insight",
+  "measured_at_utc": "2026-09-19T20:12:30.836008+00:00",
+  "endpoint": "/api/positions/insight",
+  "params": {
+    "fen": "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2",
+    "trainer_color": "white",
+    "as_of": "2026-01-15"
+  },
+  "database": {
+    "kind": "synthetic",
+    "file_name": "api-benchmark.db",
+    "size_bytes": 102400
+  },
+  "repeats": 5,
+  "timeout_s": 30.0,
+  "samples_ms": [
+    38.056,
+    4.805,
+    4.148,
+    3.671,
+    4.001
+  ],
+  "stats": {
+    "count": 5,
+    "min_ms": 3.671,
+    "median_ms": 4.148,
+    "mean_ms": 10.936,
+    "max_ms": 38.056
+  },
+  "threshold_median_ms": 2000.0,
+  "items_returned": null,
+  "total_reported": null
+}

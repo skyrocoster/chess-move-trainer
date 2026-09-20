@@ -279,10 +279,7 @@ describe("buildTrainingRequirementsQuery", () => {
 
   it("omits optional filters for all openings and all colours", () => {
     expect(
-      buildTrainingRequirementsQuery(
-        { asOf: TODAY, openingKey: null, trainerColor: null },
-        1,
-      ),
+      buildTrainingRequirementsQuery({ asOf: TODAY, openingKey: null, trainerColor: null }, 1),
     ).toEqual({
       as_of: TODAY,
       training_requirement_lt: 0,
@@ -337,7 +334,9 @@ describe("fetchTrainingRequirements", () => {
       fetchTrainingRequirements({ asOf: TODAY, openingKey: null, trainerColor: null }),
     ).resolves.toEqual({ status: "success", data: page(1, 2, [first, second]) });
     expect(getPositionTrainingRequirements).toHaveBeenCalledTimes(2);
-    expect(vi.mocked(getPositionTrainingRequirements).mock.calls.map(([request]) => request)).toEqual([
+    expect(
+      vi.mocked(getPositionTrainingRequirements).mock.calls.map(([request]) => request),
+    ).toEqual([
       {
         query: { as_of: TODAY, training_requirement_lt: 0, page: 1, page_size: 100 },
         signal: undefined,

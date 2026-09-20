@@ -87,9 +87,7 @@ export function PreferredMoveSchedulePrototype({
   onApply = () => undefined,
 }: PreferredMoveSchedulePrototypeProps) {
   const calendarRef = useRef<CalendarRef>(null);
-  const [draft, setDraft] = useState<PreferredMoveScheduleRange | null>(
-    initialSelection ?? null,
-  );
+  const [draft, setDraft] = useState<PreferredMoveScheduleRange | null>(initialSelection ?? null);
   const [continuesIndefinitely, setContinuesIndefinitely] = useState(false);
   const [feedback, setFeedback] = useState("");
 
@@ -122,10 +120,9 @@ export function PreferredMoveSchedulePrototype({
 
   useEffect(() => {
     if (!initialSelection) return;
-    calendarRef.current?.getApi().select(
-      initialSelection.effectiveFrom,
-      initialSelection.effectiveUntil,
-    );
+    calendarRef.current
+      ?.getApi()
+      .select(initialSelection.effectiveFrom, initialSelection.effectiveUntil);
   }, [initialSelection]);
 
   const handleSelect = (selection: DateSelectInfo) => {
@@ -173,14 +170,29 @@ export function PreferredMoveSchedulePrototype({
         </header>
 
         <div className={styles.legend} aria-label="Calendar legend">
-          <span><i className={styles.moveSwatch} aria-hidden="true" />Preferred move</span>
-          <span><i className={styles.selectedSwatch} aria-hidden="true" />Selected move</span>
-          <span><i className={styles.emptySwatch} aria-hidden="true" />No preference</span>
-          <span><i className={styles.unconfiguredSwatch} aria-hidden="true" />Unconfigured</span>
+          <span>
+            <i className={styles.moveSwatch} aria-hidden="true" />
+            Preferred move
+          </span>
+          <span>
+            <i className={styles.selectedSwatch} aria-hidden="true" />
+            Selected move
+          </span>
+          <span>
+            <i className={styles.emptySwatch} aria-hidden="true" />
+            No preference
+          </span>
+          <span>
+            <i className={styles.unconfiguredSwatch} aria-hidden="true" />
+            Unconfigured
+          </span>
         </div>
 
         <div className={styles.content}>
-          <section className={styles.calendarPanel} aria-label="Preferred move effective-date calendar">
+          <section
+            className={styles.calendarPanel}
+            aria-label="Preferred move effective-date calendar"
+          >
             <div className={styles.calendar}>
               <FullCalendar
                 ref={calendarRef}
@@ -237,7 +249,11 @@ export function PreferredMoveSchedulePrototype({
                     <Button size="sm" onClick={() => applyDraft("assign")}>
                       Use {selectedMove.san}
                     </Button>
-                    <Button size="sm" variant="secondary" onClick={() => applyDraft("no_preference")}>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => applyDraft("no_preference")}
+                    >
                       No preferred move
                     </Button>
                     <Button size="sm" variant="ghost" onClick={() => applyDraft("clear")}>

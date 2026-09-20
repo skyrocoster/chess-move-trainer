@@ -50,7 +50,7 @@ class StockfishStartupError(StockfishError):
 
 
 class StockfishIdentityError(StockfishStartupError):
-    """The executable did not identify itself as Stockfish 18."""
+    """The executable did not identify itself as the configured Stockfish version."""
 
 
 class StockfishProtocolError(StockfishError):

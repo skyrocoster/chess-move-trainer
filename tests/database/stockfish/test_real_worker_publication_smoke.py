@@ -13,7 +13,7 @@ from chess_move_trainer.database.positions import PositionRepository
 from chess_move_trainer.database.stockfish import DatabaseMutex, QueueService
 
 ROOT = Path(__file__).parents[3]
-EXECUTABLE = ROOT / "data" / "stockfish" / "stockfish-windows-x86-64-avx2.exe"
+EXECUTABLE = ROOT / "data" / "stockfish" / "stockfish-windows-x86-64-universal.exe"
 APPROVED_POSITIONS = ROOT / "data" / "stockfish" / "test_positions.json"
 PROCESS_TIMEOUT_SECONDS = 170
 
@@ -88,7 +88,7 @@ def test_one_position_real_worker_publishes_fixed_tool_profile_and_exits(
         "Threads": 6,
         "UCI_ShowWDL": True,
     }
-    assert parent[3:6] == ("Stockfish", "18", None)
+    assert parent[3:6] == ("Stockfish", "19", None)
     assert line_count == 5
     assert ranks == [(1,), (2,), (3,), (4,), (5,)]
     assert queue_count == 0

@@ -1,0 +1,51 @@
+{
+  "name": "training-requirements-page",
+  "measured_at_utc": "2026-09-19T20:19:47.451188+00:00",
+  "endpoint": "/api/positions/training-requirements",
+  "params": {
+    "as_of": "2026-01-15",
+    "training_requirement_gte": -100,
+    "page": 1,
+    "page_size": 50
+  },
+  "database": {
+    "kind": "synthetic",
+    "file_name": "api-benchmark.db",
+    "size_bytes": 102400
+  },
+  "repeats": 5,
+  "timeout_s": 30.0,
+  "samples_ms": [
+    9.586,
+    7.607,
+    7.935,
+    6.795,
+    7.761
+  ],
+  "stats": {
+    "count": 5,
+    "min_ms": 6.795,
+    "median_ms": 7.761,
+    "mean_ms": 7.937,
+    "max_ms": 9.586
+  },
+  "threshold_median_ms": 2000.0,
+  "items_returned": 2,
+  "total_reported": 2,
+  "cache_cleared_between_samples": true,
+  "warm_repeats": 5,
+  "warm_samples_ms": [
+    4.971,
+    3.923,
+    3.822,
+    4.003,
+    3.522
+  ],
+  "warm_stats": {
+    "count": 5,
+    "min_ms": 3.522,
+    "median_ms": 3.923,
+    "mean_ms": 4.048,
+    "max_ms": 4.971
+  }
+}

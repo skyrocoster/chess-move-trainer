@@ -73,7 +73,10 @@ export function Select({
                   label={option.label}
                   value={option.value}
                 >
-                  <DropdownItemBody option={option} indicator={<BaseSelect.ItemIndicator>✓</BaseSelect.ItemIndicator>} />
+                  <DropdownItemBody
+                    option={option}
+                    indicator={<BaseSelect.ItemIndicator>✓</BaseSelect.ItemIndicator>}
+                  />
                 </BaseSelect.Item>
               ))}
             </BaseSelect.List>

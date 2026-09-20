@@ -8,10 +8,7 @@ import {
 } from "./moveResponseDistributionApi";
 import { MoveResponseDistributionChart } from "./MoveResponseDistributionChart";
 import { MoveResponseDistributionControls } from "./MoveResponseDistributionControls";
-import {
-  colorLabel,
-  deriveMoveResponseDistributionModel,
-} from "./moveResponseDistributionModel";
+import { colorLabel, deriveMoveResponseDistributionModel } from "./moveResponseDistributionModel";
 import { useMoveResponseDistributionState } from "./moveResponseDistributionState";
 import styles from "./MoveResponseDistribution.module.css";
 

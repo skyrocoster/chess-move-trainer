@@ -7,7 +7,6 @@ from pathlib import Path
 from uuid import UUID
 
 import pytest
-from fastapi.routing import APIRoute
 from fastapi.testclient import TestClient
 
 from backend.app.dependencies import (
@@ -314,7 +313,7 @@ def test_unexpected_failures_stay_safe_without_leaking_details(
 
 
 def test_removed_positions_route_stays_gone() -> None:
-    routes = {route.path for route in app.routes if isinstance(route, APIRoute)}
+    routes = set(app.openapi()["paths"])
     assert "/api/games" in routes
     assert "/api/games/{game_uuid}" in routes
     assert "/api/games/{game_uuid}/positions" not in routes

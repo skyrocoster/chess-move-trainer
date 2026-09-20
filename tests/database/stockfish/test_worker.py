@@ -110,7 +110,7 @@ def _result(position: object, quality: AnalysisQuality | str) -> AnalysisResultI
         configuration_version=profile.configuration_version,
         settings=profile.settings,
         engine_name="Stockfish",
-        engine_version="18",
+        engine_version="19",
         lines=lines,
     )
 

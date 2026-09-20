@@ -55,11 +55,7 @@ function selectedFact(move: PositionPickerMoveRecord): RepertoireSelectedMoveFac
 }
 
 export type PreferredMoveRelationship =
-  | "empty"
-  | "first-choice"
-  | "saved"
-  | "replacement"
-  | "matching";
+  "empty" | "first-choice" | "saved" | "replacement" | "matching";
 
 export type PreferredMoveStoryFixture = {
   relationship: PreferredMoveRelationship;

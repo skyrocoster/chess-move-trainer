@@ -95,7 +95,7 @@ def _install_analysis(connection: sqlite3.Connection, position_id: int) -> None:
         INSERT INTO derived_analysis_result (
             derived_position_id, dar_quality, dar_configuration_version,
             dar_settings_json, dar_engine_name, dar_engine_version, dar_terminal_kind
-        ) VALUES (?, 'tool', 7, ?, 'Stockfish', '18', NULL)
+        ) VALUES (?, 'tool', 7, ?, 'Stockfish', '19', NULL)
         """,
         (position_id, json.dumps({"Hash": 16})),
     )

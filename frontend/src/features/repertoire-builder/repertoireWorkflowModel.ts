@@ -7,12 +7,7 @@ import type { SelectedTransition } from "./positionPickerSessionBoundary";
 export type PositionSaveability = "unknown" | "savable" | "unsavable";
 
 export type RepertoirePositionRelationship =
-  | "unknown"
-  | "empty"
-  | "first-choice"
-  | "saved"
-  | "replacement"
-  | "matching";
+  "unknown" | "empty" | "first-choice" | "saved" | "replacement" | "matching";
 
 export type PreferredMoveComparison = "unknown" | "not-applicable" | "different" | "matching";
 

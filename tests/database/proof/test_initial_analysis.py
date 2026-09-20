@@ -87,7 +87,7 @@ class _FakeEngine:
             configuration_version=TOOL_PROFILE.configuration_version,
             settings=TOOL_PROFILE.settings,
             engine_name="Stockfish",
-            engine_version="18",
+            engine_version="19",
             lines=tuple(
                 AnalysisLine(
                     rank=rank,

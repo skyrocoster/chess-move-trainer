@@ -41,7 +41,7 @@ _QUEUE_END: Final[object] = object()
 
 
 from .engine_models import ParsedUciInfo, SearchMetrics, StockfishAnalysis, StockfishError, StockfishIdentity, StockfishIdentityError, StockfishProcessError, StockfishProtocolError, StockfishStartupError, StockfishWatchdogError
-from .engine_helpers import _board_for_position, _classify_terminal, _fen_for_position, _finite_timeout, _is_stockfish_18, _line_from_info, _metrics_for, _result_for
+from .engine_helpers import _board_for_position, _classify_terminal, _fen_for_position, _finite_timeout, _is_expected_stockfish, _line_from_info, _metrics_for, _result_for
 from .engine_parsing import parse_uci_info
 
 
@@ -80,7 +80,7 @@ class StockfishEngine:
         return process is not None and process.poll() is None
 
     def start(self) -> StockfishIdentity:
-        """Start and verify Stockfish 18 with a finite UCI handshake."""
+        """Start and verify the configured Stockfish version with a finite UCI handshake."""
 
         with self._lock:
             if self._identity is not None and self.is_running:
@@ -98,9 +98,10 @@ class StockfishEngine:
                         reported_name = line[8:].strip()
                     elif line == "uciok":
                         break
-                if not reported_name or not _is_stockfish_18(reported_name):
+                if not reported_name or not _is_expected_stockfish(reported_name):
                     raise StockfishIdentityError(
-                        f"Stockfish identity must be Stockfish 18, got {reported_name!r}"
+                        f"Stockfish identity must be Stockfish {STOCKFISH_VERSION}, "
+                        f"got {reported_name!r}"
                     )
                 self._identity = StockfishIdentity(reported_name=reported_name)
                 return self._identity

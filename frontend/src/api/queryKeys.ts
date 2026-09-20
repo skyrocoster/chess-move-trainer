@@ -126,5 +126,6 @@ export const queryKeys = {
 /** Prefixes used when an invalidation applies to a family or position. */
 export const queryKeyPrefixes = {
   trainingRequirements: () => ["trainingRequirements"] as const,
-  positionInsight: (positionKey: string) => ["positionInsight", normalizePositionKey(positionKey)] as const,
+  positionInsight: (positionKey: string) =>
+    ["positionInsight", normalizePositionKey(positionKey)] as const,
 };

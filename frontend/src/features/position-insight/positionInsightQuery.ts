@@ -24,7 +24,11 @@ export class PositionInsightQueryError extends Error {
     readonly httpStatus: number | null,
     readonly kind: PositionInsightQueryErrorKind = "transport",
   ) {
-    super(kind === "malformed_response" ? "The position insight response was invalid" : "The position insight request failed");
+    super(
+      kind === "malformed_response"
+        ? "The position insight response was invalid"
+        : "The position insight request failed",
+    );
     this.name = "PositionInsightQueryError";
   }
 }
@@ -88,10 +92,7 @@ export async function queryPositionInsight(
   return result.data;
 }
 
-export function usePositionInsightQuery(
-  fen: Fen | null,
-  trainerColor: ChessSide | null,
-) {
+export function usePositionInsightQuery(fen: Fen | null, trainerColor: ChessSide | null) {
   const input = queryInput(fen, trainerColor);
   return useQuery({
     queryKey: positionInsightQueryKey(fen, trainerColor, input.asOf),

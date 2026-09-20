@@ -10,7 +10,7 @@ from .engine_helpers import (
     _classify_terminal,
     _fen_for_position,
     _finite_timeout,
-    _is_stockfish_18,
+    _is_expected_stockfish,
     _line_from_info,
     _metrics_for,
     _board_for_position,

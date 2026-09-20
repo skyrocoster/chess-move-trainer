@@ -70,9 +70,7 @@ export function GameLoader({
           <Field
             label="Game UUID"
             invalid={validationError !== null && !UUID_PATTERN.test(gameUuid.trim())}
-            error={
-              validationError ? <span role="alert">{validationError}</span> : undefined
-            }
+            error={validationError ? <span role="alert">{validationError}</span> : undefined}
           >
             <TextInput
               value={gameUuid}

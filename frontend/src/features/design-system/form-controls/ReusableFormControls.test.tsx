@@ -34,7 +34,11 @@ const OPTIONS: readonly DropdownOptionDefinition[] = [
   { value: "b18", label: "B18 Classical", disabled: true },
 ];
 
-function ControlledCombobox({ onChange = () => undefined }: { onChange?: (value: string | null) => void }) {
+function ControlledCombobox({
+  onChange = () => undefined,
+}: {
+  onChange?: (value: string | null) => void;
+}) {
   const [value, setValue] = useState<string | null>(null);
   return (
     <Combobox
@@ -52,7 +56,13 @@ function ControlledCombobox({ onChange = () => undefined }: { onChange?: (value:
 describe("reusable form controls candidate", () => {
   it("associates externally supplied Field presentation without owning validation timing", () => {
     render(
-      <Field label="Email" description="Used for reminders." required invalid error="Email is incomplete.">
+      <Field
+        label="Email"
+        description="Used for reminders."
+        required
+        invalid
+        error="Email is incomplete."
+      >
         <TextInput aria-label="Email" type="email" invalid defaultValue="learner@" />
       </Field>,
     );
@@ -131,7 +141,12 @@ describe("reusable form controls candidate", () => {
       const [value, setValue] = useState("");
       return (
         <>
-          <Autocomplete ariaLabel="Session name" options={OPTIONS} value={value} onValueChange={setValue} />
+          <Autocomplete
+            ariaLabel="Session name"
+            options={OPTIONS}
+            value={value}
+            onValueChange={setValue}
+          />
           <output>{value}</output>
         </>
       );
@@ -144,10 +159,19 @@ describe("reusable form controls candidate", () => {
   it("Select exposes selected and disabled option semantics", async () => {
     const user = userEvent.setup();
     const onValueChange = vi.fn();
-    render(<Select ariaLabel="Opening choice" options={OPTIONS} value="b10" onValueChange={onValueChange} />);
+    render(
+      <Select
+        ariaLabel="Opening choice"
+        options={OPTIONS}
+        value="b10"
+        onValueChange={onValueChange}
+      />,
+    );
     await user.click(screen.getByRole("combobox", { name: "Opening choice" }));
 
-    expect(screen.getByRole("option", { name: "B10 Caro-Kann Defense" })).toHaveAttribute("data-selected");
+    expect(screen.getByRole("option", { name: "B10 Caro-Kann Defense" })).toHaveAttribute(
+      "data-selected",
+    );
     expect(screen.getByRole("option", { name: "B18 Classical" })).toHaveAttribute("data-disabled");
   });
 

@@ -1,4 +1,4 @@
-"""Atomic backend-judged training-answer submission."""
+"""Atomic server-judged training-answer submission."""
 
 from __future__ import annotations
 
@@ -113,7 +113,7 @@ class TrainingAnswerRequest:
 
 @dataclass(frozen=True, slots=True)
 class TrainingAnswerResult:
-    """The backend judgment and the newly scored training item."""
+    """The server judgment and the newly scored training item."""
 
     as_of: str
     correct: bool

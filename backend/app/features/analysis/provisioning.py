@@ -17,9 +17,9 @@ from pathlib import Path, PurePosixPath
 from .engine import EngineIdentity, inspect_stockfish_executable, sha256_file
 from .errors import StockfishSetupError
 
-STOCKFISH_TAG = "sf_18"
-STOCKFISH_ASSET = "stockfish-windows-x86-64-avx2.zip"
-STOCKFISH_ARCHIVE_SHA256 = "6f6c272ebd6ea594377715235c8a7326f75940ef4f4f856f45106028fe6ae900"
+STOCKFISH_TAG = "sf_19"
+STOCKFISH_ASSET = "stockfish-windows-x86-64-universal.zip"
+STOCKFISH_ARCHIVE_SHA256 = "3c8bf1f9ea66a09350a40df4f632288285ac206d99f33ab5842c408fc30b48a7"
 STOCKFISH_URL = (
     f"https://github.com/official-stockfish/Stockfish/releases/download/"
     f"{STOCKFISH_TAG}/{STOCKFISH_ASSET}"

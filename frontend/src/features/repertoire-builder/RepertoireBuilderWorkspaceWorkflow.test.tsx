@@ -63,9 +63,7 @@ describe("RepertoireBuilderWorkspace workflow", () => {
         signal: expect.any(AbortSignal),
       }),
     );
-    await waitFor(() =>
-      expect(screen.getByTestId("saved-move")).toHaveTextContent("e4"),
-    );
+    await waitFor(() => expect(screen.getByTestId("saved-move")).toHaveTextContent("e4"));
     expect(screen.getByTestId("mock-chessboard")).toHaveAttribute("data-position", AFTER_E4_FEN);
   });
 
@@ -83,7 +81,7 @@ describe("RepertoireBuilderWorkspace workflow", () => {
     );
 
     expect(invalidateQueries).toHaveBeenCalledTimes(3);
-    expect(invalidateQueries.mock.calls.map(([filters]) => filters.queryKey[0])).toEqual([
+    expect(invalidateQueries.mock.calls.map(([filters]) => filters?.queryKey?.[0])).toEqual([
       "preferredMove",
       "trainingRequirements",
       "positionInsight",

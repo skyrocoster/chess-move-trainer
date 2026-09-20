@@ -5,8 +5,7 @@ import { queryKeys } from "./queryKeys";
 
 const FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 const COUNTER_VARIANT_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 17 42";
-const DISTINCT_POSITION_FEN =
-  "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1";
+const DISTINCT_POSITION_FEN = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1";
 
 describe("queryKeys", () => {
   it("uses one key for the complete sorted openings snapshot", () => {
@@ -17,9 +16,9 @@ describe("queryKeys", () => {
     expect(
       queryKeys.openingsCatalogue({ search: "  sicilian ", pageSize: 100, sort: "name_asc" }),
     ).toEqual(["openingsCatalogue", { search: "sicilian", pageSize: 100, sort: "name_asc" }]);
-    expect(
-      queryKeys.openingsCatalogue({ search: "", pageSize: 100, sort: "name_asc" }),
-    ).toEqual(queryKeys.openingsCatalogue({ search: "   ", pageSize: 100, sort: "name_asc" }));
+    expect(queryKeys.openingsCatalogue({ search: "", pageSize: 100, sort: "name_asc" })).toEqual(
+      queryKeys.openingsCatalogue({ search: "   ", pageSize: 100, sort: "name_asc" }),
+    );
   });
 
   it("normalizes complete training filters and keeps opening policy coherent", () => {
@@ -104,9 +103,10 @@ describe("queryKeys", () => {
   });
 
   it("keeps analysis observations structural and query-input order independent", () => {
-    expect(
-      queryKeys.analysisObservation({ positionKey: ` ${positionKeyFromFen(FEN)} ` }),
-    ).toEqual(["analysisObservation", positionKeyFromFen(FEN)]);
+    expect(queryKeys.analysisObservation({ positionKey: ` ${positionKeyFromFen(FEN)} ` })).toEqual([
+      "analysisObservation",
+      positionKeyFromFen(FEN),
+    ]);
     expect(
       queryKeys.trainingRequirements({
         asOf: "2026-09-14",
