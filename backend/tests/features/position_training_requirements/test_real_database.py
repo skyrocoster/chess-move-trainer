@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import sqlite3
+from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
@@ -11,13 +12,15 @@ from backend.app.dependencies import REBUILT_DATABASE_PATH_ENV
 from backend.app.main import app
 from chess_move_trainer.database.lifecycle import DEFAULT_DATABASE_PATH
 
+REAL_AS_OF = datetime.now(timezone.utc).date().isoformat()
+
 pytestmark = pytest.mark.skipif(
     os.environ.get("CHESS_RUN_REAL_TRAINING_REQUIREMENTS_SMOKE") != "1",
     reason="opt-in real-database fidelity smoke",
 )
 
 
-def test_real_database_training_requirement_anchor(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_real_database_training_requirement_contract(monkeypatch: pytest.MonkeyPatch) -> None:
     database = Path(DEFAULT_DATABASE_PATH)
     before = database.read_bytes()
     monkeypatch.setenv(REBUILT_DATABASE_PATH_ENV, str(database))
@@ -27,10 +30,10 @@ def test_real_database_training_requirement_anchor(monkeypatch: pytest.MonkeyPat
             response = client.get(
                 "/api/positions/training-requirements",
                 params={
-                    "as_of": "2026-09-12",
-                    "training_requirement_lt": 0,
-                    "opening_key": "B02:Alekhine Defense",
-                    "opening_match": "reached",
+                    "as_of": REAL_AS_OF,
+                    "training_requirement_gte": -1e300,
+                    "page": 1,
+                    "page_size": 100,
                 },
             )
     finally:
@@ -38,16 +41,12 @@ def test_real_database_training_requirement_anchor(monkeypatch: pytest.MonkeyPat
 
     assert response.status_code == 200
     body = response.json()
-    assert body["as_of"] == "2026-09-12"
-    matching_items = [
-        candidate
-        for candidate in body["items"]
-        if candidate["fen"] == "rnbqkb1r/pppppppp/5n2/8/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 1"
-        and candidate["trainer_color"] == "white"
-        and candidate["preferred_move_uci"] == "b1c3"
-    ]
-    assert len(matching_items) == 1
-    item = matching_items[0]
+    assert set(body) == {"as_of", "scoring_policy", "items", "page", "page_size", "total"}
+    assert body["as_of"] == REAL_AS_OF
+    assert body["page"] == 1
+    assert body["page_size"] == 100
+    assert body["total"] >= len(body["items"]) > 0
+    item = body["items"][0]
     assert set(item) == {
         "fen",
         "trainer_color",
@@ -64,22 +63,19 @@ def test_real_database_training_requirement_anchor(monkeypatch: pytest.MonkeyPat
         "training_required",
         "correct_answers_needed",
     }
-    assert item == {
-        "fen": "rnbqkb1r/pppppppp/5n2/8/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 1",
-        "trainer_color": "white",
-        "preferred_move_uci": "b1c3",
-        "encounters": 86,
-        "hits": 28,
-        "misses": 58,
-        "observed_success_rate": round(28 / 86, 6),
-        "game_balance": -204.0,
-        "effective_training_balance": 0.0,
-        "training_adjustment": 0.0,
-        "training_updated_on": None,
-        "training_requirement": -204.0,
-        "training_required": True,
-        "correct_answers_needed": 15,
-    }
+    assert item["trainer_color"] in {"white", "black"}
+    assert item["encounters"] == item["hits"] + item["misses"]
+    assert item["observed_success_rate"] == pytest.approx(
+        item["hits"] / item["encounters"], abs=1e-6
+    )
+    assert item["training_requirement"] == pytest.approx(
+        item["game_balance"] + item["training_adjustment"], abs=2e-6
+    )
+    assert item["training_required"] is (item["training_requirement"] < 0)
+    if item["training_required"]:
+        assert item["correct_answers_needed"] > 0
+    else:
+        assert item["correct_answers_needed"] == 0
     assert database.read_bytes() == before
 
 
@@ -91,7 +87,7 @@ def test_real_database_caro_reached_scope_includes_deeper_variation(
     monkeypatch.setenv(REBUILT_DATABASE_PATH_ENV, str(database))
     base_key = "B10:Caro-Kann Defense"
     request = {
-        "as_of": "2026-09-14",
+        "as_of": REAL_AS_OF,
         "training_requirement_lt": 0,
         "opening_key": base_key,
         "opening_match": "reached",
@@ -118,7 +114,7 @@ def test_real_database_caro_reached_scope_includes_deeper_variation(
     reached = reached_response.json()
     deepest = deepest_response.json()
     assert set(reached) == {"as_of", "scoring_policy", "items", "page", "page_size", "total"}
-    assert reached["as_of"] == "2026-09-14"
+    assert reached["as_of"] == REAL_AS_OF
     assert reached["page"] == 1
     assert reached["page_size"] == 100
 

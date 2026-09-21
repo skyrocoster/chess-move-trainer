@@ -52,7 +52,7 @@ from backend.tests.benchmarks.test_api_benchmark import (
 )
 from chess_move_trainer.database.lifecycle import DEFAULT_DATABASE_PATH
 
-REAL_AS_OF = "2026-09-14"
+REAL_AS_OF = datetime.now(timezone.utc).date().isoformat()
 REAL_ALEKHINE_FEN = "rnbqkb1r/pppppppp/5n2/8/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 1"
 REAL_CARO_KEY = "B10:Caro-Kann Defense"
 REAL_PAGE_SIZE = 100

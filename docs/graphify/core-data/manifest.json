@@ -228,10 +228,10 @@
     "semantic_hash": "b0486b3b012a0472d93bc51ed457e478"
   },
   "chess_move_trainer/database/openings/catalogue.py": {
-    "mtime": 1789944488.5613472,
-    "seen": 1789979652.3751056,
-    "ast_hash": "33ff56d505f149a70a8107af02a980ff",
-    "semantic_hash": "33ff56d505f149a70a8107af02a980ff"
+    "mtime": 1790019773.3382246,
+    "seen": 1790023945.4967058,
+    "ast_hash": "31c0dd3a56f33f2c9ecfe757fb98d01a",
+    "semantic_hash": "31c0dd3a56f33f2c9ecfe757fb98d01a"
   },
   "chess_move_trainer/database/openings/keys.py": {
     "mtime": 1789291925.657279,
@@ -324,10 +324,10 @@
     "semantic_hash": "3a132322c96e298a6420a208b08ffb37"
   },
   "chess_move_trainer/database/positions/training_requirements_repository.py": {
-    "mtime": 1789944488.5633478,
-    "seen": 1789979652.3771043,
-    "ast_hash": "a9037b801f0ddde686e9e9fd52cb8ea7",
-    "semantic_hash": "a9037b801f0ddde686e9e9fd52cb8ea7"
+    "mtime": 1790019773.3382246,
+    "seen": 1790023945.503226,
+    "ast_hash": "a7283360514070d0d24fa55979a7301c",
+    "semantic_hash": "a7283360514070d0d24fa55979a7301c"
   },
   "chess_move_trainer/database/positions/training_requirements_scoring.py": {
     "mtime": 1789888082.41375,
@@ -712,5 +712,11 @@
     "seen": 1789998613.0243528,
     "ast_hash": "30151d92861002ac4a8b2c54b88f78dc",
     "semantic_hash": "30151d92861002ac4a8b2c54b88f78dc"
+  },
+  "chess_move_trainer/database/positions/training_requirements_loaders.py": {
+    "mtime": 1790019719.4031696,
+    "seen": 1790023945.503226,
+    "ast_hash": "655d0a280f67a8b611e98af341120c27",
+    "semantic_hash": "655d0a280f67a8b611e98af341120c27"
   }
 }

@@ -66,17 +66,17 @@ export const Docs: Story = {
           {
             heading: "Actions and Form Controls",
             storyId: "reference-catalogue-actions-and-form-controls--docs",
-            note: "Button, Field, TextInput, Select, Combobox, Autocomplete, RadioGroup, Toolbar usage",
+            note: "buttons, fields, dropdowns, grouped choices, numeric and range controls, toggles, form structure",
           },
           {
             heading: "Navigation and Content Switching",
             storyId: "reference-catalogue-navigation-and-content-switching--docs",
-            note: "Tabs, Disclosure, LineLibrary and tree controls",
+            note: "menus, primary navigation, Tabs, Accordion, Disclosure, LineLibrary and tree controls",
           },
           {
             heading: "Feedback and Status",
             storyId: "reference-catalogue-feedback-and-status--docs",
-            note: "feedback variants plus loading, empty, error, and meter presentations",
+            note: "feedback variants plus loading, empty, error, progress, and outcome presentations",
           },
           {
             heading: "Surfaces and Layout",
@@ -120,9 +120,9 @@ export const Docs: Story = {
               Anything that cannot be rendered here without substantial application state is
               documented under its family with links to the closest existing story instead of a
               recreated copy. Known gaps are noted on each family page, for example: there is
-              currently no shared Checkbox component and no standalone Toolbar, Dialog, Popover, or
-              Drawer component — those Base UI behaviors appear only inside feature components as
-              composed locally.
+              currently no shared standalone Checkbox, Toolbar, Popover, Drawer, or AlertDialog
+              component. Those Base UI behaviors either have a grouped wrapper such as CheckboxGroup
+              or remain composed locally inside feature components.
             </>
           ),
         },

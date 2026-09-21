@@ -49,8 +49,8 @@ export const Docs: Story = {
           ],
         },
         {
-          heading: "Analysis and repertoire panels",
-          body: "The recurring side panels in the repertoire workflow: the analysis panel with its full request-lifecycle states, the preferred move panel with its gates, saves, and overflow variants, and the distribution/inspection panels.",
+          heading: "Analysis, game, and repertoire panels",
+          body: "The recurring application surfaces: the analysis panel with its full request lifecycle, the reusable game loader, the preferred move panel with its gates, saves, and overflow variants, and the distribution/inspection panels.",
           links: [
             {
               label: "Analysis Panel — Constrained Ready",
@@ -59,6 +59,15 @@ export const Docs: Story = {
             {
               label: "Analysis Panel — ActiveWithResult",
               storyId: "production-application-analysis-analysis-panel--active-with-result",
+            },
+            {
+              label: "Game Loader — Ready",
+              storyId: "production-application-game-game-loader--ready",
+            },
+            {
+              label: "Game Loader — Game Not Found",
+              storyId: "production-application-game-game-loader--game-not-found",
+              note: "error state",
             },
             {
               label: "Preferred Move Panel — EmptyEmpty",

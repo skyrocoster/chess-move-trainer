@@ -2,12 +2,8 @@ import type { Square } from "chess.js";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { Button } from "../design-system/Button";
-import {
-  ChessboardSurface,
-  findBoardSourceElement,
-  findBoardSquareElement,
-  type ChessboardPieceDropHandlerArgs,
-} from "./ChessboardSurface";
+import { ChessboardSurface, type ChessboardPieceDropHandlerArgs } from "./ChessboardSurface";
+import { findBoardSourceElement, findBoardSquareElement } from "./boardElementQueries";
 import {
   PromotionPicker,
   type PendingPromotion,

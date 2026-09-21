@@ -53081,6 +53081,18 @@
     },
     {
       "_origin": "semantic",
+      "community": 10,
+      "community_name": "Community 10",
+      "external": true,
+      "file_type": "concept",
+      "id": "chess_move_trainer_database_blunders",
+      "label": "chess_move_trainer_database_blunders",
+      "norm_label": "chess_move_trainer_database_blunders",
+      "source_file": "",
+      "type": "external"
+    },
+    {
+      "_origin": "semantic",
       "community": 11,
       "community_name": "Community 11",
       "external": true,
@@ -53712,17 +53724,6 @@
       "id": "shutil",
       "label": "shutil",
       "norm_label": "shutil",
-      "source_file": "",
-      "type": "external"
-    },
-    {
-      "community": 10,
-      "community_name": "Community 10",
-      "external": true,
-      "file_type": "concept",
-      "id": "chess_move_trainer_database_blunders",
-      "label": "chess_move_trainer_database_blunders",
-      "norm_label": "chess_move_trainer_database_blunders",
       "source_file": "",
       "type": "external"
     }

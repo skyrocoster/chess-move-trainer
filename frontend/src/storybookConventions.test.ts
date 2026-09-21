@@ -1,5 +1,5 @@
-import { readdirSync, readFileSync } from "node:fs";
-import { dirname, join, relative } from "node:path";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import ts from "typescript";
 import { describe, expect, it } from "vitest";
@@ -18,6 +18,53 @@ function collectStoryFiles(directory: string): string[] {
     if (entry.isDirectory()) return collectStoryFiles(entryPath);
     return /\.stories\.tsx?$/.test(entry.name) ? [entryPath] : [];
   });
+}
+
+function collectFeatureComponents(directory: string): string[] {
+  return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+    const entryPath = join(directory, entry.name);
+    if (entry.isDirectory()) return collectFeatureComponents(entryPath);
+    if (!entry.name.endsWith(".tsx")) return [];
+    if (/(?:\.test|\.stories|\.testSetup|TestHelpers)\.tsx$/.test(entry.name)) return [];
+    return [entryPath];
+  });
+}
+
+function resolveRelativeModule(filePath: string, moduleName: string): string | null {
+  const basePath = resolve(dirname(filePath), moduleName);
+  const candidates = [
+    basePath,
+    `${basePath}.ts`,
+    `${basePath}.tsx`,
+    join(basePath, "index.ts"),
+    join(basePath, "index.tsx"),
+  ];
+  return (
+    candidates.find((candidate) => existsSync(candidate) && statSync(candidate).isFile()) ?? null
+  );
+}
+
+function storyReachableSources(storyFiles: string[]): Set<string> {
+  const reachable = new Set<string>();
+  const pending = [...storyFiles];
+
+  while (pending.length > 0) {
+    const filePath = pending.pop()!;
+    if (reachable.has(filePath)) continue;
+    reachable.add(filePath);
+
+    const sourceFile = parseSourceFile(filePath);
+    for (const statement of sourceFile.statements) {
+      if (!ts.isImportDeclaration(statement) && !ts.isExportDeclaration(statement)) continue;
+      const moduleSpecifier = statement.moduleSpecifier;
+      if (!moduleSpecifier || !ts.isStringLiteral(moduleSpecifier)) continue;
+      if (!moduleSpecifier.text.startsWith(".")) continue;
+      const dependency = resolveRelativeModule(filePath, moduleSpecifier.text);
+      if (dependency) pending.push(dependency);
+    }
+  }
+
+  return reachable;
 }
 
 function unwrapExpression(expression: ts.Expression): ts.Expression {
@@ -168,7 +215,7 @@ function collectViewportReferences(sourceFile: ts.SourceFile): string[] {
   return references;
 }
 
-function parseStorySource(filePath: string): ts.SourceFile {
+function parseSourceFile(filePath: string): ts.SourceFile {
   return ts.createSourceFile(
     filePath,
     readFileSync(filePath, "utf8"),
@@ -179,6 +226,21 @@ function parseStorySource(filePath: string): ts.SourceFile {
 }
 
 describe("Storybook conventions", () => {
+  it("discovers stories from every feature directory", () => {
+    const configPath = join(sourceRoot, "..", ".storybook", "main.ts");
+    expect(readFileSync(configPath, "utf8")).toContain('"../src/features/**/*.stories.@(ts|tsx)"');
+  });
+
+  it("keeps every feature component reachable from a story", () => {
+    const reachable = storyReachableSources(collectStoryFiles(sourceRoot));
+    const missing = collectFeatureComponents(join(sourceRoot, "features"))
+      .filter((filePath) => !reachable.has(filePath))
+      .map((filePath) => relative(sourceRoot, filePath).replaceAll("\\", "/"))
+      .sort();
+
+    expect(missing).toEqual([]);
+  });
+
   it("keeps titles, status tags, and display names consistent", () => {
     const errors: string[] = [];
     const displayNamesByTitle = new Map<string, Map<string, string>>();
@@ -255,7 +317,7 @@ describe("Storybook conventions", () => {
     const errors: string[] = [];
     for (const filePath of collectStoryFiles(sourceRoot)) {
       const file = relative(sourceRoot, filePath).replaceAll("\\", "/");
-      const references = collectViewportReferences(parseStorySource(filePath));
+      const references = collectViewportReferences(parseSourceFile(filePath));
       for (const name of references) {
         if (!catalogue.has(name)) {
           errors.push(`${file}: viewport preset "${name}" is not in the shared catalogue`);

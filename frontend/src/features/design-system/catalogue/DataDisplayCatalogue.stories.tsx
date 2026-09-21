@@ -133,8 +133,28 @@ export const Docs: Story = {
         },
         {
           heading: "Production feature compositions",
-          body: "The repertoire builder workspace stories are the largest compositions that assemble board lanes, preferred move panels, distribution charts, promotions, and keyboard flows together, at wide, medium, and constrained sizes.",
+          body: "The analysis overview, trainer practice flow, and repertoire builder workspace are the largest production compositions. Together they cover report filters and tabs, board-led practice, board lanes, preferred move panels, distribution charts, promotions, and responsive keyboard flows.",
           links: [
+            {
+              label: "Analysis Overview — Loaded Report",
+              storyId: "production-application-analysis-overview--loaded-report",
+              note: "filters, scorecard, report tabs, and data tables",
+            },
+            {
+              label: "Analysis Overview — Preparation Dashboard",
+              storyId: "production-application-analysis-overview--dashboard-preparation",
+              note: "coverage and readiness displays",
+            },
+            {
+              label: "Trainer Practice — Practice Builder",
+              storyId: "production-application-trainer-practice--practice-builder",
+              note: "opening search and training filters",
+            },
+            {
+              label: "Trainer Practice — Practice Session",
+              storyId: "production-application-trainer-practice--practice-session",
+              note: "interactive board and session progress",
+            },
             {
               label: "Repertoire Builder Workspace — Candidate Activation",
               storyId:

@@ -20,6 +20,13 @@ import {
   type OpeningCatalogueStorage,
 } from "./openingCatalogueStorage";
 
+export {
+  queryOpeningCatalogueSnapshot,
+  queryOpeningChoices,
+  queryTrainingRequirements,
+  TrainerPracticeQueryError,
+} from "./trainerPracticeQueries";
+
 export const TRAINING_REQUIREMENTS_PAGE_SIZE = 100;
 export const OPENING_CATALOGUE_PAGE_SIZE = 100;
 export const OPENING_CATALOGUE_SNAPSHOT_PAGE_SIZE = 5_000;
@@ -59,13 +66,6 @@ export type TrainingAnswerInput = {
 export type TrainingAnswerResult =
   | { status: "success"; data: TrainingAnswerResponse }
   | { status: "stale_date" | "requirement_not_found" | "submission_error" };
-
-export class TrainerPracticeQueryError extends Error {
-  constructor(readonly status: TrainerPracticeFailureCode) {
-    super(status);
-    this.name = "TrainerPracticeQueryError";
-  }
-}
 
 type OpeningQuery = NonNullable<GetOpeningsData["query"]>;
 type TrainingQuery = NonNullable<GetPositionTrainingRequirementsData["query"]>;
@@ -265,12 +265,7 @@ export async function fetchOpeningCatalogueSnapshot(
   storage?: OpeningCatalogueStorage | null,
 ): Promise<OpeningCatalogueSnapshotResult> {
   const stored = readOpeningCatalogueSnapshot(storage);
-  const firstPage = await fetchOpeningPage(
-    1,
-    null,
-    signal,
-    OPENING_CATALOGUE_SNAPSHOT_PAGE_SIZE,
-  );
+  const firstPage = await fetchOpeningPage(1, null, signal, OPENING_CATALOGUE_SNAPSHOT_PAGE_SIZE);
   if (
     firstPage.status !== "success" ||
     firstPage.catalogueVersion === null ||
@@ -303,20 +298,14 @@ export async function fetchOpeningCatalogueSnapshot(
     const pages = await Promise.all(
       remainingPageNumbers
         .slice(offset, offset + OPENING_CATALOGUE_REQUEST_CONCURRENCY)
-        .map((page) =>
-          fetchOpeningPage(page, null, signal, OPENING_CATALOGUE_SNAPSHOT_PAGE_SIZE),
-        ),
+        .map((page) => fetchOpeningPage(page, null, signal, OPENING_CATALOGUE_SNAPSHOT_PAGE_SIZE)),
     );
     for (const [index, page] of pages.entries()) {
       const expectedPage = remainingPageNumbers[offset + index];
       if (
         page.status !== "success" ||
         page.catalogueVersion !== version ||
-        !hasValidCataloguePage(
-          page.data,
-          expectedPage,
-          OPENING_CATALOGUE_SNAPSHOT_PAGE_SIZE,
-        ) ||
+        !hasValidCataloguePage(page.data, expectedPage, OPENING_CATALOGUE_SNAPSHOT_PAGE_SIZE) ||
         page.data.total !== firstPageData.total ||
         page.data.total_pages !== firstPageData.total_pages
       ) {
@@ -340,17 +329,6 @@ export async function fetchOpeningCatalogueSnapshot(
   }
   writeOpeningCatalogueSnapshot(replacement, storage);
   return { status: "success", data: openings, catalogueVersion: version };
-}
-
-export async function queryOpeningCatalogueSnapshot(
-  loadSnapshot: (signal?: AbortSignal) => Promise<OpeningCatalogueSnapshotResult>,
-  signal: AbortSignal,
-): Promise<OpeningCatalogueItemResponse[]> {
-  const result = await loadSnapshot(signal);
-  if (result.status !== "success") {
-    throw new TrainerPracticeQueryError(result.status);
-  }
-  return result.data;
 }
 
 function mapRequirementsFailure(error: unknown, status: number | null): TrainingRequirementsResult {
@@ -478,33 +456,6 @@ export async function submitTrainingAnswer(
     }
     return { status: "submission_error" };
   }
-}
-
-export async function queryOpeningChoices(
-  loadOpenings: (signal?: AbortSignal, search?: string) => Promise<OpeningChoicesResult>,
-  signal: AbortSignal,
-  search: string | null,
-): Promise<OpeningCatalogueItemResponse[]> {
-  const result = await loadOpenings(signal, search ?? undefined);
-  if (result.status !== "success") {
-    throw new TrainerPracticeQueryError(result.status);
-  }
-  return result.data;
-}
-
-export async function queryTrainingRequirements(
-  loadRequirements: (
-    filters: TrainerPracticeFilters,
-    signal?: AbortSignal,
-  ) => Promise<TrainingRequirementsResult>,
-  filters: TrainerPracticeFilters,
-  signal: AbortSignal,
-): Promise<TrainingRequirementResponse> {
-  const result = await loadRequirements(filters, signal);
-  if (result.status !== "success") {
-    throw new TrainerPracticeQueryError(result.status);
-  }
-  return result.data;
 }
 
 export const defaultTrainerPracticeApi = {

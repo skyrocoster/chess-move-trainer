@@ -1,12 +1,8 @@
 import { Chess, type Square } from "chess.js";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import {
-  ChessboardSurface,
-  findBoardSourceElement,
-  findBoardSquareElement,
-  type ChessboardPieceDropHandlerArgs,
-} from "./ChessboardSurface";
+import { ChessboardSurface, type ChessboardPieceDropHandlerArgs } from "./ChessboardSurface";
+import { findBoardSourceElement, findBoardSquareElement } from "./boardElementQueries";
 import {
   isPromotionTarget,
   PromotionPicker,

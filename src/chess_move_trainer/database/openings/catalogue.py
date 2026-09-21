@@ -74,10 +74,7 @@ class OpeningCatalogueQuery:
     def __post_init__(self) -> None:
         if type(self.page) is not int or self.page < 1:
             raise OpeningCatalogueValidationError("page must be a positive integer")
-        if (
-            type(self.page_size) is not int
-            or not 1 <= self.page_size <= MAX_PAGE_SIZE
-        ):
+        if type(self.page_size) is not int or not 1 <= self.page_size <= MAX_PAGE_SIZE:
             raise OpeningCatalogueValidationError(
                 f"page_size must be an integer from 1 through {MAX_PAGE_SIZE}"
             )
