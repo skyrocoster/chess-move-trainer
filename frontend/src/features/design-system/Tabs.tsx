@@ -1,6 +1,7 @@
+import { Tabs as BaseTabs } from "@base-ui/react/tabs";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
-import type { ComponentPropsWithoutRef, KeyboardEvent, ReactNode, WheelEvent } from "react";
+import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
+import type { ComponentPropsWithoutRef, KeyboardEvent, ReactNode } from "react";
 
 import styles from "./Tabs.module.css";
 
@@ -94,10 +95,11 @@ export function Tabs({
   );
   const [scrollState, setScrollState] = useState<ScrollState>(INITIAL_SCROLL_STATE);
   const tabsScrollRef = useRef<HTMLDivElement | null>(null);
-  const tabRefs = useRef(new Map<string, HTMLButtonElement>());
+  const tabRefs = useRef(new Map<string, HTMLElement>());
   const idPrefix = `tabs-${useId().replaceAll(":", "")}`;
   const enabledTabs = useMemo(() => enabledTabsFrom(tabs), [tabs]);
   const requestedSelectedId = selectedIdProp ?? uncontrolledSelectedId;
+  const lastRequestedIdRef = useRef(requestedSelectedId);
   const selectedTabDefinition =
     tabs.find((tab) => tab.id === requestedSelectedId && !tab.disabled) ?? enabledTabs[0];
   const selectedId = selectedTabDefinition?.id;
@@ -122,6 +124,28 @@ export function Tabs({
     setScrollStateIfChanged(scrollStateFor(scrollElement));
   }, [setScrollStateIfChanged]);
 
+  const handleWheel = useCallback(
+    (event: WheelEvent) => {
+      const scrollElement = event.currentTarget;
+      if (!(scrollElement instanceof HTMLDivElement)) return;
+
+      const verticalDelta = Math.abs(event.deltaY) >= Math.abs(event.deltaX) ? event.deltaY : 0;
+      if (verticalDelta === 0) return;
+
+      const maxScrollLeft = Math.max(0, scrollElement.scrollWidth - scrollElement.clientWidth);
+      const targetScrollLeft = Math.min(
+        maxScrollLeft,
+        Math.max(0, scrollElement.scrollLeft + verticalDelta),
+      );
+      if (targetScrollLeft === scrollElement.scrollLeft) return;
+
+      event.preventDefault();
+      scrollElement.scrollLeft = targetScrollLeft;
+      setScrollStateIfChanged(scrollStateFor(scrollElement, targetScrollLeft));
+    },
+    [setScrollStateIfChanged],
+  );
+
   const revealTab = useCallback((tabId: string) => {
     const scroller = tabsScrollRef.current;
     const tab = tabRefs.current.get(tabId);
@@ -143,6 +167,19 @@ export function Tabs({
   }, [selectedId, selectedIdProp, uncontrolledSelectedId]);
 
   useEffect(() => {
+    lastRequestedIdRef.current = requestedSelectedId;
+  }, [requestedSelectedId]);
+
+  // Base UI models disabled composite tabs with aria-disabled. Preserve this
+  // wrapper's established native-button contract for consumers and tests.
+  useLayoutEffect(() => {
+    for (const tab of tabs) {
+      const element = tabRefs.current.get(tab.id);
+      if (element instanceof HTMLButtonElement) element.disabled = Boolean(tab.disabled);
+    }
+  }, [tabs, tabsLayoutKey]);
+
+  useEffect(() => {
     if (selectedId) revealTab(selectedId);
   }, [revealTab, selectedId]);
 
@@ -158,6 +195,7 @@ export function Tabs({
     if (!scrollElement || !(tabList instanceof HTMLElement)) return;
 
     scrollElement.addEventListener("scroll", updateScrollState, { passive: true });
+    scrollElement.addEventListener("wheel", handleWheel, { passive: false });
     window.addEventListener("resize", updateScrollState);
 
     const resizeObserver =
@@ -178,37 +216,39 @@ export function Tabs({
     updateScrollState();
     return () => {
       scrollElement.removeEventListener("scroll", updateScrollState);
+      scrollElement.removeEventListener("wheel", handleWheel);
       window.removeEventListener("resize", updateScrollState);
       resizeObserver?.disconnect();
       mutationObserver?.disconnect();
     };
-  }, [updateScrollState]);
+  }, [handleWheel, updateScrollState]);
 
   const activateTab = useCallback(
     (tabId: string, moveFocus = false) => {
       const tab = tabs.find((candidate) => candidate.id === tabId);
       if (!tab || tab.disabled) return;
 
-      const currentRequestedId = selectedIdProp ?? uncontrolledSelectedId;
+      const currentRequestedId = lastRequestedIdRef.current;
       if (selectedIdProp === undefined && currentRequestedId !== tab.id) {
         setUncontrolledSelectedId(tab.id);
       }
       if (currentRequestedId !== tab.id) {
+        lastRequestedIdRef.current = tab.id;
         onSelectedIdChange?.(tab.id);
       }
       if (moveFocus) {
         tabRefs.current.get(tabId)?.focus();
       }
     },
-    [onSelectedIdChange, selectedIdProp, tabs, uncontrolledSelectedId],
+    [onSelectedIdChange, selectedIdProp, tabs],
   );
 
   const handleTabKeyDown = useCallback(
-    (event: KeyboardEvent<HTMLButtonElement>, tabId: string) => {
+    (event: KeyboardEvent<HTMLElement>, tabId: string) => {
       const currentIndex = enabledTabs.findIndex((tab) => tab.id === tabId);
       if (currentIndex < 0) return;
 
-      let nextIndex = currentIndex;
+      let nextIndex: number;
       if (event.key === "ArrowRight" || event.key === "ArrowDown") {
         nextIndex = (currentIndex + 1) % enabledTabs.length;
       } else if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
@@ -217,18 +257,12 @@ export function Tabs({
         nextIndex = 0;
       } else if (event.key === "End") {
         nextIndex = enabledTabs.length - 1;
-      }
-
-      if (["ArrowRight", "ArrowDown", "ArrowLeft", "ArrowUp", "Home", "End"].includes(event.key)) {
-        event.preventDefault();
-        activateTab(enabledTabs[nextIndex].id, true);
+      } else {
         return;
       }
 
-      if (event.key === "Enter" || event.key === " ") {
-        event.preventDefault();
-        activateTab(tabId, true);
-      }
+      event.preventDefault();
+      activateTab(enabledTabs[nextIndex].id, true);
     },
     [activateTab, enabledTabs],
   );
@@ -250,28 +284,15 @@ export function Tabs({
     setScrollStateIfChanged(scrollStateFor(scrollElement, targetScrollLeft));
   };
 
-  const handleWheel = (event: WheelEvent<HTMLDivElement>) => {
-    const scrollElement = event.currentTarget;
-    const verticalDelta = Math.abs(event.deltaY) >= Math.abs(event.deltaX) ? event.deltaY : 0;
-    if (verticalDelta === 0) return;
-
-    const maxScrollLeft = Math.max(0, scrollElement.scrollWidth - scrollElement.clientWidth);
-    const targetScrollLeft = Math.min(
-      maxScrollLeft,
-      Math.max(0, scrollElement.scrollLeft + verticalDelta),
-    );
-    if (targetScrollLeft === scrollElement.scrollLeft) return;
-
-    event.preventDefault();
-    scrollElement.scrollLeft = targetScrollLeft;
-    setScrollStateIfChanged(scrollStateFor(scrollElement, targetScrollLeft));
-  };
-
   return (
-    <div
+    <BaseTabs.Root
       {...rest}
       className={[styles.tabs, className].filter(Boolean).join(" ")}
       data-testid="tabs"
+      value={selectedId ?? null}
+      onValueChange={(nextValue) => {
+        if (typeof nextValue === "string") activateTab(nextValue);
+      }}
     >
       <span
         className={styles.visuallyHidden}
@@ -304,25 +325,18 @@ export function Tabs({
           data-hidden-start={scrollState.canScrollStart ? "true" : "false"}
           data-hidden-end={scrollState.canScrollEnd ? "true" : "false"}
         >
-          <div
-            ref={tabsScrollRef}
-            className={styles.tabsScroll}
-            onWheel={handleWheel}
-            data-testid="tabs-scroll"
-          >
-            <div
+          <div ref={tabsScrollRef} className={styles.tabsScroll} data-testid="tabs-scroll">
+            <BaseTabs.List
               className={styles.tabList}
-              role="tablist"
               aria-label={ariaLabel}
               aria-orientation="horizontal"
             >
               {tabs.map((tab) => {
-                const isSelected = tab.id === selectedId;
                 const tabId = domIdFor(idPrefix, tab.id, "tab");
                 const panelId = domIdFor(idPrefix, tab.id, "panel");
 
                 return (
-                  <button
+                  <BaseTabs.Tab
                     key={tab.id}
                     ref={(element) => {
                       if (element) {
@@ -333,21 +347,17 @@ export function Tabs({
                     }}
                     className={styles.tab}
                     id={tabId}
-                    type="button"
-                    role="tab"
+                    value={tab.id}
                     aria-controls={panelId}
-                    aria-selected={isSelected}
                     disabled={tab.disabled}
-                    tabIndex={isSelected ? 0 : -1}
-                    onClick={() => activateTab(tab.id)}
                     onKeyDown={(event) => handleTabKeyDown(event, tab.id)}
                     onFocus={() => revealTab(tab.id)}
                   >
                     {tab.label}
-                  </button>
+                  </BaseTabs.Tab>
                 );
               })}
-            </div>
+            </BaseTabs.List>
           </div>
         </div>
 
@@ -366,27 +376,27 @@ export function Tabs({
 
       <div className={styles.panelViewport}>
         {tabs.map((tab) => {
-          const isSelected = tab.id === selectedId;
           const tabId = domIdFor(idPrefix, tab.id, "tab");
           const panelId = domIdFor(idPrefix, tab.id, "panel");
 
           return (
-            <section
+            <BaseTabs.Panel
               key={tab.id}
               id={panelId}
               className={styles.tabPanel}
-              role="tabpanel"
+              value={tab.id}
+              keepMounted
+              render={<section />}
               aria-labelledby={tabId}
               tabIndex={0}
-              hidden={!isSelected}
               data-tab-panel={tab.id}
               data-testid={`tabs-panel-${tab.id}`}
             >
               {tab.content}
-            </section>
+            </BaseTabs.Panel>
           );
         })}
       </div>
-    </div>
+    </BaseTabs.Root>
   );
 }

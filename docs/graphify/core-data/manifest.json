@@ -108,10 +108,10 @@
     "semantic_hash": "797297321db7af8a2c6acd09f83f823c"
   },
   "chess_move_trainer/database/connection.py": {
-    "mtime": 1789888082.3147793,
-    "seen": 1789896431.4058163,
-    "ast_hash": "f842249c12d94935416da0368cb4db7a",
-    "semantic_hash": "f842249c12d94935416da0368cb4db7a"
+    "mtime": 1789991101.3949196,
+    "seen": 1789998613.0112019,
+    "ast_hash": "8302ade74225d5b51fb74096471a7aab",
+    "semantic_hash": "8302ade74225d5b51fb74096471a7aab"
   },
   "chess_move_trainer/database/games/__init__.py": {
     "mtime": 1789131697.636082,
@@ -186,22 +186,22 @@
     "semantic_hash": "55234ddc1f95c45973bc6ff05fdafd09"
   },
   "chess_move_trainer/database/games/search_models.py": {
-    "mtime": 1789888032.7548974,
-    "seen": 1789896431.4058163,
-    "ast_hash": "c0d84f4697ac1b517c45ef6877bfb139",
-    "semantic_hash": "c0d84f4697ac1b517c45ef6877bfb139"
+    "mtime": 1789983570.2285793,
+    "seen": 1789998613.0112019,
+    "ast_hash": "132a5ea4cb87a103ace442b6f12a024d",
+    "semantic_hash": "132a5ea4cb87a103ace442b6f12a024d"
   },
   "chess_move_trainer/database/games/search_repository.py": {
-    "mtime": 1789888032.7548974,
-    "seen": 1789896431.4058163,
-    "ast_hash": "688935aee9e6b5206bf17a86ff38f97c",
-    "semantic_hash": "688935aee9e6b5206bf17a86ff38f97c"
+    "mtime": 1789989340.5241358,
+    "seen": 1789998613.0112019,
+    "ast_hash": "18351587b3bf3385a6f1cff4cff96812",
+    "semantic_hash": "18351587b3bf3385a6f1cff4cff96812"
   },
   "chess_move_trainer/database/games/search_validation.py": {
-    "mtime": 1789887847.4489923,
-    "seen": 1789896431.4058163,
-    "ast_hash": "4e3dec442ed83dde7b4086d023da421d",
-    "semantic_hash": "4e3dec442ed83dde7b4086d023da421d"
+    "mtime": 1789989340.5241358,
+    "seen": 1789998613.0112019,
+    "ast_hash": "3fb2ec4a9032cfe3d9144c33a2cc4dc2",
+    "semantic_hash": "3fb2ec4a9032cfe3d9144c33a2cc4dc2"
   },
   "chess_move_trainer/database/inspection.py": {
     "mtime": 1789888082.302778,
@@ -606,10 +606,10 @@
     "semantic_hash": "20c37abcc3ede5a73750dd8674f801f0"
   },
   "chess_move_trainer/database/games/search_loaders.py": {
-    "mtime": 1789887286.0513139,
-    "seen": 1789896431.4058163,
-    "ast_hash": "4d6ff653fdccb8918919a89ca8b8403f",
-    "semantic_hash": "4d6ff653fdccb8918919a89ca8b8403f"
+    "mtime": 1789989397.4226937,
+    "seen": 1789998613.0112019,
+    "ast_hash": "b8601d791ab2895ce983101b5ff6c147",
+    "semantic_hash": "b8601d791ab2895ce983101b5ff6c147"
   },
   "chess_move_trainer/database/positions/training_answer_support.py": {
     "mtime": 1789888082.3277786,
@@ -658,5 +658,59 @@
     "seen": 1789930628.3662205,
     "ast_hash": "fd14dab0ad4fe6e255a1a9f5e02112bf",
     "semantic_hash": "fd14dab0ad4fe6e255a1a9f5e02112bf"
+  },
+  "chess_move_trainer/database/blunders/__init__.py": {
+    "mtime": 1789983650.459259,
+    "seen": 1789998613.0112019,
+    "ast_hash": "115a8c6f1c8f4823af7425bda60cdca3",
+    "semantic_hash": "115a8c6f1c8f4823af7425bda60cdca3"
+  },
+  "chess_move_trainer/database/blunders/errors.py": {
+    "mtime": 1789981032.7348566,
+    "seen": 1789998613.0112019,
+    "ast_hash": "b916f6a33cd32913a93845789084e47d",
+    "semantic_hash": "b916f6a33cd32913a93845789084e47d"
+  },
+  "chess_move_trainer/database/blunders/loaders.py": {
+    "mtime": 1789989303.3906608,
+    "seen": 1789998613.0112019,
+    "ast_hash": "0d8f04fea3073db46e8f60fd2ff65b1c",
+    "semantic_hash": "0d8f04fea3073db46e8f60fd2ff65b1c"
+  },
+  "chess_move_trainer/database/blunders/models.py": {
+    "mtime": 1789989303.3926609,
+    "seen": 1789998613.0112019,
+    "ast_hash": "18118718b93cb74b12bc0c66db2be3df",
+    "semantic_hash": "18118718b93cb74b12bc0c66db2be3df"
+  },
+  "chess_move_trainer/database/blunders/records.py": {
+    "mtime": 1789983576.000485,
+    "seen": 1789998613.0112019,
+    "ast_hash": "7560a3552ac55349e5c5d3f9d6ac57d5",
+    "semantic_hash": "7560a3552ac55349e5c5d3f9d6ac57d5"
+  },
+  "chess_move_trainer/database/blunders/repository.py": {
+    "mtime": 1789989303.3946896,
+    "seen": 1789998613.0112019,
+    "ast_hash": "c2447d8ce0263a6e774150085fe362a1",
+    "semantic_hash": "c2447d8ce0263a6e774150085fe362a1"
+  },
+  "chess_move_trainer/database/blunders/scoring.py": {
+    "mtime": 1789989303.3946896,
+    "seen": 1789998613.0112019,
+    "ast_hash": "f00f1fbf31feaaf8be9c0c54a3cce1de",
+    "semantic_hash": "f00f1fbf31feaaf8be9c0c54a3cce1de"
+  },
+  "chess_move_trainer/database/query_helpers.py": {
+    "mtime": 1789988925.2182815,
+    "seen": 1789998613.0203557,
+    "ast_hash": "27fc6ca603d662ae049d60565ae90aba",
+    "semantic_hash": "27fc6ca603d662ae049d60565ae90aba"
+  },
+  "chess_move_trainer/database/validation.py": {
+    "mtime": 1789989303.3946896,
+    "seen": 1789998613.0243528,
+    "ast_hash": "30151d92861002ac4a8b2c54b88f78dc",
+    "semantic_hash": "30151d92861002ac4a8b2c54b88f78dc"
   }
 }

@@ -1422,10 +1422,343 @@
           }
         }
       }
+    },
+    "/api/statistics/overview": {
+      "get": {
+        "tags": ["statistics"],
+        "summary": "Get Statistics Overview",
+        "operationId": "getStatisticsOverview",
+        "parameters": [
+          {
+            "name": "as_of",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "As Of"
+            }
+          },
+          {
+            "name": "started_on_or_after",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Started On Or After"
+            }
+          },
+          {
+            "name": "started_on_or_before",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Started On Or Before"
+            }
+          },
+          {
+            "name": "trainer_color",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Trainer Color"
+            }
+          },
+          {
+            "name": "time_class",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Time Class"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatisticsOverviewResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatisticsErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatisticsErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatisticsErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        }
+      }
+    },
+    "/api/trainer/blunders": {
+      "get": {
+        "tags": ["trainer"],
+        "summary": "Get Trainer Blunders",
+        "operationId": "getTrainerBlunders",
+        "parameters": [
+          {
+            "name": "started_at_from",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Started At From"
+            }
+          },
+          {
+            "name": "started_at_to",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Started At To"
+            }
+          },
+          {
+            "name": "trainer_color",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Trainer Color"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 1,
+              "title": "Page"
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 50,
+              "title": "Page Size"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrainerBlundersResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BlunderErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BlunderErrorResponse"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BlunderErrorResponse"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        }
+      }
     }
   },
   "components": {
     "schemas": {
+      "ActivityPeriodResponse": {
+        "properties": {
+          "period": {
+            "type": "string",
+            "title": "Period"
+          },
+          "record": {
+            "$ref": "#/components/schemas/OutcomeRecordResponse"
+          },
+          "average_trainer_rating": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Average Trainer Rating"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["period", "record", "average_trainer_rating"],
+        "title": "ActivityPeriodResponse"
+      },
+      "ActivityStatisticsResponse": {
+        "properties": {
+          "first_game_at_utc": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Game At Utc"
+          },
+          "last_game_at_utc": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Game At Utc"
+          },
+          "dated_game_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Dated Game Count"
+          },
+          "by_month": {
+            "items": {
+              "$ref": "#/components/schemas/ActivityPeriodResponse"
+            },
+            "type": "array",
+            "title": "By Month"
+          },
+          "by_weekday_utc": {
+            "items": {
+              "$ref": "#/components/schemas/WeekdayActivityResponse"
+            },
+            "type": "array",
+            "title": "By Weekday Utc"
+          },
+          "by_hour_utc": {
+            "items": {
+              "$ref": "#/components/schemas/HourActivityResponse"
+            },
+            "type": "array",
+            "title": "By Hour Utc"
+          },
+          "recent_form": {
+            "items": {
+              "$ref": "#/components/schemas/RecentFormWindowResponse"
+            },
+            "type": "array",
+            "title": "Recent Form"
+          },
+          "streaks": {
+            "$ref": "#/components/schemas/StreakStatisticsResponse"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "first_game_at_utc",
+          "last_game_at_utc",
+          "dated_game_count",
+          "by_month",
+          "by_weekday_utc",
+          "by_hour_utc",
+          "recent_form",
+          "streaks"
+        ],
+        "title": "ActivityStatisticsResponse"
+      },
       "AnalysisObservationErrorResponse": {
         "properties": {
           "code": {
@@ -1626,6 +1959,326 @@
         "required": ["code", "message"],
         "title": "AnalysisRequestErrorResponse",
         "description": "Stable error body for the desired-analysis operation."
+      },
+      "AnalysisStatisticsResponse": {
+        "properties": {
+          "scoped_position_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Scoped Position Count"
+          },
+          "ready_position_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Ready Position Count"
+          },
+          "browser_quality_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Browser Quality Count"
+          },
+          "tool_quality_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Tool Quality Count"
+          },
+          "terminal_result_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Terminal Result Count"
+          },
+          "queued_position_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Queued Position Count"
+          },
+          "running_position_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Running Position Count"
+          },
+          "not_requested_position_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Not Requested Position Count"
+          },
+          "line_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Line Count"
+          },
+          "centipawn_line_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Centipawn Line Count"
+          },
+          "mate_line_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Mate Line Count"
+          },
+          "multi_pv_result_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Multi Pv Result Count"
+          },
+          "average_depth": {
+            "anyOf": [
+              {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "number"
+                  }
+                ],
+                "ge": 0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Average Depth"
+          },
+          "ready_coverage_rate": {
+            "anyOf": [
+              {
+                "anyOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "integer"
+                  }
+                ],
+                "ge": 0,
+                "le": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ready Coverage Rate"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "scoped_position_count",
+          "ready_position_count",
+          "browser_quality_count",
+          "tool_quality_count",
+          "terminal_result_count",
+          "queued_position_count",
+          "running_position_count",
+          "not_requested_position_count",
+          "line_count",
+          "centipawn_line_count",
+          "mate_line_count",
+          "multi_pv_result_count",
+          "average_depth",
+          "ready_coverage_rate"
+        ],
+        "title": "AnalysisStatisticsResponse"
+      },
+      "BlunderCoverageResponse": {
+        "properties": {
+          "examined_game_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Examined Game Count"
+          },
+          "excluded_game_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Excluded Game Count"
+          },
+          "in_scope_game_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "In Scope Game Count"
+          },
+          "trainer_move_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Trainer Move Count"
+          },
+          "comparable_move_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Comparable Move Count"
+          },
+          "skipped_missing_analysis_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Skipped Missing Analysis Count"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "examined_game_count",
+          "excluded_game_count",
+          "in_scope_game_count",
+          "trainer_move_count",
+          "comparable_move_count",
+          "skipped_missing_analysis_count"
+        ],
+        "title": "BlunderCoverageResponse"
+      },
+      "BlunderErrorResponse": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "enum": ["invalid_filter", "trainer_blunders_unavailable", "unexpected_failure"],
+            "title": "Code"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["code", "message"],
+        "title": "BlunderErrorResponse"
+      },
+      "BlunderPolicyResponse": {
+        "properties": {
+          "minimum_expected_score_loss": {
+            "type": "number",
+            "maximum": 1.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Minimum Expected Score Loss"
+          },
+          "evaluation_basis": {
+            "type": "string",
+            "const": "wdl_expected_score",
+            "title": "Evaluation Basis"
+          },
+          "score_perspective": {
+            "type": "string",
+            "const": "trainer",
+            "title": "Score Perspective"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["minimum_expected_score_loss", "evaluation_basis", "score_perspective"],
+        "title": "BlunderPolicyResponse"
+      },
+      "BlunderTimeframeResponse": {
+        "properties": {
+          "started_at_from": {
+            "type": "string",
+            "title": "Started At From"
+          },
+          "started_at_to": {
+            "type": "string",
+            "title": "Started At To"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["started_at_from", "started_at_to"],
+        "title": "BlunderTimeframeResponse"
+      },
+      "CategoryPerformanceResponse": {
+        "properties": {
+          "category": {
+            "type": "string",
+            "title": "Category"
+          },
+          "record": {
+            "$ref": "#/components/schemas/OutcomeRecordResponse"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["category", "record"],
+        "title": "CategoryPerformanceResponse"
+      },
+      "DataQualityStatisticsResponse": {
+        "properties": {
+          "missing_outcome_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Missing Outcome Count"
+          },
+          "missing_trainer_rating_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Missing Trainer Rating Count"
+          },
+          "missing_opponent_rating_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Missing Opponent Rating Count"
+          },
+          "missing_started_at_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Missing Started At Count"
+          },
+          "invalid_started_at_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Invalid Started At Count"
+          },
+          "missing_ended_at_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Missing Ended At Count"
+          },
+          "invalid_ended_at_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Invalid Ended At Count"
+          },
+          "negative_duration_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Negative Duration Count"
+          },
+          "missing_time_class_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Missing Time Class Count"
+          },
+          "missing_time_control_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Missing Time Control Count"
+          },
+          "missing_termination_reason_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Missing Termination Reason Count"
+          },
+          "missing_opponent_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Missing Opponent Count"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "missing_outcome_count",
+          "missing_trainer_rating_count",
+          "missing_opponent_rating_count",
+          "missing_started_at_count",
+          "invalid_started_at_count",
+          "missing_ended_at_count",
+          "invalid_ended_at_count",
+          "negative_duration_count",
+          "missing_time_class_count",
+          "missing_time_control_count",
+          "missing_termination_reason_count",
+          "missing_opponent_count"
+        ],
+        "title": "DataQualityStatisticsResponse"
       },
       "GameCoverageResponse": {
         "properties": {
@@ -1845,6 +2498,91 @@
           "occurrences"
         ],
         "title": "GameDetailResponse"
+      },
+      "GameStatisticsResponse": {
+        "properties": {
+          "record": {
+            "$ref": "#/components/schemas/OutcomeRecordResponse"
+          },
+          "by_trainer_color": {
+            "items": {
+              "$ref": "#/components/schemas/CategoryPerformanceResponse"
+            },
+            "type": "array",
+            "title": "By Trainer Color"
+          },
+          "by_time_class": {
+            "items": {
+              "$ref": "#/components/schemas/CategoryPerformanceResponse"
+            },
+            "type": "array",
+            "title": "By Time Class"
+          },
+          "by_time_control": {
+            "items": {
+              "$ref": "#/components/schemas/CategoryPerformanceResponse"
+            },
+            "type": "array",
+            "title": "By Time Control"
+          },
+          "by_termination_reason": {
+            "items": {
+              "$ref": "#/components/schemas/CategoryPerformanceResponse"
+            },
+            "type": "array",
+            "title": "By Termination Reason"
+          },
+          "by_rating_difference": {
+            "items": {
+              "$ref": "#/components/schemas/CategoryPerformanceResponse"
+            },
+            "type": "array",
+            "title": "By Rating Difference"
+          },
+          "by_length_plies": {
+            "items": {
+              "$ref": "#/components/schemas/CategoryPerformanceResponse"
+            },
+            "type": "array",
+            "title": "By Length Plies"
+          },
+          "trainer_rating": {
+            "$ref": "#/components/schemas/NumericSummaryResponse"
+          },
+          "opponent_rating": {
+            "$ref": "#/components/schemas/NumericSummaryResponse"
+          },
+          "rating_difference": {
+            "$ref": "#/components/schemas/NumericSummaryResponse"
+          },
+          "length_plies": {
+            "$ref": "#/components/schemas/NumericSummaryResponse"
+          },
+          "duration_seconds": {
+            "$ref": "#/components/schemas/NumericSummaryResponse"
+          },
+          "trainer_rating_progression": {
+            "$ref": "#/components/schemas/RatingProgressionResponse"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "record",
+          "by_trainer_color",
+          "by_time_class",
+          "by_time_control",
+          "by_termination_reason",
+          "by_rating_difference",
+          "by_length_plies",
+          "trainer_rating",
+          "opponent_rating",
+          "rating_difference",
+          "length_plies",
+          "duration_seconds",
+          "trainer_rating_progression"
+        ],
+        "title": "GameStatisticsResponse"
       },
       "GameSummaryResponse": {
         "properties": {
@@ -2091,6 +2829,23 @@
         "required": ["status"],
         "title": "HealthResponse"
       },
+      "HourActivityResponse": {
+        "properties": {
+          "hour_utc": {
+            "type": "integer",
+            "maximum": 23.0,
+            "minimum": 0.0,
+            "title": "Hour Utc"
+          },
+          "record": {
+            "$ref": "#/components/schemas/OutcomeRecordResponse"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["hour_utc", "record"],
+        "title": "HourActivityResponse"
+      },
       "MovePreferenceResponse": {
         "properties": {
           "kind": {
@@ -2159,6 +2914,75 @@
         "type": "object",
         "required": ["kind"],
         "title": "NoPreferenceResponse"
+      },
+      "NumericSummaryResponse": {
+        "properties": {
+          "count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Count"
+          },
+          "minimum": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Minimum"
+          },
+          "maximum": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Maximum"
+          },
+          "average": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Average"
+          },
+          "median": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Median"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["count", "minimum", "maximum", "average", "median"],
+        "title": "NumericSummaryResponse"
       },
       "OpeningCatalogueErrorResponse": {
         "properties": {
@@ -2266,6 +3090,116 @@
         "required": ["code", "message"],
         "title": "OpeningDetailErrorResponse"
       },
+      "OpeningPerformanceResponse": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "eco": {
+            "type": "string",
+            "title": "Eco"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "deepest_ply": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Deepest Ply"
+          },
+          "record": {
+            "$ref": "#/components/schemas/OutcomeRecordResponse"
+          },
+          "average_trainer_rating": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Average Trainer Rating"
+          },
+          "average_length_plies": {
+            "anyOf": [
+              {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "number"
+                  }
+                ],
+                "ge": 0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Average Length Plies"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "key",
+          "eco",
+          "name",
+          "deepest_ply",
+          "record",
+          "average_trainer_rating",
+          "average_length_plies"
+        ],
+        "title": "OpeningPerformanceResponse"
+      },
+      "OpeningStatisticsResponse": {
+        "properties": {
+          "classified_game_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Classified Game Count"
+          },
+          "unclassified_game_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Unclassified Game Count"
+          },
+          "distinct_opening_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Distinct Opening Count"
+          },
+          "returned_opening_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Returned Opening Count"
+          },
+          "openings": {
+            "items": {
+              "$ref": "#/components/schemas/OpeningPerformanceResponse"
+            },
+            "type": "array",
+            "title": "Openings"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "classified_game_count",
+          "unclassified_game_count",
+          "distinct_opening_count",
+          "returned_opening_count",
+          "openings"
+        ],
+        "title": "OpeningStatisticsResponse"
+      },
       "OpeningSummaryResponse": {
         "properties": {
           "key": {
@@ -2289,6 +3223,218 @@
         "type": "object",
         "required": ["key", "eco", "name", "ply"],
         "title": "OpeningSummaryResponse"
+      },
+      "OpponentPerformanceResponse": {
+        "properties": {
+          "opponent_chesscom_uuid": {
+            "type": "string",
+            "title": "Opponent Chesscom Uuid"
+          },
+          "record": {
+            "$ref": "#/components/schemas/OutcomeRecordResponse"
+          },
+          "average_opponent_rating": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Average Opponent Rating"
+          },
+          "average_rating_difference": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Average Rating Difference"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "opponent_chesscom_uuid",
+          "record",
+          "average_opponent_rating",
+          "average_rating_difference"
+        ],
+        "title": "OpponentPerformanceResponse"
+      },
+      "OpponentStatisticsResponse": {
+        "properties": {
+          "known_opponent_game_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Known Opponent Game Count"
+          },
+          "unknown_opponent_game_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Unknown Opponent Game Count"
+          },
+          "distinct_known_opponent_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Distinct Known Opponent Count"
+          },
+          "repeat_opponent_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Repeat Opponent Count"
+          },
+          "returned_opponent_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Returned Opponent Count"
+          },
+          "opponents": {
+            "items": {
+              "$ref": "#/components/schemas/OpponentPerformanceResponse"
+            },
+            "type": "array",
+            "title": "Opponents"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "known_opponent_game_count",
+          "unknown_opponent_game_count",
+          "distinct_known_opponent_count",
+          "repeat_opponent_count",
+          "returned_opponent_count",
+          "opponents"
+        ],
+        "title": "OpponentStatisticsResponse"
+      },
+      "OutcomeRecordResponse": {
+        "properties": {
+          "total_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Total Count"
+          },
+          "known_outcome_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Known Outcome Count"
+          },
+          "win_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Win Count"
+          },
+          "loss_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Loss Count"
+          },
+          "draw_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Draw Count"
+          },
+          "unknown_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Unknown Count"
+          },
+          "score_rate": {
+            "anyOf": [
+              {
+                "anyOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "integer"
+                  }
+                ],
+                "ge": 0,
+                "le": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score Rate"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "total_count",
+          "known_outcome_count",
+          "win_count",
+          "loss_count",
+          "draw_count",
+          "unknown_count",
+          "score_rate"
+        ],
+        "title": "OutcomeRecordResponse"
+      },
+      "PlyBucketResponse": {
+        "properties": {
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "minimum_ply": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Minimum Ply"
+          },
+          "maximum_ply": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Maximum Ply"
+          },
+          "occurrence_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Occurrence Count"
+          },
+          "distinct_game_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Distinct Game Count"
+          },
+          "distinct_position_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Distinct Position Count"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "label",
+          "minimum_ply",
+          "maximum_ply",
+          "occurrence_count",
+          "distinct_game_count",
+          "distinct_position_count"
+        ],
+        "title": "PlyBucketResponse"
       },
       "PositionInsightAnalysisResponse": {
         "properties": {
@@ -2650,6 +3796,111 @@
         "required": ["distinct_game_count", "occurrence_count"],
         "title": "PositionInsightTerminalTotalsResponse"
       },
+      "PositionStatisticsResponse": {
+        "properties": {
+          "database_position_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Database Position Count"
+          },
+          "observed_position_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Observed Position Count"
+          },
+          "distinct_game_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Distinct Game Count"
+          },
+          "occurrence_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Occurrence Count"
+          },
+          "outgoing_occurrence_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Outgoing Occurrence Count"
+          },
+          "terminal_occurrence_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Terminal Occurrence Count"
+          },
+          "trainer_turn_occurrence_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Trainer Turn Occurrence Count"
+          },
+          "opponent_turn_occurrence_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Opponent Turn Occurrence Count"
+          },
+          "distinct_outgoing_move_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Distinct Outgoing Move Count"
+          },
+          "repeated_position_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Repeated Position Count"
+          },
+          "average_occurrences_per_observed_position": {
+            "anyOf": [
+              {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "number"
+                  }
+                ],
+                "ge": 0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Average Occurrences Per Observed Position"
+          },
+          "ply_buckets": {
+            "items": {
+              "$ref": "#/components/schemas/PlyBucketResponse"
+            },
+            "type": "array",
+            "title": "Ply Buckets"
+          },
+          "recurring_positions": {
+            "items": {
+              "$ref": "#/components/schemas/RecurringPositionResponse"
+            },
+            "type": "array",
+            "title": "Recurring Positions"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "database_position_count",
+          "observed_position_count",
+          "distinct_game_count",
+          "occurrence_count",
+          "outgoing_occurrence_count",
+          "terminal_occurrence_count",
+          "trainer_turn_occurrence_count",
+          "opponent_turn_occurrence_count",
+          "distinct_outgoing_move_count",
+          "repeated_position_count",
+          "average_occurrences_per_observed_position",
+          "ply_buckets",
+          "recurring_positions"
+        ],
+        "title": "PositionStatisticsResponse"
+      },
       "PreferredMovesErrorResponse": {
         "properties": {
           "code": {
@@ -2941,6 +4192,560 @@
         "required": ["from", "until", "preference"],
         "title": "PreferredMovesSegmentResponse"
       },
+      "RatingProgressionResponse": {
+        "properties": {
+          "dated_rating_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Dated Rating Count"
+          },
+          "first_rating": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Rating"
+          },
+          "last_rating": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Rating"
+          },
+          "change": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Change"
+          },
+          "peak_rating": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Peak Rating"
+          },
+          "lowest_rating": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lowest Rating"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "dated_rating_count",
+          "first_rating",
+          "last_rating",
+          "change",
+          "peak_rating",
+          "lowest_rating"
+        ],
+        "title": "RatingProgressionResponse"
+      },
+      "RecentFormWindowResponse": {
+        "properties": {
+          "requested_game_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Requested Game Count"
+          },
+          "dated_game_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Dated Game Count"
+          },
+          "record": {
+            "$ref": "#/components/schemas/OutcomeRecordResponse"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["requested_game_count", "dated_game_count", "record"],
+        "title": "RecentFormWindowResponse"
+      },
+      "RecurringPositionResponse": {
+        "properties": {
+          "fen": {
+            "type": "string",
+            "title": "Fen"
+          },
+          "distinct_game_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Distinct Game Count"
+          },
+          "occurrence_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Occurrence Count"
+          },
+          "outgoing_occurrence_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Outgoing Occurrence Count"
+          },
+          "terminal_occurrence_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Terminal Occurrence Count"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "fen",
+          "distinct_game_count",
+          "occurrence_count",
+          "outgoing_occurrence_count",
+          "terminal_occurrence_count"
+        ],
+        "title": "RecurringPositionResponse"
+      },
+      "RepertoireStatisticsResponse": {
+        "properties": {
+          "trainer_turn_position_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Trainer Turn Position Count"
+          },
+          "move_preference_position_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Move Preference Position Count"
+          },
+          "no_preference_position_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "No Preference Position Count"
+          },
+          "unconfigured_position_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Unconfigured Position Count"
+          },
+          "preference_coverage_rate": {
+            "anyOf": [
+              {
+                "anyOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "integer"
+                  }
+                ],
+                "ge": 0,
+                "le": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Preference Coverage Rate"
+          },
+          "preference_observed_position_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Preference Observed Position Count"
+          },
+          "preferred_move_opportunity_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Preferred Move Opportunity Count"
+          },
+          "preferred_move_played_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Preferred Move Played Count"
+          },
+          "preferred_move_adherence_rate": {
+            "anyOf": [
+              {
+                "anyOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "integer"
+                  }
+                ],
+                "ge": 0,
+                "le": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Preferred Move Adherence Rate"
+          },
+          "training_balances": {
+            "$ref": "#/components/schemas/TrainingBalanceStatisticsResponse"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "trainer_turn_position_count",
+          "move_preference_position_count",
+          "no_preference_position_count",
+          "unconfigured_position_count",
+          "preference_coverage_rate",
+          "preference_observed_position_count",
+          "preferred_move_opportunity_count",
+          "preferred_move_played_count",
+          "preferred_move_adherence_rate",
+          "training_balances"
+        ],
+        "title": "RepertoireStatisticsResponse"
+      },
+      "StatisticsErrorResponse": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "enum": ["invalid_filter", "statistics_unavailable", "unexpected_failure"],
+            "title": "Code"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["code", "message"],
+        "title": "StatisticsErrorResponse"
+      },
+      "StatisticsFiltersResponse": {
+        "properties": {
+          "started_on_or_after": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started On Or After"
+          },
+          "started_on_or_before": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started On Or Before"
+          },
+          "trainer_color": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": ["white", "black"]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trainer Color"
+          },
+          "time_class": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": ["bullet", "blitz", "rapid", "daily"]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Time Class"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["started_on_or_after", "started_on_or_before", "trainer_color", "time_class"],
+        "title": "StatisticsFiltersResponse"
+      },
+      "StatisticsOverviewResponse": {
+        "properties": {
+          "as_of": {
+            "type": "string",
+            "title": "As Of"
+          },
+          "filters": {
+            "$ref": "#/components/schemas/StatisticsFiltersResponse"
+          },
+          "games": {
+            "$ref": "#/components/schemas/GameStatisticsResponse"
+          },
+          "activity": {
+            "$ref": "#/components/schemas/ActivityStatisticsResponse"
+          },
+          "openings": {
+            "$ref": "#/components/schemas/OpeningStatisticsResponse"
+          },
+          "opponents": {
+            "$ref": "#/components/schemas/OpponentStatisticsResponse"
+          },
+          "positions": {
+            "$ref": "#/components/schemas/PositionStatisticsResponse"
+          },
+          "analysis": {
+            "$ref": "#/components/schemas/AnalysisStatisticsResponse"
+          },
+          "repertoire": {
+            "$ref": "#/components/schemas/RepertoireStatisticsResponse"
+          },
+          "data_quality": {
+            "$ref": "#/components/schemas/DataQualityStatisticsResponse"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "as_of",
+          "filters",
+          "games",
+          "activity",
+          "openings",
+          "opponents",
+          "positions",
+          "analysis",
+          "repertoire",
+          "data_quality"
+        ],
+        "title": "StatisticsOverviewResponse"
+      },
+      "StreakStatisticsResponse": {
+        "properties": {
+          "current_kind": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": ["win", "loss", "draw"]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Current Kind"
+          },
+          "current_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Current Count"
+          },
+          "longest_win_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Longest Win Count"
+          },
+          "longest_loss_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Longest Loss Count"
+          },
+          "longest_draw_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Longest Draw Count"
+          },
+          "longest_unbeaten_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Longest Unbeaten Count"
+          },
+          "longest_winless_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Longest Winless Count"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "current_kind",
+          "current_count",
+          "longest_win_count",
+          "longest_loss_count",
+          "longest_draw_count",
+          "longest_unbeaten_count",
+          "longest_winless_count"
+        ],
+        "title": "StreakStatisticsResponse"
+      },
+      "TrainerBlunderItemResponse": {
+        "properties": {
+          "game_uuid": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Game Uuid"
+          },
+          "source_url": {
+            "type": "string",
+            "title": "Source Url"
+          },
+          "started_at_utc": {
+            "type": "string",
+            "title": "Started At Utc"
+          },
+          "trainer_color": {
+            "type": "string",
+            "enum": ["white", "black"],
+            "title": "Trainer Color"
+          },
+          "ply": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Ply"
+          },
+          "fen": {
+            "type": "string",
+            "title": "Fen"
+          },
+          "played_move_uci": {
+            "type": "string",
+            "title": "Played Move Uci"
+          },
+          "preferred_move_uci": {
+            "type": "string",
+            "title": "Preferred Move Uci"
+          },
+          "expected_score_before": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Expected Score Before"
+          },
+          "expected_score_after": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Expected Score After"
+          },
+          "expected_score_loss": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Expected Score Loss"
+          },
+          "before_analysis_quality": {
+            "type": "string",
+            "enum": ["browser", "tool"],
+            "title": "Before Analysis Quality"
+          },
+          "after_analysis_quality": {
+            "type": "string",
+            "enum": ["browser", "tool"],
+            "title": "After Analysis Quality"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "game_uuid",
+          "source_url",
+          "started_at_utc",
+          "trainer_color",
+          "ply",
+          "fen",
+          "played_move_uci",
+          "preferred_move_uci",
+          "expected_score_before",
+          "expected_score_after",
+          "expected_score_loss",
+          "before_analysis_quality",
+          "after_analysis_quality"
+        ],
+        "title": "TrainerBlunderItemResponse"
+      },
+      "TrainerBlundersResponse": {
+        "properties": {
+          "timeframe": {
+            "$ref": "#/components/schemas/BlunderTimeframeResponse"
+          },
+          "policy": {
+            "$ref": "#/components/schemas/BlunderPolicyResponse"
+          },
+          "coverage": {
+            "$ref": "#/components/schemas/BlunderCoverageResponse"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/TrainerBlunderItemResponse"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Page"
+          },
+          "page_size": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 1.0,
+            "title": "Page Size"
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Total"
+          },
+          "total_pages": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Total Pages"
+          },
+          "has_next": {
+            "type": "boolean",
+            "title": "Has Next"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "timeframe",
+          "policy",
+          "coverage",
+          "items",
+          "page",
+          "page_size",
+          "total",
+          "total_pages",
+          "has_next"
+        ],
+        "title": "TrainerBlundersResponse"
+      },
       "TrainingAnswerRequest": {
         "properties": {
           "fen": {
@@ -2983,6 +4788,55 @@
         "type": "object",
         "required": ["as_of", "correct", "item"],
         "title": "TrainingAnswerResponse"
+      },
+      "TrainingBalanceStatisticsResponse": {
+        "properties": {
+          "count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Count"
+          },
+          "negative_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Negative Count"
+          },
+          "zero_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Zero Count"
+          },
+          "positive_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Positive Count"
+          },
+          "updated_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Updated Count"
+          },
+          "missing_count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Missing Count"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/NumericSummaryResponse"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "count",
+          "negative_count",
+          "zero_count",
+          "positive_count",
+          "updated_count",
+          "missing_count",
+          "summary"
+        ],
+        "title": "TrainingBalanceStatisticsResponse"
       },
       "TrainingRequirementErrorResponse": {
         "properties": {
@@ -3224,6 +5078,22 @@
         "type": "object",
         "required": ["loc", "msg", "type"],
         "title": "ValidationError"
+      },
+      "WeekdayActivityResponse": {
+        "properties": {
+          "weekday": {
+            "type": "string",
+            "enum": ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"],
+            "title": "Weekday"
+          },
+          "record": {
+            "$ref": "#/components/schemas/OutcomeRecordResponse"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["weekday", "record"],
+        "title": "WeekdayActivityResponse"
       }
     }
   }

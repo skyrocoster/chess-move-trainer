@@ -1,0 +1,423 @@
+.tabContent {
+  display: grid;
+  gap: var(--cmt-spacing-32);
+  min-inline-size: 0;
+  padding: var(--cmt-spacing-24);
+}
+
+.sectionHeading {
+  display: flex;
+  min-inline-size: 0;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--cmt-spacing-8) var(--cmt-spacing-16);
+  margin-block-end: var(--cmt-spacing-16);
+}
+
+.sectionHeading h2,
+.sectionHeading p {
+  margin: 0;
+}
+
+.sectionHeading h2 {
+  color: var(--md-sys-color-on-surface);
+  font: var(--md-sys-typescale-title-large);
+}
+
+.sectionHeading p {
+  color: var(--md-sys-color-on-surface-variant);
+  font: var(--md-sys-typescale-body-medium);
+}
+
+.eyebrow {
+  color: var(--md-sys-color-primary);
+  font: var(--md-sys-typescale-label-medium);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.scorecard {
+  display: grid;
+  grid-template-columns: minmax(13rem, 0.65fr) minmax(20rem, 1.35fr);
+  min-inline-size: 0;
+  overflow: hidden;
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--cmt-radius-12);
+  background: var(--md-sys-color-surface-container-low);
+}
+
+.scoreLead {
+  display: grid;
+  align-content: center;
+  gap: var(--cmt-spacing-4);
+  padding: var(--cmt-spacing-24);
+  border-inline-start: var(--cmt-spacing-4) solid var(--md-sys-color-primary);
+  background: var(--md-sys-color-surface-container-high);
+}
+
+.scoreLead h2,
+.scoreLead p {
+  margin: 0;
+}
+
+.scoreLead h2 {
+  color: var(--md-sys-color-on-surface);
+  font: var(--md-sys-typescale-title-large);
+}
+
+.scoreLead p {
+  color: var(--md-sys-color-on-surface-variant);
+  font: var(--md-sys-typescale-body-medium);
+}
+
+.scoreRate {
+  color: var(--md-sys-color-primary);
+  font-family: var(--md-sys-typescale-display-medium-font);
+  font-size: var(--md-sys-typescale-display-medium-size);
+  font-weight: var(--md-sys-typescale-display-medium-weight);
+  letter-spacing: var(--md-sys-typescale-display-medium-letter-spacing);
+  line-height: var(--md-sys-typescale-display-medium-line-height);
+  font-variant-numeric: tabular-nums;
+}
+
+.recordBody {
+  display: grid;
+  align-content: center;
+  gap: var(--cmt-spacing-16);
+  min-inline-size: 0;
+  padding: var(--cmt-spacing-24);
+}
+
+.recordTopline {
+  display: flex;
+  min-inline-size: 0;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--cmt-spacing-8) var(--cmt-spacing-16);
+  margin: 0;
+  color: var(--md-sys-color-on-surface-variant);
+  font: var(--md-sys-typescale-body-medium);
+}
+
+.recordTopline strong {
+  color: var(--md-sys-color-on-surface);
+  font: var(--md-sys-typescale-title-medium);
+}
+
+.outcomeLegend,
+.metricGrid {
+  display: grid;
+  min-inline-size: 0;
+  margin: 0;
+}
+
+.outcomeLegend {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--cmt-spacing-8);
+}
+
+.outcomeLegend > div {
+  position: relative;
+  display: grid;
+  gap: var(--cmt-spacing-4);
+  min-inline-size: 0;
+  padding-inline-start: var(--cmt-spacing-12);
+  border-inline-start: 3px solid var(--md-sys-color-outline-variant);
+}
+
+.outcomeLegend .winMetric {
+  border-color: var(--cmt-success-accent);
+}
+
+.outcomeLegend .drawMetric {
+  border-color: var(--cmt-warning-accent);
+}
+
+.outcomeLegend .lossMetric {
+  border-color: var(--cmt-error-accent);
+}
+
+.outcomeLegend .unknownMetric {
+  border-color: var(--md-sys-color-outline);
+  border-inline-start-style: dashed;
+}
+
+.outcomeLegend dt,
+.metricCard dt {
+  color: var(--md-sys-color-on-surface-variant);
+  font: var(--md-sys-typescale-label-medium);
+}
+
+.outcomeLegend dd,
+.metricCard dd {
+  margin: 0;
+  color: var(--md-sys-color-on-surface);
+  font-variant-numeric: tabular-nums;
+}
+
+.outcomeLegend dd {
+  font: var(--md-sys-typescale-title-medium);
+}
+
+.metricGrid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--cmt-spacing-12);
+}
+
+.metricCard {
+  display: grid;
+  align-content: start;
+  gap: var(--cmt-spacing-4);
+  min-inline-size: 0;
+  padding: var(--cmt-spacing-16);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--cmt-radius-8);
+  background: var(--md-sys-color-surface-container-low);
+}
+
+.metricCard p {
+  margin: 0;
+  color: var(--md-sys-color-on-surface-variant);
+  font: var(--md-sys-typescale-body-medium);
+}
+
+.metricCard dd {
+  font-family: var(--md-sys-typescale-headline-small-font);
+  font-size: var(--md-sys-typescale-headline-small-size);
+  font-weight: var(--md-sys-typescale-headline-small-weight);
+  letter-spacing: var(--md-sys-typescale-headline-small-letter-spacing);
+  line-height: var(--md-sys-typescale-headline-small-line-height);
+  overflow-wrap: anywhere;
+}
+
+.recentGrid,
+.breakdownGrid,
+.disclosureGrid {
+  display: grid;
+  min-inline-size: 0;
+  gap: var(--cmt-spacing-12);
+}
+
+.recentGrid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.recentCard {
+  display: grid;
+  gap: var(--cmt-spacing-8);
+  padding: var(--cmt-spacing-16);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--cmt-radius-8);
+  background: var(--md-sys-color-surface-container-low);
+}
+
+.recentCard p {
+  margin: 0;
+  color: var(--md-sys-color-on-surface-variant);
+  font: var(--md-sys-typescale-body-medium);
+}
+
+.recentCard > span {
+  color: var(--md-sys-color-on-surface-variant);
+  font: var(--md-sys-typescale-label-large);
+}
+
+.recentCard > strong {
+  color: var(--md-sys-color-on-surface);
+  font: var(--md-sys-typescale-headline-small);
+  font-variant-numeric: tabular-nums;
+}
+
+.monthList,
+.breakdownList {
+  display: grid;
+  min-inline-size: 0;
+  gap: var(--cmt-spacing-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.monthList {
+  max-block-size: 28rem;
+  overflow-y: auto;
+  padding-inline-end: var(--cmt-spacing-4);
+}
+
+.monthList li {
+  display: grid;
+  grid-template-columns: minmax(8rem, 0.55fr) minmax(10rem, 1fr) minmax(3rem, auto) minmax(
+      8rem,
+      auto
+    );
+  align-items: center;
+  gap: var(--cmt-spacing-12);
+  min-inline-size: 0;
+  padding: var(--cmt-spacing-12);
+  border-block-end: 1px solid var(--md-sys-color-outline-variant);
+}
+
+.monthList li > div:first-child {
+  display: grid;
+  min-inline-size: 0;
+}
+
+.monthList strong {
+  color: var(--md-sys-color-on-surface);
+  font: var(--md-sys-typescale-label-large);
+  font-variant-numeric: tabular-nums;
+}
+
+.monthList span,
+.monthRating {
+  color: var(--md-sys-color-on-surface-variant);
+  font: var(--md-sys-typescale-label-medium);
+}
+
+.breakdownGrid,
+.disclosureGrid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.breakdownCard {
+  display: grid;
+  align-content: start;
+  gap: var(--cmt-spacing-12);
+  min-inline-size: 0;
+  padding: var(--cmt-spacing-16);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--cmt-radius-8);
+  background: var(--md-sys-color-surface-container-low);
+}
+
+.breakdownCard h3 {
+  margin: 0;
+  color: var(--md-sys-color-on-surface);
+  font: var(--md-sys-typescale-title-medium);
+}
+
+.breakdownCard p {
+  margin: 0;
+  color: var(--md-sys-color-on-surface-variant);
+  font: var(--md-sys-typescale-body-medium);
+}
+
+.breakdownList li {
+  display: grid;
+  gap: var(--cmt-spacing-8);
+  padding-block: var(--cmt-spacing-8);
+}
+
+.breakdownList li + li {
+  border-block-start: 1px solid var(--md-sys-color-outline-variant);
+}
+
+.breakdownHeader {
+  display: flex;
+  min-inline-size: 0;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--cmt-spacing-8) var(--cmt-spacing-16);
+  margin: 0;
+  color: var(--md-sys-color-on-surface);
+  font: var(--md-sys-typescale-label-large);
+}
+
+.breakdownHeader strong {
+  color: var(--md-sys-color-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.muted {
+  color: var(--md-sys-color-on-surface-variant);
+  font: var(--md-sys-typescale-body-medium);
+}
+
+@media (max-width: 72rem) {
+  .metricGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 52rem) {
+  .tabContent {
+    padding: var(--cmt-spacing-16);
+  }
+
+  .breakdownGrid,
+  .disclosureGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .scorecard {
+    grid-template-columns: 1fr;
+  }
+
+  .scoreLead {
+    border-inline-start: 0;
+    border-block-start: var(--cmt-spacing-4) solid var(--md-sys-color-primary);
+  }
+
+  .monthList li {
+    grid-template-columns: minmax(7rem, 0.6fr) minmax(8rem, 1fr) auto;
+  }
+
+  .monthRating {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 36rem) {
+  .metricGrid,
+  .recentGrid,
+  .breakdownGrid,
+  .disclosureGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .scoreLead,
+  .recordBody {
+    padding: var(--cmt-spacing-16);
+  }
+
+  .outcomeLegend {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .monthList li {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .monthList li > :nth-child(2),
+  .monthRating {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (forced-colors: active) {
+  .scorecard,
+  .scoreLead,
+  .metricCard,
+  .recentCard,
+  .breakdownCard {
+    border-color: CanvasText;
+    background: Canvas;
+    color: CanvasText;
+  }
+
+  .sectionHeading h2,
+  .scoreLead h2,
+  .scoreRate,
+  .recordTopline strong,
+  .outcomeLegend dd,
+  .metricCard dd,
+  .recentCard > strong,
+  .breakdownCard h3,
+  .breakdownHeader,
+  .breakdownHeader strong {
+    color: CanvasText;
+  }
+}

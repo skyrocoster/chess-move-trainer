@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
-import re
-from datetime import UTC, datetime
+from datetime import datetime
 from typing import Literal
 
 import chess
 
 from ..openings.keys import OpeningKeyError, opening_api_key, parse_opening_api_key
 from ..positions import CanonicalPosition, PositionValidationError, canonicalize_fen
+from ..validation import normalize_timestamp_value
 from .search_errors import GameSearchStorageError, GameSearchValidationError
 
 TrainerColor = Literal["white", "black"]
@@ -47,10 +47,6 @@ _SORTS: tuple[GameSearchSort, ...] = (
 )
 _TIME_CLASSES = ("bullet", "blitz", "rapid", "daily")
 _COVERAGE_STATES = ("none", "partial", "complete")
-_RFC3339 = re.compile(
-    r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:"
-    r"[0-9]{2}(?:\.[0-9]+)?(?:Z|[+-][0-9]{2}:[0-9]{2})\Z"
-)
 
 
 def _stored_position(fields: object) -> CanonicalPosition:
@@ -102,18 +98,10 @@ def _validate_legal_move(position_fen: str, move_uci: str) -> None:
 def _normalize_timestamp(value: str | datetime | None, field_name: str) -> str | None:
     if value is None:
         return None
-    if isinstance(value, datetime):
-        parsed = value
-    elif type(value) is str and _RFC3339.fullmatch(value):
-        try:
-            parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
-        except ValueError as error:
-            raise GameSearchValidationError(f"{field_name} must be RFC3339 UTC") from error
-    else:
-        raise GameSearchValidationError(f"{field_name} must be RFC3339 UTC")
-    if parsed.tzinfo is None or parsed.utcoffset() is None:
-        raise GameSearchValidationError(f"{field_name} must include a UTC offset")
-    return parsed.astimezone(UTC).isoformat(timespec="microseconds").replace("+00:00", "Z")
+    try:
+        return normalize_timestamp_value(value, field_name)
+    except ValueError as error:
+        raise GameSearchValidationError(str(error)) from error
 
 
 def _in_datetime_bounds(value: str | None, lower: str | None, upper: str | None) -> bool:
@@ -159,12 +147,6 @@ def _validate_optional_non_empty_text(value: object, field_name: str) -> None:
         raise GameSearchValidationError(f"{field_name} must be a non-empty string")
 
 
-def _required_text(value: object, field_name: str) -> str:
-    if not isinstance(value, str) or not value:
-        raise ValueError(f"{field_name} must be a non-empty string")
-    return value
-
-
 def _opening_api_key(eco: str, name: str) -> str:
     try:
         return opening_api_key(eco, name)
@@ -177,25 +159,3 @@ def _parse_opening_key(value: str) -> tuple[str, str]:
         return parse_opening_api_key(value)
     except OpeningKeyError as error:
         raise ValueError("opening_key must be formatted as ECO:Name") from error
-
-
-def _optional_text(value: object) -> str | None:
-    if value is None:
-        return None
-    if not isinstance(value, str):
-        raise ValueError("optional text value is malformed")
-    return value
-
-
-def _required_int(value: object, field_name: str) -> int:
-    if type(value) is not int:
-        raise ValueError(f"{field_name} must be an integer")
-    return value
-
-
-def _optional_int(value: object) -> int | None:
-    if value is None:
-        return None
-    if type(value) is not int:
-        raise ValueError("optional integer value is malformed")
-    return value

@@ -9,6 +9,7 @@ export interface FieldProps {
   description?: ReactNode;
   error?: ReactNode;
   htmlFor?: string;
+  name?: string;
   required?: boolean;
   disabled?: boolean;
   invalid?: boolean;
@@ -22,6 +23,7 @@ export function Field({
   description,
   error,
   htmlFor,
+  name,
   required = false,
   disabled = false,
   invalid = false,
@@ -32,6 +34,7 @@ export function Field({
       className={[styles.field, className].filter(Boolean).join(" ")}
       disabled={disabled}
       invalid={invalid}
+      name={name}
     >
       <BaseField.Label className={styles.fieldLabel} htmlFor={htmlFor}>
         {label}

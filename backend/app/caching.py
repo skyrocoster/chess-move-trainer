@@ -29,6 +29,7 @@ from pathlib import Path
 from cachetools import TTLCache
 from fastapi.responses import Response
 
+from chess_move_trainer.database.blunders import BlunderPolicy, BlunderQuery
 from chess_move_trainer.database.games import GameSearchQuery
 from chess_move_trainer.database.openings import OpeningCatalogueQuery
 from chess_move_trainer.database.positions import (
@@ -255,6 +256,25 @@ def games_key(database_path: Path | str, query: GameSearchQuery) -> tuple:
     )
 
 
+def trainer_blunders_key(
+    database_path: Path | str,
+    query: BlunderQuery,
+    policy: BlunderPolicy,
+) -> tuple:
+    """Canonical key for one validated trainer-blunder discovery read."""
+
+    return (
+        "trainer-blunders",
+        str(Path(database_path).resolve()),
+        query.started_at_from,
+        query.started_at_to,
+        query.trainer_color,
+        query.page,
+        query.page_size,
+        policy.minimum_expected_score_loss,
+    )
+
+
 def game_detail_key(database_path: Path | str, game_uuid: str) -> tuple:
     """Canonical key for one immutable game-detail read."""
 
@@ -455,4 +475,5 @@ __all__ = [
     "statistics_overview_key",
     "training_namespace",
     "training_requirements_key",
+    "trainer_blunders_key",
 ]

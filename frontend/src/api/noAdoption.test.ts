@@ -20,12 +20,14 @@ const ALLOWED_RUNTIME_CLIENT_IMPORTS: Record<string, ReadonlySet<string>> = {
   "features/trainer-practice/trainerPracticeApi.ts": new Set([
     "getOpenings",
     "getPositionTrainingRequirements",
+    "submitPositionTrainingAnswer",
   ]),
   "features/repertoire-builder/preferredMoveApi.ts": new Set([
     "deletePreferredMoves",
     "getPreferredMoves",
     "putPreferredMoves",
   ]),
+  "features/analysis-overview/analysisOverviewApi.ts": new Set(["getStatisticsOverview"]),
 };
 
 function collectProductionSourceFiles(dir: string): string[] {
@@ -57,7 +59,7 @@ function runtimeClientImportNames(content: string): string[] | null {
 }
 
 describe("generated client adoption guard", () => {
-  it("allows only the approved Status, Repertoire, and position-context runtime imports", () => {
+  it("allows only approved runtime imports from the central client", () => {
     const offenders: string[] = [];
     for (const filePath of collectProductionSourceFiles(srcDir)) {
       const content = readFileSync(filePath, "utf8");

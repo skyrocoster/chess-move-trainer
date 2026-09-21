@@ -12,6 +12,10 @@ const TrainerPracticePage = lazy(async () => {
   const module = await import("./features/trainer-practice/TrainerPracticePage");
   return { default: module.TrainerPracticePage };
 });
+const AnalysisPage = lazy(async () => {
+  const module = await import("./features/analysis-overview/AnalysisPage");
+  return { default: module.AnalysisPage };
+});
 
 export default function App() {
   return (
@@ -31,6 +35,14 @@ export default function App() {
           element={
             <Suspense fallback={<p role="status">Loading Trainer Practice...</p>}>
               <TrainerPracticePage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/analysis"
+          element={
+            <Suspense fallback={<p role="status">Loading Analysis...</p>}>
+              <AnalysisPage />
             </Suspense>
           }
         />

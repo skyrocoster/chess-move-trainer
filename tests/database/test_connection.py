@@ -11,6 +11,7 @@ from chess_move_trainer.database import (
     probe_connection,
 )
 from chess_move_trainer.database.connection import (
+    _READ_ONLY_MMAP_SIZE_BYTES,
     _create_sqlite_connection,
     _open_connection,
     _open_existing_connection,
@@ -48,6 +49,24 @@ def test_read_only_access_never_creates_a_missing_target(tmp_path: Path) -> None
     with pytest.raises(FileNotFoundError):
         probe_connection(missing_path, mode="read-only")
     assert not missing_path.exists()
+
+
+def test_read_only_access_enables_a_bounded_memory_map(tmp_path: Path) -> None:
+    database_path = tmp_path / "mapped.db"
+    with sqlite3.connect(database_path) as connection:
+        connection.execute("CREATE TABLE sample (id INTEGER PRIMARY KEY)")
+
+    raw_connection = _create_sqlite_connection(
+        database_path,
+        "read-only",
+        DEFAULT_LOCK_TIMEOUT_SECONDS,
+    )
+    try:
+        assert (
+            raw_connection.execute("PRAGMA mmap_size").fetchone()[0] == _READ_ONLY_MMAP_SIZE_BYTES
+        )
+    finally:
+        raw_connection.close()
 
 
 def test_parent_path_must_exist_and_be_a_directory(tmp_path: Path) -> None:

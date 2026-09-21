@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { getPositionTrainingRequirements } from "./client";
+import { getPositionTrainingRequirements, getTrainerBlunders } from "./client";
 import * as generatedSdk from "./generated/sdk.gen";
 
 const dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -30,8 +30,11 @@ describe("generated SDK surface", () => {
       "submitPositionTrainingAnswer",
       "getOpenings",
       "getOpeningByKey",
+      "getStatisticsOverview",
+      "getTrainerBlunders",
     ]);
     expect(getPositionTrainingRequirements).toBe(generatedSdk.getPositionTrainingRequirements);
+    expect(getTrainerBlunders).toBe(generatedSdk.getTrainerBlunders);
   });
 
   it("checked-in contract contains only the approved clean operations", () => {
@@ -55,6 +58,8 @@ describe("generated SDK surface", () => {
       "/api/positions/training-requirements/answers",
       "/api/openings",
       "/api/openings/{opening_key}",
+      "/api/statistics/overview",
+      "/api/trainer/blunders",
     ]);
     expect(Object.keys(contract.paths["/api/analysis"])).toEqual(["get"]);
     expect(contract.paths["/api/analysis"].get?.operationId).toBe("getAnalysis");
@@ -93,30 +98,89 @@ describe("generated SDK surface", () => {
     expect(contract.paths["/api/preferred-moves"].get?.operationId).toBe("getPreferredMoves");
     expect(contract.paths["/api/preferred-moves"].put?.operationId).toBe("putPreferredMoves");
     expect(contract.paths["/api/preferred-moves"].delete?.operationId).toBe("deletePreferredMoves");
+    expect(Object.keys(contract.paths["/api/statistics/overview"])).toEqual(["get"]);
+    expect(contract.paths["/api/statistics/overview"].get?.operationId).toBe(
+      "getStatisticsOverview",
+    );
+    expect(Object.keys(contract.paths["/api/statistics/overview"].get?.responses ?? {})).toEqual([
+      "200",
+      "422",
+      "500",
+      "503",
+    ]);
+    expect(
+      contract.paths["/api/statistics/overview"].get?.responses?.["200"]?.content?.[
+        "application/json"
+      ]?.schema,
+    ).toEqual({ $ref: "#/components/schemas/StatisticsOverviewResponse" });
+    for (const status of ["422", "500", "503"]) {
+      expect(
+        contract.paths["/api/statistics/overview"].get?.responses?.[status]?.content?.[
+          "application/json"
+        ]?.schema,
+      ).toEqual({ $ref: "#/components/schemas/StatisticsErrorResponse" });
+    }
+    expect(Object.keys(contract.paths["/api/trainer/blunders"])).toEqual(["get"]);
+    expect(contract.paths["/api/trainer/blunders"].get?.operationId).toBe("getTrainerBlunders");
+    expect(Object.keys(contract.paths["/api/trainer/blunders"].get?.responses ?? {})).toEqual([
+      "200",
+      "422",
+      "500",
+      "503",
+    ]);
+    expect(
+      contract.paths["/api/trainer/blunders"].get?.responses?.["200"]?.content?.["application/json"]
+        ?.schema,
+    ).toEqual({ $ref: "#/components/schemas/TrainerBlundersResponse" });
+    for (const status of ["422", "500", "503"]) {
+      expect(
+        contract.paths["/api/trainer/blunders"].get?.responses?.[status]?.content?.[
+          "application/json"
+        ]?.schema,
+      ).toEqual({ $ref: "#/components/schemas/BlunderErrorResponse" });
+    }
     expect(Object.keys(contract.components.schemas)).toEqual([
+      "ActivityPeriodResponse",
+      "ActivityStatisticsResponse",
       "AnalysisObservationErrorResponse",
       "AnalysisObservationLineResponse",
       "AnalysisObservationResponse",
       "AnalysisObservationResultResponse",
       "AnalysisRequestBody",
       "AnalysisRequestErrorResponse",
+      "AnalysisStatisticsResponse",
+      "BlunderCoverageResponse",
+      "BlunderErrorResponse",
+      "BlunderPolicyResponse",
+      "BlunderTimeframeResponse",
+      "CategoryPerformanceResponse",
+      "DataQualityStatisticsResponse",
       "GameCoverageResponse",
       "GameDetailOccurrenceResponse",
       "GameDetailResponse",
+      "GameStatisticsResponse",
       "GameSummaryResponse",
       "GamesErrorResponse",
       "GamesResponse",
       "HTTPValidationError",
       "HealthResponse",
+      "HourActivityResponse",
       "MovePreferenceResponse",
       "MutationMovePreferenceRequest",
       "MutationNoPreferenceRequest",
       "NoPreferenceResponse",
+      "NumericSummaryResponse",
       "OpeningCatalogueErrorResponse",
       "OpeningCatalogueItemResponse",
       "OpeningCatalogueResponse",
       "OpeningDetailErrorResponse",
+      "OpeningPerformanceResponse",
+      "OpeningStatisticsResponse",
       "OpeningSummaryResponse",
+      "OpponentPerformanceResponse",
+      "OpponentStatisticsResponse",
+      "OutcomeRecordResponse",
+      "PlyBucketResponse",
       "PositionInsightAnalysisResponse",
       "PositionInsightErrorResponse",
       "PositionInsightExperienceResponse",
@@ -127,6 +191,7 @@ describe("generated SDK surface", () => {
       "PositionInsightResponse",
       "PositionInsightResultResponse",
       "PositionInsightTerminalTotalsResponse",
+      "PositionStatisticsResponse",
       "PreferredMovesErrorResponse",
       "PreferredMovesMutationRequest",
       "PreferredMovesMutationResponse",
@@ -135,14 +200,26 @@ describe("generated SDK surface", () => {
       "PreferredMovesRemovalResponse",
       "PreferredMovesResponse",
       "PreferredMovesSegmentResponse",
+      "RatingProgressionResponse",
+      "RecentFormWindowResponse",
+      "RecurringPositionResponse",
+      "RepertoireStatisticsResponse",
+      "StatisticsErrorResponse",
+      "StatisticsFiltersResponse",
+      "StatisticsOverviewResponse",
+      "StreakStatisticsResponse",
+      "TrainerBlunderItemResponse",
+      "TrainerBlundersResponse",
       "TrainingAnswerRequest",
       "TrainingAnswerResponse",
+      "TrainingBalanceStatisticsResponse",
       "TrainingRequirementErrorResponse",
       "TrainingRequirementItemResponse",
       "TrainingRequirementPolicyResponse",
       "TrainingRequirementResponse",
       "UnconfiguredPreferenceResponse",
       "ValidationError",
+      "WeekdayActivityResponse",
     ]);
   });
 });

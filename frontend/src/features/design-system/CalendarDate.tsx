@@ -17,6 +17,12 @@ export interface CalendarDateProps {
   value: CalendarDateValue;
   onChange: (value: CalendarDateValue) => void;
   label?: string;
+  /** Marks the trigger as invalid without owning form-level error text. */
+  invalid?: boolean;
+  /** Links the trigger to external descriptive or error text. */
+  describedBy?: string;
+  /** Stable id for the trigger so external labels or errors can reference it. */
+  triggerId?: string;
 }
 
 const calendarClassNames = {
@@ -46,7 +52,14 @@ const calendarClassNames = {
   today: styles.today,
 } satisfies Partial<ClassNames>;
 
-export function CalendarDate({ value, onChange, label = "Date" }: CalendarDateProps) {
+export function CalendarDate({
+  value,
+  onChange,
+  label = "Date",
+  invalid = false,
+  describedBy,
+  triggerId,
+}: CalendarDateProps) {
   const [open, setOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const now = new Date();
@@ -67,7 +80,14 @@ export function CalendarDate({ value, onChange, label = "Date" }: CalendarDatePr
 
   return (
     <Popover.Root open={open} modal onOpenChange={setOpen}>
-      <Popover.Trigger ref={triggerRef} className={styles.trigger} aria-label={accessibleLabel}>
+      <Popover.Trigger
+        ref={triggerRef}
+        id={triggerId}
+        className={styles.trigger}
+        aria-label={accessibleLabel}
+        aria-invalid={invalid ? true : undefined}
+        aria-describedby={describedBy}
+      >
         <span aria-hidden="true">{displayValue}</span>
       </Popover.Trigger>
       <Popover.Portal>

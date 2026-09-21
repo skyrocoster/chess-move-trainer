@@ -13,6 +13,8 @@ import {
   getPositionInsight,
   getPositionTrainingRequirements,
   getPreferredMoves,
+  getStatisticsOverview,
+  getTrainerBlunders,
   type Options,
 } from "../sdk.gen";
 import type {
@@ -42,6 +44,12 @@ import type {
   GetPreferredMovesData,
   GetPreferredMovesError,
   GetPreferredMovesResponse,
+  GetStatisticsOverviewData,
+  GetStatisticsOverviewError,
+  GetStatisticsOverviewResponse,
+  GetTrainerBlundersData,
+  GetTrainerBlundersError,
+  GetTrainerBlundersResponse,
 } from "../types.gen";
 
 export type QueryKey<TOptions extends Options> = [
@@ -304,4 +312,54 @@ export const getOpeningByKeyOptions = (options: Options<GetOpeningByKeyData>) =>
       return data;
     },
     queryKey: getOpeningByKeyQueryKey(options),
+  });
+
+export const getStatisticsOverviewQueryKey = (options: Options<GetStatisticsOverviewData>) =>
+  createQueryKey("getStatisticsOverview", options);
+
+/**
+ * Get Statistics Overview
+ */
+export const getStatisticsOverviewOptions = (options: Options<GetStatisticsOverviewData>) =>
+  queryOptions<
+    GetStatisticsOverviewResponse,
+    GetStatisticsOverviewError,
+    GetStatisticsOverviewResponse,
+    ReturnType<typeof getStatisticsOverviewQueryKey>
+  >({
+    queryFn: async ({ queryKey, signal }) => {
+      const { data } = await getStatisticsOverview({
+        ...options,
+        ...queryKey[0],
+        signal,
+        throwOnError: true,
+      });
+      return data;
+    },
+    queryKey: getStatisticsOverviewQueryKey(options),
+  });
+
+export const getTrainerBlundersQueryKey = (options: Options<GetTrainerBlundersData>) =>
+  createQueryKey("getTrainerBlunders", options);
+
+/**
+ * Get Trainer Blunders
+ */
+export const getTrainerBlundersOptions = (options: Options<GetTrainerBlundersData>) =>
+  queryOptions<
+    GetTrainerBlundersResponse,
+    GetTrainerBlundersError,
+    GetTrainerBlundersResponse,
+    ReturnType<typeof getTrainerBlundersQueryKey>
+  >({
+    queryFn: async ({ queryKey, signal }) => {
+      const { data } = await getTrainerBlunders({
+        ...options,
+        ...queryKey[0],
+        signal,
+        throwOnError: true,
+      });
+      return data;
+    },
+    queryKey: getTrainerBlundersQueryKey(options),
   });

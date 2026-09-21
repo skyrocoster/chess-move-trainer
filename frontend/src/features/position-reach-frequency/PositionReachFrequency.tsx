@@ -1,6 +1,6 @@
-import { Meter } from "@base-ui/react/meter";
 import { useId } from "react";
 
+import { ProgressMeter } from "../design-system/ProgressMeter";
 import type { ChessSide } from "../chess/chessPrimitives";
 import type { PositionContextResponse } from "../position-context/positionContextApi";
 import { derivePositionReachFrequencyModel } from "./positionReachFrequencyModel";
@@ -30,24 +30,11 @@ export function PositionReachFrequency({ context, selectedColor }: PositionReach
             <span className={styles.fraction}>{model.fractionLabel}</span>
             <span className={styles.percentage}>{model.percentageLabel}</span>
           </div>
-          <Meter.Root
-            className={styles.meter}
-            min={0}
-            max={100}
+          <ProgressMeter
             value={model.meterValue}
-            aria-valuetext={model.accessibleValue}
-          >
-            <Meter.Label className={styles.visuallyHidden}>
-              Position reach frequency as {model.colorLabel}
-            </Meter.Label>
-            <Meter.Track className={styles.track}>
-              <Meter.Indicator
-                className={styles.indicator}
-                data-testid="position-reach-indicator"
-                style={{ inlineSize: `${model.meterValue}%` }}
-              />
-            </Meter.Track>
-          </Meter.Root>
+            label={`Position reach frequency as ${model.colorLabel}`}
+            valueText={model.accessibleValue}
+          />
           <p className={styles.detail}>{model.message}</p>
         </div>
       ) : (

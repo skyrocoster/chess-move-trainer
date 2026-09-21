@@ -20,8 +20,26 @@ export const Docs: Story = {
       intro="Data displays (charts, calendars, meters, chess-specific views) plus the larger production compositions that show how shared components are currently assembled inside real features."
       sections={[
         {
+          heading: "Foundational content primitives",
+          body: "Avatar supplies an image fallback, ScrollArea adds custom scrollbars around a native scroll viewport, and Separator provides an accessible horizontal or vertical boundary. These are deliberately content- and layout-neutral so features can set their own dimensions.",
+          links: [
+            {
+              label: "Content Primitives — Avatar",
+              storyId: "production-design-system-base-ui-content-primitives--avatar-examples",
+            },
+            {
+              label: "Content Primitives — Scroll Area",
+              storyId: "production-design-system-base-ui-content-primitives--scroll-area-example",
+            },
+            {
+              label: "Content Primitives — Separator",
+              storyId: "production-design-system-base-ui-content-primitives--separator-example",
+            },
+          ],
+        },
+        {
           heading: "Charts and meters",
-          body: "MoveResponseDistribution is a treegame-sector chart feature with a pull-to-parent tag; the distribution overview story set covers loading, empty (NoGames, MatchingGamesWithoutNextMoves), retry, density, keyboard, and constrained-width states. The evaluation bar is the meter-style display.",
+          body: "MoveResponseDistribution is a treegame-sector chart feature with a pull-to-parent tag; the distribution overview story set covers loading, empty (NoGames, MatchingGamesWithoutNextMoves), retry, density, keyboard, and constrained-width states. The evaluation bar is the meter-style display. OutcomeTrack shows win/draw/loss shares with an optional unknown segment, and ProgressMeter is the shared determinate progress display with an unavailable state.",
           links: [
             {
               label: "Move Response Distribution Overview — Available With Tail",
@@ -44,6 +62,18 @@ export const Docs: Story = {
             {
               label: "Position Reach Frequency — Positive Black",
               storyId: "production-application-position-reach-frequency--positive-black",
+            },
+            {
+              label: "Outcome Track — With Unknown Segment",
+              storyId: "production-design-system-components-outcome-track--with-unknown",
+            },
+            {
+              label: "Progress Meter — Determinate",
+              storyId: "production-design-system-components-progress-meter--determinate",
+            },
+            {
+              label: "Progress Meter — Unavailable",
+              storyId: "production-design-system-components-progress-meter--unavailable",
             },
           ],
         },

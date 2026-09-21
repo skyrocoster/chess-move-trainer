@@ -1,4 +1,5 @@
 import { Button } from "../design-system/Button";
+import { OutcomeTrack } from "../design-system/OutcomeTrack";
 import styles from "./AnalysisPanel.module.css";
 
 export type AnalysisPanelWdlValue = {
@@ -81,27 +82,15 @@ function WdlTrack({
   label?: string;
 }) {
   return (
-    <div
-      className={compact ? styles.miniTrack : styles.wdlTrack}
-      role="img"
-      aria-label={label ?? wdl.accessibleLabel}
-    >
-      <span
-        className={styles.wdlWin}
-        style={{ inlineSize: `${wdl.wins.percentage}%` }}
-        aria-hidden="true"
-      />
-      <span
-        className={styles.wdlDraw}
-        style={{ inlineSize: `${wdl.draws.percentage}%` }}
-        aria-hidden="true"
-      />
-      <span
-        className={styles.wdlLoss}
-        style={{ inlineSize: `${wdl.losses.percentage}%` }}
-        aria-hidden="true"
-      />
-    </div>
+    <OutcomeTrack
+      compact={compact}
+      values={{
+        wins: wdl.wins.percentage,
+        draws: wdl.draws.percentage,
+        losses: wdl.losses.percentage,
+      }}
+      accessibleLabel={label ?? wdl.accessibleLabel}
+    />
   );
 }
 

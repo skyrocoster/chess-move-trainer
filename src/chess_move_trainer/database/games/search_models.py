@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import re
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Literal
@@ -55,10 +54,6 @@ _SORTS: tuple[GameSearchSort, ...] = (
 )
 _TIME_CLASSES = ("bullet", "blitz", "rapid", "daily")
 _COVERAGE_STATES = ("none", "partial", "complete")
-_RFC3339 = re.compile(
-    r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:"
-    r"[0-9]{2}(?:\.[0-9]+)?(?:Z|[+-][0-9]{2}:[0-9]{2})\Z"
-)
 
 
 @dataclass(frozen=True, slots=True)

@@ -21,6 +21,11 @@
   background: var(--md-sys-color-surface-container-high);
 }
 
+.trigger[aria-invalid="true"] {
+  border-color: var(--cmt-error-accent);
+  border-width: 2px;
+}
+
 .trigger:focus-visible,
 .navButton:focus-visible,
 .dayButton:focus-visible,

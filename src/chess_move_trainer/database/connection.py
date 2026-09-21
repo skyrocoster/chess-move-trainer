@@ -15,6 +15,7 @@ from sqlalchemy.pool import NullPool
 
 DEFAULT_LOCK_TIMEOUT_SECONDS: Final[float] = 5.0
 _MAX_SQLITE_TIMEOUT_MS: Final[int] = 2_147_483_647
+_READ_ONLY_MMAP_SIZE_BYTES: Final[int] = 256 * 1024 * 1024
 AccessMode = Literal["read-write", "read-only"]
 
 
@@ -125,14 +126,18 @@ def _create_sqlite_connection(
         connection = sqlite3.connect(str(database_path), timeout=lock_timeout)
 
     try:
-        _configure_sqlite_connection(connection, lock_timeout)
+        _configure_sqlite_connection(connection, lock_timeout, mode)
     except BaseException:
         connection.close()
         raise
     return connection
 
 
-def _configure_sqlite_connection(connection: sqlite3.Connection, lock_timeout: float) -> None:
+def _configure_sqlite_connection(
+    connection: sqlite3.Connection,
+    lock_timeout: float,
+    mode: AccessMode,
+) -> None:
     timeout_ms = min(
         _MAX_SQLITE_TIMEOUT_MS,
         max(1, int(lock_timeout * 1000)),
@@ -141,6 +146,11 @@ def _configure_sqlite_connection(connection: sqlite3.Connection, lock_timeout: f
     if connection.execute("PRAGMA foreign_keys").fetchone()[0] != 1:
         raise RuntimeError("SQLite foreign-key enforcement could not be enabled.")
     connection.execute(f"PRAGMA busy_timeout = {timeout_ms}")
+    if mode == "read-only":
+        # The rebuilt database is bind-mounted into Docker on Windows. Mapping
+        # read-only pages avoids prohibitively slow random file reads for the
+        # statistics aggregates without changing database contents.
+        connection.execute(f"PRAGMA mmap_size = {_READ_ONLY_MMAP_SIZE_BYTES}")
 
 
 def _validate_database_path(database_path: str | Path, mode: AccessMode) -> Path:

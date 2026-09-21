@@ -12,6 +12,8 @@ from sqlalchemy import text
 from ..connection import DEFAULT_LOCK_TIMEOUT_SECONDS, _open_connection
 from ..positions import canonicalize_fen
 from ..schema import SchemaIncompatibleError, _assert_compatible_schema
+from ..validation import require_int as _required_int
+from ..validation import require_text as _required_text
 from .search_errors import (
     GameSearchError,
     GameSearchSchemaError,
@@ -32,8 +34,6 @@ from .search_validation import (
     _in_datetime_bounds,
     _opening_api_key,
     _parse_opening_key,
-    _required_int,
-    _required_text,
 )
 
 

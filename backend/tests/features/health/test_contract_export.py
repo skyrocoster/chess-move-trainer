@@ -23,6 +23,7 @@ EXPECTED_OPERATION_IDS: dict[str, dict[str, str]] = {
         "delete": "deletePreferredMoves",
     },
     "/api/statistics/overview": {"get": "getStatisticsOverview"},
+    "/api/trainer/blunders": {"get": "getTrainerBlunders"},
 }
 
 

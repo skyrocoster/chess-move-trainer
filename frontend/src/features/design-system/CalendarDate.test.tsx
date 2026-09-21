@@ -129,6 +129,27 @@ describe("CalendarDate", () => {
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
+  it("passes validation attributes through to the trigger", () => {
+    render(
+      <>
+        <CalendarDate
+          value={JANUARY_2025}
+          onChange={() => undefined}
+          label="Games from"
+          invalid
+          describedBy="filters-error"
+          triggerId="games-from-trigger"
+        />
+        <p id="filters-error">Games from must be on or before Games through.</p>
+      </>,
+    );
+
+    const trigger = screen.getByRole("button", { name: "Games from: 2025-01-15" });
+    expect(trigger).toHaveAttribute("id", "games-from-trigger");
+    expect(trigger).toHaveAttribute("aria-invalid", "true");
+    expect(trigger).toHaveAttribute("aria-describedby", "filters-error");
+  });
+
   it("passes a focused axe check for the Popover dialog", async () => {
     const user = userEvent.setup();
     render(<Harness initialValue={JANUARY_2025} />);

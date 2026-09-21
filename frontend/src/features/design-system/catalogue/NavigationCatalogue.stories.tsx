@@ -20,6 +20,30 @@ export const Docs: Story = {
       intro="The components currently used to switch visible content or navigate hierarchical data. Coverage is provided by the existing Production stories; each link notes the states it shows."
       sections={[
         {
+          heading: "Menus and primary navigation",
+          body: "Menu, ContextMenu, and Menubar share one action/link definition, while NavigationMenu handles direct links and popup link groups. All four keep keyboard and focus behavior in Base UI and leave destinations and commands caller-owned.",
+          links: [
+            {
+              label: "Menus and Navigation — Menu",
+              storyId: "production-design-system-base-ui-menus-and-navigation--menu-example",
+            },
+            {
+              label: "Menus and Navigation — Context Menu",
+              storyId:
+                "production-design-system-base-ui-menus-and-navigation--context-menu-example",
+            },
+            {
+              label: "Menus and Navigation — Menubar",
+              storyId: "production-design-system-base-ui-menus-and-navigation--menubar-example",
+            },
+            {
+              label: "Menus and Navigation — Navigation Menu",
+              storyId:
+                "production-design-system-base-ui-menus-and-navigation--navigation-menu-example",
+            },
+          ],
+        },
+        {
           heading: "Tabs",
           body: "Token-driven tabs built on Base UI's Tabs primitive. Stories cover the default presentation, the disabled state, controlled usage, and overflow handling when the tab strip is too long.",
           links: [
@@ -62,6 +86,16 @@ export const Docs: Story = {
           ],
         },
         {
+          heading: "Accordion",
+          body: "Data-driven multi-item disclosure built on Base UI Accordion. Consumers provide stable values, summaries, and arbitrary panel content, and may opt into controlled or multi-panel state.",
+          links: [
+            {
+              label: "Content Primitives — Accordion",
+              storyId: "production-design-system-base-ui-content-primitives--accordion-example",
+            },
+          ],
+        },
+        {
           heading: "Line family (tree controls)",
           body: "The line-library feature covers repository browsing: LineLibrary assembles filters plus the tree with loading, empty, and error states; the tree supports selection; the filters exist in explicit-apply and immediate-apply modes with a disabled state. The opening line library production story shows the same family in the full application context, including search, ECO range filter, and stale refresh.",
           links: [
@@ -97,10 +131,6 @@ export const Docs: Story = {
               note: "interactive production context",
             },
           ],
-        },
-        {
-          heading: "Not catalogued here",
-          body: "There is no shared sidebar, menu, or table-of-contents navigation component in the design system. Application-level navigation exists only inside AppShell (see Surfaces and Layout).",
         },
       ]}
     />

@@ -5,6 +5,56 @@ export type ClientOptions = {
 };
 
 /**
+ * ActivityPeriodResponse
+ */
+export type ActivityPeriodResponse = {
+  /**
+   * Period
+   */
+  period: string;
+  record: OutcomeRecordResponse;
+  /**
+   * Average Trainer Rating
+   */
+  average_trainer_rating: number | number | null;
+};
+
+/**
+ * ActivityStatisticsResponse
+ */
+export type ActivityStatisticsResponse = {
+  /**
+   * First Game At Utc
+   */
+  first_game_at_utc: string | null;
+  /**
+   * Last Game At Utc
+   */
+  last_game_at_utc: string | null;
+  /**
+   * Dated Game Count
+   */
+  dated_game_count: number;
+  /**
+   * By Month
+   */
+  by_month: Array<ActivityPeriodResponse>;
+  /**
+   * By Weekday Utc
+   */
+  by_weekday_utc: Array<WeekdayActivityResponse>;
+  /**
+   * By Hour Utc
+   */
+  by_hour_utc: Array<HourActivityResponse>;
+  /**
+   * Recent Form
+   */
+  recent_form: Array<RecentFormWindowResponse>;
+  streaks: StreakStatisticsResponse;
+};
+
+/**
  * AnalysisObservationErrorResponse
  */
 export type AnalysisObservationErrorResponse = {
@@ -140,6 +190,209 @@ export type AnalysisRequestErrorResponse = {
 };
 
 /**
+ * AnalysisStatisticsResponse
+ */
+export type AnalysisStatisticsResponse = {
+  /**
+   * Scoped Position Count
+   */
+  scoped_position_count: number;
+  /**
+   * Ready Position Count
+   */
+  ready_position_count: number;
+  /**
+   * Browser Quality Count
+   */
+  browser_quality_count: number;
+  /**
+   * Tool Quality Count
+   */
+  tool_quality_count: number;
+  /**
+   * Terminal Result Count
+   */
+  terminal_result_count: number;
+  /**
+   * Queued Position Count
+   */
+  queued_position_count: number;
+  /**
+   * Running Position Count
+   */
+  running_position_count: number;
+  /**
+   * Not Requested Position Count
+   */
+  not_requested_position_count: number;
+  /**
+   * Line Count
+   */
+  line_count: number;
+  /**
+   * Centipawn Line Count
+   */
+  centipawn_line_count: number;
+  /**
+   * Mate Line Count
+   */
+  mate_line_count: number;
+  /**
+   * Multi Pv Result Count
+   */
+  multi_pv_result_count: number;
+  /**
+   * Average Depth
+   */
+  average_depth: number | number | null;
+  /**
+   * Ready Coverage Rate
+   */
+  ready_coverage_rate: number | number | null;
+};
+
+/**
+ * BlunderCoverageResponse
+ */
+export type BlunderCoverageResponse = {
+  /**
+   * Examined Game Count
+   */
+  examined_game_count: number;
+  /**
+   * Excluded Game Count
+   */
+  excluded_game_count: number;
+  /**
+   * In Scope Game Count
+   */
+  in_scope_game_count: number;
+  /**
+   * Trainer Move Count
+   */
+  trainer_move_count: number;
+  /**
+   * Comparable Move Count
+   */
+  comparable_move_count: number;
+  /**
+   * Skipped Missing Analysis Count
+   */
+  skipped_missing_analysis_count: number;
+};
+
+/**
+ * BlunderErrorResponse
+ */
+export type BlunderErrorResponse = {
+  /**
+   * Code
+   */
+  code: "invalid_filter" | "trainer_blunders_unavailable" | "unexpected_failure";
+  /**
+   * Message
+   */
+  message: string;
+};
+
+/**
+ * BlunderPolicyResponse
+ */
+export type BlunderPolicyResponse = {
+  /**
+   * Minimum Expected Score Loss
+   */
+  minimum_expected_score_loss: number;
+  /**
+   * Evaluation Basis
+   */
+  evaluation_basis: "wdl_expected_score";
+  /**
+   * Score Perspective
+   */
+  score_perspective: "trainer";
+};
+
+/**
+ * BlunderTimeframeResponse
+ */
+export type BlunderTimeframeResponse = {
+  /**
+   * Started At From
+   */
+  started_at_from: string;
+  /**
+   * Started At To
+   */
+  started_at_to: string;
+};
+
+/**
+ * CategoryPerformanceResponse
+ */
+export type CategoryPerformanceResponse = {
+  /**
+   * Category
+   */
+  category: string;
+  record: OutcomeRecordResponse;
+};
+
+/**
+ * DataQualityStatisticsResponse
+ */
+export type DataQualityStatisticsResponse = {
+  /**
+   * Missing Outcome Count
+   */
+  missing_outcome_count: number;
+  /**
+   * Missing Trainer Rating Count
+   */
+  missing_trainer_rating_count: number;
+  /**
+   * Missing Opponent Rating Count
+   */
+  missing_opponent_rating_count: number;
+  /**
+   * Missing Started At Count
+   */
+  missing_started_at_count: number;
+  /**
+   * Invalid Started At Count
+   */
+  invalid_started_at_count: number;
+  /**
+   * Missing Ended At Count
+   */
+  missing_ended_at_count: number;
+  /**
+   * Invalid Ended At Count
+   */
+  invalid_ended_at_count: number;
+  /**
+   * Negative Duration Count
+   */
+  negative_duration_count: number;
+  /**
+   * Missing Time Class Count
+   */
+  missing_time_class_count: number;
+  /**
+   * Missing Time Control Count
+   */
+  missing_time_control_count: number;
+  /**
+   * Missing Termination Reason Count
+   */
+  missing_termination_reason_count: number;
+  /**
+   * Missing Opponent Count
+   */
+  missing_opponent_count: number;
+};
+
+/**
  * GameCoverageResponse
  */
 export type GameCoverageResponse = {
@@ -247,6 +500,43 @@ export type GameDetailResponse = {
    * Occurrences
    */
   occurrences: Array<GameDetailOccurrenceResponse>;
+};
+
+/**
+ * GameStatisticsResponse
+ */
+export type GameStatisticsResponse = {
+  record: OutcomeRecordResponse;
+  /**
+   * By Trainer Color
+   */
+  by_trainer_color: Array<CategoryPerformanceResponse>;
+  /**
+   * By Time Class
+   */
+  by_time_class: Array<CategoryPerformanceResponse>;
+  /**
+   * By Time Control
+   */
+  by_time_control: Array<CategoryPerformanceResponse>;
+  /**
+   * By Termination Reason
+   */
+  by_termination_reason: Array<CategoryPerformanceResponse>;
+  /**
+   * By Rating Difference
+   */
+  by_rating_difference: Array<CategoryPerformanceResponse>;
+  /**
+   * By Length Plies
+   */
+  by_length_plies: Array<CategoryPerformanceResponse>;
+  trainer_rating: NumericSummaryResponse;
+  opponent_rating: NumericSummaryResponse;
+  rating_difference: NumericSummaryResponse;
+  length_plies: NumericSummaryResponse;
+  duration_seconds: NumericSummaryResponse;
+  trainer_rating_progression: RatingProgressionResponse;
 };
 
 /**
@@ -382,6 +672,17 @@ export type HealthResponse = {
 };
 
 /**
+ * HourActivityResponse
+ */
+export type HourActivityResponse = {
+  /**
+   * Hour Utc
+   */
+  hour_utc: number;
+  record: OutcomeRecordResponse;
+};
+
+/**
  * MovePreferenceResponse
  */
 export type MovePreferenceResponse = {
@@ -431,6 +732,32 @@ export type NoPreferenceResponse = {
    * Kind
    */
   kind: "no_preference";
+};
+
+/**
+ * NumericSummaryResponse
+ */
+export type NumericSummaryResponse = {
+  /**
+   * Count
+   */
+  count: number;
+  /**
+   * Minimum
+   */
+  minimum: number | number | null;
+  /**
+   * Maximum
+   */
+  maximum: number | number | null;
+  /**
+   * Average
+   */
+  average: number | number | null;
+  /**
+   * Median
+   */
+  median: number | number | null;
 };
 
 /**
@@ -522,6 +849,63 @@ export type OpeningDetailErrorResponse = {
 };
 
 /**
+ * OpeningPerformanceResponse
+ */
+export type OpeningPerformanceResponse = {
+  /**
+   * Key
+   */
+  key: string;
+  /**
+   * Eco
+   */
+  eco: string;
+  /**
+   * Name
+   */
+  name: string;
+  /**
+   * Deepest Ply
+   */
+  deepest_ply: number;
+  record: OutcomeRecordResponse;
+  /**
+   * Average Trainer Rating
+   */
+  average_trainer_rating: number | number | null;
+  /**
+   * Average Length Plies
+   */
+  average_length_plies: number | number | null;
+};
+
+/**
+ * OpeningStatisticsResponse
+ */
+export type OpeningStatisticsResponse = {
+  /**
+   * Classified Game Count
+   */
+  classified_game_count: number;
+  /**
+   * Unclassified Game Count
+   */
+  unclassified_game_count: number;
+  /**
+   * Distinct Opening Count
+   */
+  distinct_opening_count: number;
+  /**
+   * Returned Opening Count
+   */
+  returned_opening_count: number;
+  /**
+   * Openings
+   */
+  openings: Array<OpeningPerformanceResponse>;
+};
+
+/**
  * OpeningSummaryResponse
  */
 export type OpeningSummaryResponse = {
@@ -541,6 +925,119 @@ export type OpeningSummaryResponse = {
    * Ply
    */
   ply: number;
+};
+
+/**
+ * OpponentPerformanceResponse
+ */
+export type OpponentPerformanceResponse = {
+  /**
+   * Opponent Chesscom Uuid
+   */
+  opponent_chesscom_uuid: string;
+  record: OutcomeRecordResponse;
+  /**
+   * Average Opponent Rating
+   */
+  average_opponent_rating: number | number | null;
+  /**
+   * Average Rating Difference
+   */
+  average_rating_difference: number | number | null;
+};
+
+/**
+ * OpponentStatisticsResponse
+ */
+export type OpponentStatisticsResponse = {
+  /**
+   * Known Opponent Game Count
+   */
+  known_opponent_game_count: number;
+  /**
+   * Unknown Opponent Game Count
+   */
+  unknown_opponent_game_count: number;
+  /**
+   * Distinct Known Opponent Count
+   */
+  distinct_known_opponent_count: number;
+  /**
+   * Repeat Opponent Count
+   */
+  repeat_opponent_count: number;
+  /**
+   * Returned Opponent Count
+   */
+  returned_opponent_count: number;
+  /**
+   * Opponents
+   */
+  opponents: Array<OpponentPerformanceResponse>;
+};
+
+/**
+ * OutcomeRecordResponse
+ */
+export type OutcomeRecordResponse = {
+  /**
+   * Total Count
+   */
+  total_count: number;
+  /**
+   * Known Outcome Count
+   */
+  known_outcome_count: number;
+  /**
+   * Win Count
+   */
+  win_count: number;
+  /**
+   * Loss Count
+   */
+  loss_count: number;
+  /**
+   * Draw Count
+   */
+  draw_count: number;
+  /**
+   * Unknown Count
+   */
+  unknown_count: number;
+  /**
+   * Score Rate
+   */
+  score_rate: number | number | null;
+};
+
+/**
+ * PlyBucketResponse
+ */
+export type PlyBucketResponse = {
+  /**
+   * Label
+   */
+  label: string;
+  /**
+   * Minimum Ply
+   */
+  minimum_ply: number;
+  /**
+   * Maximum Ply
+   */
+  maximum_ply: number | null;
+  /**
+   * Occurrence Count
+   */
+  occurrence_count: number;
+  /**
+   * Distinct Game Count
+   */
+  distinct_game_count: number;
+  /**
+   * Distinct Position Count
+   */
+  distinct_position_count: number;
 };
 
 /**
@@ -782,6 +1279,64 @@ export type PositionInsightTerminalTotalsResponse = {
 };
 
 /**
+ * PositionStatisticsResponse
+ */
+export type PositionStatisticsResponse = {
+  /**
+   * Database Position Count
+   */
+  database_position_count: number;
+  /**
+   * Observed Position Count
+   */
+  observed_position_count: number;
+  /**
+   * Distinct Game Count
+   */
+  distinct_game_count: number;
+  /**
+   * Occurrence Count
+   */
+  occurrence_count: number;
+  /**
+   * Outgoing Occurrence Count
+   */
+  outgoing_occurrence_count: number;
+  /**
+   * Terminal Occurrence Count
+   */
+  terminal_occurrence_count: number;
+  /**
+   * Trainer Turn Occurrence Count
+   */
+  trainer_turn_occurrence_count: number;
+  /**
+   * Opponent Turn Occurrence Count
+   */
+  opponent_turn_occurrence_count: number;
+  /**
+   * Distinct Outgoing Move Count
+   */
+  distinct_outgoing_move_count: number;
+  /**
+   * Repeated Position Count
+   */
+  repeated_position_count: number;
+  /**
+   * Average Occurrences Per Observed Position
+   */
+  average_occurrences_per_observed_position: number | number | null;
+  /**
+   * Ply Buckets
+   */
+  ply_buckets: Array<PlyBucketResponse>;
+  /**
+   * Recurring Positions
+   */
+  recurring_positions: Array<RecurringPositionResponse>;
+};
+
+/**
  * PreferredMovesErrorResponse
  */
 export type PreferredMovesErrorResponse = {
@@ -980,6 +1535,300 @@ export type PreferredMovesSegmentResponse = {
 };
 
 /**
+ * RatingProgressionResponse
+ */
+export type RatingProgressionResponse = {
+  /**
+   * Dated Rating Count
+   */
+  dated_rating_count: number;
+  /**
+   * First Rating
+   */
+  first_rating: number | null;
+  /**
+   * Last Rating
+   */
+  last_rating: number | null;
+  /**
+   * Change
+   */
+  change: number | null;
+  /**
+   * Peak Rating
+   */
+  peak_rating: number | null;
+  /**
+   * Lowest Rating
+   */
+  lowest_rating: number | null;
+};
+
+/**
+ * RecentFormWindowResponse
+ */
+export type RecentFormWindowResponse = {
+  /**
+   * Requested Game Count
+   */
+  requested_game_count: number;
+  /**
+   * Dated Game Count
+   */
+  dated_game_count: number;
+  record: OutcomeRecordResponse;
+};
+
+/**
+ * RecurringPositionResponse
+ */
+export type RecurringPositionResponse = {
+  /**
+   * Fen
+   */
+  fen: string;
+  /**
+   * Distinct Game Count
+   */
+  distinct_game_count: number;
+  /**
+   * Occurrence Count
+   */
+  occurrence_count: number;
+  /**
+   * Outgoing Occurrence Count
+   */
+  outgoing_occurrence_count: number;
+  /**
+   * Terminal Occurrence Count
+   */
+  terminal_occurrence_count: number;
+};
+
+/**
+ * RepertoireStatisticsResponse
+ */
+export type RepertoireStatisticsResponse = {
+  /**
+   * Trainer Turn Position Count
+   */
+  trainer_turn_position_count: number;
+  /**
+   * Move Preference Position Count
+   */
+  move_preference_position_count: number;
+  /**
+   * No Preference Position Count
+   */
+  no_preference_position_count: number;
+  /**
+   * Unconfigured Position Count
+   */
+  unconfigured_position_count: number;
+  /**
+   * Preference Coverage Rate
+   */
+  preference_coverage_rate: number | number | null;
+  /**
+   * Preference Observed Position Count
+   */
+  preference_observed_position_count: number;
+  /**
+   * Preferred Move Opportunity Count
+   */
+  preferred_move_opportunity_count: number;
+  /**
+   * Preferred Move Played Count
+   */
+  preferred_move_played_count: number;
+  /**
+   * Preferred Move Adherence Rate
+   */
+  preferred_move_adherence_rate: number | number | null;
+  training_balances: TrainingBalanceStatisticsResponse;
+};
+
+/**
+ * StatisticsErrorResponse
+ */
+export type StatisticsErrorResponse = {
+  /**
+   * Code
+   */
+  code: "invalid_filter" | "statistics_unavailable" | "unexpected_failure";
+  /**
+   * Message
+   */
+  message: string;
+};
+
+/**
+ * StatisticsFiltersResponse
+ */
+export type StatisticsFiltersResponse = {
+  /**
+   * Started On Or After
+   */
+  started_on_or_after: string | null;
+  /**
+   * Started On Or Before
+   */
+  started_on_or_before: string | null;
+  /**
+   * Trainer Color
+   */
+  trainer_color: "white" | "black" | null;
+  /**
+   * Time Class
+   */
+  time_class: "bullet" | "blitz" | "rapid" | "daily" | null;
+};
+
+/**
+ * StatisticsOverviewResponse
+ */
+export type StatisticsOverviewResponse = {
+  /**
+   * As Of
+   */
+  as_of: string;
+  filters: StatisticsFiltersResponse;
+  games: GameStatisticsResponse;
+  activity: ActivityStatisticsResponse;
+  openings: OpeningStatisticsResponse;
+  opponents: OpponentStatisticsResponse;
+  positions: PositionStatisticsResponse;
+  analysis: AnalysisStatisticsResponse;
+  repertoire: RepertoireStatisticsResponse;
+  data_quality: DataQualityStatisticsResponse;
+};
+
+/**
+ * StreakStatisticsResponse
+ */
+export type StreakStatisticsResponse = {
+  /**
+   * Current Kind
+   */
+  current_kind: "win" | "loss" | "draw" | null;
+  /**
+   * Current Count
+   */
+  current_count: number;
+  /**
+   * Longest Win Count
+   */
+  longest_win_count: number;
+  /**
+   * Longest Loss Count
+   */
+  longest_loss_count: number;
+  /**
+   * Longest Draw Count
+   */
+  longest_draw_count: number;
+  /**
+   * Longest Unbeaten Count
+   */
+  longest_unbeaten_count: number;
+  /**
+   * Longest Winless Count
+   */
+  longest_winless_count: number;
+};
+
+/**
+ * TrainerBlunderItemResponse
+ */
+export type TrainerBlunderItemResponse = {
+  /**
+   * Game Uuid
+   */
+  game_uuid: string;
+  /**
+   * Source Url
+   */
+  source_url: string;
+  /**
+   * Started At Utc
+   */
+  started_at_utc: string;
+  /**
+   * Trainer Color
+   */
+  trainer_color: "white" | "black";
+  /**
+   * Ply
+   */
+  ply: number;
+  /**
+   * Fen
+   */
+  fen: string;
+  /**
+   * Played Move Uci
+   */
+  played_move_uci: string;
+  /**
+   * Preferred Move Uci
+   */
+  preferred_move_uci: string;
+  /**
+   * Expected Score Before
+   */
+  expected_score_before: number;
+  /**
+   * Expected Score After
+   */
+  expected_score_after: number;
+  /**
+   * Expected Score Loss
+   */
+  expected_score_loss: number;
+  /**
+   * Before Analysis Quality
+   */
+  before_analysis_quality: "browser" | "tool";
+  /**
+   * After Analysis Quality
+   */
+  after_analysis_quality: "browser" | "tool";
+};
+
+/**
+ * TrainerBlundersResponse
+ */
+export type TrainerBlundersResponse = {
+  timeframe: BlunderTimeframeResponse;
+  policy: BlunderPolicyResponse;
+  coverage: BlunderCoverageResponse;
+  /**
+   * Items
+   */
+  items: Array<TrainerBlunderItemResponse>;
+  /**
+   * Page
+   */
+  page: number;
+  /**
+   * Page Size
+   */
+  page_size: number;
+  /**
+   * Total
+   */
+  total: number;
+  /**
+   * Total Pages
+   */
+  total_pages: number;
+  /**
+   * Has Next
+   */
+  has_next: boolean;
+};
+
+/**
  * TrainingAnswerRequest
  */
 export type TrainingAnswerRequest = {
@@ -1014,6 +1863,37 @@ export type TrainingAnswerResponse = {
    */
   correct: boolean;
   item: TrainingRequirementItemResponse;
+};
+
+/**
+ * TrainingBalanceStatisticsResponse
+ */
+export type TrainingBalanceStatisticsResponse = {
+  /**
+   * Count
+   */
+  count: number;
+  /**
+   * Negative Count
+   */
+  negative_count: number;
+  /**
+   * Zero Count
+   */
+  zero_count: number;
+  /**
+   * Positive Count
+   */
+  positive_count: number;
+  /**
+   * Updated Count
+   */
+  updated_count: number;
+  /**
+   * Missing Count
+   */
+  missing_count: number;
+  summary: NumericSummaryResponse;
 };
 
 /**
@@ -1192,6 +2072,17 @@ export type ValidationError = {
   ctx?: {
     [key: string]: unknown;
   };
+};
+
+/**
+ * WeekdayActivityResponse
+ */
+export type WeekdayActivityResponse = {
+  /**
+   * Weekday
+   */
+  weekday: "monday" | "tuesday" | "wednesday" | "thursday" | "friday" | "saturday" | "sunday";
+  record: OutcomeRecordResponse;
 };
 
 export type GetHealthData = {
@@ -1850,3 +2741,114 @@ export type GetOpeningByKeyResponses = {
 };
 
 export type GetOpeningByKeyResponse = GetOpeningByKeyResponses[keyof GetOpeningByKeyResponses];
+
+export type GetStatisticsOverviewData = {
+  body?: never;
+  path?: never;
+  query: {
+    /**
+     * As Of
+     */
+    as_of: string;
+    /**
+     * Started On Or After
+     */
+    started_on_or_after?: string | null;
+    /**
+     * Started On Or Before
+     */
+    started_on_or_before?: string | null;
+    /**
+     * Trainer Color
+     */
+    trainer_color?: string | null;
+    /**
+     * Time Class
+     */
+    time_class?: string | null;
+  };
+  url: "/api/statistics/overview";
+};
+
+export type GetStatisticsOverviewErrors = {
+  /**
+   * Unprocessable Entity
+   */
+  422: StatisticsErrorResponse;
+  /**
+   * Internal Server Error
+   */
+  500: StatisticsErrorResponse;
+  /**
+   * Service Unavailable
+   */
+  503: StatisticsErrorResponse;
+};
+
+export type GetStatisticsOverviewError =
+  GetStatisticsOverviewErrors[keyof GetStatisticsOverviewErrors];
+
+export type GetStatisticsOverviewResponses = {
+  /**
+   * Successful Response
+   */
+  200: StatisticsOverviewResponse;
+};
+
+export type GetStatisticsOverviewResponse =
+  GetStatisticsOverviewResponses[keyof GetStatisticsOverviewResponses];
+
+export type GetTrainerBlundersData = {
+  body?: never;
+  path?: never;
+  query: {
+    /**
+     * Started At From
+     */
+    started_at_from: string;
+    /**
+     * Started At To
+     */
+    started_at_to: string;
+    /**
+     * Trainer Color
+     */
+    trainer_color?: string | null;
+    /**
+     * Page
+     */
+    page?: number;
+    /**
+     * Page Size
+     */
+    page_size?: number;
+  };
+  url: "/api/trainer/blunders";
+};
+
+export type GetTrainerBlundersErrors = {
+  /**
+   * Unprocessable Entity
+   */
+  422: BlunderErrorResponse;
+  /**
+   * Internal Server Error
+   */
+  500: BlunderErrorResponse;
+  /**
+   * Service Unavailable
+   */
+  503: BlunderErrorResponse;
+};
+
+export type GetTrainerBlundersError = GetTrainerBlundersErrors[keyof GetTrainerBlundersErrors];
+
+export type GetTrainerBlundersResponses = {
+  /**
+   * Successful Response
+   */
+  200: TrainerBlundersResponse;
+};
+
+export type GetTrainerBlundersResponse =
+  GetTrainerBlundersResponses[keyof GetTrainerBlundersResponses];

@@ -37,6 +37,14 @@ export type AnalysisObservationKeyInput = {
   positionKey: string;
 };
 
+export type StatisticsOverviewKeyInput = {
+  asOf: string;
+  startedOnOrAfter: OptionalText;
+  startedOnOrBefore: OptionalText;
+  trainerColor: OptionalText;
+  timeClass: OptionalText;
+};
+
 function normalizeOptionalText(value: OptionalText): string | null {
   const normalized = value?.trim() ?? "";
   return normalized === "" ? null : normalized;
@@ -55,7 +63,7 @@ function normalizeOpeningMatch(value: OptionalText, openingKey: string | null): 
 }
 
 /**
- * Canonical structural keys for the six frontend server-state families.
+ * Canonical structural keys for the frontend server-state families.
  *
  * Every response-affecting input is present in its family's key. Page numbers
  * are deliberately absent from training requirements because that key owns
@@ -120,6 +128,19 @@ export const queryKeys = {
 
   analysisObservation(input: AnalysisObservationKeyInput) {
     return ["analysisObservation", normalizePositionKey(input.positionKey)] as const;
+  },
+
+  statisticsOverview(input: StatisticsOverviewKeyInput) {
+    return [
+      "statisticsOverview",
+      {
+        asOf: normalizeRequiredText(input.asOf),
+        startedOnOrAfter: normalizeOptionalText(input.startedOnOrAfter),
+        startedOnOrBefore: normalizeOptionalText(input.startedOnOrBefore),
+        trainerColor: normalizeOptionalText(input.trainerColor),
+        timeClass: normalizeOptionalText(input.timeClass),
+      },
+    ] as const;
   },
 };
 

@@ -127,4 +127,25 @@ describe("queryKeys", () => {
       }),
     );
   });
+
+  it("keeps every statistics report cut in one normalized key", () => {
+    expect(
+      queryKeys.statisticsOverview({
+        asOf: " 2026-09-21 ",
+        startedOnOrAfter: " 2026-01-01 ",
+        startedOnOrBefore: " ",
+        trainerColor: " white ",
+        timeClass: null,
+      }),
+    ).toEqual([
+      "statisticsOverview",
+      {
+        asOf: "2026-09-21",
+        startedOnOrAfter: "2026-01-01",
+        startedOnOrBefore: null,
+        trainerColor: "white",
+        timeClass: null,
+      },
+    ]);
+  });
 });

@@ -1,0 +1,118 @@
+.filters {
+  display: grid;
+  gap: var(--cmt-spacing-16);
+  padding: var(--cmt-spacing-24);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: var(--cmt-radius-12);
+  background: var(--md-sys-color-surface-container);
+}
+
+.filterHeader {
+  display: flex;
+  min-inline-size: 0;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--cmt-spacing-8) var(--cmt-spacing-16);
+}
+
+.filterHeader > div:first-child {
+  display: grid;
+  max-inline-size: 44rem;
+  gap: var(--cmt-spacing-4);
+}
+
+.filterHeader h2,
+.filterHeader p {
+  margin: 0;
+}
+
+.filterHeader h2 {
+  color: var(--md-sys-color-on-surface);
+  font: var(--md-sys-typescale-title-large);
+}
+
+.filterHeader p {
+  color: var(--md-sys-color-on-surface-variant);
+  font: var(--md-sys-typescale-body-medium);
+}
+
+.eyebrow {
+  color: var(--md-sys-color-primary);
+  font: var(--md-sys-typescale-label-medium);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.filterCount {
+  padding: var(--cmt-spacing-4) var(--cmt-spacing-12);
+  border-radius: var(--cmt-radius-12);
+  background: var(--md-sys-color-secondary-container);
+  color: var(--md-sys-color-on-secondary-container);
+  font: var(--md-sys-typescale-label-medium);
+  white-space: nowrap;
+}
+
+.filterGrid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(9rem, 1fr));
+  gap: var(--cmt-spacing-16);
+  align-items: start;
+}
+
+.filterActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--cmt-spacing-8);
+}
+
+.filterError {
+  margin: 0;
+  color: var(--cmt-error-accent);
+  font: var(--md-sys-typescale-body-medium);
+}
+
+@media (max-width: 72rem) {
+  .filterGrid {
+    grid-template-columns: repeat(3, minmax(10rem, 1fr));
+  }
+}
+
+@media (max-width: 52rem) {
+  .filters {
+    padding: var(--cmt-spacing-16);
+  }
+
+  .filterGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 36rem) {
+  .filterGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .filterActions > button {
+    flex: 1 1 auto;
+  }
+}
+
+@media (forced-colors: active) {
+  .filters {
+    border-color: CanvasText;
+    background: Canvas;
+    color: CanvasText;
+  }
+
+  .filterHeader h2 {
+    color: CanvasText;
+  }
+
+  .filterCount {
+    border: 1px solid CanvasText;
+    background: Canvas;
+    color: CanvasText;
+  }
+}

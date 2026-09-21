@@ -33,12 +33,13 @@ describe("PositionReachFrequency", () => {
     expect(screen.getByText("2 / 5 games", { exact: true })).toBeVisible();
     expect(screen.getByText("40%", { exact: true })).toBeVisible();
 
-    const meter = screen.getByRole("meter", { name: "Position reach frequency as White" });
+    const meter = screen.getByRole("meter", {
+      name: "Position reach frequency as White",
+    });
     expect(meter).toHaveAttribute("aria-valuenow", "40");
     expect(meter).toHaveAttribute("aria-valuemin", "0");
     expect(meter).toHaveAttribute("aria-valuemax", "100");
     expect(meter).toHaveAttribute("aria-valuetext", "2 of 5 games as White; 40% reached.");
-    expect(screen.getByTestId("position-reach-indicator")).toHaveStyle({ inlineSize: "40%" });
   });
 
   it("renders Black values when Black is explicitly selected", () => {
@@ -62,7 +63,6 @@ describe("PositionReachFrequency", () => {
       <PositionReachFrequency context={context({ distinctGameCount: 0 })} selectedColor="white" />,
     );
 
-    expect(screen.getByTestId("position-reach-indicator")).toBeInTheDocument();
     expect(screen.getByText("0 / 5 games", { exact: true })).toBeVisible();
     expect(screen.getByText("0%", { exact: true })).toBeVisible();
     expect(screen.getByRole("meter")).toHaveAttribute(

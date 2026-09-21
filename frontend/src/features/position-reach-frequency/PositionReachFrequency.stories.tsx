@@ -166,7 +166,7 @@ export const Accessibility: Story = {
     const meter = canvas.getByRole("meter", { name: "Position reach frequency as Black" });
     await expect(meter).toHaveAttribute("aria-valuemin", "0");
     await expect(meter).toHaveAttribute("aria-valuemax", "100");
-    await expect(meter).toHaveAttribute("aria-valuenow", "42.857142857142854");
+    await expect(meter).toHaveAttribute("aria-valuenow", "42.86");
     await expect(meter).toHaveAttribute("aria-valuetext", "3 of 7 games as Black; 42.9% reached.");
   },
 };

@@ -19,14 +19,35 @@ export const Docs: Story = {
       family="Overlays"
       intro={
         <>
-          Overlay presentations currently in use. There are no standalone shared Dialog, Popover, or
-          Drawer components: Base UI's primitives are composed locally inside feature components.
-          The links point at the stories that already show each overlay pattern with its real
-          behavior.
+          Shared Dialog, PreviewCard, Toast, and Tooltip wrappers now cover common reusable overlay
+          behavior. Popover and Drawer remain composed locally where their feature-specific anchors,
+          responsive changes, and content require it.
         </>
       }
       caution="A shared AlertDialog component does not exist. The remove-confirmation alert dialog in the preferred move workflow is composed inline from Base UI primitives inside PreferredMovePanelSections; it is only reachable through the workspace flow stories."
       sections={[
+        {
+          heading: "Reusable overlays",
+          body: "Dialog owns the standard modal surface and dismissal, PreviewCard adds non-interrupting link previews, ToastProvider supplies a shared notification queue, and Tooltip provides short sighted-user hints. Each wrapper supports controlled state or consumer content where the Base UI primitive does.",
+          links: [
+            {
+              label: "Overlays — Dialog",
+              storyId: "production-design-system-base-ui-overlays--dialog-example",
+            },
+            {
+              label: "Overlays — Preview Card",
+              storyId: "production-design-system-base-ui-overlays--preview-card-example",
+            },
+            {
+              label: "Overlays — Toast",
+              storyId: "production-design-system-base-ui-overlays--toast-example",
+            },
+            {
+              label: "Overlays — Tooltip",
+              storyId: "production-design-system-base-ui-overlays--tooltip-example",
+            },
+          ],
+        },
         {
           heading: "Popover-based overlays",
           body: "CalendarDate is a popover-hosted date picker (Base UI Popover, modal) with blank, selected, disabled-future-dates, clearable, keyboard, constrained-width, and forced-colors stories. PromotionPicker renders its picker as a popover at wide viewports.",

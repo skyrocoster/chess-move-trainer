@@ -69,6 +69,16 @@ describe("App routes", () => {
     expect(screen.queryByRole("heading", { name: /board|session/i })).not.toBeInTheDocument();
   }, 35_000);
 
+  it("renders the Analysis page at /analysis", async () => {
+    renderApp(["/analysis"]);
+
+    expect(
+      await screen.findByRole("heading", { name: "Analysis", level: 1 }, { timeout: 30_000 }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Apply filters|Applying…/ })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Analysis" })).toHaveAttribute("aria-current", "page");
+  }, 35_000);
+
   it("renders the in-shell not-found state for an unmatched route", () => {
     renderApp(["/does-not-exist"]);
 

@@ -1,5 +1,5 @@
 import { Drawer, type DrawerRoot } from "@base-ui/react/drawer";
-import { Activity, BookOpen, Crown, Dumbbell, Menu, X } from "lucide-react";
+import { Activity, BookOpen, ChartNoAxesCombined, Crown, Dumbbell, Menu, X } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { useRef } from "react";
 
@@ -24,6 +24,10 @@ function NavigationItems({ onSelect }: { onSelect?: () => void }) {
       <NavLink className={styles.navigationLink} to="/trainer" onClick={onSelect}>
         <Dumbbell aria-hidden="true" size={20} />
         <span>Trainer Practice</span>
+      </NavLink>
+      <NavLink className={styles.navigationLink} to="/analysis" onClick={onSelect}>
+        <ChartNoAxesCombined aria-hidden="true" size={20} />
+        <span>Analysis</span>
       </NavLink>
     </>
   );

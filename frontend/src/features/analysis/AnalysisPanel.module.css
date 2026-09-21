@@ -180,31 +180,6 @@
   font: var(--md-sys-typescale-label-medium);
 }
 
-.wdlTrack,
-.miniTrack {
-  display: flex;
-  overflow: hidden;
-  border: 1px solid var(--md-sys-color-outline);
-  border-radius: var(--cmt-radius-4);
-  background: var(--md-sys-color-surface-container-highest);
-}
-
-.wdlTrack {
-  block-size: 12px;
-}
-
-.miniTrack {
-  block-size: 6px;
-  border-color: var(--md-sys-color-outline-variant);
-}
-
-.wdlTrack > span,
-.miniTrack > span {
-  display: block;
-  min-inline-size: 0;
-  block-size: 100%;
-}
-
 .wdlWin {
   background: var(--cmt-success-accent);
 }
@@ -468,8 +443,6 @@
   .panel,
   .bestLine,
   .line,
-  .wdlTrack,
-  .miniTrack,
   .emptyResult {
     border-color: CanvasText;
     background: Canvas;
@@ -514,8 +487,6 @@
     color: CanvasText;
   }
 
-  .wdlTrack > span,
-  .miniTrack > span,
   .legendDot {
     background: Highlight;
   }

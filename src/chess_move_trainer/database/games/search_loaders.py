@@ -4,9 +4,12 @@ from __future__ import annotations
 
 from sqlalchemy import text
 
+from ..validation import optional_int as _optional_int
+from ..validation import optional_text as _optional_text
+from ..validation import require_int as _required_int
+from ..validation import require_text as _required_text
 from .search_errors import GameSearchError, GameSearchStorageError
 from .search_models import _GameData
-from .search_validation import _optional_int, _optional_text, _required_int, _required_text
 
 
 def _load_games(connection: object) -> dict[int, _GameData]:

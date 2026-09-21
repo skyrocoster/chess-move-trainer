@@ -514,40 +514,48 @@ describe("Tabs", () => {
   it("updates overflow from available observers without resubscribing and disconnects them", async () => {
     const resizeCallbacks: Array<() => void> = [];
     const mutationCallbacks: Array<() => void> = [];
-    const resizeObserved = vi.fn();
-    const resizeDisconnected = vi.fn();
-    const mutationObserved = vi.fn();
-    const mutationDisconnected = vi.fn();
+    const resizeTargets: Element[][] = [];
+    const mutationTargets: Array<Array<{ target: Node; options?: MutationObserverInit }>> = [];
+    const resizeDisconnected: number[] = [];
+    const mutationDisconnected: number[] = [];
     const originalResizeObserver = globalThis.ResizeObserver;
     const originalMutationObserver = globalThis.MutationObserver;
 
     class TestResizeObserver {
+      private readonly index: number;
+
       constructor(callback: ResizeObserverCallback) {
+        this.index = resizeCallbacks.length;
         resizeCallbacks.push(() => callback([], this));
+        resizeTargets.push([]);
       }
 
       observe(element: Element) {
-        resizeObserved(element);
+        resizeTargets[this.index].push(element);
       }
 
       unobserve() {}
 
       disconnect() {
-        resizeDisconnected();
+        resizeDisconnected.push(this.index);
       }
     }
 
     class TestMutationObserver {
+      private readonly index: number;
+
       constructor(callback: MutationCallback) {
+        this.index = mutationCallbacks.length;
         mutationCallbacks.push(() => callback([], this));
+        mutationTargets.push([]);
       }
 
       observe(target: Node, options?: MutationObserverInit) {
-        mutationObserved(target, options);
+        mutationTargets[this.index].push({ target, options });
       }
 
       disconnect() {
-        mutationDisconnected();
+        mutationDisconnected.push(this.index);
       }
 
       takeRecords() {
@@ -563,36 +571,60 @@ describe("Tabs", () => {
       view = render(<Tabs tabs={BASE_TABS} />);
       const scrollElement = screen.getByTestId("tabs-scroll");
       const metrics = mockScrollMetrics(scrollElement, { clientWidth: 320, scrollWidth: 920 });
+      const tabList = scrollElement.firstElementChild;
+      const resizeObserverIndex = resizeTargets.findIndex((targets) =>
+        targets.includes(scrollElement),
+      );
+      const mutationObserverIndex = mutationTargets.findIndex((records) =>
+        records.some(
+          (record) => record.target === tabList && record.options?.attributeFilter !== undefined,
+        ),
+      );
 
-      expect(resizeObserved).toHaveBeenCalledTimes(2);
-      expect(mutationObserved).toHaveBeenCalledOnce();
-      expect(mutationObserved.mock.calls[0][1]).toMatchObject({
+      expect(resizeObserverIndex).toBeGreaterThanOrEqual(0);
+      expect(resizeTargets[resizeObserverIndex]).toEqual([scrollElement, tabList]);
+      expect(mutationObserverIndex).toBeGreaterThanOrEqual(0);
+      expect(mutationTargets[mutationObserverIndex][0].options).toMatchObject({
         attributeFilter: ["class", "disabled", "style"],
         attributes: true,
         childList: true,
         subtree: true,
       });
 
-      resizeCallbacks[0]?.();
+      resizeCallbacks[resizeObserverIndex]?.();
       await waitFor(() => {
         expect(screen.getByTestId("tabs-navigation")).toHaveAttribute("data-overflow", "true");
       });
 
       metrics.setScrollLeft(400);
-      mutationCallbacks[0]?.();
+      mutationCallbacks[mutationObserverIndex]?.();
       await waitFor(() => {
         expect(screen.getByRole("button", { name: "Scroll tabs left" })).toBeEnabled();
       });
 
-      const mutationCallbacksBeforeRerender = mutationCallbacks.length;
+      const resizeObserversBeforeRerender = resizeTargets.filter((targets) =>
+        targets.includes(scrollElement),
+      ).length;
+      const mutationObserversBeforeRerender = mutationTargets.filter((records) =>
+        records.some(
+          (record) => record.target === tabList && record.options?.attributeFilter !== undefined,
+        ),
+      ).length;
       view.rerender(<Tabs tabs={BASE_TABS} />);
-      expect(resizeCallbacks).toHaveLength(1);
-      expect(mutationCallbacks).toHaveLength(mutationCallbacksBeforeRerender);
+      expect(resizeTargets.filter((targets) => targets.includes(scrollElement))).toHaveLength(
+        resizeObserversBeforeRerender,
+      );
+      expect(
+        mutationTargets.filter((records) =>
+          records.some(
+            (record) => record.target === tabList && record.options?.attributeFilter !== undefined,
+          ),
+        ),
+      ).toHaveLength(mutationObserversBeforeRerender);
 
-      const mutationDisconnectsBeforeUnmount = mutationDisconnected.mock.calls.length;
       view.unmount();
-      expect(resizeDisconnected).toHaveBeenCalledOnce();
-      expect(mutationDisconnected).toHaveBeenCalledTimes(mutationDisconnectsBeforeUnmount + 1);
+      expect(resizeDisconnected).toContain(resizeObserverIndex);
+      expect(mutationDisconnected).toContain(mutationObserverIndex);
     } finally {
       view?.unmount();
       vi.stubGlobal("ResizeObserver", originalResizeObserver);
