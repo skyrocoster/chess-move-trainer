@@ -1,21 +1,13 @@
 import type { Square } from "chess.js";
-import {
-  cloneElement,
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  type ReactElement,
-  type SVGProps,
-} from "react";
-import {
-  Chessboard,
-  defaultPieces,
-  type PieceDropHandlerArgs,
-  type PieceRenderObject,
-} from "react-chessboard";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { Button } from "../design-system/Button";
+import {
+  ChessboardSurface,
+  findBoardSourceElement,
+  findBoardSquareElement,
+  type ChessboardPieceDropHandlerArgs,
+} from "./ChessboardSurface";
 import {
   PromotionPicker,
   type PendingPromotion,
@@ -75,52 +67,6 @@ export type InteractiveBoardMoveIntent = {
   anchorElement: HTMLElement | null;
 };
 
-const PIECE_NAMES: Record<string, string> = {
-  wP: "White pawn",
-  wR: "White rook",
-  wN: "White knight",
-  wB: "White bishop",
-  wQ: "White queen",
-  wK: "White king",
-  bP: "Black pawn",
-  bR: "Black rook",
-  bN: "Black knight",
-  bB: "Black bishop",
-  bQ: "Black queen",
-  bK: "Black king",
-};
-
-const accessiblePieces = Object.fromEntries(
-  Object.entries(defaultPieces).map(([pieceType, renderPiece]) => [
-    pieceType,
-    (props?: { fill?: string; square?: string; svgStyle?: React.CSSProperties }) => {
-      const piece = renderPiece(props) as ReactElement<SVGProps<SVGSVGElement>>;
-      const name = `${PIECE_NAMES[pieceType]}${props?.square ? ` on ${props.square}` : ""}`;
-      return cloneElement(piece, { "aria-label": name, role: "img" });
-    },
-  ]),
-) as PieceRenderObject;
-
-function findSourceElement(boardRoot: HTMLElement | null, sourceSquare: Square) {
-  const activeElement = document.activeElement;
-  const activeSource =
-    activeElement instanceof HTMLElement
-      ? activeElement.closest<HTMLElement>(`[data-square="${sourceSquare}"]`)
-      : null;
-  return (
-    activeSource?.querySelector<HTMLElement>('[aria-roledescription="draggable"]') ??
-    boardRoot?.querySelector<HTMLElement>(
-      `[data-square="${sourceSquare}"] [aria-roledescription="draggable"]`,
-    ) ??
-    boardRoot?.querySelector<HTMLElement>(`[data-square="${sourceSquare}"]`) ??
-    null
-  );
-}
-
-function findSquareElement(boardRoot: HTMLElement | null, square: Square) {
-  return boardRoot?.querySelector<HTMLElement>(`[data-square="${square}"]`) ?? null;
-}
-
 function branchSan(originFen: string, moves: readonly BranchMove[]) {
   const fields = originFen.split(" ");
   let moveNumber = Number(fields[5]) || 1;
@@ -177,7 +123,7 @@ export function InteractiveBoardAdapter({
   );
 
   const handlePieceDrop = useCallback(
-    ({ sourceSquare, targetSquare }: PieceDropHandlerArgs) => {
+    ({ sourceSquare, targetSquare }: ChessboardPieceDropHandlerArgs) => {
       if (!targetSquare) {
         return false;
       }
@@ -190,8 +136,8 @@ export function InteractiveBoardAdapter({
       return onMoveIntent({
         sourceSquare: source,
         targetSquare: target,
-        sourceElement: findSourceElement(boardRootRef.current, source),
-        anchorElement: findSquareElement(boardRootRef.current, target),
+        sourceElement: findBoardSourceElement(boardRootRef.current, source),
+        anchorElement: findBoardSquareElement(boardRootRef.current, target),
       });
     },
     [interactionAllowed, onMoveIntent],
@@ -221,14 +167,12 @@ export function InteractiveBoardAdapter({
   );
   const options = {
     allowDragging: interactionAllowed || undefined,
-    allowDrawingArrows: false,
     animationDurationInMs: 0,
     boardOrientation: orientation,
     id: "interactive-analysis-board",
     onPieceDrag: () => undefined,
     onPieceDragCancel: () => undefined,
     onPieceDrop: handlePieceDrop,
-    pieces: accessiblePieces,
     position: branchSnapshot.currentFen,
     squareStyles,
     showAnimations: false,
@@ -247,7 +191,7 @@ export function InteractiveBoardAdapter({
         role="group"
         aria-label={label}
       >
-        <Chessboard options={options} />
+        <ChessboardSurface options={options} accessiblePieceNames />
       </div>
       {answer ? (
         <p

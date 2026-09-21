@@ -352,7 +352,7 @@ def _eligible_evidence(
     hits = 0
     misses = 0
     expected_side = "w" if trainer_color == "white" else "b"
-    for row in _load_occurrences(connection):
+    for row in _load_occurrences(connection, position_id=position_id):
         (
             occurrence_position_id,
             move_uci,

@@ -1,10 +1,10 @@
 import { useId, useLayoutEffect, useRef } from "react";
 import { validateFen } from "chess.js";
-import { Chessboard } from "react-chessboard";
 import { ErrorBoundary } from "react-error-boundary";
 
 import { PanelFeedback } from "../design-system/feedback/PanelFeedback";
 import styles from "./BoardAdapter.module.css";
+import { ChessboardSurface } from "./ChessboardSurface";
 import { PositionDescription } from "./PositionDescription";
 import {
   createPositionModel,
@@ -108,10 +108,9 @@ function BoardRender({
         aria-describedby={descriptionId}
       >
         <div ref={packageBoardRef} className={styles.packageBoard} aria-hidden="true" inert>
-          <Chessboard
+          <ChessboardSurface
             options={{
               allowDragging: false,
-              allowDrawingArrows: false,
               boardOrientation: model.orientation,
               position: model.fen,
               showNotation: showCoordinates,

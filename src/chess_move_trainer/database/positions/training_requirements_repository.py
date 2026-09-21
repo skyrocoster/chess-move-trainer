@@ -174,7 +174,9 @@ class TrainingRequirementRepository:
                 group.misses += 1
             group.game_ids.add(game_id)
 
-        opening_matches = _load_opening_matches(connection)
+        opening_matches = (
+            _load_opening_matches(connection) if query.opening_key is not None else {}
+        )
         aggregates = _load_training_aggregates(connection)
         as_of = parse_calendar_date(query.as_of, "as_of")
         current_groups = _current_scoped_groups(
@@ -261,9 +263,39 @@ read_training_requirements = discover_training_requirements
 get_training_requirements = discover_training_requirements
 
 
-def _load_occurrences(connection: object) -> Iterable[tuple[object, ...]]:
-    rows = connection.execute(
-        text(
+def _load_occurrences(
+    connection: object,
+    *,
+    position_id: int | None = None,
+) -> Iterable[tuple[object, ...]]:
+    if position_id is None:
+        statement = text(
+            """
+            SELECT
+                o.derived_position_id,
+                o.dgp_move_uci,
+                o.datasource_game_id,
+                g.dg_trainer_color,
+                g.dg_started_at_utc,
+                p.dp_placement,
+                p.dp_side_to_move,
+                p.dp_castling_rights,
+                p.dp_legal_en_passant
+            FROM (
+                SELECT DISTINCT derived_position_id
+                FROM datasource_preferred_move_period
+            ) AS preferred_position
+            CROSS JOIN derived_game_position AS o
+              ON o.derived_position_id = preferred_position.derived_position_id
+            JOIN datasource_game AS g
+              ON g.dg_game_id = o.datasource_game_id
+            JOIN derived_position AS p
+              ON p.dp_position_id = o.derived_position_id
+            """
+        )
+        parameters = None
+    else:
+        statement = text(
             """
             SELECT
                 o.derived_position_id,
@@ -280,27 +312,34 @@ def _load_occurrences(connection: object) -> Iterable[tuple[object, ...]]:
               ON g.dg_game_id = o.datasource_game_id
             JOIN derived_position AS p
               ON p.dp_position_id = o.derived_position_id
-            ORDER BY o.derived_position_id, o.datasource_game_id, o.dgp_ply
+            WHERE o.derived_position_id = :position_id
             """
         )
-    ).all()
+        parameters = {"position_id": position_id}
+
+    rows = connection.execute(statement, parameters).all()
     normalized: list[tuple[object, ...]] = []
+    positions: dict[int, _PositionRecord] = {}
     for row in rows:
-        position_id = _positive_int(row[0], "stored position identifier")
+        occurrence_position_id = _positive_int(row[0], "stored position identifier")
         game_id = _positive_int(row[2], "stored game identifier")
+        position = positions.get(occurrence_position_id)
+        if position is None:
+            position = _PositionRecord(
+                _text(row[5], "stored position placement"),
+                _text(row[6], "stored position side"),
+                _text(row[7], "stored castling rights"),
+                _text(row[8], "stored en-passant square"),
+            )
+            positions[occurrence_position_id] = position
         normalized.append(
             (
-                position_id,
+                occurrence_position_id,
                 row[1],
                 game_id,
                 row[3],
                 row[4],
-                _PositionRecord(
-                    _text(row[5], "stored position placement"),
-                    _text(row[6], "stored position side"),
-                    _text(row[7], "stored castling rights"),
-                    _text(row[8], "stored en-passant square"),
-                ),
+                position,
             )
         )
     return normalized

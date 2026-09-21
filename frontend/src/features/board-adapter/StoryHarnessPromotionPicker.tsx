@@ -1,20 +1,12 @@
 import { Chess, type Square } from "chess.js";
-import {
-  cloneElement,
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  type ReactElement,
-  type SVGProps,
-} from "react";
-import {
-  Chessboard,
-  defaultPieces,
-  type PieceDropHandlerArgs,
-  type PieceRenderObject,
-} from "react-chessboard";
+import { useCallback, useEffect, useRef, useState } from "react";
 
+import {
+  ChessboardSurface,
+  findBoardSourceElement,
+  findBoardSquareElement,
+  type ChessboardPieceDropHandlerArgs,
+} from "./ChessboardSurface";
 import {
   isPromotionTarget,
   PromotionPicker,
@@ -27,52 +19,6 @@ import styles from "./PromotionPicker.module.css";
 
 const PROMOTION_FEN_WHITE = "k7/4P3/8/8/8/8/8/4K3 w - - 0 1";
 const PROMOTION_FEN_BLACK = "4k3/8/8/8/8/8/4p3/K7 b - - 0 1";
-
-const PIECE_NAMES: Record<string, string> = {
-  wP: "White pawn",
-  wR: "White rook",
-  wN: "White knight",
-  wB: "White bishop",
-  wQ: "White queen",
-  wK: "White king",
-  bP: "Black pawn",
-  bR: "Black rook",
-  bN: "Black knight",
-  bB: "Black bishop",
-  bQ: "Black queen",
-  bK: "Black king",
-};
-
-const accessiblePieces = Object.fromEntries(
-  Object.entries(defaultPieces).map(([pieceType, renderPiece]) => [
-    pieceType,
-    (props?: { fill?: string; square?: string; svgStyle?: React.CSSProperties }) => {
-      const piece = renderPiece(props) as ReactElement<SVGProps<SVGSVGElement>>;
-      const name = `${PIECE_NAMES[pieceType]}${props?.square ? ` on ${props.square}` : ""}`;
-      return cloneElement(piece, { "aria-label": name, role: "img" });
-    },
-  ]),
-) as PieceRenderObject;
-
-function findSourceElement(boardRoot: HTMLElement | null, sourceSquare: Square) {
-  const activeElement = document.activeElement;
-  const activeSource =
-    activeElement instanceof HTMLElement
-      ? activeElement.closest<HTMLElement>(`[data-square="${sourceSquare}"]`)
-      : null;
-  return (
-    activeSource?.querySelector<HTMLElement>('[aria-roledescription="draggable"]') ??
-    boardRoot?.querySelector<HTMLElement>(
-      `[data-square="${sourceSquare}"] [aria-roledescription="draggable"]`,
-    ) ??
-    boardRoot?.querySelector<HTMLElement>(`[data-square="${sourceSquare}"]`) ??
-    null
-  );
-}
-
-function findSquareElement(boardRoot: HTMLElement | null, square: Square) {
-  return boardRoot?.querySelector<HTMLElement>(`[data-square="${square}"]`) ?? null;
-}
 
 export type StoryHarnessPromotionPickerProps = {
   color?: PromotionColor;
@@ -140,7 +86,7 @@ export function StoryHarnessPromotionPicker({
   } = controller;
 
   const handlePieceDrop = useCallback(
-    ({ sourceSquare, targetSquare }: PieceDropHandlerArgs) => {
+    ({ sourceSquare, targetSquare }: ChessboardPieceDropHandlerArgs) => {
       if (!targetSquare) {
         return false;
       }
@@ -149,8 +95,8 @@ export function StoryHarnessPromotionPicker({
       const target = targetSquare as Square;
       const piece = chess.get(source);
       if (piece?.type === "p" && isPromotionTarget(piece.color, target)) {
-        const sourceElement = findSourceElement(boardRootRef.current, source);
-        const anchorElement = findSquareElement(boardRootRef.current, target);
+        const sourceElement = findBoardSourceElement(boardRootRef.current, source);
+        const anchorElement = findBoardSquareElement(boardRootRef.current, target);
         const opened = requestPromotion(source, target, sourceElement, anchorElement);
         setNotice(opened ? "Choose a promotion piece." : "Promotion move rejected.");
         return false;
@@ -177,8 +123,8 @@ export function StoryHarnessPromotionPicker({
 
     const sourceSquare: Square = color === "w" ? "e7" : "e2";
     const targetSquare: Square = color === "w" ? "e8" : "e1";
-    const sourceElement = findSourceElement(boardRootRef.current, sourceSquare);
-    const anchorElement = findSquareElement(boardRootRef.current, targetSquare);
+    const sourceElement = findBoardSourceElement(boardRootRef.current, sourceSquare);
+    const anchorElement = findBoardSquareElement(boardRootRef.current, targetSquare);
     if (
       sourceElement &&
       requestPromotion(sourceSquare, targetSquare, sourceElement, anchorElement)
@@ -190,13 +136,11 @@ export function StoryHarnessPromotionPicker({
 
   const options = {
     allowDragging: true,
-    allowDrawingArrows: false,
     animationDurationInMs: 0,
     boardOrientation: color === "w" ? "white" : "black",
     id: "promotion-picker-board",
     onPieceDrag: () => undefined,
     onPieceDragCancel: () => undefined,
-    pieces: accessiblePieces,
     position: fen,
     showAnimations: false,
     showNotation: true,
@@ -211,7 +155,7 @@ export function StoryHarnessPromotionPicker({
     >
       <h1>Application-owned promotion picker</h1>
       <div ref={boardRootRef} className={styles.demoBoard} data-testid="promotion-board">
-        <Chessboard options={options} />
+        <ChessboardSurface options={options} accessiblePieceNames />
       </div>
       <div className={styles.demoState} aria-label="Promotion state">
         <p data-testid="promotion-current-fen">FEN: {fen}</p>

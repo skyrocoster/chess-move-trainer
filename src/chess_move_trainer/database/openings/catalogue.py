@@ -41,6 +41,7 @@ _SORTS: tuple[OpeningCatalogueSort, ...] = (
     "games_deepest_desc",
 )
 _ECO_PATTERN = re.compile(r"[A-E][0-9]{2}\Z")
+MAX_PAGE_SIZE = 5_000
 
 
 class OpeningCatalogueError(Exception):
@@ -73,8 +74,13 @@ class OpeningCatalogueQuery:
     def __post_init__(self) -> None:
         if type(self.page) is not int or self.page < 1:
             raise OpeningCatalogueValidationError("page must be a positive integer")
-        if type(self.page_size) is not int or not 1 <= self.page_size <= 100:
-            raise OpeningCatalogueValidationError("page_size must be an integer from 1 through 100")
+        if (
+            type(self.page_size) is not int
+            or not 1 <= self.page_size <= MAX_PAGE_SIZE
+        ):
+            raise OpeningCatalogueValidationError(
+                f"page_size must be an integer from 1 through {MAX_PAGE_SIZE}"
+            )
         if self.search is not None:
             if type(self.search) is not str:
                 raise OpeningCatalogueValidationError("search must be text")

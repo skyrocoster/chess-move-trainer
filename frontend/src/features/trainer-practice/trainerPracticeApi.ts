@@ -22,6 +22,7 @@ import {
 
 export const TRAINING_REQUIREMENTS_PAGE_SIZE = 100;
 export const OPENING_CATALOGUE_PAGE_SIZE = 100;
+export const OPENING_CATALOGUE_SNAPSHOT_PAGE_SIZE = 5_000;
 export const OPENINGS_CATALOGUE_VERSION_HEADER = "X-Openings-Catalogue-Version";
 const OPENING_CATALOGUE_REQUEST_CONCURRENCY = 4;
 
@@ -122,13 +123,14 @@ async function fetchOpeningPage(
   page: number,
   search: string | null,
   signal?: AbortSignal,
+  pageSize = OPENING_CATALOGUE_PAGE_SIZE,
 ): Promise<OpeningPageResult> {
   throwIfAborted(signal);
 
   try {
     const query: OpeningQuery = {
       page,
-      page_size: OPENING_CATALOGUE_PAGE_SIZE,
+      page_size: pageSize,
       sort: "name_asc",
     };
     if (search !== null) {
@@ -240,12 +242,16 @@ export type OpeningCatalogueSnapshotResult =
     }
   | { status: "catalogue_error" };
 
-function hasValidCataloguePage(page: OpeningCatalogueResponse, expectedPage: number): boolean {
+function hasValidCataloguePage(
+  page: OpeningCatalogueResponse,
+  expectedPage: number,
+  expectedPageSize: number,
+): boolean {
   return (
     Number.isInteger(page.page) &&
     page.page === expectedPage &&
     Number.isInteger(page.page_size) &&
-    page.page_size === OPENING_CATALOGUE_PAGE_SIZE &&
+    page.page_size === expectedPageSize &&
     Number.isInteger(page.total) &&
     page.total >= 0 &&
     Number.isInteger(page.total_pages) &&
@@ -259,11 +265,16 @@ export async function fetchOpeningCatalogueSnapshot(
   storage?: OpeningCatalogueStorage | null,
 ): Promise<OpeningCatalogueSnapshotResult> {
   const stored = readOpeningCatalogueSnapshot(storage);
-  const firstPage = await fetchOpeningPage(1, null, signal);
+  const firstPage = await fetchOpeningPage(
+    1,
+    null,
+    signal,
+    OPENING_CATALOGUE_SNAPSHOT_PAGE_SIZE,
+  );
   if (
     firstPage.status !== "success" ||
     firstPage.catalogueVersion === null ||
-    !hasValidCataloguePage(firstPage.data, 1)
+    !hasValidCataloguePage(firstPage.data, 1, OPENING_CATALOGUE_SNAPSHOT_PAGE_SIZE)
   ) {
     return { status: "catalogue_error" };
   }
@@ -292,14 +303,20 @@ export async function fetchOpeningCatalogueSnapshot(
     const pages = await Promise.all(
       remainingPageNumbers
         .slice(offset, offset + OPENING_CATALOGUE_REQUEST_CONCURRENCY)
-        .map((page) => fetchOpeningPage(page, null, signal)),
+        .map((page) =>
+          fetchOpeningPage(page, null, signal, OPENING_CATALOGUE_SNAPSHOT_PAGE_SIZE),
+        ),
     );
     for (const [index, page] of pages.entries()) {
       const expectedPage = remainingPageNumbers[offset + index];
       if (
         page.status !== "success" ||
         page.catalogueVersion !== version ||
-        !hasValidCataloguePage(page.data, expectedPage) ||
+        !hasValidCataloguePage(
+          page.data,
+          expectedPage,
+          OPENING_CATALOGUE_SNAPSHOT_PAGE_SIZE,
+        ) ||
         page.data.total !== firstPageData.total ||
         page.data.total_pages !== firstPageData.total_pages
       ) {

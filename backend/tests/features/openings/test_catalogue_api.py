@@ -230,7 +230,7 @@ def test_list_openings_filters_sorts_and_pages(
     "query",
     [
         {"page": "0"},
-        {"page_size": "101"},
+        {"page_size": "5001"},
         {"eco_from": "Z99"},
         {"eco_from": "C20", "eco_to": "B10"},
         {"sort": "unknown"},

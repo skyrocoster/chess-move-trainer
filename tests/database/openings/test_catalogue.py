@@ -249,6 +249,7 @@ def test_catalogue_paginates_empty_and_beyond_end_pages(tmp_path: Path) -> None:
     second = repository.read(OpeningCatalogueQuery(page_size=2, page=2))
     beyond = repository.read(OpeningCatalogueQuery(page_size=2, page=4))
     empty = repository.read(OpeningCatalogueQuery(search="not-present"))
+    snapshot = repository.read(OpeningCatalogueQuery(page_size=5_000))
 
     assert _keys(first) == ["A00:Alpha", "B10:Beta:Study"]
     assert first.total_pages == 3 and first.has_next
@@ -256,6 +257,7 @@ def test_catalogue_paginates_empty_and_beyond_end_pages(tmp_path: Path) -> None:
     assert _keys(beyond) == [] and beyond.total == 5 and not beyond.has_next
     assert empty.items == ()
     assert empty.total == 0 and empty.total_pages == 0 and not empty.has_next
+    assert len(snapshot.items) == 5 and snapshot.total_pages == 1 and not snapshot.has_next
 
 
 @pytest.mark.parametrize(
@@ -263,7 +265,7 @@ def test_catalogue_paginates_empty_and_beyond_end_pages(tmp_path: Path) -> None:
     [
         {"page": 0},
         {"page_size": 0},
-        {"page_size": 101},
+        {"page_size": 5_001},
         {"search": 4},
         {"eco_from": "A0"},
         {"eco_to": "F00"},

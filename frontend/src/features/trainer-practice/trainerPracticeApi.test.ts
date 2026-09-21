@@ -91,7 +91,7 @@ function cataloguePage(
       has_next: pageNumber < Math.ceil(total / 1),
       items,
       page: pageNumber,
-      page_size: 100,
+      page_size: 5_000,
       total,
       total_pages: Math.ceil(total / 1),
     },
@@ -220,9 +220,17 @@ describe("fetchOpeningCatalogueSnapshot", () => {
   it("reads the opaque response header and persists a complete replacement", async () => {
     const secondOpening = { ...OPENING, key: "B11:Caro-Kann Defense: Main Line" };
     const browser = browserStorage();
-    vi.mocked(getOpenings)
-      .mockResolvedValueOnce(cataloguePage(1, 2, [OPENING]))
-      .mockResolvedValueOnce(cataloguePage(2, 2, [secondOpening]));
+    vi.mocked(getOpenings).mockResolvedValueOnce({
+      data: {
+        has_next: false,
+        items: [OPENING, secondOpening],
+        page: 1,
+        page_size: 5_000,
+        total: 2,
+        total_pages: 1,
+      },
+      response: { headers: new Headers({ "X-Openings-Catalogue-Version": "opaque-v1" }) },
+    } as never);
 
     await expect(fetchOpeningCatalogueSnapshot(undefined, browser)).resolves.toEqual({
       status: "success",
@@ -230,8 +238,7 @@ describe("fetchOpeningCatalogueSnapshot", () => {
       catalogueVersion: "opaque-v1",
     });
     expect(vi.mocked(getOpenings).mock.calls.map(([request]) => request)).toEqual([
-      { query: { page: 1, page_size: 100, sort: "name_asc" }, signal: undefined },
-      { query: { page: 2, page_size: 100, sort: "name_asc" }, signal: undefined },
+      { query: { page: 1, page_size: 5_000, sort: "name_asc" }, signal: undefined },
     ]);
     expect(browser.getItem("cmt.openings.catalogue.v1")).toContain('"storage_schema":1');
   });

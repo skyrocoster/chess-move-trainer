@@ -80,6 +80,7 @@ async function mockCatalogue(page: Page, paginated = false) {
     const url = new URL(route.request().url());
     requests.push(url);
     const pageNumber = Number(url.searchParams.get("page"));
+    const pageSize = Number(url.searchParams.get("page_size"));
     const items = paginated
       ? pageNumber === 1
         ? [OPENING_ITEMS[0]]
@@ -89,7 +90,7 @@ async function mockCatalogue(page: Page, paginated = false) {
       has_next: paginated && pageNumber === 1,
       items,
       page: pageNumber,
-      page_size: 100,
+      page_size: pageSize,
       total: paginated ? 2 : OPENING_ITEMS.length,
       total_pages: paginated ? 2 : 1,
     });

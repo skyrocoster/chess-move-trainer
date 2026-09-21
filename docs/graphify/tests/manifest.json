@@ -264,10 +264,10 @@
     "semantic_hash": "7b78f5509987f39af804a6538276fd6c"
   },
   "database/openings/test_catalogue.py": {
-    "mtime": 1789888082.3367794,
-    "seen": 1789896438.8269222,
-    "ast_hash": "f907d3e3ca4e6c18ba790d6678c79c6f",
-    "semantic_hash": "f907d3e3ca4e6c18ba790d6678c79c6f"
+    "mtime": 1789944465.9774694,
+    "seen": 1789979658.0618858,
+    "ast_hash": "7f9f764ed6827fa6025491bec124570a",
+    "semantic_hash": "7f9f764ed6827fa6025491bec124570a"
   },
   "database/openings/test_persistence.py": {
     "mtime": 1789888082.3377783,
@@ -660,10 +660,10 @@
     "semantic_hash": "e8d085f2fe496544113e4888504bc6e8"
   },
   "e2e/trainer-practice.spec.ts": {
-    "mtime": 1789940922.1983047,
-    "seen": 1789942535.7191525,
-    "ast_hash": "9201dc069372271428fbc084730b99c3",
-    "semantic_hash": "9201dc069372271428fbc084730b99c3"
+    "mtime": 1789944465.972456,
+    "seen": 1789979658.0690544,
+    "ast_hash": "33dcdd8fd7dd963c217bfa41ddb61fe9",
+    "semantic_hash": "33dcdd8fd7dd963c217bfa41ddb61fe9"
   },
   "stockfish_analysis/__init__.py": {
     "mtime": 1787218078.6879337,
