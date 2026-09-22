@@ -36,7 +36,7 @@ const RESULT = {
   engine_name: "stockfish",
   engine_version: "test",
   lines: [LINE],
-  quality: "tool",
+  quality: "browser",
   settings: { depth: 20 },
   terminal_kind: null,
 };
@@ -97,7 +97,7 @@ describe("analysisApi", () => {
       data: {
         fen: FEN,
         state: "ready",
-        result: { lines: [LINE], terminal_kind: null },
+        result: { quality: "browser", lines: [LINE], terminal_kind: null },
       },
     });
     expect(getAnalysisMock).toHaveBeenCalledWith({
@@ -119,7 +119,7 @@ describe("analysisApi", () => {
       data: {
         fen: COUNTER_VARIANT_FEN,
         state: "ready",
-        result: { lines: [LINE], terminal_kind: null },
+        result: { quality: "browser", lines: [LINE], terminal_kind: null },
       },
     });
   });
@@ -140,7 +140,7 @@ describe("analysisApi", () => {
     await expect(fetchAnalysis(FEN)).resolves.toEqual({ status: code });
   });
 
-  it("deliberately requests Tool analysis through the generated clean POST", async () => {
+  it("requests Browser analysis by default through the generated clean POST", async () => {
     generatedRequestAnalysisMock.mockResolvedValue(
       apiResult(observation({ state: "queued" }), 202),
     );
@@ -150,12 +150,28 @@ describe("analysisApi", () => {
       data: {
         fen: FEN,
         state: "queued",
-        result: { lines: [LINE], terminal_kind: null },
+        result: { quality: "browser", lines: [LINE], terminal_kind: null },
       },
     });
     expect(generatedRequestAnalysisMock).toHaveBeenCalledWith({
-      body: { fen: FEN, quality: "tool" },
+      body: { fen: FEN, quality: "browser" },
       signal: undefined,
+    });
+  });
+
+  it("requests explicit Tool analysis without losing the AbortSignal", async () => {
+    const signal = new AbortController().signal;
+    generatedRequestAnalysisMock.mockResolvedValue(
+      apiResult(observation({ state: "queued", result: { ...RESULT, quality: "tool" } }), 202),
+    );
+
+    await expect(requestAnalysis(FEN, signal, "tool")).resolves.toMatchObject({
+      status: "success",
+      data: { state: "queued", result: { quality: "tool" } },
+    });
+    expect(generatedRequestAnalysisMock).toHaveBeenCalledWith({
+      body: { fen: FEN, quality: "tool" },
+      signal,
     });
   });
 

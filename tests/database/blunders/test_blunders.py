@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import sqlite3
 from dataclasses import fields
 from datetime import datetime, timezone
@@ -21,6 +22,7 @@ from chess_move_trainer.database.blunders import (
 from chess_move_trainer.database.games.normalization import normalize_game
 from chess_move_trainer.database.games.persistence import GameRepository
 from chess_move_trainer.database.games.reading import GameReadRepository
+from chess_move_trainer.database.stockfish import BROWSER_PROFILE, TOOL_PROFILE
 
 TRAINER_UUID = "11111111-1111-4111-8111-111111111111"
 OPPONENT_UUID = "99999999-9999-4999-8999-999999999991"
@@ -94,6 +96,7 @@ def _add_analysis(
     pv: tuple[str, ...] = ("d2d4",),
     terminal: str | None = None,
 ) -> None:
+    profile = BROWSER_PROFILE if quality == "browser" else TOOL_PROFILE
     with sqlite3.connect(database) as connection:
         connection.execute(
             """
@@ -101,9 +104,15 @@ def _add_analysis(
                 (derived_position_id, dar_quality, dar_configuration_version,
                  dar_settings_json, dar_engine_name, dar_engine_version,
                  dar_terminal_kind)
-            VALUES (?, ?, 1, '{}', 'fixture', '1', ?)
+            VALUES (?, ?, ?, ?, 'fixture', '1', ?)
             """,
-            (position_id, quality, terminal),
+            (
+                position_id,
+                quality,
+                profile.configuration_version,
+                json.dumps(dict(profile.settings)),
+                terminal,
+            ),
         )
         if terminal is None:
             assert wins is not None and draws is not None and losses is not None

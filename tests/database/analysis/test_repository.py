@@ -19,6 +19,7 @@ from chess_move_trainer.database.analysis import (
     validate_analysis_result,
 )
 from chess_move_trainer.database.positions import PositionRepository
+from chess_move_trainer.database.stockfish import BROWSER_PROFILE, TOOL_PROFILE
 
 STARTING_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 OLD_ROOTS = (
@@ -57,19 +58,28 @@ def _lines(roots: tuple[tuple[str, ...], ...] = OLD_ROOTS) -> tuple[AnalysisLine
 def _result(
     *,
     quality: AnalysisQuality = AnalysisQuality.TOOL,
-    configuration_version: int = 1,
+    configuration_version: int | None = None,
     settings: dict[str, object] | None = None,
     engine_name: str = "normalized-test-engine",
     engine_version: str = "engine-1",
     lines: tuple[AnalysisLine, ...] | None = None,
 ):
+    profile = BROWSER_PROFILE if quality is AnalysisQuality.BROWSER else TOOL_PROFILE
     return validate_analysis_result(
         quality=quality,
-        configuration_version=configuration_version,
-        settings={"Threads": 1, "Hash": 16} if settings is None else settings,
+        configuration_version=(
+            profile.configuration_version
+            if configuration_version is None
+            else configuration_version
+        ),
+        settings=dict(profile.settings) if settings is None else settings,
         engine_name=engine_name,
         engine_version=engine_version,
-        lines=_lines() if lines is None else lines,
+        lines=(
+            _lines(OLD_ROOTS[: profile.multipv])
+            if lines is None
+            else lines
+        ),
     )
 
 
@@ -136,7 +146,7 @@ def test_first_publication_persists_exact_parent_and_complete_lines(
         position_id,
         "tool",
         1,
-        '{"Hash":16,"Threads":1}',
+         '{"Hash":1024,"MultiPV":5,"Nodes":6400000,"Threads":6,"UCI_ShowWDL":true}',
         "normalized-test-engine",
         "engine-1",
         None,
@@ -168,7 +178,7 @@ def test_one_current_result_is_replaced_by_a_new_same_quality_version(
     assert repository.publish(position_id, _result()).saved
     assert repository.publish(
         position_id,
-        _result(configuration_version=2, lines=_lines(NEW_ROOTS)),
+        _result(engine_version="engine-2", lines=_lines(NEW_ROOTS)),
     ).saved
 
     with sqlite3.connect(database_path) as connection:
@@ -192,9 +202,9 @@ def test_tool_replaces_browser_but_browser_cannot_downgrade_it(
         position_id,
         _result(
             quality=AnalysisQuality.BROWSER,
-            configuration_version=9,
+            configuration_version=BROWSER_PROFILE.configuration_version,
             engine_version="engine-9",
-            lines=_lines(NEW_ROOTS),
+            lines=_lines(NEW_ROOTS[:1]),
         ),
     )
 
@@ -227,17 +237,11 @@ def test_same_quality_configuration_version_change_refreshes_result(
     database_path, repository, position_id = _repository(tmp_path)
     assert repository.publish(position_id, _result()).saved
 
-    assert (
+    with pytest.raises(AnalysisValidationError, match="configuration version"):
         repository.publish(
             position_id,
             _result(configuration_version=2, lines=_lines(NEW_ROOTS)),
         )
-        == PublicationOutcome.saved_result()
-    )
-
-    parent, _ = _stored_result(database_path, position_id)
-    assert parent is not None
-    assert parent[2:4] == (2, '{"Hash":16,"Threads":1}')
 
 
 def test_same_quality_engine_version_change_refreshes_result(
@@ -265,7 +269,7 @@ def test_replacement_removes_every_old_line_and_commits_only_new_lines(
     database_path, repository, position_id = _repository(tmp_path)
     assert repository.publish(position_id, _result()).saved
 
-    replacement = _result(configuration_version=2, lines=_lines(NEW_ROOTS))
+    replacement = _result(engine_version="engine-2", lines=_lines(NEW_ROOTS))
     assert repository.publish(position_id, replacement).saved
 
     _, lines = _stored_result(database_path, position_id)
@@ -296,7 +300,7 @@ def test_old_committed_result_remains_visible_until_replacement_commits(
         try:
             replacement_repository.publish(
                 position_id,
-                _result(configuration_version=2, lines=_lines(NEW_ROOTS)),
+                _result(engine_version="engine-2", lines=_lines(NEW_ROOTS)),
             )
         except BaseException as error:
             errors.append(error)
@@ -317,4 +321,4 @@ def test_old_committed_result_remains_visible_until_replacement_commits(
     assert errors == []
     parent, _ = _stored_result(database_path, position_id)
     assert parent is not None
-    assert parent[2] == 2
+    assert parent[2] == 1

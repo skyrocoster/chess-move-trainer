@@ -5,7 +5,11 @@ import type {
   AnalysisPanelWdl,
   AnalysisPanelWdlValue,
 } from "./AnalysisPanel";
-import type { AnalysisLine, AnalysisObservation, AnalysisResult } from "./analysisApi";
+import type {
+  AnalysisLine,
+  AnalysisObservation,
+  AnalysisResult,
+} from "./analysisApi";
 import type { AnalysisState } from "./analysisState";
 import type { Fen } from "../chess/chessPrimitives";
 
@@ -88,6 +92,7 @@ function resultDisplay(
   displayedPly: number | undefined,
 ): NonNullable<AnalysisPanelDisplay["result"]> {
   return {
+    quality: result.quality,
     metadata: {
       displayedPly: displayedPly ?? null,
       depth: result.lines[0]?.depth ?? null,
@@ -112,7 +117,13 @@ export function analysisPanelDisplay(
   const result = observation?.result;
   const active = state === "queued" || state === "running";
   const showAnalyze = !loading && state === "not_requested";
-  const showObservationRetry = !loading && Boolean(error);
+  const showUpgrade =
+    !loading &&
+    !active &&
+    state === "ready" &&
+    result?.quality === "browser" &&
+    result.terminal_kind === null;
+  const showObservationRetry = !loading && !active && Boolean(error);
 
   let stateLabel = "Loading analysis…";
   if (!loading && error) {
@@ -148,6 +159,7 @@ export function analysisPanelDisplay(
     result: observation && result ? resultDisplay(observation, result, options.displayedPly) : null,
     actions: {
       analyze: showAnalyze,
+      upgrade: showUpgrade,
       observationRetry: showObservationRetry,
       pending: requestPending,
     },

@@ -22,8 +22,8 @@ function line(overrides: Partial<AnalysisLine> = {}): AnalysisLine {
   return { ...BASE_LINE, ...overrides };
 }
 
-function result(lines: AnalysisLine[]): AnalysisResult {
-  return { lines, terminal_kind: null };
+function result(lines: AnalysisLine[], quality: AnalysisResult["quality"] = "tool"): AnalysisResult {
+  return { quality, lines, terminal_kind: null };
 }
 
 function state(
@@ -39,6 +39,7 @@ function state(
     requestError: null,
     requestPending: false,
     requestAnalysis: async () => undefined,
+    requestFullAnalysis: async () => undefined,
     retryObservation: () => undefined,
   };
 }
@@ -51,6 +52,7 @@ describe("analysisPanelDisplay", () => {
     );
 
     expect(display.result).toEqual({
+      quality: "tool",
       metadata: { displayedPly: 12, depth: 28, candidateCount: 1 },
       lines: [
         {
@@ -117,15 +119,21 @@ describe("analysisPanelDisplay", () => {
 
   it("keeps terminal result empty and removes update/retry derivation", () => {
     const display = analysisPanelDisplay(
-      state("ready", { lines: [], terminal_kind: "checkmate" }),
+      state("ready", { quality: "browser", lines: [], terminal_kind: "checkmate" }),
       { displayedPly: 24 },
     );
 
     expect(display.result).toEqual({
+      quality: "browser",
       metadata: { displayedPly: 24, depth: null, candidateCount: 0 },
       lines: [],
     });
-    expect(display.actions).toEqual({ analyze: false, observationRetry: false, pending: false });
+    expect(display.actions).toEqual({
+      analyze: false,
+      upgrade: false,
+      observationRetry: false,
+      pending: false,
+    });
   });
 
   it("shows a deliberate request only for the clean not-requested state", () => {
@@ -133,6 +141,17 @@ describe("analysisPanelDisplay", () => {
 
     expect(display.result).toBeNull();
     expect(display.actions.analyze).toBe(true);
+    expect(display.actions.upgrade).toBe(false);
+  });
+
+  it("offers a full upgrade only for a browser-ready result", () => {
+    const display = analysisPanelDisplay(state("ready", result([line()], "browser")));
+
+    expect(display.result?.quality).toBe("browser");
+    expect(display.actions).toMatchObject({ analyze: false, upgrade: true, pending: false });
+
+    const fullDisplay = analysisPanelDisplay(state("ready", result([line()], "tool")));
+    expect(fullDisplay.actions.upgrade).toBe(false);
   });
 
   it("uses the observation FEN for retained-result PV formatting", () => {
@@ -144,5 +163,6 @@ describe("analysisPanelDisplay", () => {
 
     expect(display.result?.lines[0]?.pv).toBe("42. e4");
     expect(display.stateLabel).toBe("Analysis running");
+    expect(display.actions.upgrade).toBe(false);
   });
 });

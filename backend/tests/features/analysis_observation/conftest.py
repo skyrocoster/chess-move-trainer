@@ -60,6 +60,17 @@ def _complete_analysis_result(database: Path) -> None:
         ).fetchone()[0]
         legal_moves = {move.uci() for move in board.legal_moves}
         assert set(additional_moves).issubset(legal_moves)
+        existing_ranks = {
+            row[0]
+            for row in connection.execute(
+                """
+                SELECT dal_rank
+                FROM derived_analysis_line
+                WHERE derived_analysis_result_id = ?
+                """,
+                (position_id,),
+            )
+        }
         connection.executemany(
             """
             INSERT INTO derived_analysis_line (
@@ -70,6 +81,7 @@ def _complete_analysis_result(database: Path) -> None:
             (
                 (position_id, rank, 34 + rank, json.dumps([move]))
                 for rank, move in enumerate(additional_moves, 2)
+                if rank not in existing_ranks
             ),
         )
 

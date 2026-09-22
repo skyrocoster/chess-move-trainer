@@ -22,6 +22,7 @@ from chess_move_trainer.database.stockfish import (
     QueueQualityError,
     QueueService,
 )
+from chess_move_trainer.database.stockfish.configuration import profile_for
 
 STARTING_FEN = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1"
 OLD_ROOTS = (
@@ -43,15 +44,21 @@ NEW_ROOTS = (
 def _result(
     *,
     quality: AnalysisQuality = AnalysisQuality.BROWSER,
-    configuration_version: int = 1,
+    configuration_version: int | None = None,
     roots: tuple[tuple[str, ...], ...] = OLD_ROOTS,
+    engine_version: str = "engine-1",
 ):
+    profile = profile_for(quality)
+    if configuration_version is None:
+        configuration_version = profile.configuration_version
+    if quality is AnalysisQuality.BROWSER and roots == OLD_ROOTS:
+        roots = roots[:1]
     return validate_analysis_result(
         quality=quality,
         configuration_version=configuration_version,
-        settings={"Hash": 16},
+        settings=dict(profile.settings),
         engine_name="queue-test-engine",
-        engine_version="engine-1",
+        engine_version=engine_version,
         lines=tuple(
             AnalysisLine(
                 rank=rank,
@@ -207,7 +214,7 @@ def test_completion_publishes_and_deletes_matching_claim_in_one_lifecycle(tmp_pa
     assert _queue_row(database_path, position_id) is None
     assert _stored_analysis(database_path, position_id) == (
         "browser",
-        1,
+        2,
         "engine-1",
     )
 
@@ -231,7 +238,7 @@ def test_browser_completion_after_tool_promotion_publishes_then_releases(tmp_pat
     assert row is not None
     assert row[0:2] == ("tool", "queued")
     assert row[3:] == (None, None)
-    assert _stored_analysis(database_path, position_id) == ("browser", 1, "engine-1")
+    assert _stored_analysis(database_path, position_id) == ("browser", 2, "engine-1")
 
 
 def test_completion_rollback_keeps_queue_and_previous_complete_result(tmp_path: Path) -> None:
@@ -253,7 +260,10 @@ def test_completion_rollback_keeps_queue_and_previous_complete_result(tmp_path: 
     assert claim is not None
 
     with pytest.raises(AnalysisStorageError):
-        queue.complete(claim, _result(quality=AnalysisQuality.TOOL, configuration_version=2))
+        queue.complete(
+            claim,
+            _result(quality=AnalysisQuality.TOOL, engine_version="engine-2"),
+        )
 
     assert _stored_analysis(database_path, position_id) == before
     row = _queue_row(database_path, position_id)
@@ -307,3 +317,48 @@ def test_failed_publication_does_not_leave_partial_lines(tmp_path: Path) -> None
             ).fetchone()[0]
             == 1
         )
+
+
+def test_background_seed_claims_one_browser_row_atomically_and_only_when_empty(
+    tmp_path: Path,
+) -> None:
+    database_path, position_id = _setup(tmp_path)
+    second_position = PositionRepository(database_path).resolve_fen(
+        "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2"
+    )
+    now = datetime(2026, 1, 1, tzinfo=UTC)
+    queue = QueueService(database_path, _token_factory=lambda: "background-token")
+
+    claim = queue.seed_and_claim_background(position_id, now=now)
+
+    assert claim is not None
+    assert claim.position_id == position_id
+    assert claim.quality is AnalysisQuality.BROWSER
+    assert claim.claim_token == "background-token"
+    assert _queue_row(database_path, position_id) == (
+        "browser",
+        "running",
+        "2026-01-01T00:00:00.000000Z",
+        claim.claimed_at_utc,
+        "background-token",
+    )
+    assert queue.seed_and_claim_background(second_position, now=now) is None
+    with sqlite3.connect(database_path) as connection:
+        assert connection.execute("SELECT COUNT(*) FROM derived_analysis_queue").fetchone()[0] == 1
+
+
+def test_background_seed_leaves_existing_requested_work_untouched(tmp_path: Path) -> None:
+    database_path, position_id = _setup(tmp_path)
+    requested_position = PositionRepository(database_path).resolve_fen(
+        "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2"
+    )
+    now = datetime(2026, 1, 1, tzinfo=UTC)
+    queue = QueueService(database_path)
+    queue.enqueue(requested_position, AnalysisQuality.TOOL, requested_at=now)
+
+    assert queue.seed_and_claim_background(position_id, now=now) is None
+    claim = queue.claim(now=now)
+
+    assert claim is not None
+    assert claim.position_id == requested_position
+    assert claim.quality is AnalysisQuality.TOOL

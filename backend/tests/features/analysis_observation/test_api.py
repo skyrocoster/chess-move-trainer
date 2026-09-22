@@ -77,8 +77,14 @@ def test_finished_analysis_returns_full_detail_and_ignores_unknown_filters(api_c
         "state": "ready",
         "result": {
             "quality": "tool",
-            "configuration_version": 7,
-            "settings": {"Hash": 16},
+            "configuration_version": 1,
+            "settings": {
+                "Hash": 1024,
+                "MultiPV": 5,
+                "Nodes": 6400000,
+                "Threads": 6,
+                "UCI_ShowWDL": True,
+            },
             "engine_name": "Stockfish",
             "engine_version": "19",
             "terminal_kind": None,

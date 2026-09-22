@@ -13,6 +13,7 @@ from chess_move_trainer.database.analysis import (
     validate_analysis_position,
 )
 from chess_move_trainer.database.positions import CanonicalPosition, canonicalize_fen
+from chess_move_trainer.database.stockfish import TOOL_PROFILE
 
 STARTING_PLACEMENT = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR"
 STARTING_FEN = f"{STARTING_PLACEMENT} w KQkq - 0 1"
@@ -42,8 +43,8 @@ def _line(rank: int, *pv: str) -> AnalysisLine:
 def _result(lines: list[AnalysisLine] | tuple[AnalysisLine, ...] = ()) -> AnalysisResultInput:
     return AnalysisResultInput(
         quality=AnalysisQuality.TOOL,
-        configuration_version=1,
-        settings={},
+        configuration_version=TOOL_PROFILE.configuration_version,
+        settings=TOOL_PROFILE.settings,
         engine_name="normalized-test-input",
         engine_version="1",
         lines=lines,
@@ -104,6 +105,48 @@ def test_nonterminal_position_requires_five_legal_complete_lines() -> None:
         ("c2c4", "e7e5"),
         ("b1c3", "b8c6"),
     )
+
+
+def test_browser_nonterminal_position_requires_one_legal_rank_one_line() -> None:
+    result = AnalysisResultInput(
+        quality=AnalysisQuality.BROWSER,
+        configuration_version=2,
+        settings={
+            "Hash": 1024,
+            "MultiPV": 1,
+            "Nodes": 200_000,
+            "Threads": 6,
+            "UCI_ShowWDL": True,
+        },
+        engine_name="normalized-test-input",
+        engine_version="1",
+        lines=(_line(1, "e2e4", "e7e5"),),
+    )
+
+    validated = validate_analysis_position(_position(STARTING_FEN), result)
+
+    assert validated.terminal_kind is None
+    assert validated.lines == result.lines
+
+
+def test_browser_nonterminal_position_rejects_multiple_candidate_lines() -> None:
+    result = AnalysisResultInput(
+        quality=AnalysisQuality.BROWSER,
+        configuration_version=2,
+        settings={
+            "Hash": 1024,
+            "MultiPV": 1,
+            "Nodes": 200_000,
+            "Threads": 6,
+            "UCI_ShowWDL": True,
+        },
+        engine_name="normalized-test-input",
+        engine_version="1",
+        lines=(_line(1, "e2e4"), _line(2, "d2d4")),
+    )
+
+    with pytest.raises(AnalysisValidationError):
+        validate_analysis_position(_position(STARTING_FEN), result)
 
 
 def test_nonterminal_position_with_fewer_than_five_legal_moves_uses_all_roots() -> None:

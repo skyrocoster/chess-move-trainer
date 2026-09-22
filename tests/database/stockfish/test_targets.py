@@ -8,10 +8,13 @@ import pytest
 
 from chess_move_trainer.database import create_schema
 from chess_move_trainer.database.analysis import AnalysisQuality, AnalysisRepository
-from chess_move_trainer.database.positions import PositionRepository
+from chess_move_trainer.database.positions import PositionRepository, canonicalize_fen
 from chess_move_trainer.database.stockfish import (
+    BackgroundTargetSelector,
     BulkTargetSelector,
+    QueueService,
 )
+from chess_move_trainer.database.stockfish.configuration import profile_for
 
 START_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 E4_FEN = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1"
@@ -35,6 +38,8 @@ def _add_game_occurrences(
     database: Path,
     game_number: int,
     position_ids: tuple[int, ...],
+    *,
+    first_ply: int = 0,
 ) -> None:
     with sqlite3.connect(database) as connection:
         connection.execute(
@@ -55,7 +60,7 @@ def _add_game_occurrences(
             "SELECT dg_game_id FROM datasource_game WHERE dg_chesscom_game_uuid = ?",
             (f"00000000-0000-4000-8000-{game_number:012d}",),
         ).fetchone()[0]
-        for ply, position_id in enumerate(position_ids):
+        for offset, position_id in enumerate(position_ids):
             connection.execute(
                 """
                 INSERT INTO derived_game_position (
@@ -63,7 +68,7 @@ def _add_game_occurrences(
                     dgp_move_uci, dgp_halfmove_clock, dgp_fullmove_number
                 ) VALUES (?, ?, ?, ?, 0, 1)
                 """,
-                (game_id, ply, position_id, None),
+                (game_id, first_ply + offset, position_id, None),
             )
 
 
@@ -151,6 +156,104 @@ def test_game_pages_are_bounded_and_stable(tmp_path: Path, monkeypatch: pytest.M
     assert all(size <= 2 for size in page_sizes)
 
 
+def test_background_pages_use_distinct_game_frequency_and_keyset_boundaries(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    database = _database(tmp_path)
+    ids = _position_ids(database, (START_FEN, E4_FEN, D4_FEN))
+    _add_game_occurrences(database, 1, (ids[START_FEN], ids[START_FEN], ids[E4_FEN]))
+    _add_game_occurrences(database, 2, (ids[START_FEN], ids[D4_FEN]))
+    _add_game_occurrences(database, 3, (ids[D4_FEN],))
+
+    selector = BackgroundTargetSelector(database, page_size=1)
+    page_sizes: list[int] = []
+    original = selector._load_game_page
+
+    def wrapped(cursor):
+        page = original(cursor)
+        page_sizes.append(len(page))
+        return page
+
+    monkeypatch.setattr(selector, "_load_game_page", wrapped)
+    targets = list(selector.iter_targets())
+
+    assert [(target.frequency, target.position_id) for target in targets] == [
+        (2, ids[START_FEN]),
+        (2, ids[D4_FEN]),
+        (1, ids[E4_FEN]),
+    ]
+    assert page_sizes == [1, 1, 1, 0]
+    assert all(size <= 1 for size in page_sizes)
+
+
+def test_background_selector_covers_all_plies_with_canonical_targets(tmp_path: Path) -> None:
+    database = _database(tmp_path)
+    ids = _position_ids(database, (E4_E5_NF3_FEN,))
+    _add_game_occurrences(database, 1, (ids[E4_E5_NF3_FEN],), first_ply=20)
+
+    targets = list(BackgroundTargetSelector(database).iter_targets())
+
+    assert len(targets) == 1
+    assert targets[0].position_id == ids[E4_E5_NF3_FEN]
+    assert targets[0].frequency == 1
+    assert targets[0].position == canonicalize_fen(E4_E5_NF3_FEN)
+
+
+def test_background_selector_applies_set_based_result_and_queue_eligibility(
+    tmp_path: Path,
+) -> None:
+    database = _database(tmp_path)
+    terminal_fen = "7k/6Q1/6K1/8/8/8/8/8 b - - 0 1"
+    missing_fen = "rnbqkbnr/pppp1ppp/8/4p3/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 2"
+    queued_fen = "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2"
+    ids = _position_ids(
+        database,
+        (START_FEN, E4_FEN, D4_FEN, E4_E5_FEN, terminal_fen, missing_fen, queued_fen),
+    )
+    for game_number, position_id in enumerate(ids.values(), start=1):
+        _add_game_occurrences(database, game_number, (position_id,))
+
+    repository = AnalysisRepository(database)
+    current_browser = ids[START_FEN]
+    stale_browser = ids[E4_FEN]
+    current_tool = ids[D4_FEN]
+    stale_tool = ids[E4_E5_FEN]
+    terminal = ids[terminal_fen]
+    for position_id, quality, engine in (
+        (current_browser, AnalysisQuality.BROWSER, "19"),
+        (stale_browser, AnalysisQuality.BROWSER, "19"),
+        (current_tool, AnalysisQuality.TOOL, "19"),
+        (stale_tool, AnalysisQuality.TOOL, "19"),
+    ):
+        assert repository.publish(
+            position_id,
+            _valid_result(
+                database,
+                position_id,
+                quality,
+                profile_for(quality).configuration_version,
+                engine,
+            ),
+        ).saved
+    with sqlite3.connect(database) as connection:
+        connection.execute(
+            "UPDATE derived_analysis_result SET dar_configuration_version = 1 WHERE derived_position_id = ?",
+            (stale_browser,),
+        )
+        connection.execute(
+            "UPDATE derived_analysis_result SET dar_configuration_version = 2 WHERE derived_position_id = ?",
+            (stale_tool,),
+        )
+    terminal_result = _terminal_result(profile_for(AnalysisQuality.BROWSER))
+    assert repository.publish(terminal, terminal_result).saved
+    QueueService(database).enqueue(ids[queued_fen], AnalysisQuality.BROWSER)
+
+    eligible = {target.position_id for target in BackgroundTargetSelector(database).iter_targets()}
+
+    assert eligible == {stale_browser, ids[missing_fen]}
+
+
 def test_eligibility_includes_missing_browser_and_stale_tool_but_skips_current_tool(
     tmp_path: Path,
 ) -> None:
@@ -165,8 +268,23 @@ def test_eligibility_includes_missing_browser_and_stale_tool_but_skips_current_t
         (E4_E5_FEN, AnalysisQuality.TOOL, 2, "19"),
     ):
         position_id = ids[fen]
-        result = _valid_result(database, position_id, quality, version, engine)
+        result = _valid_result(
+            database,
+            position_id,
+            quality,
+            profile_for(quality).configuration_version,
+            engine,
+        )
         assert repository.publish(position_id, result).saved
+        with sqlite3.connect(database) as connection:
+            connection.execute(
+                """
+                UPDATE derived_analysis_result
+                SET dar_configuration_version = ?, dar_engine_version = ?
+                WHERE derived_position_id = ?
+                """,
+                (version, engine, position_id),
+            )
 
     eligible = {target.position_id for target in BulkTargetSelector(database).iter_targets()}
 
@@ -203,12 +321,13 @@ def _valid_result(
         ).fetchone()
     assert row is not None
     board = chess.Board(" ".join((*row, "0", "1")))
-    moves = tuple(move.uci() for move in board.legal_moves)[:5]
+    profile = profile_for(quality)
+    moves = tuple(move.uci() for move in board.legal_moves)[: profile.multipv]
 
     return validate_analysis_result(
         quality=quality,
         configuration_version=version,
-        settings={"Nodes": 100},
+        settings=dict(profile.settings),
         engine_name="Stockfish",
         engine_version=engine,
         lines=tuple(
@@ -224,4 +343,17 @@ def _valid_result(
             )
             for rank, move in enumerate(moves, start=1)
         ),
+    )
+
+
+def _terminal_result(profile):
+    from chess_move_trainer.database.analysis import validate_analysis_result
+
+    return validate_analysis_result(
+        quality=profile.quality,
+        configuration_version=profile.configuration_version,
+        settings=dict(profile.settings),
+        engine_name="Stockfish",
+        engine_version="19",
+        lines=(),
     )

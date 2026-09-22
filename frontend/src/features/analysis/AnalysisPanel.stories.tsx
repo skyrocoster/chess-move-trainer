@@ -79,6 +79,7 @@ const DISPLAY_LINES: AnalysisPanelLine[] = [
 
 const DEFAULT_ACTIONS: AnalysisPanelDisplay["actions"] = {
   analyze: false,
+  upgrade: false,
   observationRetry: false,
   pending: false,
 };
@@ -134,6 +135,7 @@ function completeDisplay(
   return displayFor({
     stateLabel: "Analysis complete",
     result: {
+      quality: "tool",
       lines,
       metadata: {
         displayedPly: 12,
@@ -143,6 +145,22 @@ function completeDisplay(
     },
     ...displayOverrides,
     actions,
+  });
+}
+
+function quickDisplay(overrides: DisplayOverrides = {}): AnalysisPanelDisplay {
+  return completeDisplay(DISPLAY_LINES.slice(0, 1), {
+    result: {
+      quality: "browser",
+      lines: DISPLAY_LINES.slice(0, 1),
+      metadata: {
+        displayedPly: 12,
+        depth: 28,
+        candidateCount: 1,
+      },
+    },
+    actions: { upgrade: true },
+    ...overrides,
   });
 }
 
@@ -170,6 +188,7 @@ function panelArgs(display: AnalysisPanelDisplay): ComponentProps<typeof Analysi
   return {
     display,
     onAnalyze: fn(),
+    onUpgrade: fn(),
     onRetryObservation: fn(),
     onCandidateMove: fn(),
   };
@@ -235,9 +254,21 @@ export const Running: Story = {
 };
 
 export const Ready: Story = {
-  name: "Ready — five ranked lines and formatted values",
+  name: "Ready — full five-line analysis",
   args: panelArgs(completeDisplay()),
   render: (args) => panel(args),
+};
+
+export const QuickReady: Story = {
+  name: "Ready — quick one-line analysis with upgrade",
+  args: panelArgs(quickDisplay()),
+  render: (args) => panel(args),
+  play: async ({ args, canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByText("Displayed position · ply 12 · depth 28 · 1 line")).toBeVisible();
+    await userEvent.click(await canvas.findByRole("button", { name: "Upgrade to full analysis" }));
+    await expect(args.onUpgrade).toHaveBeenCalledTimes(1);
+  },
 };
 
 export const ActiveWithResult: Story = {
@@ -245,6 +276,7 @@ export const ActiveWithResult: Story = {
   args: panelArgs(
     queuedDisplay("running", {
       result: {
+        quality: "browser",
         lines: DISPLAY_LINES,
         metadata: {
           displayedPly: 12,

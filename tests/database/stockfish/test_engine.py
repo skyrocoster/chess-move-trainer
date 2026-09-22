@@ -86,6 +86,7 @@ class _FakeProcess:
         self._returncode: int | None = None
         self._wrong_identity = wrong_identity
         self._hang = hang
+        self._multipv = 5
         self.worker = threading.Thread(target=self._run, daemon=True)
         self.worker.start()
 
@@ -101,6 +102,8 @@ class _FakeProcess:
                 self.stdout.put("uciok")
             elif command == "isready":
                 self.stdout.put("readyok")
+            elif command.startswith("setoption name MultiPV value "):
+                self._multipv = int(command.rsplit(" ", 1)[1])
             elif command.startswith("go nodes ") and not self._hang:
                 self._send_analysis()
 
@@ -113,7 +116,7 @@ class _FakeProcess:
             "b1c3",
         )
         replies = ("e7e5", "d7d5", "g8f6", "e7e5", "b8c6")
-        for rank, (root, reply) in enumerate(zip(roots, replies), start=1):
+        for rank, (root, reply) in enumerate(zip(roots[: self._multipv], replies), start=1):
             self.stdout.put(
                 f"info depth {10 + rank} multipv {rank} score cp {rank * 10} "
                 f"wdl 600 300 100 pv {root} {reply}"
@@ -157,13 +160,15 @@ class _FakeFactory:
 def test_fixed_profiles_and_identity_contract_are_explicit() -> None:
     assert BROWSER_PROFILE.quality is AnalysisQuality.BROWSER
     assert BROWSER_PROFILE.nodes == BROWSER_NODES == 200_000
+    assert BROWSER_PROFILE.multipv == 1
+    assert BROWSER_PROFILE.configuration_version == 2
     assert TOOL_PROFILE.quality is AnalysisQuality.TOOL
     assert TOOL_PROFILE.nodes == TOOL_NODES == 6_400_000
+    assert TOOL_PROFILE.multipv == MULTI_PV == 5
+    assert TOOL_PROFILE.configuration_version == CONFIGURATION_VERSION == 1
     for profile in (BROWSER_PROFILE, TOOL_PROFILE):
         assert profile.threads == THREADS == 6
         assert profile.hash_mb == HASH_MB == 1024
-        assert profile.multipv == MULTI_PV == 5
-        assert profile.configuration_version == CONFIGURATION_VERSION == 1
     assert STOCKFISH_VERSION == "19"
     assert "Nodes" in TOOL_PROFILE.settings
 

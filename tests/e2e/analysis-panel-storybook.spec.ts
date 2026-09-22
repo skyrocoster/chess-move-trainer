@@ -11,6 +11,7 @@ const STORY_IDS = {
   queued: `${STORY_PREFIX}--queued`,
   running: `${STORY_PREFIX}--running`,
   ready: `${STORY_PREFIX}--ready`,
+  quickReady: `${STORY_PREFIX}--quick-ready`,
   activeWithResult: `${STORY_PREFIX}--active-with-result`,
   constrainedReady: `${STORY_PREFIX}--constrained-ready`,
   observationError: `${STORY_PREFIX}--observation-error`,
@@ -146,6 +147,11 @@ test.describe("Analysis Panel Storybook surface", () => {
         role: "status" as const,
       },
       {
+        id: STORY_IDS.quickReady,
+        status: "Analysis complete",
+        role: "status" as const,
+      },
+      {
         id: STORY_IDS.activeWithResult,
         status: "Analysis running",
         role: "status" as const,
@@ -203,6 +209,34 @@ test.describe("Analysis Panel Storybook surface", () => {
     ).toBeVisible();
     await expect(page.getByRole("listitem")).toHaveCount(4);
     await expect(page.getByText("Line unavailable")).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Upgrade to full analysis" }),
+    ).toHaveCount(0);
+    await checkA11y(page);
+
+    await openStory(page, STORY_IDS.quickReady);
+    await expect(
+      page.getByText("Displayed position · ply 12 · depth 28 · 1 line"),
+    ).toBeVisible();
+    const quickUpgrade = page.getByRole("button", {
+      name: "Upgrade to full analysis",
+    });
+    await expect(quickUpgrade).toHaveAttribute("type", "button");
+    await quickUpgrade.focus();
+    await expect(quickUpgrade).toBeFocused();
+    await quickUpgrade.click();
+    await checkA11y(page);
+
+    await openStory(page, STORY_IDS.activeWithResult);
+    await expect(
+      page.getByRole("button", { name: "Analyze position" }),
+    ).toHaveCount(0);
+    await expect(
+      page.getByRole("button", { name: "Upgrade to full analysis" }),
+    ).toHaveCount(0);
+    await expect(
+      page.getByRole("button", { name: "Retry observation" }),
+    ).toHaveCount(0);
     await checkA11y(page);
 
     await openStory(page, STORY_IDS.terminalEmpty);
@@ -214,6 +248,9 @@ test.describe("Analysis Panel Storybook surface", () => {
     await expect(page.getByRole("figure")).toHaveCount(0);
     await expect(
       page.getByRole("list", { name: "Ranked analysis lines" }),
+    ).toHaveCount(0);
+    await expect(
+      page.getByRole("button", { name: "Upgrade to full analysis" }),
     ).toHaveCount(0);
   });
 
@@ -233,6 +270,9 @@ test.describe("Analysis Panel Storybook surface", () => {
     await openStory(page, STORY_IDS.ready);
     await expect(page.getByRole("button", { name: "Update analysis" })).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Retry analysis" })).toHaveCount(0);
+    await expect(
+      page.getByRole("button", { name: "Upgrade to full analysis" }),
+    ).toHaveCount(0);
 
     await openStory(page, STORY_IDS.observationError);
     const retryObservation = page.getByRole("button", {
@@ -247,6 +287,14 @@ test.describe("Analysis Panel Storybook surface", () => {
     await expect(
       page.getByRole("button", { name: "Analyze position" }),
     ).toBeDisabled();
+
+    await openStory(page, STORY_IDS.activeWithResult);
+    await expect(
+      page.getByRole("button", { name: "Analyze position" }),
+    ).toHaveCount(0);
+    await expect(
+      page.getByRole("button", { name: "Upgrade to full analysis" }),
+    ).toHaveCount(0);
 
     await openStory(page, STORY_IDS.requestError);
     const deliberateRequest = page.getByRole("button", { name: "Analyze position" });
@@ -278,6 +326,9 @@ test.describe("Analysis Panel Storybook surface", () => {
 
     await expect(page.getByRole("button", { name: "Update analysis" })).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Retry analysis" })).toHaveCount(0);
+    await expect(
+      page.getByRole("button", { name: "Upgrade to full analysis" }),
+    ).toHaveCount(0);
     await expectBestLineGeometry(page);
   });
 

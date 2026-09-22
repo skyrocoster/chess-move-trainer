@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   type AnalysisClient,
   type AnalysisFailure,
+  type AnalysisQuality,
   type AnalysisObservation,
   defaultAnalysisClient,
   positionKeyFromFen,
@@ -28,7 +29,8 @@ export type AnalysisState = {
   error: string | null;
   requestError: string | null;
   requestPending: boolean;
-  requestAnalysis: () => Promise<void>;
+  requestAnalysis: (quality?: AnalysisQuality) => Promise<void>;
+  requestFullAnalysis: () => Promise<void>;
   retryObservation: () => void;
 };
 
@@ -168,7 +170,7 @@ function useDefaultAnalysisState(fen: Fen | null, pollIntervalMs: number): Analy
     query.pollLimitReached && observation !== null ? POLL_TIMEOUT_MESSAGE : null;
   const loading = fen !== null && (query.isPending || refreshing);
 
-  async function requestAnalysis(): Promise<void> {
+  async function requestAnalysis(quality: AnalysisQuality = "browser"): Promise<void> {
     if (fen === null || requestPendingRef.current) return;
 
     const positionFen = fen;
@@ -181,7 +183,7 @@ function useDefaultAnalysisState(fen: Fen | null, pollIntervalMs: number): Analy
 
     let result;
     try {
-      result = await defaultAnalysisClient.request(positionFen, controller.signal);
+      result = await defaultAnalysisClient.request(positionFen, controller.signal, quality);
     } catch {
       if (!controller.signal.aborted) {
         requestPendingRef.current = false;
@@ -228,6 +230,7 @@ function useDefaultAnalysisState(fen: Fen | null, pollIntervalMs: number): Analy
     requestError,
     requestPending,
     requestAnalysis,
+    requestFullAnalysis: () => requestAnalysis("tool"),
     retryObservation: () => setRetryToken((token) => token + 1),
   };
 }
@@ -362,7 +365,7 @@ function useInjectedAnalysisState(
     };
   }, [client, fen, pollIntervalMs, refreshToken]);
 
-  async function requestAnalysis() {
+  async function requestAnalysis(quality: AnalysisQuality = "browser") {
     if (fen === null || requestPendingRef.current) {
       return;
     }
@@ -377,7 +380,7 @@ function useInjectedAnalysisState(
 
     let result;
     try {
-      result = await client.request(positionFen, controller.signal);
+      result = await client.request(positionFen, controller.signal, quality);
     } catch {
       if (!controller.signal.aborted) {
         requestPendingRef.current = false;
@@ -415,6 +418,7 @@ function useInjectedAnalysisState(
     requestError,
     requestPending,
     requestAnalysis,
+    requestFullAnalysis: () => requestAnalysis("tool"),
     retryObservation: () => setRefreshToken((token) => token + 1),
   };
 }

@@ -18,6 +18,7 @@ const BASE_LINE: AnalysisLine = {
 };
 
 const result = (line: AnalysisLine): AnalysisResult => ({
+  quality: "browser",
   lines: [line],
   terminal_kind: null,
 });
@@ -33,6 +34,7 @@ function analysisState(
     requestError: null,
     requestPending: false,
     requestAnalysis: vi.fn(async () => undefined),
+    requestFullAnalysis: vi.fn(async () => undefined),
     retryObservation: vi.fn(),
   };
 }
@@ -90,7 +92,7 @@ describe("evaluationDisplay", () => {
 
   it("keeps a ready terminal observation neutral without inventing a line", () => {
     const display = evaluationDisplay(
-      analysisState(observation({ lines: [], terminal_kind: "checkmate" })),
+      analysisState(observation({ quality: "browser", lines: [], terminal_kind: "checkmate" })),
     );
 
     expect(display).toEqual({

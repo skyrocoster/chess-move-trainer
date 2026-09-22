@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
@@ -13,7 +14,7 @@ from ..connection import DEFAULT_LOCK_TIMEOUT_SECONDS, _open_existing_connection
 from ..positions import CanonicalPosition, canonicalize_board, canonicalize_fen
 from ..positions.repository import position_transaction
 from ..schema import SchemaIncompatibleError, _assert_compatible_schema
-from .configuration import CONFIGURATION_VERSION, STOCKFISH_VERSION
+from .configuration import STOCKFISH_VERSION, profile_for
 
 TARGET_MIN_PLY = 0
 TARGET_MAX_PLY = 19
@@ -241,7 +242,8 @@ class BulkTargetSelector:
                 row = connection.execute(
                     text(
                         """
-                        SELECT dar_quality, dar_configuration_version, dar_engine_version
+                         SELECT dar_quality, dar_configuration_version,
+                                dar_engine_version, dar_settings_json
                         FROM derived_analysis_result
                         WHERE derived_position_id = :position_id
                         """
@@ -256,7 +258,16 @@ class BulkTargetSelector:
             return True
         if row[0] != "tool":
             raise TargetSelectionError("stored analysis has an invalid quality")
-        return row[1] != CONFIGURATION_VERSION or row[2] != STOCKFISH_VERSION
+        profile = profile_for(row[0])
+        try:
+            settings = json.loads(row[3])
+        except (IndexError, TypeError, ValueError, json.JSONDecodeError):
+            return True
+        return (
+            row[1] != profile.configuration_version
+            or row[2] != STOCKFISH_VERSION
+            or settings != dict(profile.settings)
+        )
 
     def _replay_route_positions(self) -> dict[int, CanonicalPosition]:
         routes = _load_route_moves(self._database_path, self._lock_timeout)
@@ -294,6 +305,136 @@ class BulkTargetSelector:
         except Exception as error:
             raise TargetSelectionError("opening routes could not be replayed") from error
         return route_positions
+
+
+class BackgroundTargetSelector:
+    """Select bounded, all-game-position browser targets in stable order."""
+
+    def __init__(
+        self,
+        database_path: str | Path,
+        *,
+        page_size: int = DEFAULT_TARGET_PAGE_SIZE,
+        lock_timeout: float = DEFAULT_LOCK_TIMEOUT_SECONDS,
+    ) -> None:
+        if type(page_size) is not int or page_size <= 0:
+            raise TargetInputError("page_size must be a positive integer")
+        self._database_path = database_path
+        self._page_size = page_size
+        self._lock_timeout = lock_timeout
+
+    def iter_targets(self, *, limit: int | None = None) -> Iterator[BulkTarget]:
+        """Yield eligible all-ply game positions without retaining a target list."""
+
+        _validate_limit(limit)
+        yielded = 0
+        cursor: tuple[int, int] | None = None
+        while True:
+            page = self._load_game_page(cursor)
+            if not page:
+                return
+            for target in page:
+                yield target
+                yielded += 1
+                if limit is not None and yielded >= limit:
+                    return
+            last = page[-1]
+            cursor = (last.frequency, last.position_id)
+
+    def _load_game_page(
+        self,
+        cursor: tuple[int, int] | None,
+    ) -> tuple[BulkTarget, ...]:
+        profile = profile_for("browser")
+        parameters: dict[str, int | str] = {
+            "browser_quality": "browser",
+            "configuration_version": profile.configuration_version,
+            "engine_version": STOCKFISH_VERSION,
+            "hash_mb": profile.hash_mb,
+            "multipv": profile.multipv,
+            "nodes": profile.nodes,
+            "threads": profile.threads,
+            "show_wdl": 1,
+            "settings_key_count": len(profile.settings),
+            "page_size": self._page_size,
+        }
+        cursor_clause = ""
+        if cursor is not None:
+            parameters.update(
+                {
+                    "last_frequency": cursor[0],
+                    "last_position_id": cursor[1],
+                }
+            )
+            cursor_clause = """
+              AND (
+                    gc.game_count < :last_frequency
+                    OR (
+                        gc.game_count = :last_frequency
+                        AND gc.position_id > :last_position_id
+                    )
+                  )
+            """
+        try:
+            with _open_existing_connection(self._database_path, self._lock_timeout) as connection:
+                _assert_compatible_schema(connection, self._lock_timeout)
+                rows = connection.execute(
+                    text(
+                        f"""
+                        WITH game_counts AS (
+                            SELECT derived_position_id AS position_id,
+                                   COUNT(DISTINCT datasource_game_id) AS game_count
+                            FROM derived_game_position
+                            GROUP BY derived_position_id
+                        )
+                        SELECT gc.position_id, gc.game_count,
+                               p.dp_placement, p.dp_side_to_move,
+                               p.dp_castling_rights, p.dp_legal_en_passant
+                        FROM game_counts AS gc
+                        JOIN derived_position AS p
+                          ON p.dp_position_id = gc.position_id
+                        LEFT JOIN derived_analysis_result AS r
+                          ON r.derived_position_id = gc.position_id
+                        LEFT JOIN derived_analysis_queue AS q
+                          ON q.derived_position_id = gc.position_id
+                        WHERE q.derived_position_id IS NULL
+                          AND (
+                                r.derived_position_id IS NULL
+                                OR (
+                                    r.dar_quality = :browser_quality
+                                    AND r.dar_terminal_kind IS NULL
+                                    AND (
+                                        r.dar_configuration_version <> :configuration_version
+                                        OR r.dar_engine_version <> :engine_version
+                                        OR json_type(r.dar_settings_json, '$.Hash') IS NOT 'integer'
+                                        OR json_extract(r.dar_settings_json, '$.Hash') <> :hash_mb
+                                        OR json_type(r.dar_settings_json, '$.MultiPV') IS NOT 'integer'
+                                        OR json_extract(r.dar_settings_json, '$.MultiPV') <> :multipv
+                                        OR json_type(r.dar_settings_json, '$.Nodes') IS NOT 'integer'
+                                        OR json_extract(r.dar_settings_json, '$.Nodes') <> :nodes
+                                        OR json_type(r.dar_settings_json, '$.Threads') IS NOT 'integer'
+                                        OR json_extract(r.dar_settings_json, '$.Threads') <> :threads
+                                        OR json_type(r.dar_settings_json, '$.UCI_ShowWDL') IS NOT 'true'
+                                        OR json_extract(r.dar_settings_json, '$.UCI_ShowWDL') <> :show_wdl
+                                        OR (
+                                            SELECT COUNT(*)
+                                            FROM json_each(r.dar_settings_json)
+                                        ) <> :settings_key_count
+                                    )
+                                )
+                              )
+                        {cursor_clause}
+                        ORDER BY gc.game_count DESC, gc.position_id ASC
+                        LIMIT :page_size
+                        """
+                    ),
+                    parameters,
+                ).all()
+        except SchemaIncompatibleError:
+            raise
+        except Exception as error:
+            raise TargetSelectionError("background game targets could not be read") from error
+        return tuple(_target_from_row(row) for row in rows)
 
 
 class InitialAnalysisTargetSelector:
@@ -431,6 +572,7 @@ def _validate_limit(limit: int | None) -> None:
 
 
 __all__ = [
+    "BackgroundTargetSelector",
     "BulkTarget",
     "BulkTargetSelector",
     "DEFAULT_TARGET_PAGE_SIZE",

@@ -19,6 +19,7 @@ from ..schema import _assert_compatible_schema
 from .engine import StockfishAnalysis, StockfishEngine
 from .mutex import DatabaseMutex, MutexBusyError
 from .queue import QueueClaim, QueueService
+from .targets import BackgroundTargetSelector
 
 DEFAULT_RECOVERY_POLL_SECONDS = 1.0
 
@@ -82,6 +83,7 @@ class WorkerRunner:
         _queue_factory: Callable[[str | Path, float], Any] | None = None,
         _engine_factory: Callable[[], Any] | None = None,
         _mutex_factory: Callable[[str | Path], Any] | None = None,
+        _background_selector_factory: Callable[[str | Path, float], Any] | None = None,
         _position_loader: Callable[[int], CanonicalPosition] | None = None,
     ) -> None:
         if not isinstance(executable, (str, Path)) or not str(executable):
@@ -102,6 +104,9 @@ class WorkerRunner:
         )
         self._engine_factory = _engine_factory or (lambda: StockfishEngine(self._executable))
         self._mutex_factory = _mutex_factory or (lambda path: DatabaseMutex(path))
+        self._background_selector_factory = _background_selector_factory or (
+            lambda path, timeout: BackgroundTargetSelector(path, lock_timeout=timeout)
+        )
         self._position_loader = _position_loader or self._load_position
 
     def run(self) -> WorkerOutcome:
@@ -113,6 +118,7 @@ class WorkerRunner:
             raise MutexBusyError(f"Stockfish analysis is already running for {self._database_path}")
 
         engine: Any | None = None
+        background_selector: Any
         current_claim: QueueClaim | None = None
         failures: list[WorkerFailure] = []
         failed_position_ids: set[int] = set()
@@ -124,6 +130,9 @@ class WorkerRunner:
         recovery_polls = 0
 
         try:
+            background_selector = self._background_selector_factory(
+                self._database_path, self._lock_timeout
+            )
             while True:
                 try:
                     claim = queue.claim(
@@ -157,7 +166,23 @@ class WorkerRunner:
                         drained = False
 
                 if claim is None:
-                    break
+                    try:
+                        claim, queue_is_no_longer_empty = self._claim_background(
+                            queue,
+                            background_selector,
+                            failed_position_ids,
+                        )
+                    except KeyboardInterrupt:
+                        interrupted = True
+                        break
+                    except Exception as error:
+                        failures.append(WorkerFailure(None, str(error)))
+                        drained = False
+                        break
+                    if claim is None:
+                        if queue_is_no_longer_empty:
+                            continue
+                        break
 
                 claimed_count += 1
                 current_claim = claim
@@ -252,6 +277,26 @@ class WorkerRunner:
             drained=drained,
             recovery_polls=recovery_polls,
         )
+
+    def _claim_background(
+        self,
+        queue: Any,
+        selector: Any,
+        failed_position_ids: set[int],
+    ) -> tuple[QueueClaim | None, bool]:
+        """Atomically claim one browser target after confirming the queue is empty."""
+
+        for target in selector.iter_targets():
+            if target.position_id in failed_position_ids:
+                continue
+            claim = queue.seed_and_claim_background(
+                target.position_id,
+                now=self._clock(),
+            )
+            if claim is None:
+                return None, True
+            return claim, False
+        return None, False
 
     def _recover_young_claim(
         self,

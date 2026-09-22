@@ -28,6 +28,7 @@ const COUNTER_VARIANT_FEN: Fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w 
 const NEXT_FEN: Fen = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1";
 
 const RESULT: AnalysisResult = {
+  quality: "browser",
   lines: [
     {
       rank: 1,

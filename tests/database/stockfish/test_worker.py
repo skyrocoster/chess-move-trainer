@@ -77,6 +77,22 @@ class _FakeClock:
         self.current += timedelta(seconds=seconds)
 
 
+class _FakeBackgroundTarget:
+    def __init__(self, position_id: int) -> None:
+        self.position_id = position_id
+
+
+class _FakeBackgroundSelector:
+    def __init__(self, position_ids: list[int]) -> None:
+        self._targets = [_FakeBackgroundTarget(position_id) for position_id in position_ids]
+        self.calls = 0
+
+    def iter_targets(self):
+        self.calls += 1
+        while self._targets:
+            yield self._targets.pop(0)
+
+
 def _result(position: object, quality: AnalysisQuality | str) -> AnalysisResultInput:
     canonical = position
     board = chess.Board(
@@ -103,7 +119,7 @@ def _result(position: object, quality: AnalysisQuality | str) -> AnalysisResultI
             pv_uci=(move.uci(),),
             depth=12,
         )
-        for rank, move in enumerate(tuple(board.legal_moves)[:5], start=1)
+        for rank, move in enumerate(tuple(board.legal_moves)[: profile.multipv], start=1)
     )
     return AnalysisResultInput(
         quality=profile.quality,
@@ -134,6 +150,17 @@ def _queue_row(database: Path, position_id: int) -> tuple[object, ...] | None:
             """,
             (position_id,),
         ).fetchone()
+
+
+def _queue_rows(database: Path) -> list[tuple[object, ...]]:
+    with sqlite3.connect(database) as connection:
+        return connection.execute(
+            """
+            SELECT derived_position_id, daq_requested_quality, daq_state
+            FROM derived_analysis_queue
+            ORDER BY derived_position_id
+            """
+        ).fetchall()
 
 
 def _stored_quality(database: Path, position_id: int) -> object | None:
@@ -200,6 +227,130 @@ def test_fifo_claims_immutable_quality_and_serial_engine_reuse(tmp_path: Path) -
     assert mutex.released
     assert _queue_row(database, ids[START_FEN]) is None
     assert _queue_row(database, ids[E4_FEN]) is None
+
+
+def test_requested_work_precedes_one_at_a_time_background_browser_work(
+    tmp_path: Path,
+) -> None:
+    database, ids = _database(tmp_path)
+    queue = QueueService(database)
+    origin = datetime(2026, 1, 1, tzinfo=UTC)
+    queue.enqueue(ids[START_FEN], AnalysisQuality.TOOL, requested_at=origin)
+    selector = _FakeBackgroundSelector([ids[E4_FEN], ids[D4_FEN]])
+    observed_rows: list[tuple[AnalysisQuality, list[tuple[object, ...]]]] = []
+
+    def on_analyze(_position: object, quality: AnalysisQuality) -> None:
+        observed_rows.append((quality, _queue_rows(database)))
+
+    engine = _FakeEngine(on_analyze=on_analyze)
+    outcome = _runner(
+        database,
+        _FakeMutex(),
+        lambda: engine,
+        _background_selector_factory=lambda _path, _timeout: selector,
+    ).run()
+
+    assert outcome.succeeded
+    assert outcome.claimed_count == outcome.completed_count == 3
+    assert [quality for _position, quality in engine.calls] == [
+        AnalysisQuality.TOOL,
+        AnalysisQuality.BROWSER,
+        AnalysisQuality.BROWSER,
+    ]
+    assert [rows for _quality, rows in observed_rows] == [
+        [(ids[START_FEN], "tool", "running")],
+        [(ids[E4_FEN], "browser", "running")],
+        [(ids[D4_FEN], "browser", "running")],
+    ]
+    assert selector.calls == 3
+    assert engine.closed
+    assert _queue_rows(database) == []
+
+
+def test_queue_is_rechecked_before_next_background_target(tmp_path: Path) -> None:
+    database, ids = _database(tmp_path)
+    queue = QueueService(database)
+    selector = _FakeBackgroundSelector([ids[E4_FEN], ids[D4_FEN]])
+
+    def enqueue_requested_after_first_background(_position: object, quality: AnalysisQuality) -> None:
+        if quality is AnalysisQuality.BROWSER and len(engine.calls) == 1:
+            queue.enqueue(ids[START_FEN], AnalysisQuality.TOOL)
+
+    engine = _FakeEngine(on_analyze=enqueue_requested_after_first_background)
+    outcome = _runner(
+        database,
+        _FakeMutex(),
+        lambda: engine,
+        _background_selector_factory=lambda _path, _timeout: selector,
+    ).run()
+
+    assert outcome.succeeded
+    assert [quality for _position, quality in engine.calls] == [
+        AnalysisQuality.BROWSER,
+        AnalysisQuality.TOOL,
+        AnalysisQuality.BROWSER,
+    ]
+    assert selector.calls == 3
+    assert _stored_quality(database, ids[START_FEN]) == "tool"
+    assert _stored_quality(database, ids[E4_FEN]) == "browser"
+    assert _stored_quality(database, ids[D4_FEN]) == "browser"
+
+
+def test_background_interruption_releases_work_for_rerun_recovery(tmp_path: Path) -> None:
+    database, ids = _database(tmp_path, (START_FEN, E4_FEN))
+    selector = _FakeBackgroundSelector([ids[E4_FEN]])
+    interrupted_engine = _FakeEngine([KeyboardInterrupt()])
+    first = _runner(
+        database,
+        _FakeMutex(),
+        lambda: interrupted_engine,
+        _background_selector_factory=lambda _path, _timeout: selector,
+    ).run()
+
+    assert first.interrupted
+    assert _queue_row(database, ids[E4_FEN])[1] == "queued"
+    assert interrupted_engine.closed
+
+    recovery_engine = _FakeEngine()
+    second = _runner(
+        database,
+        _FakeMutex(),
+        lambda: recovery_engine,
+        _background_selector_factory=lambda _path, _timeout: _FakeBackgroundSelector([]),
+    ).run()
+
+    assert second.succeeded
+    assert second.claimed_count == second.completed_count == 1
+    assert recovery_engine.calls[0][1] is AnalysisQuality.BROWSER
+    assert _queue_row(database, ids[E4_FEN]) is None
+    assert _stored_quality(database, ids[E4_FEN]) == "browser"
+
+
+def test_background_failure_is_isolated_without_same_launch_retry(tmp_path: Path) -> None:
+    database, ids = _database(tmp_path)
+    selector = _FakeBackgroundSelector([ids[E4_FEN], ids[D4_FEN]])
+    engines: list[_FakeEngine] = []
+
+    def engine_factory() -> _FakeEngine:
+        engine = _FakeEngine([RuntimeError("background search failed")]) if not engines else _FakeEngine()
+        engines.append(engine)
+        return engine
+
+    outcome = _runner(
+        database,
+        _FakeMutex(),
+        engine_factory,
+        _background_selector_factory=lambda _path, _timeout: selector,
+    ).run()
+
+    assert outcome.exit_code == 1
+    assert outcome.claimed_count == 2
+    assert len(outcome.failures) == 1
+    assert outcome.failures[0].position_id == ids[E4_FEN]
+    assert [quality for _position, quality in engines[1].calls] == [AnalysisQuality.BROWSER]
+    assert _stored_quality(database, ids[E4_FEN]) is None
+    assert _stored_quality(database, ids[D4_FEN]) == "browser"
+    assert all(engine.closed for engine in engines)
 
 
 def test_browser_completion_releases_promotion_then_tool_completes(tmp_path: Path) -> None:

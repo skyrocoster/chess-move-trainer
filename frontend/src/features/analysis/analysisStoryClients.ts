@@ -5,6 +5,7 @@ import type {
   AnalysisLine,
   AnalysisObservation,
   AnalysisOperationResult,
+  AnalysisQuality,
   AnalysisResult,
   AnalysisStateValue,
 } from "./analysisApi";
@@ -25,8 +26,13 @@ function cleanLine(move: string, rank: number, scoreValue: number): AnalysisLine
   };
 }
 
-function cleanResult(moves: readonly string[], scoreOffset = 0): AnalysisResult {
+function cleanResult(
+  moves: readonly string[],
+  scoreOffset = 0,
+  quality: AnalysisQuality = "tool",
+): AnalysisResult {
   return {
+    quality,
     lines: moves.map((move, index) => cleanLine(move, index + 1, 34 - index * 10 + scoreOffset)),
     terminal_kind: null,
   };
@@ -48,7 +54,7 @@ export type StoryAnalysisLifecycleEvent = {
   fen: Fen;
   state: AnalysisStateValue;
   hasResult: boolean;
-  quality?: "tool";
+  quality?: AnalysisQuality;
 };
 
 function emitLifecycleEvent(
@@ -70,7 +76,13 @@ export function storyCandidateAnalysisClient(
 ): AnalysisClient {
   return {
     observe: fn(async (fen) => cleanObservation(fen, "ready", cleanResult(moves))),
-    request: fn(async (fen) => cleanObservation(fen, "ready", cleanResult(moves))),
+    request: fn(async (fen, _signal, quality = "browser") =>
+      cleanObservation(
+        fen,
+        "ready",
+        cleanResult(quality === "tool" ? moves : moves.slice(0, 1), 0, quality),
+      ),
+    ),
   };
 }
 
@@ -81,6 +93,7 @@ export function storySelectedPositionAnalysisClient(
   const readyMoves = ["e2e4"] as const;
   let primaryFen: Fen | null = null;
   let requestStarted = false;
+  let requestedQuality: AnalysisQuality = "browser";
   let pollCount = 0;
 
   const observe = fn(async (fen: Fen): Promise<AnalysisSuccess> => {
@@ -94,10 +107,13 @@ export function storySelectedPositionAnalysisClient(
       } else if (pollCount === 0) {
         pollCount += 1;
         state = "running";
-        result = cleanResult(initialMoves);
+        result = cleanResult(initialMoves, 0, "browser");
       } else {
         state = "ready";
-        result = cleanResult(readyMoves, 8);
+        result =
+          requestedQuality === "tool"
+            ? cleanResult(["e2e4", "d2d4", "c2c4", "g1f3", "b1c3"], 8, "tool")
+            : cleanResult(readyMoves, 8, "browser");
       }
     }
 
@@ -110,20 +126,27 @@ export function storySelectedPositionAnalysisClient(
     return cleanObservation(fen, state, result);
   });
 
-  const request = fn(async (fen: Fen): Promise<AnalysisSuccess> => {
+  const request = fn(
+    async (
+      fen: Fen,
+      _signal?: AbortSignal,
+      quality: AnalysisQuality = "browser",
+    ): Promise<AnalysisSuccess> => {
     primaryFen ??= fen;
     requestStarted = true;
+    requestedQuality = quality;
     pollCount = 0;
-    const result = cleanResult(initialMoves);
+    const result = cleanResult(initialMoves, 0, "browser");
     emitLifecycleEvent(onEvent, {
       operation: "request",
       fen,
       state: "queued",
       hasResult: true,
-      quality: "tool",
+      quality,
     });
     return cleanObservation(fen, "queued", result);
-  });
+    },
+  );
 
   return { observe, request };
 }

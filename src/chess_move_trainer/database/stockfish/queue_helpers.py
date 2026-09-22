@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import sqlite3
 import uuid
-from collections.abc import Collection
+from collections.abc import Callable, Collection
 from contextlib import contextmanager
 from datetime import UTC, datetime
 from pathlib import Path
@@ -73,6 +73,67 @@ def _enqueue_in_transaction(
             "quality": normalized_quality.value,
             "requested_at": requested_at_utc,
         },
+    )
+
+
+def _seed_and_claim_background_in_transaction(
+    connection: object,
+    position_id: int,
+    *,
+    requested_at: datetime | str,
+    claimed_at: datetime | str,
+    claim_token: str | Callable[[], str],
+) -> QueueClaim | None:
+    """Seed and claim one browser row while the caller owns an immediate transaction."""
+
+    _validate_position_id(position_id)
+    existing = connection.execute(
+        text(
+            """
+            SELECT derived_position_id
+            FROM derived_analysis_queue
+            LIMIT 1
+            """
+        )
+    ).first()
+    if existing is not None:
+        return None
+    resolved_claim_token = claim_token() if callable(claim_token) else claim_token
+
+    if not isinstance(resolved_claim_token, str) or not resolved_claim_token:
+        raise QueueValidationError("claim_token must be a non-empty string")
+
+    _enqueue_in_transaction(
+        connection,
+        position_id,
+        AnalysisQuality.BROWSER,
+        requested_at=requested_at,
+    )
+    claimed_at_utc = _format_timestamp(claimed_at)
+    updated = connection.execute(
+        text(
+            """
+            UPDATE derived_analysis_queue
+            SET daq_state = 'running',
+                daq_claimed_at_utc = :claimed_at,
+                daq_claim_token = :claim_token
+            WHERE derived_position_id = :position_id
+              AND daq_state = 'queued'
+            """
+        ),
+        {
+            "position_id": position_id,
+            "claimed_at": claimed_at_utc,
+            "claim_token": resolved_claim_token,
+        },
+    )
+    if updated.rowcount != 1:
+        raise QueueStorageError("background queue seed was not claimable")
+    return QueueClaim(
+        position_id=position_id,
+        quality=AnalysisQuality.BROWSER,
+        claimed_at_utc=claimed_at_utc,
+        claim_token=resolved_claim_token,
     )
 
 

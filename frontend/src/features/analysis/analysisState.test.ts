@@ -16,6 +16,7 @@ const COUNTER_VARIANT_FEN: Fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w 
 const DISTINCT_POSITION_FEN: Fen = "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1";
 
 const RESULT: AnalysisResult = {
+  quality: "browser",
   lines: [
     {
       rank: 1,
@@ -65,10 +66,11 @@ function Probe({
         result: state.observation?.result ?? null,
         error: state.error,
         requestError: state.requestError,
-        requestPending: state.requestPending,
+      requestPending: state.requestPending,
       }),
     ),
     createElement("button", { onClick: () => void state.requestAnalysis() }, "request"),
+    createElement("button", { onClick: () => void state.requestFullAnalysis() }, "upgrade"),
   );
 }
 
@@ -158,11 +160,33 @@ describe("useAnalysisState", () => {
     fireEvent.click(screen.getByRole("button", { name: "request" }));
 
     await waitFor(() => expect(request).toHaveBeenCalledTimes(1));
-    expect(request).toHaveBeenCalledWith(FEN, expect.any(AbortSignal));
+    expect(request).toHaveBeenCalledWith(FEN, expect.any(AbortSignal), "browser");
     await waitFor(() =>
       expect(readProbe().requestError).toBe("The analysis service is unavailable."),
     );
     expect(readProbe().state).toBe("not_requested");
+  });
+
+  it("requests an explicit full upgrade while retaining result quality", async () => {
+    const fullResult = { ...RESULT, quality: "tool" as const };
+    let observedQuality: "browser" | "tool" = "browser";
+    const observe = vi.fn(async (fen: Fen) =>
+      success(observation(fen, "ready", observedQuality === "tool" ? fullResult : RESULT)),
+    );
+    const request = vi
+      .fn<AnalysisClient["request"]>()
+      .mockImplementation(async (fen, _signal, quality = "browser") => {
+        observedQuality = quality;
+        return success(observation(fen, "ready", fullResult));
+      });
+    const client: AnalysisClient = { observe, request };
+
+    render(createElement(Probe, { fen: FEN, client }));
+    await waitFor(() => expect(readProbe().result.quality).toBe("browser"));
+    fireEvent.click(screen.getByRole("button", { name: "upgrade" }));
+
+    await waitFor(() => expect(request).toHaveBeenCalledWith(FEN, expect.any(AbortSignal), "tool"));
+    expect(readProbe().result.quality).toBe("tool");
   });
 
   it("ignores a stale observation after moving to a different position", async () => {

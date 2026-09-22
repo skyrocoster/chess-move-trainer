@@ -204,6 +204,15 @@ def validate_analysis_position(
 
     if not isinstance(result, AnalysisResultInput):
         raise AnalysisValidationError("result must be an AnalysisResultInput value")
+    from ..stockfish.configuration import profile_for
+
+    profile = profile_for(result.quality)
+    if result.configuration_version != profile.configuration_version:
+        raise AnalysisValidationError(
+            "analysis configuration version does not match the quality profile"
+        )
+    if dict(result.settings) != dict(profile.settings):
+        raise AnalysisValidationError("analysis settings do not match the quality profile")
     board = _neutral_board(position)
     terminal_kind = _classify_board(board)
     if terminal_kind is not None:
@@ -212,10 +221,10 @@ def validate_analysis_position(
         return ValidatedAnalysisResult(terminal_kind=terminal_kind, lines=())
 
     legal_root_moves = tuple(board.legal_moves)
-    expected_line_count = min(5, len(legal_root_moves))
+    expected_line_count = min(profile.multipv, len(legal_root_moves))
     if len(result.lines) != expected_line_count:
         raise AnalysisValidationError(
-            "non-terminal results must contain exactly five lines or one line per legal root move"
+            "non-terminal results must contain exactly the profile MultiPV lines or one line per legal root move"
         )
     expected_ranks = tuple(range(1, expected_line_count + 1))
     actual_ranks = tuple(line.rank for line in result.lines)

@@ -22,7 +22,7 @@ from chess_move_trainer.database.analysis import (
     validate_analysis_result,
 )
 from chess_move_trainer.database.positions import PositionRepository
-from chess_move_trainer.database.stockfish import QueueService
+from chess_move_trainer.database.stockfish import BROWSER_PROFILE, QueueService, TOOL_PROFILE
 
 STARTING_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 STARTING_WITH_COUNTERS = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 37 19"
@@ -40,13 +40,18 @@ ROOTS = (
 def _result(
     *,
     quality: AnalysisQuality = AnalysisQuality.BROWSER,
-    configuration_version: int = 1,
+    configuration_version: int | None = None,
     engine_version: str = "19",
 ):
+    profile = BROWSER_PROFILE if quality is AnalysisQuality.BROWSER else TOOL_PROFILE
     return validate_analysis_result(
         quality=quality,
-        configuration_version=configuration_version,
-        settings={"Hash": 1024, "MultiPV": 5, "Nodes": 200000},
+        configuration_version=(
+            profile.configuration_version
+            if configuration_version is None
+            else configuration_version
+        ),
+        settings=profile.settings,
         engine_name="Stockfish",
         engine_version=engine_version,
         lines=tuple(
@@ -60,7 +65,7 @@ def _result(
                 pv_uci=pv,
                 depth=20,
             )
-            for rank, pv in enumerate(ROOTS, start=1)
+            for rank, pv in enumerate(ROOTS[: profile.multipv], start=1)
         ),
     )
 
@@ -75,7 +80,7 @@ def _position_with_result(
     database: Path,
     *,
     quality: AnalysisQuality = AnalysisQuality.BROWSER,
-    configuration_version: int = 1,
+    configuration_version: int | None = None,
     engine_version: str = "19",
 ) -> int:
     position_id = PositionRepository(database).resolve_fen(STARTING_FEN)
@@ -130,7 +135,7 @@ def test_current_result_reuse_is_read_only_and_higher_quality_satisfies_browser(
     position_id = _position_with_result(
         database,
         quality=AnalysisQuality.TOOL,
-        configuration_version=99,
+        configuration_version=TOOL_PROFILE.configuration_version,
         engine_version="old-stockfish",
     )
     before = database.read_bytes()
@@ -153,7 +158,7 @@ def test_stale_equal_quality_result_is_visible_while_refresh_is_queued(
     position_id = _position_with_result(
         database,
         quality=AnalysisQuality.BROWSER,
-        configuration_version=99,
+        configuration_version=BROWSER_PROFILE.configuration_version,
         engine_version="old-stockfish",
     )
 
@@ -163,6 +168,24 @@ def test_stale_equal_quality_result_is_visible_while_refresh_is_queued(
     assert outcome.observation.state is AnalysisObservationState.QUEUED
     assert outcome.observation.result is not None
     assert _queue_row(database, position_id) is not None
+
+
+def test_explicit_tool_request_refreshes_stale_tool_result(tmp_path: Path) -> None:
+    database = _database(tmp_path)
+    position_id = _position_with_result(
+        database,
+        quality=AnalysisQuality.TOOL,
+        configuration_version=TOOL_PROFILE.configuration_version,
+        engine_version="old-stockfish",
+    )
+
+    outcome = request_analysis(database, STARTING_FEN, AnalysisQuality.TOOL)
+
+    assert outcome.disposition is AnalysisRequestDisposition.ENQUEUED
+    assert outcome.observation.state is AnalysisObservationState.QUEUED
+    assert outcome.observation.result is not None
+    assert outcome.observation.result.quality is AnalysisQuality.TOOL
+    assert _queue_row(database, position_id)[0] == "tool"
 
 
 def test_live_work_is_reused_or_promoted_without_losing_an_active_claim(

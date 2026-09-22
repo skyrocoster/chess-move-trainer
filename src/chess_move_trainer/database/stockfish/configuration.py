@@ -16,6 +16,10 @@ THREADS = 6
 HASH_MB = 1024
 BROWSER_NODES = 200_000
 TOOL_NODES = 6_400_000
+BROWSER_MULTI_PV = 1
+TOOL_MULTI_PV = 5
+BROWSER_CONFIGURATION_VERSION = 2
+TOOL_CONFIGURATION_VERSION = 1
 
 
 @dataclass(frozen=True, slots=True)
@@ -69,8 +73,18 @@ class StockfishProfile:
         )
 
 
-BROWSER_PROFILE = StockfishProfile(AnalysisQuality.BROWSER, BROWSER_NODES)
-TOOL_PROFILE = StockfishProfile(AnalysisQuality.TOOL, TOOL_NODES)
+BROWSER_PROFILE = StockfishProfile(
+    AnalysisQuality.BROWSER,
+    BROWSER_NODES,
+    multipv=BROWSER_MULTI_PV,
+    configuration_version=BROWSER_CONFIGURATION_VERSION,
+)
+TOOL_PROFILE = StockfishProfile(
+    AnalysisQuality.TOOL,
+    TOOL_NODES,
+    multipv=TOOL_MULTI_PV,
+    configuration_version=TOOL_CONFIGURATION_VERSION,
+)
 PROFILES: Mapping[AnalysisQuality, StockfishProfile] = MappingProxyType(
     {
         AnalysisQuality.BROWSER: BROWSER_PROFILE,
@@ -92,7 +106,9 @@ def profile_for(value: StockfishProfile | AnalysisQuality | str) -> StockfishPro
 
 __all__ = [
     "BROWSER_NODES",
+    "BROWSER_MULTI_PV",
     "BROWSER_PROFILE",
+    "BROWSER_CONFIGURATION_VERSION",
     "CONFIGURATION_VERSION",
     "HASH_MB",
     "MULTI_PV",
@@ -101,7 +117,9 @@ __all__ = [
     "STOCKFISH_VERSION",
     "THREADS",
     "TOOL_NODES",
+    "TOOL_MULTI_PV",
     "TOOL_PROFILE",
+    "TOOL_CONFIGURATION_VERSION",
     "StockfishProfile",
     "profile_for",
 ]

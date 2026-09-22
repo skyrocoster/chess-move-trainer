@@ -21,6 +21,7 @@ from chess_move_trainer.database.analysis import (
     validate_analysis_result,
 )
 from chess_move_trainer.database.positions import PositionRepository
+from chess_move_trainer.database.stockfish import TOOL_PROFILE
 
 STARTING_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 STARTING_WITH_COUNTERS = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 99 120"
@@ -39,8 +40,8 @@ ROOTS = (
 def _result():
     return validate_analysis_result(
         quality=AnalysisQuality.TOOL,
-        configuration_version=7,
-        settings={"Hash": 16, "Threads": 1},
+        configuration_version=TOOL_PROFILE.configuration_version,
+        settings=TOOL_PROFILE.settings,
         engine_name="observation-test-engine",
         engine_version="engine-7",
         lines=tuple(
@@ -116,8 +117,8 @@ def test_existing_and_unseen_fens_are_canonical_sparse_read_only_observations(
         existing.result.terminal_kind,
     ) == (
         AnalysisQuality.TOOL,
-        7,
-        {"Hash": 16, "Threads": 1},
+        TOOL_PROFILE.configuration_version,
+        dict(TOOL_PROFILE.settings),
         "observation-test-engine",
         "engine-7",
         None,

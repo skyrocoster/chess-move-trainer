@@ -95,18 +95,38 @@ def _install_analysis(connection: sqlite3.Connection, position_id: int) -> None:
         INSERT INTO derived_analysis_result (
             derived_position_id, dar_quality, dar_configuration_version,
             dar_settings_json, dar_engine_name, dar_engine_version, dar_terminal_kind
-        ) VALUES (?, 'tool', 7, ?, 'Stockfish', '19', NULL)
+        ) VALUES (?, 'tool', 1, ?, 'Stockfish', '19', NULL)
         """,
-        (position_id, json.dumps({"Hash": 16})),
+        (
+            position_id,
+            json.dumps(
+                {
+                    "Hash": 1024,
+                    "MultiPV": 5,
+                    "Nodes": 6_400_000,
+                    "Threads": 6,
+                    "UCI_ShowWDL": True,
+                }
+            ),
+        ),
     )
-    connection.execute(
+    connection.executemany(
         """
         INSERT INTO derived_analysis_line (
             derived_analysis_result_id, dal_rank, dal_score_kind, dal_score_value,
             dal_wdl_wins, dal_wdl_draws, dal_wdl_losses, dal_pv_uci_json, dal_depth
-        ) VALUES (?, 1, 'cp', 34, 450, 300, 250, '["a2a3"]', 22)
+        ) VALUES (?, ?, 'cp', ?, 450, 300, 250, ?, 22)
         """,
-        (position_id,),
+        (
+            (position_id, rank, score, json.dumps([move]))
+            for rank, move, score in (
+                (1, "a2a3", 34),
+                (2, "g1h3", 36),
+                (3, "g1f3", 37),
+                (4, "g1e2", 38),
+                (5, "f1a6", 39),
+            )
+        ),
     )
 
 

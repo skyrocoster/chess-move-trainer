@@ -10,6 +10,7 @@ export const MAX_FEN_LENGTH = 128;
 type JsonRecord = Record<string, unknown>;
 
 export type AnalysisStateValue = "not_requested" | "queued" | "running" | "ready";
+export type AnalysisQuality = "browser" | "tool";
 export type AnalysisScoreKind = "cp" | "mate";
 export type AnalysisTerminalKind = "checkmate" | "stalemate" | "insufficient_material";
 export type PositionKey = string;
@@ -29,6 +30,7 @@ export type AnalysisLine = {
 };
 
 export type AnalysisResult = {
+  quality: AnalysisQuality;
   lines: AnalysisLine[];
   terminal_kind: AnalysisTerminalKind | null;
 };
@@ -41,7 +43,7 @@ export type AnalysisObservation = {
 
 export type AnalysisRequest = {
   fen: Fen;
-  quality: "tool";
+  quality?: AnalysisQuality;
 };
 
 export type AnalysisFailure = { status: AnalysisFailureCode };
@@ -55,6 +57,7 @@ export type AnalysisClient = {
   request: (
     fen: Fen,
     signal?: AbortSignal,
+    quality?: AnalysisQuality,
   ) => Promise<AnalysisOperationResult<AnalysisObservation>>;
 };
 
@@ -97,6 +100,10 @@ function isState(value: unknown): value is AnalysisStateValue {
   return (
     value === "not_requested" || value === "queued" || value === "running" || value === "ready"
   );
+}
+
+function isQuality(value: unknown): value is AnalysisQuality {
+  return value === "browser" || value === "tool";
 }
 
 function isScoreKind(value: unknown): value is AnalysisScoreKind {
@@ -148,11 +155,15 @@ function mapResult(value: unknown): AnalysisResult | null {
   if (!isRecord(value) || !Array.isArray(value.lines) || !value.lines.every(isLine)) {
     return null;
   }
+  if (!isQuality(value.quality)) {
+    return null;
+  }
   if (value.terminal_kind !== null && !isTerminalKind(value.terminal_kind)) {
     return null;
   }
 
   return {
+    quality: value.quality,
     lines: value.lines.map((line) => mapLine(line as JsonRecord)),
     terminal_kind: value.terminal_kind,
   };
@@ -230,19 +241,41 @@ export const fetchAnalysis = async (
   return observation === null
     ? { status: "unexpected_failure" }
     : { status: "success", data: observation };
-};
+}
 
-export const requestAnalysis = async (
+export function requestAnalysis(
   fen: Fen,
   signal?: AbortSignal,
-): Promise<AnalysisOperationResult<AnalysisObservation>> => {
+  quality?: AnalysisQuality,
+): Promise<AnalysisOperationResult<AnalysisObservation>>;
+export function requestAnalysis(
+  fen: Fen,
+  quality?: AnalysisQuality,
+  signal?: AbortSignal,
+): Promise<AnalysisOperationResult<AnalysisObservation>>;
+export async function requestAnalysis(
+  fen: Fen,
+  signalOrQuality?: AbortSignal | AnalysisQuality,
+  qualityOrSignal?: AnalysisQuality | AbortSignal,
+): Promise<AnalysisOperationResult<AnalysisObservation>> {
   const validationFailure = validateAnalysisFen(fen);
   if (validationFailure !== null) {
     return invalidFenResult();
   }
 
+  const signal =
+    typeof signalOrQuality === "string"
+      ? (qualityOrSignal as AbortSignal | undefined)
+      : signalOrQuality;
+  const requestedQuality =
+    typeof signalOrQuality === "string"
+      ? signalOrQuality
+      : typeof qualityOrSignal === "string"
+        ? qualityOrSignal
+        : "browser";
+
   const response = await generatedRequestAnalysis({
-    body: { fen, quality: "tool" },
+    body: { fen, quality: requestedQuality },
     signal,
   });
   if (response.data === undefined || response.error !== undefined) {

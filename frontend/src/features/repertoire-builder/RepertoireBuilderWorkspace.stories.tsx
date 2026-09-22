@@ -68,7 +68,10 @@ function SelectedPositionAnalysisLifecycleStory() {
       <output data-testid="analysis-lifecycle-proof" hidden>
         observations: {events.filter(({ operation }) => operation === "observe").length}; requests:{" "}
         {events.filter(({ operation }) => operation === "request").length}; request quality:{" "}
-        {events.some(({ quality }) => quality === "tool") ? "tool" : "none"}; states: {summary}
+        {events
+          .filter(({ operation }) => operation === "request")
+          .map(({ quality }) => quality ?? "none")
+          .join(", ") || "none"}; states: {summary}
       </output>
     </>
   );
@@ -180,7 +183,7 @@ export const SelectedPositionAnalysisLifecycle: Story = {
     await expect(status).toHaveTextContent(/Analysis (queued|running)/);
     await expect(analysisQueries.getByRole("button", { name: "1. d4" })).toBeVisible();
     await expect(proof).toHaveTextContent("requests: 1");
-    await expect(proof).toHaveTextContent("request quality: tool");
+    await expect(proof).toHaveTextContent("request quality: browser");
 
     await waitFor(() => expect(status).toHaveTextContent("Analysis running"));
     await expect(analysisQueries.getByRole("button", { name: "1. d4" })).toBeVisible();
@@ -189,11 +192,21 @@ export const SelectedPositionAnalysisLifecycle: Story = {
     await waitFor(() => expect(status).toHaveTextContent("Analysis complete"));
     await expect(analysisQueries.getByRole("button", { name: "1. e4" })).toBeVisible();
     await expect(
+      analysisQueries.getByRole("button", { name: "Upgrade to full analysis" }),
+    ).toBeVisible();
+    await expect(
       analysisQueries.queryByRole("button", { name: "Update analysis" }),
     ).not.toBeInTheDocument();
     await expect(
       analysisQueries.queryByRole("button", { name: "Retry analysis" }),
     ).not.toBeInTheDocument();
+
+    await userEvent.click(analysisQueries.getByRole("button", { name: "Upgrade to full analysis" }));
+    await expect(status).toHaveTextContent(/Analysis (queued|running)/);
+    await expect(analysisQueries.getByRole("button", { name: "1. d4" })).toBeVisible();
+    await expect(proof).toHaveTextContent("request quality: browser, tool");
+    await waitFor(() => expect(status).toHaveTextContent("Analysis complete"));
+    await expect(analysisQueries.getByRole("button", { name: "1. d4" })).toBeVisible();
 
     await userEvent.click(analysisQueries.getByRole("button", { name: "1. e4" }));
     await expect(canvas.getByTestId("branch-status")).toHaveTextContent("Move played locally: e4.");

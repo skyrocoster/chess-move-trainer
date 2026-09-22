@@ -31,6 +31,7 @@ from .queue_helpers import (
     _quality_rank,
     _random_token,
     _rollback_if_active,
+    _seed_and_claim_background_in_transaction,
     _translate_queue_error,
     _validate_position_id,
 )
@@ -404,6 +405,39 @@ class QueueService:
             raise
         except Exception as error:
             raise _translate_queue_error(error) from error
+
+    def seed_and_claim_background(
+        self,
+        position_id: int,
+        *,
+        now: datetime | str | None = None,
+        requested_at: datetime | str | None = None,
+    ) -> QueueClaim | None:
+        """Atomically seed and claim one browser target only when the queue is empty."""
+
+        _validate_position_id(position_id)
+        current_time = _parse_timestamp(now)
+        requested_at_utc = _format_timestamp(
+            current_time if requested_at is None else requested_at
+        )
+        claimed_at_utc = _format_timestamp(current_time)
+        with self._connection() as connection:
+            transaction = _begin_immediate(connection)
+            try:
+                claim = _seed_and_claim_background_in_transaction(
+                    connection,
+                    position_id,
+                    requested_at=requested_at_utc,
+                    claimed_at=claimed_at_utc,
+                    claim_token=lambda: self._fresh_token(connection),
+                )
+                transaction.commit()
+                return claim
+            except BaseException as error:
+                _rollback_if_active(connection, transaction)
+                if isinstance(error, (KeyboardInterrupt, SystemExit, AnalysisError, QueueError)):
+                    raise
+                raise _translate_storage_error(error) from error
 
     def _fresh_token(self, connection: object) -> str:
         for _ in range(10):

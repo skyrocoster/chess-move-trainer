@@ -7,6 +7,7 @@ import type {
   AnalysisClient,
   AnalysisObservation,
   AnalysisOperationResult,
+  AnalysisQuality,
 } from "../analysis/analysisApi";
 import { createTestQueryClient } from "../../test-utils/QueryClientTestProvider";
 import {
@@ -32,8 +33,8 @@ function successfulGameClient() {
 }
 
 function cleanAnalysisClient(): AnalysisClient {
-  let requested = false;
-  const result = {
+  let requestedQuality: AnalysisQuality | null = null;
+  const quickResult = {
     lines: [
       {
         rank: 1,
@@ -47,11 +48,23 @@ function cleanAnalysisClient(): AnalysisClient {
       },
     ],
     terminal_kind: null,
+    quality: "browser" as const,
+  };
+  const fullResult = {
+    ...quickResult,
+    quality: "tool" as const,
+    lines: [
+      ...quickResult.lines,
+      { ...quickResult.lines[0], rank: 2, pv_uci: ["d2d4"], score_value: 24 },
+      { ...quickResult.lines[0], rank: 3, pv_uci: ["c2c4"], score_value: 14 },
+      { ...quickResult.lines[0], rank: 4, pv_uci: ["g1f3"], score_value: 4 },
+      { ...quickResult.lines[0], rank: 5, pv_uci: ["b1c3"], score_value: -6 },
+    ],
   };
   const observation = (fen: string): AnalysisObservation => ({
     fen,
-    state: requested ? "ready" : "not_requested",
-    result: requested ? result : null,
+    state: requestedQuality === null ? "not_requested" : "ready",
+    result: requestedQuality === null ? null : requestedQuality === "tool" ? fullResult : quickResult,
   });
   const success = (fen: string): AnalysisOperationResult<AnalysisObservation> => ({
     status: "success",
@@ -60,8 +73,8 @@ function cleanAnalysisClient(): AnalysisClient {
 
   return {
     observe: vi.fn(async (fen: string) => success(fen)),
-    request: vi.fn(async (fen: string) => {
-      requested = true;
+    request: vi.fn(async (fen: string, _signal?: AbortSignal, quality: AnalysisQuality = "browser") => {
+      requestedQuality = quality;
       return success(fen);
     }),
   };
@@ -97,8 +110,25 @@ describe("RepertoireBuilderWorkspace", () => {
     expect(analysisClient.request).not.toHaveBeenCalled();
     await user.click(screen.getByRole("button", { name: "Analyze position" }));
     await waitFor(() =>
-      expect(analysisClient.request).toHaveBeenCalledWith(STARTING_FEN, expect.any(AbortSignal)),
+      expect(analysisClient.request).toHaveBeenCalledWith(
+        STARTING_FEN,
+        expect.any(AbortSignal),
+        "browser",
+      ),
     );
+
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Upgrade to full analysis" })).toBeVisible(),
+    );
+    await user.click(screen.getByRole("button", { name: "Upgrade to full analysis" }));
+    await waitFor(() =>
+      expect(analysisClient.request).toHaveBeenLastCalledWith(
+        STARTING_FEN,
+        expect.any(AbortSignal),
+        "tool",
+      ),
+    );
+    expect(screen.getByRole("button", { name: "1. d4" })).toBeVisible();
 
     const candidate = await screen.findByRole("button", { name: "1. e4" });
     await user.click(candidate);

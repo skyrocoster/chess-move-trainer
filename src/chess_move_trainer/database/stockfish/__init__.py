@@ -88,6 +88,7 @@ from .queue import (
     QueueValidationError,
 )
 from .targets import (
+    BackgroundTargetSelector,
     DEFAULT_TARGET_PAGE_SIZE,
     INITIAL_COMMON_TARGET_COUNT,
     INITIAL_TECHNICAL_CATEGORIES,
@@ -115,6 +116,7 @@ from .worker import (
 __all__ = [
     "ANALYSIS_WATCHDOG_SECONDS",
     "AnalysisQueue",
+    "BackgroundTargetSelector",
     "BulkError",
     "BulkFailure",
     "BulkInputError",

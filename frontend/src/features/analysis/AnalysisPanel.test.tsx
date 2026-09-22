@@ -76,6 +76,7 @@ const DISPLAY_LINES: AnalysisPanelLine[] = [
 
 const DEFAULT_ACTIONS: AnalysisPanelDisplay["actions"] = {
   analyze: false,
+  upgrade: false,
   observationRetry: false,
   pending: false,
 };
@@ -125,6 +126,7 @@ function completeDisplay(
   return displayFor({
     stateLabel: "Analysis complete",
     result: {
+      quality: "tool",
       lines,
       metadata: {
         displayedPly: 12,
@@ -149,7 +151,7 @@ function errorDisplay(overrides: DisplayOverrides = {}): AnalysisPanelDisplay {
 
 type PanelCallbacks = Pick<
   ComponentProps<typeof AnalysisPanel>,
-  "onAnalyze" | "onRetryObservation" | "onCandidateMove"
+  "onAnalyze" | "onUpgrade" | "onRetryObservation" | "onCandidateMove"
 >;
 
 function renderPanel(
@@ -159,6 +161,7 @@ function renderPanel(
 ) {
   const callbacks: PanelCallbacks = {
     onAnalyze: vi.fn(),
+    onUpgrade: vi.fn(),
     onRetryObservation: vi.fn(),
     ...overrides,
   };
@@ -255,8 +258,32 @@ describe("AnalysisPanel", () => {
       }),
     ).toBeVisible();
     expect(screen.getByText("Line unavailable")).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Upgrade to full analysis" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Update analysis" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Retry analysis" })).not.toBeInTheDocument();
+  });
+
+  it("offers the semantic full-analysis upgrade for a browser-ready one-line result", async () => {
+    const callbacks = renderPanel(
+      completeDisplay(DISPLAY_LINES.slice(0, 1), {
+        result: {
+          quality: "browser",
+          lines: DISPLAY_LINES.slice(0, 1),
+          metadata: { displayedPly: 12, depth: 28, candidateCount: 1 },
+        },
+        actions: { upgrade: true },
+      }),
+    );
+    const user = userEvent.setup();
+
+    expect(screen.getByText("Displayed position · ply 12 · depth 28 · 1 line")).toBeVisible();
+    const upgrade = screen.getByRole("button", { name: "Upgrade to full analysis" });
+    expect(upgrade).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Analyze position" })).not.toBeInTheDocument();
+
+    await user.click(upgrade);
+
+    expect(callbacks.onUpgrade).toHaveBeenCalledOnce();
   });
 
   it("exposes every candidate as a native pointer and keyboard control when controlled", async () => {

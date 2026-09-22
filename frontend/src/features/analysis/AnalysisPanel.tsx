@@ -1,6 +1,7 @@
 import { Button } from "../design-system/Button";
 import { OutcomeTrack } from "../design-system/OutcomeTrack";
 import styles from "./AnalysisPanel.module.css";
+import type { AnalysisQuality } from "./analysisApi";
 
 export type AnalysisPanelWdlValue = {
   percentage: number;
@@ -29,6 +30,7 @@ export type AnalysisPanelResultMetadata = {
 };
 
 export type AnalysisPanelResult = {
+  quality: AnalysisQuality;
   lines: AnalysisPanelLine[];
   metadata: AnalysisPanelResultMetadata;
 };
@@ -41,6 +43,7 @@ export type AnalysisPanelDisplay = {
   result: AnalysisPanelResult | null;
   actions: {
     analyze: boolean;
+    upgrade: boolean;
     observationRetry: boolean;
     pending: boolean;
   };
@@ -54,6 +57,7 @@ export type AnalysisPanelProps = {
   /** Remove the standalone card surface when a parent composition owns it. */
   embedded?: boolean;
   onAnalyze: AnalysisPanelIntent;
+  onUpgrade: AnalysisPanelIntent;
   onRetryObservation: () => void;
   onCandidateMove?: AnalysisPanelCandidateIntent;
 };
@@ -243,6 +247,7 @@ export function AnalysisPanel({
   display,
   embedded = false,
   onAnalyze,
+  onUpgrade,
   onRetryObservation,
   onCandidateMove,
 }: AnalysisPanelProps) {
@@ -282,12 +287,17 @@ export function AnalysisPanel({
       ) : null}
       {result ? <ResultPresentation result={result} onCandidateMove={onCandidateMove} /> : null}
 
-      {actions.analyze || actions.observationRetry ? (
+      {actions.analyze || actions.upgrade || actions.observationRetry ? (
         <div className={styles.actionRow}>
           <div className={styles.actions}>
             {actions.analyze ? (
               <Button onClick={() => void onAnalyze()} disabled={actions.pending}>
                 Analyze position
+              </Button>
+            ) : null}
+            {actions.upgrade ? (
+              <Button variant="secondary" onClick={() => void onUpgrade()} disabled={actions.pending}>
+                Upgrade to full analysis
               </Button>
             ) : null}
             {actions.observationRetry ? (

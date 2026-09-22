@@ -8,14 +8,17 @@ from pathlib import Path
 
 from sqlalchemy import text
 
+from .._position_identity import CanonicalPosition
 from ..connection import DEFAULT_LOCK_TIMEOUT_SECONDS, _open_connection
 from ..schema import SchemaIncompatibleError, _assert_compatible_schema
 from .models import (
     AnalysisLine,
+    AnalysisResultInput,
     AnalysisQuality,
     AnalysisScoreKind,
     AnalysisTerminalKind,
 )
+from .validation import validate_analysis_position
 
 
 class AnalysisReadError(RuntimeError):
@@ -92,8 +95,11 @@ def _read_current_result(connection: object, position_id: int) -> AnalysisReadRe
             """
             SELECT derived_position_id, dar_quality,
                    dar_configuration_version, dar_settings_json,
-                   dar_engine_name, dar_engine_version, dar_terminal_kind
+                   dar_engine_name, dar_engine_version, dar_terminal_kind,
+                   dp_placement, dp_side_to_move, dp_castling_rights,
+                   dp_legal_en_passant
             FROM derived_analysis_result
+            JOIN derived_position ON derived_position.dp_position_id = derived_position_id
             WHERE derived_position_id = :position_id
             ORDER BY CASE dar_quality WHEN 'browser' THEN 0 WHEN 'tool' THEN 1 END
             """
@@ -129,17 +135,32 @@ def _materialize_result(parent: object, line_rows: list[object]) -> AnalysisRead
         engine_name = _required_text(parent[4], "engine name")
         engine_version = _required_text(parent[5], "engine version")
         terminal_kind = None if parent[6] is None else AnalysisTerminalKind(parent[6])
+        position = CanonicalPosition(
+            placement=parent[7],
+            side_to_move=parent[8],
+            castling_rights=parent[9],
+            legal_en_passant=parent[10],
+        )
         lines = tuple(_line_from_row(row) for row in line_rows)
     except (IndexError, TypeError, ValueError, json.JSONDecodeError) as error:
         raise AnalysisReadError("analysis result row is malformed") from error
 
-    ranks = tuple(line.rank for line in lines)
-    if ranks != tuple(range(1, len(lines) + 1)):
-        raise AnalysisReadError("analysis lines are not complete and contiguous")
-    if terminal_kind is not None and lines:
-        raise AnalysisReadError("terminal analysis must not have candidate lines")
-    if terminal_kind is None and not lines:
-        raise AnalysisReadError("non-terminal analysis must have candidate lines")
+    try:
+        validated = validate_analysis_position(
+            position,
+            AnalysisResultInput(
+                quality=quality,
+                configuration_version=configuration_version,
+                settings=settings_value,
+                engine_name=engine_name,
+                engine_version=engine_version,
+                lines=lines,
+            ),
+        )
+    except (TypeError, ValueError) as error:
+        raise AnalysisReadError("analysis result is incomplete or inconsistent") from error
+    if terminal_kind is not validated.terminal_kind:
+        raise AnalysisReadError("analysis result terminal kind is malformed")
     return AnalysisReadResult(
         position_id=position_id,
         quality=quality,
