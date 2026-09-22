@@ -16,6 +16,7 @@ from .cli_helpers import (
 )
 from .connection import DEFAULT_LOCK_TIMEOUT_SECONDS
 from .inspection import inspect_schema, render_schema_markdown
+from .lifecycle import HOST_SEED_DATABASE_PATH
 from .publication import SchemaPublicationCollisionError, publish_schema
 from .schema import SchemaIncompatibleError, create_schema, upgrade_schema
 
@@ -23,52 +24,70 @@ from .schema import SchemaIncompatibleError, create_schema, upgrade_schema
 @app.command(
     "setup",
     help=(
-        "Create the fixed host seed/export database at data/database/chess-seed.db. "
-        "The destination is not configurable. "
+        "Create the database at the requested path "
+        "(default data/database/chess-seed.db). "
         "Inside containers the live database remains "
         "/workspace/data/database/chess.db; Datasette uses /data/chess.db."
     ),
 )
-def setup_command() -> None:
-    """Create the fixed direct database through the package lifecycle service."""
+def setup_command(
+    database: Path = typer.Option(
+        HOST_SEED_DATABASE_PATH,
+        "--database",
+        help="Explicit SQLite database path.",
+    ),
+) -> None:
+    """Create the direct database through the package lifecycle service."""
 
     from . import cli as _cli_module
 
-    _run_lifecycle(_cli_module.setup_database)
+    _run_lifecycle(lambda: _cli_module.setup_database(database), target=database)
 
 
 @update_app.command(
     "games",
     help=(
-        "Refresh games in the fixed host seed/export database at data/database/chess-seed.db. "
-        "The destination is not configurable. "
+        "Refresh games in the database at the requested path "
+        "(default data/database/chess-seed.db). "
         "Inside containers the live database remains "
         "/workspace/data/database/chess.db; Datasette uses /data/chess.db."
     ),
 )
-def update_games_command() -> None:
-    """Refresh the fixed direct database's game data."""
+def update_games_command(
+    database: Path = typer.Option(
+        HOST_SEED_DATABASE_PATH,
+        "--database",
+        help="Explicit SQLite database path.",
+    ),
+) -> None:
+    """Refresh the direct database's game data."""
 
     from . import cli as _cli_module
 
-    _run_lifecycle(_cli_module.update_games)
+    _run_lifecycle(lambda: _cli_module.update_games(database), target=database)
 
 
 @update_app.command(
     "openings",
     help=(
-        "Refresh openings in the fixed host seed/export database at data/database/chess-seed.db. "
-        "The destination is not configurable. "
+        "Refresh openings in the database at the requested path "
+        "(default data/database/chess-seed.db). "
         "Inside containers the live database remains "
         "/workspace/data/database/chess.db; Datasette uses /data/chess.db."
     ),
 )
-def update_openings_command() -> None:
-    """Refresh the fixed direct database's opening data."""
+def update_openings_command(
+    database: Path = typer.Option(
+        HOST_SEED_DATABASE_PATH,
+        "--database",
+        help="Explicit SQLite database path.",
+    ),
+) -> None:
+    """Refresh the direct database's opening data."""
 
     from . import cli as _cli_module
 
-    _run_lifecycle(_cli_module.update_openings)
+    _run_lifecycle(lambda: _cli_module.update_openings(database), target=database)
 
 
 @schema_app.command("create")

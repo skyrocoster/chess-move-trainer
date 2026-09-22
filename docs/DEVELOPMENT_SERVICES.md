@@ -23,7 +23,22 @@ powershell -ExecutionPolicy Bypass -File ./dev.ps1 logs
 # Stop or explicitly restart all services.
 powershell -ExecutionPolicy Bypass -File ./dev.ps1 stop
 powershell -ExecutionPolicy Bypass -File ./dev.ps1 restart
+
+# Refresh games and openings in the live database (pauses workers, restores them after).
+powershell -ExecutionPolicy Bypass -File ./dev.ps1 update
+
+# One-time creation of the live database (refuses when one already exists).
+powershell -ExecutionPolicy Bypass -File ./dev.ps1 setup
 ```
+
+A cold `start` (stopped stack, live database present) first runs `update games`
+then `update openings` in a short-lived one-shot container
+(`chess-move-trainer-db-update`, same worker image, no extra Compose service)
+against the live database in the `chess-database` volume, then starts the
+services. A healthy stack is left alone: `start` performs no update and no
+worker-mode change. A failed update only warns and the services still start on
+the existing data. `restart`, `rebuild`, and per-service starts never run data
+updates.
 
 Add `backend`, `frontend`, `storybook`, `datasette`, `worker`, or `worker-six` after the action to affect only one service:
 
@@ -161,14 +176,18 @@ Safety notes:
   the existing two-minute stale boundary; no database replacement should occur while either worker mode runs.
 - The live database lives in the `chess-database` Docker volume, mounted at `/workspace/data/database` in the
   backend, worker, and worker-six containers and at `/data` in the datasette container. The host file `data/database/chess-seed.db` is a different,
-  diverged file: seed and export storage only. The separate `chess.db.backup.pre-wal` file remains a manual backup;
+  diverged file: seed and export storage only. Nothing automatic produces or refreshes that export. The separate `chess.db.backup.pre-wal` file remains a manual backup;
   if a file is not in the volume, it is not live. The per-file manifest, the stale-check (`sha256sum` on the host seed copy versus
-  `docker exec chess-move-trainer-backend-1 sha256sum /workspace/data/database/chess.db`), and the refresh
+  `docker exec chess-move-trainer-backend-1 sha256sum /workspace/data/database/chess.db`), and the manual export
   procedure live in [`data/README.md`](../data/README.md). Containers cannot see host-side edits, and host tools
   cannot see live results. To inspect or back
   up the live database, stop the workers first, then copy out of a container (for example
   `docker cp chess-move-trainer-worker-six-1:/workspace/data/database/chess.db data/database/chess-seed.db`)
-  and restart afterward. Host test suites that read `./data/database/chess-seed.db` must run against such an export.
+  and restart afterward. Host proof, benchmark, and smoke suites that read `./data/database/chess-seed.db` skip
+  when no export exists; run them against such a manual export.
+- A cold `dev.ps1 start` refreshes games and openings in the live database inside a one-shot container before the
+  services start (see Commands above). `dev.ps1 update` does the same on a live stack with workers paused.
+  `restart`, `rebuild`, and per-service starts never update data.
 - Each Stockfish process retains six engine threads and 1024 MiB of hash. Six workers can therefore use about
   36 engine threads and 6 GiB of hash, plus container and operating-system overhead.
 - Avoid `docker compose down`; it removes the persistent containers and is unnecessary for normal development.
@@ -204,5 +223,8 @@ services only through `dev.ps1` and follow these rules:
 - Do not stop services as task cleanup, and never run `docker compose down` unless the user explicitly requests it.
 - If a service is unhealthy, inspect its `dev.ps1 logs <service>` output before acting; restart only that service
   when a restart is actually needed, and leave the stack running afterward.
+- Never write to the live database while workers run. Data updates happen only on a cold `dev.ps1 start`
+  (nothing running yet) or via `dev.ps1 update` / `dev.ps1 setup`, which stop the workers first and restore
+  them afterward. Never copy a host database file into the volume.
 - Ordinary Python, TypeScript, CSS, and Storybook source edits never need a rebuild; only dependency, Dockerfile,
   or Compose changes might (see `rebuild` above).

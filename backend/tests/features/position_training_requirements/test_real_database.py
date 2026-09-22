@@ -22,6 +22,8 @@ pytestmark = pytest.mark.skipif(
 
 def test_real_database_training_requirement_contract(monkeypatch: pytest.MonkeyPatch) -> None:
     database = Path(HOST_SEED_DATABASE_PATH)
+    if not database.exists():
+        pytest.skip(f"real database not found: {database}")
     before = database.read_bytes()
     monkeypatch.setenv(REBUILT_DATABASE_PATH_ENV, str(database))
     app.dependency_overrides.clear()
@@ -83,6 +85,8 @@ def test_real_database_caro_reached_scope_includes_deeper_variation(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     database = Path(HOST_SEED_DATABASE_PATH)
+    if not database.exists():
+        pytest.skip(f"real database not found: {database}")
     before = database.read_bytes()
     monkeypatch.setenv(REBUILT_DATABASE_PATH_ENV, str(database))
     base_key = "B10:Caro-Kann Defense"

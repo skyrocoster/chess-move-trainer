@@ -1,63 +1,38 @@
 """Generate the repository's deterministic Graphify catalogue.
 
-The generator deliberately keeps Graphify behind the application interpreter and
-uses only code-only extraction followed by deterministic clustering.  It never
-opens the repository database; Graphify's normal ignore handling excludes it.
+The generator runs local, deterministic AST-only extraction and clustering for
+each layer, then validates the resulting bundle. It never opens the repository
+database; Graphify's normal ignore handling excludes it. Generated bundles are
+machine-local (gitignored) output under ``docs/graphify/<layer>/``.
 """
 
 from __future__ import annotations
 
-import json
 import os
-import re
 import shutil
 import subprocess
 import sys
-import tempfile
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
 
-if __package__:
-    from .graphify_catalogue_validation import PATH_KEYS as PATH_KEYS
+try:
     from .graphify_catalogue_validation import (
         REQUIRED_ARTIFACTS,
         GraphifyError,
         _load_json,
         _validate_artifact_files,
-        _validate_generated_text,
     )
-else:
-    from graphify_catalogue_validation import (
-        PATH_KEYS as PATH_KEYS,  # type: ignore[import-not-found]
-    )
+except ImportError:  # direct script execution: python src/tools/graphify_catalogue.py
     from graphify_catalogue_validation import (  # type: ignore[import-not-found]
         REQUIRED_ARTIFACTS,
         GraphifyError,
         _load_json,
         _validate_artifact_files,
-        _validate_generated_text,
     )
 
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 GRAPHIFY_TIMEOUT_SECONDS = 900
-PROVENANCE = "complete pre-commit working tree"
-PROVENANCE_NOTE = (
-    "This graph represents the complete pre-commit working tree, including local "
-    "changes. See manifest.json for per-file content hashes."
-)
-REFRESH_COMMAND = "timeout 10800s .venv/Scripts/python.exe src/tools/graphify_catalogue.py"
-REPORT_FRESHNESS = (
-    "## Graph Freshness\n"
-    "- This report represents the complete pre-commit working tree, including local changes.\n"
-    "- See `manifest.json` for per-file content hashes.\n"
-    f"- Refresh all layers with `{REFRESH_COMMAND}` (or invoke `/commit`, which runs it first).\n"
-)
-HTML_PROVENANCE_COMMENT = (
-    "<!-- Graphify provenance: complete pre-commit working tree, including local "
-    "changes. See manifest.json for per-file content hashes. -->"
-)
 
 
 @dataclass(frozen=True)
@@ -65,14 +40,6 @@ class LayerSpec:
     name: str
     source_root: str
     output_dir: str
-
-
-@dataclass(frozen=True)
-class PriorDerivedArtifacts:
-    canonical_graph: dict[str, Any]
-    analysis: bytes
-    report: bytes
-    html: bytes
 
 
 LAYERS = (
@@ -83,27 +50,6 @@ LAYERS = (
     LayerSpec("tests", "tests", "docs/graphify/tests"),
     LayerSpec("agent-workflow", ".opencode", "docs/graphify/agent-workflow"),
 )
-
-KNOWN_EPHEMERAL_FILES = frozenset(
-    {
-        ".graphify_root",
-        ".graphify_stale",
-        ".graphify_stale.json",
-        ".graphify_query",
-        ".graphify_query.json",
-        ".graphify_query_stamp",
-        ".graphify_labels",
-        ".graphify_labels.json",
-        ".query_stamp",
-        ".query_stamp.json",
-        "query_stamp",
-        "query_stamp.json",
-        "labels.json",
-        ".labels.json",
-        "community_labels.json",
-    }
-)
-KNOWN_EPHEMERAL_DIRS = frozenset({"cache"})
 
 
 def _command_text(command: list[str]) -> str:
@@ -127,7 +73,7 @@ def build_graphify_command(action: str, source_root: str) -> list[str]:
     raise ValueError(f"unsupported Graphify action: {action}")
 
 
-def _process_output(value: Any) -> str:
+def _process_output(value: object) -> str:
     if value is None:
         return ""
     if isinstance(value, bytes):
@@ -178,291 +124,58 @@ def run_graphify(
         )
 
 
-def _known_ephemeral(name: str, is_directory: bool) -> bool:
-    if is_directory:
-        return name in KNOWN_EPHEMERAL_DIRS
-    return name in KNOWN_EPHEMERAL_FILES
+def _fresh_output_dir(output_dir: Path) -> None:
+    """Replace the layer's generated output directory with an empty directory."""
 
-
-def _entry_kind(entry: os.DirEntry[str]) -> str:
-    if entry.is_symlink():
-        raise GraphifyError(f"Refusing symlink in Graphify output: {entry.path}")
-    if entry.is_dir(follow_symlinks=False):
-        return "directory"
-    if entry.is_file(follow_symlinks=False):
-        return "file"
-    raise GraphifyError(f"Refusing non-regular Graphify output entry: {entry.path}")
-
-
-def _validate_known_tree(
-    directory: Path,
-    allowed_files: frozenset[str],
-    allowed_directories: frozenset[str],
-) -> None:
-    """Validate a complete tree before any allowlisted deletion occurs."""
-
-    if directory.is_symlink():
-        raise GraphifyError(f"Refusing symlink Graphify directory: {directory}")
-    if not directory.is_dir():
-        raise GraphifyError(f"Graphify path is not a directory: {directory}")
-
-    def visit(current: Path, top_level: bool = False) -> None:
-        with os.scandir(current) as entries:
-            for entry in entries:
-                kind = _entry_kind(entry)
-                name = entry.name
-                if kind == "directory":
-                    if top_level and name not in allowed_directories:
-                        raise GraphifyError(
-                            f"Unknown Graphify output directory refuses cleanup: {entry.path}"
-                        )
-                    visit(Path(entry.path))
-                elif top_level and name not in allowed_files:
-                    raise GraphifyError(
-                        f"Unknown Graphify output file refuses cleanup: {entry.path}"
-                    )
-
-    visit(directory, top_level=True)
-
-
-def safe_remove_legacy_output(path: Path) -> None:
-    """Remove legacy output only after its complete tree passes the allowlist."""
-
-    if not path.exists() and not path.is_symlink():
+    if not output_dir.exists():
+        output_dir.mkdir(parents=True)
         return
-    _validate_known_tree(
-        path,
-        frozenset(REQUIRED_ARTIFACTS) | KNOWN_EPHEMERAL_FILES,
-        KNOWN_EPHEMERAL_DIRS,
-    )
-    shutil.rmtree(path)
+    if output_dir.is_symlink() or not output_dir.is_dir():
+        raise GraphifyError(f"Refusing to replace non-directory Graphify output: {output_dir}")
+    shutil.rmtree(output_dir)
+    output_dir.mkdir(parents=True)
 
 
-def _remove_known_entries(directory: Path) -> None:
-    """Remove only known Graphify sidecars after the directory is validated."""
+def _strip_graphify_sidecars(output_dir: Path) -> None:
+    """Remove Graphify CLI sidecars, leaving exactly the required artifacts."""
 
-    if not directory.exists():
-        directory.mkdir(parents=True)
-        return
-    _validate_known_tree(
-        directory,
-        frozenset(REQUIRED_ARTIFACTS) | KNOWN_EPHEMERAL_FILES,
-        KNOWN_EPHEMERAL_DIRS,
-    )
-    with os.scandir(directory) as entries:
-        for entry in entries:
-            kind = _entry_kind(entry)
-            if _known_ephemeral(entry.name, kind == "directory"):
-                target = Path(entry.path)
-                if kind == "directory":
-                    shutil.rmtree(target)
-                else:
-                    target.unlink()
+    required = set(REQUIRED_ARTIFACTS)
+    for entry in output_dir.iterdir():
+        if entry.name in required:
+            continue
+        if entry.is_dir() and not entry.is_symlink():
+            shutil.rmtree(entry)
+        else:
+            entry.unlink()
 
 
-def _atomic_write_batch(updates: dict[Path, str | bytes]) -> None:
-    temporary_paths: list[Path] = []
-    try:
-        for destination, content in updates.items():
-            destination.parent.mkdir(parents=True, exist_ok=True)
-            descriptor, temporary_name = tempfile.mkstemp(
-                prefix=f".{destination.name}.", suffix=".tmp", dir=destination.parent
-            )
-            temporary_path = Path(temporary_name)
-            temporary_paths.append(temporary_path)
-            payload = content if isinstance(content, bytes) else content.encode("utf-8")
-            with os.fdopen(descriptor, "wb") as stream:
-                stream.write(payload)
-                stream.flush()
-                os.fsync(stream.fileno())
-        for temporary_path, destination in zip(temporary_paths, updates):
-            os.replace(temporary_path, destination)
-        temporary_paths.clear()
-    finally:
-        for temporary_path in temporary_paths:
-            try:
-                temporary_path.unlink()
-            except FileNotFoundError:
-                pass
-
-
-def _report_without_stale_commit_claim(report: str) -> str:
-    report = re.sub(r"(?im)^.*built from commit.*(?:\n|$)", "", report)
-    report = re.sub(
-        r"(?im)^.*(?:git rev-parse HEAD|graphify update \.|"
-        r"Run `manifest\.json for per-file content hashes`).*(?:\n|$)",
-        "",
-        report,
-    )
-    freshness = re.compile(r"(?ims)^## Graph Freshness[ \t]*\r?\n.*?(?=^## |\Z)")
-    if freshness.search(report):
-        report = freshness.sub(REPORT_FRESHNESS, report, count=1)
-    else:
-        report = report.rstrip() + "\n\n" + REPORT_FRESHNESS
-    if PROVENANCE_NOTE not in report:
-        report = report.rstrip() + "\n\n" + PROVENANCE_NOTE + "\n"
-    return report
-
-
-def _html_without_stale_commit_claim(html: str) -> str:
-    html = re.sub(r"(?i)built from commit[^<\n]*", "", html)
-    html = html.replace("git rev-parse HEAD", "manifest.json for per-file content hashes")
-    if HTML_PROVENANCE_COMMENT not in html:
-        html = HTML_PROVENANCE_COMMENT + "\n" + html
-    return html
-
-
-def _read_and_validate_bundle(
-    output_dir: Path,
-) -> tuple[dict[str, Any], dict[str, Any], str, str]:
-    """Read a complete bundle without changing any of its files."""
+def validate_bundle(output_dir: Path) -> None:
+    """Validate a complete five-artifact Graphify bundle."""
 
     _validate_artifact_files(output_dir)
-    graph_path = output_dir / "graph.json"
-    analysis_path = output_dir / ".graphify_analysis.json"
-    manifest_path = output_dir / "manifest.json"
-    report_path = output_dir / "GRAPH_REPORT.md"
-    html_path = output_dir / "graph.html"
-
-    graph = _load_json(graph_path, "graph.json")
-    analysis = _load_json(analysis_path, ".graphify_analysis.json")
-    _load_json(manifest_path, "manifest.json")
-    try:
-        report = report_path.read_text(encoding="utf-8")
-        html = html_path.read_text(encoding="utf-8")
-    except OSError as error:
-        raise GraphifyError(f"Unable to read Graphify report or HTML in {output_dir}") from error
-    _validate_generated_text(report, "GRAPH_REPORT.md")
-    _validate_generated_text(html, "graph.html")
-
-    if not isinstance(graph, dict) or not isinstance(analysis, dict):
-        raise GraphifyError("Graphify graph and analysis artifacts must contain JSON objects")
-
-    return graph, analysis, report, html
-
-
-def _canonical_graph(graph: dict[str, Any]) -> dict[str, Any]:
-    """Remove only the two approved provenance fields before graph comparison."""
-
-    canonical = dict(graph)
-    canonical.pop("built_at_commit", None)
-    canonical.pop("graphify_provenance", None)
-    return canonical
-
-
-def _capture_prior_derived_artifacts(output_dir: Path) -> PriorDerivedArtifacts | None:
-    """Capture a valid normalized bundle before extraction can overwrite it."""
-
-    try:
-        graph, analysis, report, html = _read_and_validate_bundle(output_dir)
-        if graph.get("built_at_commit") is not None:
-            return None
-        if graph.get("graphify_provenance") != PROVENANCE:
-            return None
-        if analysis.get("graphify_provenance") != PROVENANCE:
-            return None
-        if "built from commit" in report.lower() or "git rev-parse HEAD" in report:
-            return None
-        if PROVENANCE_NOTE not in report or HTML_PROVENANCE_COMMENT not in html:
-            return None
-        return PriorDerivedArtifacts(
-            canonical_graph=_canonical_graph(graph),
-            analysis=(output_dir / ".graphify_analysis.json").read_bytes(),
-            report=(output_dir / "GRAPH_REPORT.md").read_bytes(),
-            html=(output_dir / "graph.html").read_bytes(),
-        )
-    except (GraphifyError, OSError, UnicodeError):
-        return None
-
-
-def _restore_prior_derived_artifacts(output_dir: Path, prior: PriorDerivedArtifacts) -> None:
-    _atomic_write_batch(
-        {
-            output_dir / ".graphify_analysis.json": prior.analysis,
-            output_dir / "GRAPH_REPORT.md": prior.report,
-            output_dir / "graph.html": prior.html,
-        }
-    )
-
-
-def _normalize_preserved_derived_artifacts(output_dir: Path) -> None:
-    """Apply current report and HTML normalization after restoring prior bytes."""
-
-    report_path = output_dir / "GRAPH_REPORT.md"
-    html_path = output_dir / "graph.html"
-    try:
-        report = report_path.read_text(encoding="utf-8")
-        html = html_path.read_text(encoding="utf-8")
-    except (OSError, UnicodeError) as error:
-        raise GraphifyError(
-            f"Unable to read preserved Graphify report or HTML in {output_dir}"
-        ) from error
-    _atomic_write_batch(
-        {
-            report_path: _report_without_stale_commit_claim(report),
-            html_path: _html_without_stale_commit_claim(html),
-        }
-    )
-
-
-def _normalize_graph_and_validate(output_dir: Path) -> None:
-    """Normalize only a newly extracted graph, then validate the full bundle."""
-
-    graph_path = output_dir / "graph.json"
-    graph = _load_json(graph_path, "graph.json")
-    if not isinstance(graph, dict):
-        raise GraphifyError("Graphify graph artifact must contain a JSON object")
-    graph["built_at_commit"] = None
-    graph["graphify_provenance"] = PROVENANCE
-    _atomic_write_batch({graph_path: json.dumps(graph, indent=2, sort_keys=True) + "\n"})
-    _read_and_validate_bundle(output_dir)
-
-
-def normalize_and_validate(output_dir: Path, source_root: str) -> None:
-    """Normalize provenance, validate paths, and enforce the five-file contract."""
-
-    graph, analysis, report, html = _read_and_validate_bundle(output_dir)
-    graph_path = output_dir / "graph.json"
-    analysis_path = output_dir / ".graphify_analysis.json"
-    report_path = output_dir / "GRAPH_REPORT.md"
-    html_path = output_dir / "graph.html"
-    graph["built_at_commit"] = None
-    graph["graphify_provenance"] = PROVENANCE
-    analysis["graphify_provenance"] = PROVENANCE
-
-    _atomic_write_batch(
-        {
-            graph_path: json.dumps(graph, indent=2, sort_keys=True) + "\n",
-            analysis_path: json.dumps(analysis, indent=2, sort_keys=True) + "\n",
-            report_path: _report_without_stale_commit_claim(report),
-            html_path: _html_without_stale_commit_claim(html),
-        }
-    )
-    _read_and_validate_bundle(output_dir)
+    _load_json(output_dir / "graph.json", "graph.json")
+    _load_json(output_dir / ".graphify_analysis.json", ".graphify_analysis.json")
+    _load_json(output_dir / "manifest.json", "manifest.json")
+    for name in ("GRAPH_REPORT.md", "graph.html"):
+        try:
+            (output_dir / name).read_text(encoding="utf-8")
+        except (OSError, UnicodeError) as error:
+            raise GraphifyError(f"Unable to read Graphify {name} in {output_dir}") from error
 
 
 def generate_catalogue(repository_root: Path = REPOSITORY_ROOT) -> None:
     """Generate all layers in order, stopping at the first failure."""
 
-    safe_remove_legacy_output(repository_root / "graphify-out")
+    legacy_output = repository_root / "graphify-out"
+    if legacy_output.is_dir() and not legacy_output.is_symlink():
+        shutil.rmtree(legacy_output)
     for layer in LAYERS:
         output_dir = repository_root / layer.output_dir
-        prior = _capture_prior_derived_artifacts(output_dir)
-        _remove_known_entries(output_dir)
+        _fresh_output_dir(output_dir)
         run_graphify(layer, "extract", output_dir, repository_root)
-        extracted_graph = _load_json(output_dir / "graph.json", "graph.json")
-        if not isinstance(extracted_graph, dict):
-            raise GraphifyError("Graphify graph artifact must contain a JSON object")
-
-        if prior is not None and _canonical_graph(extracted_graph) == prior.canonical_graph:
-            _remove_known_entries(output_dir)
-            _restore_prior_derived_artifacts(output_dir, prior)
-            _normalize_preserved_derived_artifacts(output_dir)
-            _normalize_graph_and_validate(output_dir)
-        else:
-            run_graphify(layer, "cluster-only", output_dir, repository_root)
-            _remove_known_entries(output_dir)
-            normalize_and_validate(output_dir, layer.source_root)
+        run_graphify(layer, "cluster-only", output_dir, repository_root)
+        _strip_graphify_sidecars(output_dir)
+        validate_bundle(output_dir)
 
 
 def main() -> int:

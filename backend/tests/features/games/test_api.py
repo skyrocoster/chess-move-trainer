@@ -364,6 +364,9 @@ def test_real_packaged_database_smoke(
     monkeypatch.delenv(REBUILT_DATABASE_PATH_ENV, raising=False)
     monkeypatch.delenv("CHESS_DATABASE_PATH", raising=False)
     monkeypatch.chdir(ROOT)
+    database = Path(HOST_SEED_DATABASE_PATH)
+    if not database.exists():
+        pytest.skip(f"real database not found: {database}")
 
     response = client.get("/api/games?page_size=1")
 

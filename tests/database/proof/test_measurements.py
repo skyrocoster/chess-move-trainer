@@ -4,6 +4,8 @@ import os
 import re
 from pathlib import Path
 
+import pytest
+
 from chess_move_trainer.database.proof import (
     collect_direct_measurements,
     print_direct_measurements,
@@ -20,6 +22,8 @@ def _database() -> Path:
 
 
 def test_real_direct_database_records_query_plans_and_timings() -> None:
+    if not _database().exists():
+        pytest.skip(f"real database not found: {_database()}")
     report = collect_direct_measurements(_database())
 
     assert report.database_path == _database().resolve()
@@ -85,6 +89,8 @@ def test_real_direct_database_records_query_plans_and_timings() -> None:
 
 
 def test_measurement_output_is_aggregate_only(capsys) -> None:
+    if not _database().exists():
+        pytest.skip(f"real database not found: {_database()}")
     report = collect_direct_measurements(_database())
     print_direct_measurements(report)
     output = capsys.readouterr().out

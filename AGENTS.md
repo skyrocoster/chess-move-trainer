@@ -37,7 +37,9 @@ command fails, report the exact command and failure.
 ## Application commands
 
 - `powershell -ExecutionPolicy Bypass -File ./dev.ps1 start` starts the backend, frontend, worker, Storybook, and Datasette in
-  detached Docker containers. Replace `start` with `stop`, `restart`, `rebuild`, `status`, or `logs`; append one
+  detached Docker containers. A cold `start` first refreshes games and openings in the live volume database; a
+  healthy stack is left alone. Replace `start` with `stop`, `restart`, `rebuild`, `status`, `logs`, `update`
+  (refresh data with workers paused), or `setup` (one-time live-database creation); append one
   of `backend`, `frontend`, `worker`, `datasette`, or `storybook` to target a single service.
 - `.venv/Scripts/python.exe -m pytest backend/tests tests` runs the Python suites.
 - Python dependencies are pinned in `requirements.txt` and configured in `pyproject.toml`. The repository-root

@@ -1,9 +1,9 @@
 # Docker start data refresh - `dev.ps1` fetches the latest games against the live volume database
 
-> **Status:** pending — written 2026-09-22 from the approved direction record; coordinator-reviewed
-> and corrected the same day (Stage 3 proof validity for the hardwired opt-in suites; Stage 4
-> accelerated partial-stack restore excludes the normal `worker` from `up`). Execution is
-> explicitly deferred until the user says go.
+> **Status:** implemented 2026-09-22 — all five stages executed with their proof scenarios
+> passing (see Progress and decisions). The stack was left healthy in normal mode; the refreshed
+> raw-month ledger files (`data/chess-com/raw/games/2026/09.json`, `data/chess-com/openings/e.tsv`)
+> are uncommitted by design.
 
 - **Read trigger:** Read before implementing or reviewing any change to `dev.ps1`, the lifecycle CLI
   (`setup` / `update games` / `update openings`), the preferred-move guesser deletion, the real-data
@@ -181,11 +181,24 @@ untouched. Host real-data tests no longer fail when no exported database file ex
 
 ## Progress and decisions
 
-- **Stage 1:** pending — proof: lifecycle/schema/update pytest subset; breakpoint: none.
-- **Stage 2:** pending — proof: preferred-moves + boundary pytest subset; breakpoint: none.
-- **Stage 3:** pending — proof: skip-when-missing runs (override, temp-CWD, and code-review variants per the stage proof); breakpoint: none.
-- **Stage 4:** pending — proof: six dev.ps1/docker scenarios with finite budgets; breakpoint: budget tuning only.
-- **Stage 5:** pending — proof: bounded grep + review; breakpoint: none.
+- **Stage 1:** done — `--database` flag on `setup`/`update games`/`update openings` with target-aware
+  guard; proof: 23 passed (`test_lifecycle_cli`, `test_schema_cli`, `test_setup`, `test_update_games`,
+  `test_update_openings`).
+- **Stage 2:** done — `preferred_moves/setup.py`, `inference.py`, the `setup` CLI command, its render
+  helper, and the three guesser test files deleted; proof: 115 passed (preferred-moves + boundary suites).
+- **Stage 3:** done — five suites skip when their database file is absent (overrides and opt-in gates kept);
+  proof: missing-file run 1 passed + 10 skipped with the missing-file reason, temp-CWD smoke 2 skipped,
+  repo-root proof subset 5 passed (no over-skip), games suite 15 passed + 1 gate-skip.
+- **Stage 4:** done — `dev.ps1` gains `setup`/`update`, healthy-stack no-op, probe, budgeted one-shot runs
+  with kill-by-name, accelerated-aware restore. Proof: healthy no-op (no updater, mode unchanged); cold
+  `start` ran both updates before `up` (log lines 17-23 before Healthy at 127-128, DB hash refreshed,
+  Datasette live); `update` in normal and accelerated-six modes (workers paused, updates ran, mode
+  restored, backend/frontend/datasette uptimes unchanged); `setup` refusal exit 1 with bytes unchanged;
+  forced 2000 ms timeout warned and started services anyway with no orphan; probe exit 0 present / 1 absent;
+  `update` failure restored workers first, then errored exit 1. Two launcher bugs found and fixed during
+  proof (console-handle inheritance, argument quoting). Volume never deleted, no `down`, stack left healthy.
+- **Stage 5:** done — `DEVELOPMENT_SERVICES.md`, `data/README.md`, `AGENTS.md` updated; proof: bounded
+  `chess-seed` grep + review (no host-only-update or auto-export claims remain).
 
 ## Proof
 

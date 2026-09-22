@@ -23,11 +23,8 @@ def test_supported_lifecycle_help_names_host_seed_and_live_destinations() -> Non
         assert HOST_SEED_DATABASE_PATH.as_posix() in result.stdout
         assert "/workspace/data/database/chess.db" in result.stdout
         assert "/data/chess.db" in result.stdout
-        help_text = result.stdout.lower()
-        assert "destination is" in help_text
-        assert "configurable" in help_text
-        assert "same path" not in help_text
-        assert "--database" not in result.stdout
+        assert "--database" in result.stdout
+        assert "not configurable" not in result.stdout.lower()
         assert "--config" not in result.stdout
 
 
@@ -59,9 +56,9 @@ def test_lifecycle_adapters_forward_fixed_path_service_results(monkeypatch) -> N
         monkeypatch.setattr(
             database_cli,
             service_name,
-            lambda operation=operation: LifecycleResult(
+            lambda database=HOST_SEED_DATABASE_PATH, operation=operation: LifecycleResult(
                 operation=operation,
-                database_path=HOST_SEED_DATABASE_PATH,
+                database_path=Path(database),
                 message="completed",
             ),
         )
@@ -72,14 +69,36 @@ def test_lifecycle_adapters_forward_fixed_path_service_results(monkeypatch) -> N
         assert str(HOST_SEED_DATABASE_PATH) in result.stdout
 
 
+def test_lifecycle_adapters_forward_explicit_database_option(monkeypatch, tmp_path: Path) -> None:
+    custom = tmp_path / "custom.db"
+    seen: list[Path] = []
+
+    def _service(database: Path = HOST_SEED_DATABASE_PATH) -> LifecycleResult:
+        seen.append(Path(database))
+        return LifecycleResult(
+            operation=LifecycleOperation.SETUP,
+            database_path=Path(database),
+            message="completed",
+        )
+
+    monkeypatch.setattr(database_cli, "setup_database", _service)
+
+    result = runner.invoke(database_cli.app, ["setup", "--database", str(custom)])
+
+    assert result.exit_code == 0
+    assert "completed" in result.stdout
+    assert str(custom) in result.stdout
+    assert seen == [custom]
+
+
 @pytest.mark.parametrize("exit_code", [1, 2, 130])
 def test_lifecycle_adapters_preserve_service_exit_mapping(monkeypatch, exit_code: int) -> None:
     monkeypatch.setattr(
         database_cli,
         "setup_database",
-        lambda: LifecycleResult(
+        lambda database=HOST_SEED_DATABASE_PATH: LifecycleResult(
             operation=LifecycleOperation.SETUP,
-            database_path=HOST_SEED_DATABASE_PATH,
+            database_path=Path(database),
             message="failed",
             exit_code=exit_code,
         ),
@@ -95,7 +114,7 @@ def test_lifecycle_adapter_rejects_a_service_destination_override(monkeypatch) -
     monkeypatch.setattr(
         database_cli,
         "setup_database",
-        lambda: LifecycleResult(
+        lambda database=HOST_SEED_DATABASE_PATH: LifecycleResult(
             operation=LifecycleOperation.SETUP,
             database_path=Path("other.db"),
             message="completed",
@@ -103,6 +122,26 @@ def test_lifecycle_adapter_rejects_a_service_destination_override(monkeypatch) -
     )
 
     result = runner.invoke(database_cli.app, ["setup"])
+
+    assert result.exit_code == 1
+    assert "destination" in result.stderr.lower()
+
+
+def test_lifecycle_adapter_rejects_a_mismatched_explicit_destination(
+    monkeypatch, tmp_path: Path
+) -> None:
+    custom = tmp_path / "custom.db"
+    monkeypatch.setattr(
+        database_cli,
+        "setup_database",
+        lambda database=HOST_SEED_DATABASE_PATH: LifecycleResult(
+            operation=LifecycleOperation.SETUP,
+            database_path=HOST_SEED_DATABASE_PATH,
+            message="completed",
+        ),
+    )
+
+    result = runner.invoke(database_cli.app, ["setup", "--database", str(custom)])
 
     assert result.exit_code == 1
     assert "destination" in result.stderr.lower()

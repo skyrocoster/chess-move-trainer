@@ -69,7 +69,8 @@ needs_real_database = pytest.mark.skipif(
 
 def _real_database() -> Path:
     database = Path(os.environ.get("CHESS_REBUILT_DATABASE_PATH", str(HOST_SEED_DATABASE_PATH)))
-    assert database.exists(), f"real database not found: {database}"
+    if not database.exists():
+        pytest.skip(f"real database not found: {database}")
     return database
 
 

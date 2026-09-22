@@ -4,6 +4,8 @@ import os
 import sqlite3
 from pathlib import Path
 
+import pytest
+
 from chess_move_trainer.database.games.configuration import load_acquire_configuration
 from chess_move_trainer.database.games.persistence import load_normalized_months
 from chess_move_trainer.database.games.raw_storage import load_month
@@ -43,6 +45,8 @@ def test_pinned_source_has_a_bounded_same_side_transposition_pair() -> None:
 
 def test_real_direct_database_capabilities() -> None:
     database = _database()
+    if not database.exists():
+        pytest.skip(f"real database not found: {database}")
     opening_source = Path(
         os.environ.get(
             "DIRECT_OPENING_DIR",
@@ -74,6 +78,8 @@ def test_real_direct_database_capabilities() -> None:
 
 def test_real_direct_database_matches_the_retained_source_ledger() -> None:
     database = _database()
+    if not database.exists():
+        pytest.skip(f"real database not found: {database}")
     raw_root = Path(
         os.environ.get(
             "DIRECT_RAW_ROOT",

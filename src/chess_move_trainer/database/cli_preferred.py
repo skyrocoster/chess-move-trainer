@@ -14,11 +14,7 @@ from .cli_helpers import (
     _preference_from_options,
     _render_preferred_periods,
     _render_preferred_resolution,
-    _render_preferred_setup,
     _usage_error,
-)
-from .lifecycle import (
-    HOST_SEED_DATABASE_PATH,
 )
 from .preferred_moves.ranges import (
     RangeValidationError,
@@ -28,12 +24,6 @@ from .preferred_moves.repository import (
     PreferredMoveSchemaError,
     PreferredMoveStorageError,
     PreferredMoveValidationError,
-)
-from .preferred_moves.setup import (
-    PreferredMoveSetupError,
-)
-from .preferred_moves.setup import (
-    setup_preferred_moves as run_preferred_moves_setup,
 )
 
 
@@ -61,24 +51,6 @@ def list_preferred_moves(
         _operational_error(error, 1)
     else:
         _render_preferred_periods(periods, json_output)
-
-
-@preferred_moves_app.command("setup")
-def setup_preferred_moves_command() -> None:
-    """Initialize preferred moves from the fixed app database."""
-
-    try:
-        result = run_preferred_moves_setup(HOST_SEED_DATABASE_PATH)
-    except KeyboardInterrupt:
-        _interrupted()
-    except PreferredMoveSchemaError as error:
-        _operational_error(error, 3)
-    except PreferredMoveSetupError as error:
-        _operational_error(error, 1)
-    except Exception as error:
-        _operational_error(error, 1)
-    else:
-        _render_preferred_setup(result)
 
 
 @preferred_moves_app.command("resolve")

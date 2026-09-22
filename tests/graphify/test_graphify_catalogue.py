@@ -8,6 +8,7 @@ from pathlib import Path, PurePosixPath
 import pytest
 
 from src.tools import graphify_catalogue as catalogue
+from src.tools.graphify_catalogue_validation import PATH_KEYS, REQUIRED_ARTIFACTS
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
@@ -17,36 +18,6 @@ def test_generator_is_owned_by_src_tools_and_resolves_repository_root() -> None:
     assert catalogue.REPOSITORY_ROOT == PROJECT_ROOT
     assert not (PROJECT_ROOT / "tools/graphify_catalogue.py").exists()
     assert Path(catalogue.__file__).resolve().parent != PROJECT_ROOT / "src/chess_move_trainer"
-
-
-def _artifact_fixture(output: Path, *, unsafe_path: str | None = None) -> bytes:
-    output.mkdir(parents=True, exist_ok=True)
-    graph: dict[str, object] = {"built_at_commit": "old-commit", "nodes": []}
-    if unsafe_path is not None:
-        graph["nodes"] = [{"file_path": unsafe_path}]
-    analysis = {"communities": [], "built_at_commit": "old-commit"}
-    manifest = {
-        "files": {
-            "chess_move_trainer/example.py": {
-                "mtime": 1,
-                "seen": True,
-                "ast_hash": "ast-before",
-                "semantic_hash": "semantic-before",
-            }
-        }
-    }
-    (output / "graph.json").write_text(json.dumps(graph), encoding="utf-8")
-    (output / ".graphify_analysis.json").write_text(json.dumps(analysis), encoding="utf-8")
-    manifest_bytes = (json.dumps(manifest, indent=2) + "\n").encode()
-    (output / "manifest.json").write_bytes(manifest_bytes)
-    (output / "GRAPH_REPORT.md").write_text(
-        "# Graph\n\nBuilt from commit: old-commit\nRun `git rev-parse HEAD` to refresh.\n",
-        encoding="utf-8",
-    )
-    (output / "graph.html").write_text(
-        "<html><body>Built from commit: old-commit</body></html>", encoding="utf-8"
-    )
-    return manifest_bytes
 
 
 def test_six_layer_map_includes_complete_src_core_worker_package() -> None:
@@ -124,14 +95,11 @@ def test_catalogue_stops_at_failing_layer(monkeypatch: pytest.MonkeyPatch, tmp_p
 
     def fake_run(layer: catalogue.LayerSpec, action: str, output: Path, root: Path) -> None:
         calls.append((layer.name, action))
-        if action == "extract" and layer.name == "repository":
-            output.mkdir(parents=True, exist_ok=True)
-            (output / "graph.json").write_text(json.dumps({"nodes": []}), encoding="utf-8")
         if layer.name == "backend":
             raise catalogue.GraphifyError("controlled backend failure")
 
     monkeypatch.setattr(catalogue, "run_graphify", fake_run)
-    monkeypatch.setattr(catalogue, "normalize_and_validate", lambda output, source: None)
+    monkeypatch.setattr(catalogue, "validate_bundle", lambda output: None)
     with pytest.raises(catalogue.GraphifyError, match="controlled backend failure"):
         catalogue.generate_catalogue(tmp_path)
     assert calls == [
@@ -141,240 +109,82 @@ def test_catalogue_stops_at_failing_layer(monkeypatch: pytest.MonkeyPatch, tmp_p
     ]
 
 
-def test_provenance_is_normalized_atomically_and_manifest_is_preserved(tmp_path: Path) -> None:
-    output = tmp_path / "bundle"
-    manifest_before = _artifact_fixture(output)
-    catalogue.normalize_and_validate(output, "src")
+def test_fresh_output_dir_replaces_prior_bundle_and_refuses_non_directory(
+    tmp_path: Path,
+) -> None:
+    bundle = tmp_path / "bundle"
+    bundle.mkdir()
+    (bundle / "stale.json").write_text("{}", encoding="utf-8")
+    catalogue._fresh_output_dir(bundle)
+    assert list(bundle.iterdir()) == []
 
-    graph = json.loads((output / "graph.json").read_text(encoding="utf-8"))
-    analysis = json.loads((output / ".graphify_analysis.json").read_text(encoding="utf-8"))
-    assert graph["built_at_commit"] is None
-    assert graph["graphify_provenance"] == catalogue.PROVENANCE
-    assert analysis["graphify_provenance"] == catalogue.PROVENANCE
-    report = (output / "GRAPH_REPORT.md").read_text(encoding="utf-8")
-    html = (output / "graph.html").read_text(encoding="utf-8")
-    assert "Built from commit" not in report
-    assert "git rev-parse HEAD" not in report
-    assert catalogue.REPORT_FRESHNESS in report
-    assert catalogue.REFRESH_COMMAND in report
-    assert "graphify update ." not in report
-    assert "Run `manifest.json for per-file content hashes`" not in report
-    assert catalogue.PROVENANCE_NOTE in report
-    assert catalogue.HTML_PROVENANCE_COMMENT in html
-    assert (output / "manifest.json").read_bytes() == manifest_before
-    assert not list(output.glob("*.tmp"))
+    plain_file = tmp_path / "plain.txt"
+    plain_file.write_text("not a directory", encoding="utf-8")
+    with pytest.raises(catalogue.GraphifyError, match="Refusing to replace"):
+        catalogue._fresh_output_dir(plain_file)
+    assert plain_file.read_text(encoding="utf-8") == "not a directory"
 
 
 def test_artifact_contract_rejects_missing_and_unexpected_entries(tmp_path: Path) -> None:
+    def fixture(output: Path) -> None:
+        output.mkdir(parents=True, exist_ok=True)
+        (output / "graph.json").write_text(json.dumps({"nodes": []}), encoding="utf-8")
+        (output / ".graphify_analysis.json").write_text("{}", encoding="utf-8")
+        (output / "manifest.json").write_text("{}", encoding="utf-8")
+        (output / "GRAPH_REPORT.md").write_text("# Graph\n", encoding="utf-8")
+        (output / "graph.html").write_text("<html></html>", encoding="utf-8")
+
     output = tmp_path / "bundle"
-    _artifact_fixture(output)
+    fixture(output)
+    catalogue.validate_bundle(output)
     (output / "manifest.json").unlink()
     with pytest.raises(catalogue.GraphifyError, match="missing required artifacts"):
-        catalogue.normalize_and_validate(output, "src")
+        catalogue.validate_bundle(output)
 
-    _artifact_fixture(output)
+    fixture(output)
     (output / "unexpected.txt").write_text("no", encoding="utf-8")
     with pytest.raises(catalogue.GraphifyError, match="unexpected final artifacts"):
-        catalogue.normalize_and_validate(output, "src")
+        catalogue.validate_bundle(output)
 
 
 def test_tracked_data_is_allowed_but_runtime_data_is_rejected_without_database_access(
     tmp_path: Path,
 ) -> None:
-    output = tmp_path / "tracked-data-bundle"
-    _artifact_fixture(output, unsafe_path="data/chess-com/supported.json")
-    catalogue.normalize_and_validate(output, "src")
-    graph = json.loads((output / "graph.json").read_text(encoding="utf-8"))
-    assert graph["nodes"][0]["file_path"] == "data/chess-com/supported.json"
-
     output = tmp_path / "runtime-data-bundle"
-    _artifact_fixture(output, unsafe_path="../data/database/chess.db")
-    with pytest.raises(catalogue.GraphifyError, match="Parent traversal"):
-        catalogue.normalize_and_validate(output, "src")
-
-    _artifact_fixture(output, unsafe_path="data/database/chess.db")
+    output.mkdir()
+    (output / "graph.json").write_text(
+        json.dumps({"nodes": [{"file_path": "data/database/chess.db"}]}), encoding="utf-8"
+    )
+    (output / ".graphify_analysis.json").write_text("{}", encoding="utf-8")
+    (output / "manifest.json").write_text("{}", encoding="utf-8")
+    (output / "GRAPH_REPORT.md").write_text("# Graph\n", encoding="utf-8")
+    (output / "graph.html").write_text("<html></html>", encoding="utf-8")
     with pytest.raises(catalogue.GraphifyError, match="Runtime-data path"):
-        catalogue.normalize_and_validate(output, "src")
+        catalogue.validate_bundle(output)
 
 
-def test_allowlist_cleanup_removes_known_tree_but_refuses_unknown_content(tmp_path: Path) -> None:
-    legacy = tmp_path / "graphify-out"
-    _artifact_fixture(legacy)
-    (legacy / ".graphify_root").write_text(str(tmp_path), encoding="utf-8")
-    (legacy / "cache").mkdir()
-    (legacy / "cache" / "known.tmp").write_text("cache", encoding="utf-8")
-    catalogue.safe_remove_legacy_output(legacy)
-    assert not legacy.exists()
-
-    blocked = tmp_path / "blocked-graphify-out"
-    _artifact_fixture(blocked)
-    marker = blocked / "unknown.txt"
-    marker.write_text("preserve me", encoding="utf-8")
-    with pytest.raises(catalogue.GraphifyError, match="Unknown Graphify output file"):
-        catalogue.safe_remove_legacy_output(blocked)
-    assert marker.exists()
-
-
-def _single_layer_catalogue(
-    monkeypatch: pytest.MonkeyPatch,
-    tmp_path: Path,
-    extracted_graph: dict[str, object],
-    *,
-    cluster_writer: object | None = None,
-    report_override: str | None = None,
-) -> list[str]:
-    output = tmp_path / catalogue.LAYERS[3].output_dir
-    _artifact_fixture(output)
-    catalogue.normalize_and_validate(output, "src")
-    if report_override is not None:
-        (output / "GRAPH_REPORT.md").write_text(report_override, encoding="utf-8")
-    calls: list[str] = []
-
-    def fake_run(layer: catalogue.LayerSpec, action: str, destination: Path, root: Path) -> None:
-        calls.append(action)
-        if action == "extract":
-            (destination / "graph.json").write_text(json.dumps(extracted_graph), encoding="utf-8")
-        elif cluster_writer is not None:
-            cluster_writer(destination)
-
-    monkeypatch.setattr(catalogue, "LAYERS", (catalogue.LAYERS[3],))
-    monkeypatch.setattr(catalogue, "run_graphify", fake_run)
-    catalogue.generate_catalogue(tmp_path)
-    return calls
-
-
-def test_unchanged_canonical_graph_preserves_derived_bytes_without_clustering(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-) -> None:
-    output = tmp_path / catalogue.LAYERS[3].output_dir
-    _artifact_fixture(output)
-    catalogue.normalize_and_validate(output, "src")
-    prior_bytes = {
-        name: (output / name).read_bytes()
-        for name in (".graphify_analysis.json", "GRAPH_REPORT.md", "graph.html")
-    }
-
-    calls: list[str] = []
-
-    def fake_run(layer: catalogue.LayerSpec, action: str, destination: Path, root: Path) -> None:
-        calls.append(action)
-        if action == "extract":
-            (destination / "graph.json").write_text(
-                json.dumps(
-                    {
-                        "built_at_commit": "new-commit",
-                        "nodes": [],
-                    }
-                ),
-                encoding="utf-8",
-            )
-            (destination / ".graphify_analysis.json").write_text("varied", encoding="utf-8")
-            (destination / "GRAPH_REPORT.md").write_text("varied", encoding="utf-8")
-            (destination / "graph.html").write_text("varied", encoding="utf-8")
-        else:
-            pytest.fail("unchanged graph entered clustering")
-
-    monkeypatch.setattr(catalogue, "LAYERS", (catalogue.LAYERS[3],))
-    monkeypatch.setattr(catalogue, "run_graphify", fake_run)
-    catalogue.generate_catalogue(tmp_path)
-
-    assert calls == ["extract"]
-    for name, content in prior_bytes.items():
-        assert (output / name).read_bytes() == content
-    report = (output / "GRAPH_REPORT.md").read_text(encoding="utf-8")
-    assert catalogue.REPORT_FRESHNESS in report
-    assert "graphify update ." not in report
-    assert "Run `manifest.json for per-file content hashes`" not in report
-
-
-def test_substantive_graph_change_recomputes_and_normalizes_derived_output(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-) -> None:
-    def write_clustered_output(destination: Path) -> None:
-        (destination / ".graphify_analysis.json").write_text(
-            json.dumps({"communities": ["changed"]}), encoding="utf-8"
-        )
-        (destination / "GRAPH_REPORT.md").write_text(
-            "# Changed\nBuilt from commit: child\nRun `git rev-parse HEAD`.\n",
-            encoding="utf-8",
-        )
-        (destination / "graph.html").write_text(
-            "<html>Built from commit: child</html>", encoding="utf-8"
-        )
-
-    calls = _single_layer_catalogue(
-        monkeypatch,
-        tmp_path,
-        {"built_at_commit": "new-commit", "nodes": [{"name": "new-node"}]},
-        cluster_writer=write_clustered_output,
-    )
-
-    assert calls == ["extract", "cluster-only"]
-    output = tmp_path / "docs/graphify/core-data"
-    analysis = json.loads((output / ".graphify_analysis.json").read_text(encoding="utf-8"))
-    graph = json.loads((output / "graph.json").read_text(encoding="utf-8"))
-    report = (output / "GRAPH_REPORT.md").read_text(encoding="utf-8")
-    html = (output / "graph.html").read_text(encoding="utf-8")
-    assert graph["nodes"] == [{"name": "new-node"}]
-    assert graph["built_at_commit"] is None
-    assert analysis["communities"] == ["changed"]
-    assert analysis["graphify_provenance"] == catalogue.PROVENANCE
-    assert "Built from commit" not in report
-    assert "git rev-parse HEAD" not in report
-    assert catalogue.HTML_PROVENANCE_COMMENT in html
-
-
-def test_provenance_only_graph_differences_do_not_recompute_clustering(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-) -> None:
-    calls = _single_layer_catalogue(
-        monkeypatch,
-        tmp_path,
-        {
-            "built_at_commit": "another-commit",
-            "graphify_provenance": "another provenance",
-            "nodes": [],
-        },
-    )
-
-    assert calls == ["extract"]
-
-
-def test_unchanged_graph_repairs_legacy_report_guidance_without_clustering(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-) -> None:
-    legacy_report = (
-        "# Graph\n\n## Graph Freshness\n"
-        "- Run `manifest.json for per-file content hashes` and compare to check "
-        "if the graph is stale.\n"
-        "- Run `graphify update .` after code changes (no API cost).\n\n"
-        f"{catalogue.PROVENANCE_NOTE}\n"
-    )
-    calls = _single_layer_catalogue(
-        monkeypatch,
-        tmp_path,
-        {"built_at_commit": "new-commit", "nodes": []},
-        report_override=legacy_report,
-    )
-
-    assert calls == ["extract"]
-    report = (tmp_path / "docs/graphify/core-data/GRAPH_REPORT.md").read_text(encoding="utf-8")
-    assert catalogue.REPORT_FRESHNESS in report
-    assert "git rev-parse HEAD" not in report
-    assert "Run `manifest.json for per-file content hashes`" not in report
-    assert "graphify update ." not in report
-
-
-def test_ignore_rules_are_narrow_and_exclude_graphify_outputs() -> None:
+def test_ignore_rules_exclude_generated_graphify_bundles() -> None:
     gitignore = (PROJECT_ROOT / ".gitignore").read_text(encoding="utf-8")
     graphifyignore = (PROJECT_ROOT / ".graphifyignore").read_text(encoding="utf-8")
+    assert "docs/graphify/*" in gitignore
+    assert "!docs/graphify/README.md" in gitignore
     assert "/graphify-out/" in gitignore
-    assert "docs/graphify/**/cache/" in gitignore
     assert "!.opencode/commands/" in gitignore
     assert "!.opencode/commands/commit.md" in gitignore
-    assert "!.opencode/**" not in gitignore
     assert "/docs/graphify/" in graphifyignore
     assert "/graphify-out/" in graphifyignore
+
+
+def test_generated_bundles_are_not_tracked() -> None:
+    tracked = subprocess.run(
+        ["git", "ls-files", "docs/graphify"],
+        cwd=PROJECT_ROOT,
+        capture_output=True,
+        text=True,
+        timeout=60,
+        check=True,
+    ).stdout.splitlines()
+    assert tracked == ["docs/graphify/README.md"]
 
 
 def _assert_relative_catalogue_path(value: str) -> None:
@@ -391,7 +201,7 @@ def _graph_path_values(value: object) -> list[str]:
         for key, child in value.items():
             if (
                 isinstance(key, str)
-                and key.lower() in catalogue.PATH_KEYS
+                    and key.lower() in PATH_KEYS
                 and isinstance(child, str)
             ):
                 paths.append(child)
@@ -406,35 +216,22 @@ def test_real_catalogue_has_six_exact_five_artifact_bundles() -> None:
     for layer in catalogue.LAYERS:
         output = PROJECT_ROOT / layer.output_dir
         assert output.is_dir()
-        assert {entry.name for entry in output.iterdir()} == set(catalogue.REQUIRED_ARTIFACTS)
+        assert {entry.name for entry in output.iterdir()} == set(REQUIRED_ARTIFACTS)
 
         graph = json.loads((output / "graph.json").read_text(encoding="utf-8"))
-        analysis = json.loads((output / ".graphify_analysis.json").read_text(encoding="utf-8"))
         manifest = json.loads((output / "manifest.json").read_text(encoding="utf-8"))
-        assert graph["built_at_commit"] is None
-        assert graph["graphify_provenance"] == catalogue.PROVENANCE
-        assert analysis["graphify_provenance"] == catalogue.PROVENANCE
         assert isinstance(manifest, dict) and manifest
 
-        for source_path in _graph_path_values(graph) + _graph_path_values(analysis):
+        for source_path in _graph_path_values(graph):
             _assert_relative_catalogue_path(source_path)
         for source_path, record in manifest.items():
             _assert_relative_catalogue_path(source_path)
             assert {"mtime", "seen", "ast_hash", "semantic_hash"} <= set(record)
             assert record["ast_hash"] and record["semantic_hash"]
 
-        report = (output / "GRAPH_REPORT.md").read_text(encoding="utf-8")
-        html = (output / "graph.html").read_text(encoding="utf-8")
-        generated_text = "\n".join(
-            (report, html, json.dumps(graph), json.dumps(analysis), json.dumps(manifest))
-        ).lower()
-        assert catalogue.PROVENANCE in generated_text
-        assert catalogue.REPORT_FRESHNESS in report
-        assert "built from commit" not in generated_text
-        assert "git rev-parse head" not in generated_text
-        assert "git rev-parse HEAD" not in report
-        assert "Run `manifest.json for per-file content hashes`" not in report
-        assert "graphify update ." not in report
+        generated_text = (
+            json.dumps(graph).lower() + json.dumps(manifest).lower()
+        )
         assert "docs/graphify/" not in generated_text
         assert "data/database/" not in generated_text
         assert "data/stockfish/" not in generated_text
@@ -473,6 +270,7 @@ def test_stage_two_authority_and_commit_fail_closed_ordering() -> None:
     assert "source code, this `AGENTS.md`, and active Plans remain authoritative" in agents
     assert "complete `src/` core/worker package" in agents
     assert "never live database" in agents
+    assert "gitignored" in commit
     assert commit.index("src/tools/graphify_catalogue.py") < commit.index("git status")
     assert commit.index("git status") < commit.index("git diff")
     assert commit.index("git diff") < commit.index("git add -A")

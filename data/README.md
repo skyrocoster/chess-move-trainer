@@ -31,7 +31,7 @@ All `*.db` files here are ignored by git. Only `schema.md` is tracked.
 
 | File | What it is | Who writes it | Who reads it |
 | --- | --- | --- | --- |
-| `chess-seed.db` | Ignored local seed/export copy for host-side pytest, benchmarks, and proof scripts. Stale unless freshly exported. | You, via the `docker cp` export in `docs/DEVELOPMENT_SERVICES.md`, or a host-side `setup` run. | Host test runs that default to `data/database/chess-seed.db`. Never the app. |
+| `chess-seed.db` | Ignored local seed/export copy for host-side pytest, benchmarks, and proof scripts. Stale unless freshly exported. Nothing automatic creates or refreshes it. | You, via the `docker cp` export in `docs/DEVELOPMENT_SERVICES.md`, or a host-side `setup` run. | Host test runs that default to `data/database/chess-seed.db` (they skip when no export exists). Never the app. |
 | `chess.db.backup.pre-wal` | Manual backup snapshot taken before a write-ahead-log change. | You, by hand. | You, by hand, if a restore is ever needed. |
 | `schema.md` | Generated schema reference (tracked by git). | `python -m chess_move_trainer.database schema inspect --database <path> --output data/database/schema.md`. | Readers who want the table layout without opening the database. |
 
@@ -53,6 +53,14 @@ docker exec chess-move-trainer-backend-1 sha256sum /workspace/data/database/ches
 Different hashes mean the host seed copy is stale. To refresh it: stop the workers
 first, copy out of a container, restart, then re-hash to confirm. The exact
 commands are in [`docs/DEVELOPMENT_SERVICES.md`](../docs/DEVELOPMENT_SERVICES.md).
+
+The live database itself stays current without any export: a cold
+`powershell -ExecutionPolicy Bypass -File ./dev.ps1 start` refreshes games and
+openings in the volume before the services start, and
+`powershell -ExecutionPolicy Bypass -File ./dev.ps1 update` refreshes them on a
+live stack with workers paused. The host CLI (`setup`, `update games`, `update
+openings`) targets the host seed path by default and accepts an explicit
+`--database` option; it is not part of the container startup path.
 
 ## Other directories
 

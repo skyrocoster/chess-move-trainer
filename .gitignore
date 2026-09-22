@@ -62,13 +62,9 @@ docs/benchmarks/API/*Z-*.json
 !.opencode/agents/**
 opencode.json
 
-# Graphify machine-local output and sidecars
-docs/graphify/**/cache/
-docs/graphify/**/.graphify_root
-docs/graphify/**/.graphify_stale*
-docs/graphify/**/.graphify_query*
-docs/graphify/**/.graphify_labels*
-docs/graphify/**/.query_stamp*
+# Generated Graphify bundles (machine-local, refreshed by src/tools/graphify_catalogue.py)
+docs/graphify/*
+!docs/graphify/README.md
 
 # Chess.com raw profiles (large, regenerable)
 data/chess-com/raw/profiles/

@@ -21,9 +21,6 @@ from .preferred_moves.ranges import (
     RangeValidationError,
     ResolutionState,
 )
-from .preferred_moves.setup import (
-    PreferredMoveSetupResult,
-)
 from .schema import SchemaIncompatibleError
 
 
@@ -65,9 +62,15 @@ def _usage_error(error: Exception, *, param_hint: str = "--lock-timeout") -> Non
     raise typer.BadParameter(str(error), param_hint=param_hint)
 
 
-def _run_lifecycle(service: Callable[[], LifecycleResult]) -> None:
-    """Run one fixed-path service and render only its ordinary result data."""
+def _run_lifecycle(
+    service: Callable[[], LifecycleResult],
+    target: str | Path = HOST_SEED_DATABASE_PATH,
+) -> None:
+    """Run one lifecycle service and render only its ordinary result data."""
 
+    from pathlib import Path as _Path
+
+    requested = _Path(target)
     try:
         result = service()
     except KeyboardInterrupt:
@@ -75,11 +78,9 @@ def _run_lifecycle(service: Callable[[], LifecycleResult]) -> None:
     except Exception as error:
         _operational_error(error, 1)
 
-    if result.database_path != HOST_SEED_DATABASE_PATH:
+    if _Path(result.database_path) != requested:
         _operational_error(
-            RuntimeError(
-                f"lifecycle service returned a destination other than {HOST_SEED_DATABASE_PATH}"
-            ),
+            RuntimeError(f"lifecycle service returned a destination other than {requested}"),
             1,
         )
     if result.exit_code == 130:
@@ -87,7 +88,7 @@ def _run_lifecycle(service: Callable[[], LifecycleResult]) -> None:
     if result.exit_code not in (0, 1, 2):
         _operational_error(RuntimeError("lifecycle service returned an invalid exit code"), 1)
     typer.echo(
-        f"{result.message}\nTarget: {HOST_SEED_DATABASE_PATH}",
+        f"{result.message}\nTarget: {requested}",
         err=result.exit_code != 0,
     )
     if result.exit_code != 0:
@@ -187,22 +188,6 @@ def _render_preferred_periods(periods: tuple[NormalizedPeriod, ...], json_output
         end = period["effective_until"] or "indefinite"
         value = period["move"] or "no preference"
         typer.echo(f"- {period['effective_from']} to {end}: {value}")
-
-
-def _render_preferred_setup(result: PreferredMoveSetupResult) -> None:
-    """Render only the five ordinary setup summary counts."""
-
-    typer.echo(
-        "\n".join(
-            (
-                f"Examined games: {result.examined_games}",
-                f"Skipped games: {result.skipped_games}",
-                f"Qualifying positions: {result.qualifying_positions}",
-                f"Periods applied: {result.periods_applied}",
-                f"Conflicting positions: {result.conflicting_positions}",
-            )
-        )
-    )
 
 
 def _render_preferred_resolution(result: object, json_output: bool) -> None:

@@ -55,22 +55,22 @@ class LifecycleResult:
     exit_code: LifecycleExitCode = 0
 
 
-def setup_database() -> LifecycleResult:
-    """Create and populate the one fixed database."""
+def setup_database(database: str | Path = HOST_SEED_DATABASE_PATH) -> LifecycleResult:
+    """Create and populate the database at the requested destination."""
 
-    return _setup_database()
-
-
-def update_games() -> LifecycleResult:
-    """Dispatch the fixed-path direct game-update operation."""
-
-    return _update_games()
+    return _setup_database(_database_path=database)
 
 
-def update_openings() -> LifecycleResult:
-    """Dispatch the fixed-path direct opening-update operation."""
+def update_games(database: str | Path = HOST_SEED_DATABASE_PATH) -> LifecycleResult:
+    """Dispatch the direct game-update operation for the requested destination."""
 
-    return _update_openings()
+    return _update_games(_database_path=database)
+
+
+def update_openings(database: str | Path = HOST_SEED_DATABASE_PATH) -> LifecycleResult:
+    """Dispatch the direct opening-update operation for the requested destination."""
+
+    return _update_openings(_database_path=database)
 
 
 def _setup_database(
