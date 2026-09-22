@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { getPositionTrainingRequirements, getTrainerBlunders } from "./client";
+import { getPositionTrainingRequirements } from "./client";
 import * as generatedSdk from "./generated/sdk.gen";
 
 const dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -31,10 +31,8 @@ describe("generated SDK surface", () => {
       "getOpenings",
       "getOpeningByKey",
       "getStatisticsOverview",
-      "getTrainerBlunders",
     ]);
     expect(getPositionTrainingRequirements).toBe(generatedSdk.getPositionTrainingRequirements);
-    expect(getTrainerBlunders).toBe(generatedSdk.getTrainerBlunders);
   });
 
   it("checked-in contract contains only the approved clean operations", () => {
@@ -59,7 +57,6 @@ describe("generated SDK surface", () => {
       "/api/openings",
       "/api/openings/{opening_key}",
       "/api/statistics/overview",
-      "/api/trainer/blunders",
     ]);
     expect(Object.keys(contract.paths["/api/analysis"])).toEqual(["get"]);
     expect(contract.paths["/api/analysis"].get?.operationId).toBe("getAnalysis");
@@ -120,25 +117,6 @@ describe("generated SDK surface", () => {
         ]?.schema,
       ).toEqual({ $ref: "#/components/schemas/StatisticsErrorResponse" });
     }
-    expect(Object.keys(contract.paths["/api/trainer/blunders"])).toEqual(["get"]);
-    expect(contract.paths["/api/trainer/blunders"].get?.operationId).toBe("getTrainerBlunders");
-    expect(Object.keys(contract.paths["/api/trainer/blunders"].get?.responses ?? {})).toEqual([
-      "200",
-      "422",
-      "500",
-      "503",
-    ]);
-    expect(
-      contract.paths["/api/trainer/blunders"].get?.responses?.["200"]?.content?.["application/json"]
-        ?.schema,
-    ).toEqual({ $ref: "#/components/schemas/TrainerBlundersResponse" });
-    for (const status of ["422", "500", "503"]) {
-      expect(
-        contract.paths["/api/trainer/blunders"].get?.responses?.[status]?.content?.[
-          "application/json"
-        ]?.schema,
-      ).toEqual({ $ref: "#/components/schemas/BlunderErrorResponse" });
-    }
     expect(Object.keys(contract.components.schemas)).toEqual([
       "ActivityPeriodResponse",
       "ActivityStatisticsResponse",
@@ -149,10 +127,6 @@ describe("generated SDK surface", () => {
       "AnalysisRequestBody",
       "AnalysisRequestErrorResponse",
       "AnalysisStatisticsResponse",
-      "BlunderCoverageResponse",
-      "BlunderErrorResponse",
-      "BlunderPolicyResponse",
-      "BlunderTimeframeResponse",
       "CategoryPerformanceResponse",
       "DataQualityStatisticsResponse",
       "GameCoverageResponse",
@@ -208,8 +182,6 @@ describe("generated SDK surface", () => {
       "StatisticsFiltersResponse",
       "StatisticsOverviewResponse",
       "StreakStatisticsResponse",
-      "TrainerBlunderItemResponse",
-      "TrainerBlundersResponse",
       "TrainingAnswerRequest",
       "TrainingAnswerResponse",
       "TrainingBalanceStatisticsResponse",

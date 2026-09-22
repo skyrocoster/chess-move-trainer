@@ -5,7 +5,7 @@ param(
     [string]$Action = "status",
 
     [Parameter(Position = 1)]
-    [ValidateSet("all", "backend", "frontend", "storybook", "worker", "worker-six")]
+    [ValidateSet("all", "backend", "frontend", "storybook", "datasette", "worker", "worker-six")]
     [string]$Service = "all"
 )
 

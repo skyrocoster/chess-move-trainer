@@ -9,7 +9,7 @@ from collections.abc import Callable
 import typer
 
 from .lifecycle import (
-    DEFAULT_DATABASE_PATH,
+    HOST_SEED_DATABASE_PATH,
     LifecycleResult,
 )
 from .openings import (
@@ -75,10 +75,10 @@ def _run_lifecycle(service: Callable[[], LifecycleResult]) -> None:
     except Exception as error:
         _operational_error(error, 1)
 
-    if result.database_path != DEFAULT_DATABASE_PATH:
+    if result.database_path != HOST_SEED_DATABASE_PATH:
         _operational_error(
             RuntimeError(
-                f"lifecycle service returned a destination other than {DEFAULT_DATABASE_PATH}"
+                f"lifecycle service returned a destination other than {HOST_SEED_DATABASE_PATH}"
             ),
             1,
         )
@@ -87,7 +87,7 @@ def _run_lifecycle(service: Callable[[], LifecycleResult]) -> None:
     if result.exit_code not in (0, 1, 2):
         _operational_error(RuntimeError("lifecycle service returned an invalid exit code"), 1)
     typer.echo(
-        f"{result.message}\nTarget: {DEFAULT_DATABASE_PATH}",
+        f"{result.message}\nTarget: {HOST_SEED_DATABASE_PATH}",
         err=result.exit_code != 0,
     )
     if result.exit_code != 0:

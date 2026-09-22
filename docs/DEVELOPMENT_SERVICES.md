@@ -25,7 +25,7 @@ powershell -ExecutionPolicy Bypass -File ./dev.ps1 stop
 powershell -ExecutionPolicy Bypass -File ./dev.ps1 restart
 ```
 
-Add `backend`, `frontend`, `storybook`, `worker`, or `worker-six` after the action to affect only one service:
+Add `backend`, `frontend`, `storybook`, `datasette`, `worker`, or `worker-six` after the action to affect only one service:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File ./dev.ps1 restart backend
@@ -61,6 +61,12 @@ dependency changes because the frontend and Storybook share them. Storybook is t
 it has `pull_policy: build`, so an ordinary `start` already rebuilds its image (fast from Docker layer cache when
 dependencies are unchanged).
 
+The backend Compose service explicitly provides the existing
+`CHESS_REBUILT_DATABASE_PATH=data/database/chess.db` setting for the live
+container database. When that Compose environment changes, use the targeted
+`dev.ps1 rebuild backend` command; a plain `restart backend` does not recreate
+the container with the changed environment.
+
 ```powershell
 powershell -ExecutionPolicy Bypass -File ./dev.ps1 rebuild backend
 powershell -ExecutionPolicy Bypass -File ./dev.ps1 rebuild worker
@@ -78,11 +84,66 @@ not available.
 | Backend | <http://localhost:5666> |
 | Frontend | <http://localhost:8444> |
 | Storybook | <http://localhost:6006> |
+| Datasette | <http://localhost:8666> |
 | Worker | No port; normal mode drains the queue every 5 seconds |
 | Six workers | No port; accelerated mode runs exactly six queue workers |
 
-All three ports are published only on the local machine. Startup fails rather than selecting a different port when
+All four ports are published only on the local machine. Startup fails rather than selecting a different port when
 one is already occupied. The containers have no automatic restart policy: `restart` remains an explicit command.
+
+## Explore the live database with Datasette
+
+Datasette is an off-the-shelf web UI for SQLite, managed as a `datasette`
+service in `compose.yaml` and `dev.ps1` like everything else. Use it to browse
+tables and run `SELECT` queries against the live database without changing
+application code.
+
+Why this setup fits here:
+
+- The database is SQLite with 11 tables (see `src/chess_move_trainer/database/schema_v2.sql`).
+- The Datasette container mounts the same `chess-database` Docker volume as the
+  backend and workers (at `/data` inside its container), so it always shows live
+  data. The host file `data/database/chess-seed.db` is seed and export storage
+  only; the separate `chess.db.backup.pre-wal` file remains a manual backup
+  snapshot (see the volume note under Day-to-day behavior).
+- Datasette only issues `SELECT` statements while serving, so the normal worker
+  or six accelerated workers can keep running while you browse.
+- It uses port `8666`, so it does not clash with the backend (`5666`),
+  frontend (`8444`), or Storybook (`6006`).
+
+Manage it from the repository root like any other service (Docker Desktop must
+be running):
+
+```powershell
+# Start it (a plain `start` brings it up together with everything else).
+powershell -ExecutionPolicy Bypass -File ./dev.ps1 start datasette
+
+# Check it and read its logs.
+powershell -ExecutionPolicy Bypass -File ./dev.ps1 status datasette
+powershell -ExecutionPolicy Bypass -File ./dev.ps1 logs datasette
+```
+
+Then open <http://localhost:8666>, select the `chess` database, and open a table.
+Use the built-in SQL page for read-only queries, and add `.json` to a table or
+query URL when you need machine-readable output.
+
+The service definition intentionally mounts the volume without `:ro` and omits
+Datasette's `--immutable` flag: SQLite needs the `-wal`/`-shm` sidecars for
+locking, and the workers write while you browse. Immutable mode skips locking,
+which produces bogus `database disk image is malformed` errors on a live
+database (see `compose.yaml`).
+
+Safety notes:
+
+- Do not add `--immutable` while workers run; it causes false
+  `database disk image is malformed` errors. The database itself is fine in that
+  case — verify with a read-only check inside the backend container, which reads
+  the same `chess-database` volume at `/workspace/data/database/chess.db`:
+  `docker exec chess-move-trainer-backend-1 python -c "import sqlite3; c = sqlite3.connect('file:/workspace/data/database/chess.db?mode=ro', uri=True, timeout=30); print(c.execute('PRAGMA quick_check').fetchall())"`
+  (expect `[('ok',)]`).
+- To look at the host seed file instead of live data, copy the live database out
+  first (see the `docker cp` example below) and inspect the copy with a
+  host-side SQLite tool; the managed Datasette always shows the live volume.
 
 ## Day-to-day behavior
 
@@ -99,11 +160,15 @@ one is already occupied. The containers have no automatic restart policy: `resta
 - Stopping a worker releases an in-process claim when possible. A forced stop leaves a running row reclaimable at
   the existing two-minute stale boundary; no database replacement should occur while either worker mode runs.
 - The live database lives in the `chess-database` Docker volume, mounted at `/workspace/data/database` in the
-  backend, worker, and worker-six containers. The host file `data/database/chess.db` is seed, backup, and export
-  storage only: containers cannot see host-side edits, and host tools cannot see live results. To inspect or back
+  backend, worker, and worker-six containers and at `/data` in the datasette container. The host file `data/database/chess-seed.db` is a different,
+  diverged file: seed and export storage only. The separate `chess.db.backup.pre-wal` file remains a manual backup;
+  if a file is not in the volume, it is not live. The per-file manifest, the stale-check (`sha256sum` on the host seed copy versus
+  `docker exec chess-move-trainer-backend-1 sha256sum /workspace/data/database/chess.db`), and the refresh
+  procedure live in [`data/README.md`](../data/README.md). Containers cannot see host-side edits, and host tools
+  cannot see live results. To inspect or back
   up the live database, stop the workers first, then copy out of a container (for example
-  `docker cp chess-move-trainer-worker-six-1:/workspace/data/database/chess.db data/database/chess.db`)
-  and restart afterward. Host test suites that read `./data/database/chess.db` must run against such an export.
+  `docker cp chess-move-trainer-worker-six-1:/workspace/data/database/chess.db data/database/chess-seed.db`)
+  and restart afterward. Host test suites that read `./data/database/chess-seed.db` must run against such an export.
 - Each Stockfish process retains six engine threads and 1024 MiB of hash. Six workers can therefore use about
   36 engine threads and 6 GiB of hash, plus container and operating-system overhead.
 - Avoid `docker compose down`; it removes the persistent containers and is unnecessary for normal development.
@@ -132,7 +197,7 @@ services only through `dev.ps1` and follow these rules:
 - Before any lifecycle action or browser/E2E check, run `dev.ps1 status` and reuse healthy services as they are;
   Playwright is configured to reuse them.
 - Never launch Uvicorn, Vite, or Storybook directly on the host, and never start competing processes on the fixed
-  ports `5666`, `8444`, or `6006`.
+  ports `5666`, `8444`, `6006`, or `8666`.
 - Do not start, stop, or restart services before or after a task for ordinary source edits; hot reload applies
   them. If an approved check genuinely requires a stopped service, start only that service and leave the stack
   running afterward.

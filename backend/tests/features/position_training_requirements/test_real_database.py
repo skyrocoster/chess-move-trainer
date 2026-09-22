@@ -10,7 +10,7 @@ from fastapi.testclient import TestClient
 
 from backend.app.dependencies import REBUILT_DATABASE_PATH_ENV
 from backend.app.main import app
-from chess_move_trainer.database.lifecycle import DEFAULT_DATABASE_PATH
+from chess_move_trainer.database.lifecycle import HOST_SEED_DATABASE_PATH
 
 REAL_AS_OF = datetime.now(timezone.utc).date().isoformat()
 
@@ -21,7 +21,7 @@ pytestmark = pytest.mark.skipif(
 
 
 def test_real_database_training_requirement_contract(monkeypatch: pytest.MonkeyPatch) -> None:
-    database = Path(DEFAULT_DATABASE_PATH)
+    database = Path(HOST_SEED_DATABASE_PATH)
     before = database.read_bytes()
     monkeypatch.setenv(REBUILT_DATABASE_PATH_ENV, str(database))
     app.dependency_overrides.clear()
@@ -82,7 +82,7 @@ def test_real_database_training_requirement_contract(monkeypatch: pytest.MonkeyP
 def test_real_database_caro_reached_scope_includes_deeper_variation(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    database = Path(DEFAULT_DATABASE_PATH)
+    database = Path(HOST_SEED_DATABASE_PATH)
     before = database.read_bytes()
     monkeypatch.setenv(REBUILT_DATABASE_PATH_ENV, str(database))
     base_key = "B10:Caro-Kann Defense"

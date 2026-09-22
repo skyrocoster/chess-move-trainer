@@ -7,6 +7,7 @@ from pathlib import Path
 from chess_move_trainer.database.games.configuration import load_acquire_configuration
 from chess_move_trainer.database.games.persistence import load_normalized_months
 from chess_move_trainer.database.games.raw_storage import load_month
+from chess_move_trainer.database.lifecycle import HOST_SEED_DATABASE_PATH
 from chess_move_trainer.database.openings.source import load_opening_sources
 from chess_move_trainer.database.positions import canonicalize_board
 from chess_move_trainer.database.proof import (
@@ -16,7 +17,7 @@ from chess_move_trainer.database.proof import (
 )
 
 ROOT = Path(__file__).parents[3]
-DIRECT_DATABASE = ROOT / "data/database/chess.db"
+DIRECT_DATABASE = ROOT / HOST_SEED_DATABASE_PATH
 
 
 def _database() -> Path:

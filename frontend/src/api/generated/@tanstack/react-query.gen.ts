@@ -14,7 +14,6 @@ import {
   getPositionTrainingRequirements,
   getPreferredMoves,
   getStatisticsOverview,
-  getTrainerBlunders,
   type Options,
 } from "../sdk.gen";
 import type {
@@ -47,9 +46,6 @@ import type {
   GetStatisticsOverviewData,
   GetStatisticsOverviewError,
   GetStatisticsOverviewResponse,
-  GetTrainerBlundersData,
-  GetTrainerBlundersError,
-  GetTrainerBlundersResponse,
 } from "../types.gen";
 
 export type QueryKey<TOptions extends Options> = [
@@ -337,29 +333,4 @@ export const getStatisticsOverviewOptions = (options: Options<GetStatisticsOverv
       return data;
     },
     queryKey: getStatisticsOverviewQueryKey(options),
-  });
-
-export const getTrainerBlundersQueryKey = (options: Options<GetTrainerBlundersData>) =>
-  createQueryKey("getTrainerBlunders", options);
-
-/**
- * Get Trainer Blunders
- */
-export const getTrainerBlundersOptions = (options: Options<GetTrainerBlundersData>) =>
-  queryOptions<
-    GetTrainerBlundersResponse,
-    GetTrainerBlundersError,
-    GetTrainerBlundersResponse,
-    ReturnType<typeof getTrainerBlundersQueryKey>
-  >({
-    queryFn: async ({ queryKey, signal }) => {
-      const { data } = await getTrainerBlunders({
-        ...options,
-        ...queryKey[0],
-        signal,
-        throwOnError: true,
-      });
-      return data;
-    },
-    queryKey: getTrainerBlundersQueryKey(options),
   });

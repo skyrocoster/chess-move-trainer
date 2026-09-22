@@ -267,3 +267,108 @@ These are directional hypotheses for Part 3, not authorization to build the fina
 - Do not force each blunder into a predefined tactical-motif label before analysing the game population.
 - Do not expose unsupported or underpowered statistical observations as possible weaknesses.
 - Do not implement the final learning workflow before the Part 3 grilling decisions are confirmed.
+
+# Appendix (2026-09-22) — Retired single-blunder lookup: what was built and what to keep
+
+Part 1 is now complete (see `docs/plans/done/chess-learning-part-1-analysis-infrastructure.md`).
+The worker fills quick (`browser`, 200,000 nodes, SinglePV) coverage in the background while full
+(`tool`, 6,400,000 nodes, MultiPV 5) stays an explicit upgrade. Rank-one quick and full results are
+pooled together for move-quality work. The older single-blunder lookup described below still runs,
+but it is superseded by the Part 2 population analysis and can be removed so it is not in the way.
+The full build record stays in `docs/grilling-docs/blunder-training-backend-2026-09-21.md`.
+
+## What existed
+
+- Domain reader: `src/chess_move_trainer/database/blunders/` (`__init__.py`, `models.py`,
+  `repository.py`, `scoring.py`, `loaders.py`, `records.py`, `errors.py`).
+- HTTP layer: `backend/app/features/trainer_blunders/` (`__init__.py`, `router.py`,
+  `api_schemas.py`), served as `GET /api/trainer/blunders` with operation id `getTrainerBlunders`.
+- Wiring: `get_blunder_policy()` in `backend/app/dependencies.py`,
+  `trainer_blunders_key()` in `backend/app/caching.py`, router registration in
+  `backend/app/main.py`.
+- Tests: `tests/database/blunders/test_blunders.py` plus
+  `backend/tests/features/trainer_blunders/` (`conftest.py`, `test_api.py`).
+  Contract checks naming this endpoint also live in
+  `backend/tests/features/health/test_contract_export.py` and
+  `frontend/src/api/generatedSurface.test.ts`.
+- Generated surface only: `frontend/src/api/generated/` (`openapi.json`, `sdk.gen.ts`,
+  `types.gen.ts`, `index.ts`, `@tanstack/react-query.gen.ts`) plus the re-export in
+  `frontend/src/api/client.ts`. No feature under `frontend/src/features/` calls it.
+- It wrote nothing: no table, no migration, no JSON store. It read `datasource_game`,
+  `derived_game_position`, `derived_position`, `derived_analysis_result`, and
+  `derived_analysis_line`.
+
+## Definition that worked
+
+- A blunder was one trainer move losing at least `0.20` expected game points.
+- Expected score came from Stockfish win/draw/loss values: `win + 0.5 * draw`, viewed from the
+  trainer's colour. Stored WDL values are per-mille White-perspective numbers that sum to 1000.
+- Example: a White move at 0.65 expected score followed by 0.40 is a 0.25 loss and counts;
+  an exact 0.20 loss also counts. Using WDL this way handled centipawn and mate scores with one
+  rule instead of inventing a centipawn value for mate.
+- The `0.20` default lived only in `backend/app/dependencies.py`
+  (`CHESS_BLUNDER_MINIMUM_EXPECTED_SCORE_LOSS`, default `0.20`). The domain `BlunderPolicy`
+  itself had no hard-coded default. An invalid configured threshold made only this endpoint
+  return controlled `503 trainer_blunders_unavailable`.
+
+## How it derived the answer
+
+- It paired consecutive positions in one game (`derived_game_position` ordered by ply) and kept
+  only moves where the side to move matched the stored trainer colour.
+- Both the before and after positions needed a completed rank-one analysis. A before-position
+  terminal needed no search and was not comparable. An after-position terminal was scored
+  directly: checkmate is 0 or 1 by side to move, stalemate and insufficient material are 0.5.
+- It never guessed missing analysis. Every in-scope trainer move was either comparable or counted
+  in `skipped_missing_analysis_count`.
+- It checked stored data with `python-chess`: the outgoing move had to be legal and reach the
+  next stored position, the preferred move (first move of the before-position principal variation)
+  had to be legal, positions had to be canonical, and WDL had to sum to 1000.
+- Request rules: mandatory inclusive RFC3339 `started_at_from` / `started_at_to` (normalized the
+  same way as game search), optional `trainer_color`, `page` from 1, `page_size` 1 through 100.
+- Result order was deterministic: largest loss first, then later game start, then game UUID, then ply.
+- Response fields reused the training-requirements names `fen`, `trainer_color`, and
+  `preferred_move_uci` so a client could show the board exercise without SQLite identifiers. Score
+  floats were rounded to six places. Each item also carried game UUID, source URL, start time, ply,
+  played move, before/after scores and loss, and before/after analysis quality (`browser`/`tool`).
+- Coverage counts were explicit: examined, excluded (bad timestamp), in-scope games, trainer moves,
+  comparable moves, and skipped-for-missing-analysis moves.
+- Errors: bad timeframe/filter gave `422 invalid_filter`; bad storage or schema gave controlled
+  `503`; anything unexpected gave `500`.
+
+## What the tests proved
+
+Focused verification passed 54 tests across the domain and API suites. They covered White and
+Black score perspective, exact-threshold inclusion, timestamp normalization and inclusive bounds,
+trainer-turn filtering, later-ply FEN handling, legal preferred moves, missing-analysis coverage,
+terminal scoring, deterministic ordering and pagination, large-ID reads, read-only behavior,
+missing/incompatible storage, strict API output, policy configuration, caching, controlled errors,
+and OpenAPI registration. Part 1 Stage 2 also kept `tests/database/blunders/test_blunders.py`
+passing to prove rank-one pooling across current `browser` and `tool` results.
+
+## Why removal is safe
+
+- Read-only: deleting it changes no stored games, positions, analysis results, or queue rows.
+- No schema or worker dependency: the Stockfish queue, worker, profiles, publication rules, and
+  background discovery do not import it.
+- No product caller: no code under `frontend/src/features/` uses it; only the generated SDK,
+  the `client.ts` re-export, and the two contract-surface tests name it.
+- Removal must include the wiring and contract updates, not just the domain folder: the router and
+  schemas, `get_blunder_policy`, `trainer_blunders_key`, `main.py` registration, both test suites,
+  the two contract-surface test expectations, and regeneration of `frontend/src/api/generated/`.
+  The catalogue mentions at `docs/grilling-docs/chess-analysis-idea-catalogue-2026-09-21.md:75,507-508`
+  become historical references once removed.
+
+## What Part 2 can reuse
+
+- The WDL-to-expected-score conversion (`(wins + 0.5 * draws) / 1000`, trainer perspective) and
+  the terminal after-position scoring above. These are the same before/after comparison Part 2
+  needs for expected-score loss and severe-loss questions.
+- The consecutive before/after pairing over `derived_game_position` plus the legality/canonical
+  checks as a pattern for building versioned move-feature records.
+- The coverage-counting pattern: eligible, comparable, missing, plus excluded games counted
+  separately, instead of silently dropping incomplete data.
+- The lesson about what not to keep: a single-move list sorted by loss is a starting-point
+  inspector, not a finding. Part 2 must still run the population models (game-clustered inference,
+  multiplicity control, coverage and stability gates) and Part 3 must still decide what, if
+  anything, becomes a lesson. Do not carry the `0.20` threshold forward as an approved severe-loss
+  definition; Part 2 sets that threshold explicitly.

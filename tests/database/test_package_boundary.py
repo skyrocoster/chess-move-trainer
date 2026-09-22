@@ -20,7 +20,8 @@ def test_common_package_and_database_namespace_are_importable() -> None:
     assert package.__name__ == "chess_move_trainer"
     assert database.__name__ == "chess_move_trainer.database"
     assert lifecycle.__name__ == "chess_move_trainer.database.lifecycle"
-    assert lifecycle.DEFAULT_DATABASE_PATH.as_posix() == "data/database/chess.db"
+    assert lifecycle.HOST_SEED_DATABASE_PATH.as_posix() == "data/database/chess-seed.db"
+    assert lifecycle.LIVE_DATABASE_PATH.as_posix() == "data/database/chess.db"
     assert tuple(operation.value for operation in lifecycle.LifecycleOperation) == (
         "setup",
         "update games",
@@ -118,11 +119,13 @@ def test_common_package_and_database_namespace_are_importable() -> None:
     ):
         assert hasattr(games, name)
     for name in (
-        "DEFAULT_DATABASE_PATH",
+        "HOST_SEED_DATABASE_PATH",
         "DirectProof",
         "collect_direct_proof",
     ):
         assert hasattr(proof, name)
+    for name in ("DEFAULT_DATABASE_PATH", "LIVE_DATABASE_PATH"):
+        assert not hasattr(proof, name)
     for name in (
         "OpeningAcquisitionError",
         "OpeningAcquisitionResult",

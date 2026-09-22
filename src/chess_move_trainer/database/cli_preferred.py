@@ -18,7 +18,7 @@ from .cli_helpers import (
     _usage_error,
 )
 from .lifecycle import (
-    DEFAULT_DATABASE_PATH,
+    HOST_SEED_DATABASE_PATH,
 )
 from .preferred_moves.ranges import (
     RangeValidationError,
@@ -68,7 +68,7 @@ def setup_preferred_moves_command() -> None:
     """Initialize preferred moves from the fixed app database."""
 
     try:
-        result = run_preferred_moves_setup(DEFAULT_DATABASE_PATH)
+        result = run_preferred_moves_setup(HOST_SEED_DATABASE_PATH)
     except KeyboardInterrupt:
         _interrupted()
     except PreferredMoveSchemaError as error:

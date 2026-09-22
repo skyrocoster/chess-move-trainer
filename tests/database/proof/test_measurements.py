@@ -8,10 +8,11 @@ from chess_move_trainer.database.proof import (
     collect_direct_measurements,
     print_direct_measurements,
 )
+from chess_move_trainer.database.lifecycle import HOST_SEED_DATABASE_PATH
 from chess_move_trainer.database.stockfish import TOOL_PROFILE
 
 ROOT = Path(__file__).parents[3]
-DIRECT_DATABASE = ROOT / "data/database/chess.db"
+DIRECT_DATABASE = ROOT / HOST_SEED_DATABASE_PATH
 
 
 def _database() -> Path:

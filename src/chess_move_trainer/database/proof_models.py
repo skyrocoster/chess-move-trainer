@@ -6,7 +6,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal
 
-DEFAULT_DATABASE_PATH = Path("data/database/chess.db")
 DIRECT_TABLE_NAMES = (
     "datasource_game",
     "datasource_opening",

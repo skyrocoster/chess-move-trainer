@@ -35,9 +35,6 @@ import type {
   GetStatisticsOverviewData,
   GetStatisticsOverviewErrors,
   GetStatisticsOverviewResponses,
-  GetTrainerBlundersData,
-  GetTrainerBlundersErrors,
-  GetTrainerBlundersResponses,
   PutPreferredMovesData,
   PutPreferredMovesErrors,
   PutPreferredMovesResponses,
@@ -256,15 +253,3 @@ export const getStatisticsOverview = <ThrowOnError extends boolean = false>(
     GetStatisticsOverviewErrors,
     ThrowOnError
   >({ url: "/api/statistics/overview", ...options });
-
-/**
- * Get Trainer Blunders
- */
-export const getTrainerBlunders = <ThrowOnError extends boolean = false>(
-  options: Options<GetTrainerBlundersData, ThrowOnError>,
-): RequestResult<GetTrainerBlundersResponses, GetTrainerBlundersErrors, ThrowOnError> =>
-  (options.client ?? client).get<
-    GetTrainerBlundersResponses,
-    GetTrainerBlundersErrors,
-    ThrowOnError
-  >({ url: "/api/trainer/blunders", ...options });

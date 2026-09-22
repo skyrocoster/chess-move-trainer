@@ -23,8 +23,10 @@ from .schema import SchemaIncompatibleError, create_schema, upgrade_schema
 @app.command(
     "setup",
     help=(
-        "Create the one fixed database at data/database/chess.db. "
-        "The destination is not configurable."
+        "Create the fixed host seed/export database at data/database/chess-seed.db. "
+        "The destination is not configurable. "
+        "Inside containers the live database remains "
+        "/workspace/data/database/chess.db; Datasette uses /data/chess.db."
     ),
 )
 def setup_command() -> None:
@@ -37,7 +39,12 @@ def setup_command() -> None:
 
 @update_app.command(
     "games",
-    help=("Refresh games directly in data/database/chess.db. The destination is not configurable."),
+    help=(
+        "Refresh games in the fixed host seed/export database at data/database/chess-seed.db. "
+        "The destination is not configurable. "
+        "Inside containers the live database remains "
+        "/workspace/data/database/chess.db; Datasette uses /data/chess.db."
+    ),
 )
 def update_games_command() -> None:
     """Refresh the fixed direct database's game data."""
@@ -50,7 +57,10 @@ def update_games_command() -> None:
 @update_app.command(
     "openings",
     help=(
-        "Refresh openings directly in data/database/chess.db. The destination is not configurable."
+        "Refresh openings in the fixed host seed/export database at data/database/chess-seed.db. "
+        "The destination is not configurable. "
+        "Inside containers the live database remains "
+        "/workspace/data/database/chess.db; Datasette uses /data/chess.db."
     ),
 )
 def update_openings_command() -> None:

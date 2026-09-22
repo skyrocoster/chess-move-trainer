@@ -8,12 +8,12 @@ proof_capabilities, proof_measurements, proof_query, proof_verification.
 from __future__ import annotations
 
 from .proof_capabilities import collect_direct_capabilities
+from .lifecycle import HOST_SEED_DATABASE_PATH
 from .proof_measurements import (
     collect_direct_measurements,
     print_direct_measurements,
 )
 from .proof_models import (
-    DEFAULT_DATABASE_PATH,
     DIRECT_TABLE_NAMES,
     DirectCapabilities,
     DirectMeasurementCorpus,
@@ -27,7 +27,7 @@ from .proof_opening_helpers import _board_for_moves, _find_transposition_pair
 from .proof_verification import collect_direct_proof
 
 __all__ = [
-    "DEFAULT_DATABASE_PATH",
+    "HOST_SEED_DATABASE_PATH",
     "DIRECT_TABLE_NAMES",
     "DirectCapabilities",
     "DirectMeasurementCorpus",

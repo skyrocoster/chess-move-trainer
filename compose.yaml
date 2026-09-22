@@ -38,6 +38,7 @@ services:
     init: true
     working_dir: /workspace
     environment:
+      CHESS_REBUILT_DATABASE_PATH: data/database/chess.db
       PYTHONUNBUFFERED: "1"
       WATCHFILES_FORCE_POLLING: "true"
     volumes:
@@ -136,6 +137,38 @@ services:
       timeout: 3s
       retries: 30
       start_period: 30s
+
+  datasette:
+    image: datasetteproject/datasette
+    command:
+      - datasette
+      - serve
+      - /data/chess.db
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8666"
+    init: true
+    # Mounted read-write on purpose: SQLite needs the -wal/-shm sidecars for
+    # locking while workers write. Datasette only issues SELECT statements, so
+    # it does not change data. A :ro mount plus --immutable produces bogus
+    # "database disk image is malformed" errors on this live database.
+    volumes:
+      - chess-database:/data
+    ports:
+      - "127.0.0.1:8666:8666"
+    restart: "no"
+    stop_grace_period: 10s
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8666/-/databases.json', timeout=2).read()"
+      interval: 10s
+      timeout: 3s
+      retries: 20
+      start_period: 20s
 
   worker:
     <<: *worker-common

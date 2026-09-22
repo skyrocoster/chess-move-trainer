@@ -1,7 +1,10 @@
 """Real-database API benchmarks (opt-in, read-only).
 
 Covers the gaps named in the benchmark analysis: timings for insight,
-games, openings, and analysis against ``data/database/chess.db``, plus a
+games, openings, and analysis against the host export copy at
+``data/database/chess-seed.db`` (never the live volume; export a fresh host seed
+copy first,
+see ``data/README.md``), plus a
 global no-filter training load with a per-page breakdown.
 
 Run from the repository root (Git Bash):
@@ -50,7 +53,7 @@ from backend.tests.benchmarks.test_api_benchmark import (
     _timed_get,
     _write_report,
 )
-from chess_move_trainer.database.lifecycle import DEFAULT_DATABASE_PATH
+from chess_move_trainer.database.lifecycle import HOST_SEED_DATABASE_PATH
 
 REAL_AS_OF = datetime.now(timezone.utc).date().isoformat()
 REAL_ALEKHINE_FEN = "rnbqkb1r/pppppppp/5n2/8/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 1"
@@ -65,7 +68,7 @@ needs_real_database = pytest.mark.skipif(
 
 
 def _real_database() -> Path:
-    database = Path(os.environ.get("CHESS_REBUILT_DATABASE_PATH", str(DEFAULT_DATABASE_PATH)))
+    database = Path(os.environ.get("CHESS_REBUILT_DATABASE_PATH", str(HOST_SEED_DATABASE_PATH)))
     assert database.exists(), f"real database not found: {database}"
     return database
 

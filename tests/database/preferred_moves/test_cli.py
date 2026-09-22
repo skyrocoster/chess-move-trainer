@@ -6,6 +6,7 @@ import pytest
 from typer.testing import CliRunner
 
 from chess_move_trainer.database import cli_preferred as database_cli
+from chess_move_trainer.database.lifecycle import HOST_SEED_DATABASE_PATH
 from chess_move_trainer.database.preferred_moves.repository import PreferredMoveSchemaError
 from chess_move_trainer.database.preferred_moves.setup import (
     PreferredMoveSetupError,
@@ -52,7 +53,7 @@ def test_preferred_moves_setup_forwards_fixed_path_without_reading_prompt(
 
     assert result.exit_code == 0
     assert result.stderr == ""
-    assert seen == [database_cli.DEFAULT_DATABASE_PATH]
+    assert seen == [HOST_SEED_DATABASE_PATH]
     assert option_result.exit_code == 2
     assert option_result.stdout == ""
 

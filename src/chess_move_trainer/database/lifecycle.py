@@ -29,7 +29,8 @@ from .openings.persistence import (
 )
 from .schema import create_schema
 
-DEFAULT_DATABASE_PATH: Final[Path] = Path("data/database/chess.db")
+HOST_SEED_DATABASE_PATH: Final[Path] = Path("data/database/chess-seed.db")
+LIVE_DATABASE_PATH: Final[Path] = Path("data/database/chess.db")
 DEFAULT_RAW_ROOT: Final[Path] = Path("data/chess-com/raw")
 DEFAULT_OPENING_SOURCE_DIR: Final[Path] = Path("data/chess-com/openings")
 DEFAULT_GAMES_CONFIGURATION: Final[Path] = Path("data/chess-com/direct-games.yaml")
@@ -49,7 +50,7 @@ class LifecycleResult:
     """Ordinary result data crossing from a lifecycle service to its adapter."""
 
     operation: LifecycleOperation
-    database_path: Path = DEFAULT_DATABASE_PATH
+    database_path: Path = HOST_SEED_DATABASE_PATH
     message: str = ""
     exit_code: LifecycleExitCode = 0
 
@@ -74,7 +75,7 @@ def update_openings() -> LifecycleResult:
 
 def _setup_database(
     *,
-    _database_path: str | Path = DEFAULT_DATABASE_PATH,
+    _database_path: str | Path = HOST_SEED_DATABASE_PATH,
     _raw_root: str | Path = DEFAULT_RAW_ROOT,
     _opening_source_dir: str | Path = DEFAULT_OPENING_SOURCE_DIR,
     _games_configuration: str | Path = DEFAULT_GAMES_CONFIGURATION,
@@ -164,7 +165,7 @@ def _setup_database(
 
 def _update_games(
     *,
-    _database_path: str | Path = DEFAULT_DATABASE_PATH,
+    _database_path: str | Path = HOST_SEED_DATABASE_PATH,
     _raw_root: str | Path = DEFAULT_RAW_ROOT,
     _games_configuration: str | Path = DEFAULT_GAMES_CONFIGURATION,
     _game_transport: JsonTransport | None = None,
@@ -254,7 +255,7 @@ def _update_games(
 
 def _update_openings(
     *,
-    _database_path: str | Path = DEFAULT_DATABASE_PATH,
+    _database_path: str | Path = HOST_SEED_DATABASE_PATH,
     _opening_source_dir: str | Path = DEFAULT_OPENING_SOURCE_DIR,
     _opening_transport: OpeningAcquisitionTransport | None = None,
     _sleep: Callable[[float], None] | None = None,
@@ -388,10 +389,11 @@ def _failure(
 
 
 __all__ = [
-    "DEFAULT_DATABASE_PATH",
     "LifecycleExitCode",
     "LifecycleOperation",
     "LifecycleResult",
+    "HOST_SEED_DATABASE_PATH",
+    "LIVE_DATABASE_PATH",
     "setup_database",
     "update_games",
     "update_openings",

@@ -12,7 +12,6 @@ from backend.app.features.position_training_requirements.router import (
 )
 from backend.app.features.preferred_moves.router import router as preferred_moves_router
 from backend.app.features.statistics.router import router as statistics_router
-from backend.app.features.trainer_blunders.router import router as trainer_blunders_router
 
 
 def create_app() -> FastAPI:
@@ -34,7 +33,6 @@ def create_app() -> FastAPI:
     app.include_router(position_training_requirements_router)
     app.include_router(openings_router)
     app.include_router(statistics_router)
-    app.include_router(trainer_blunders_router)
     return app
 
 

@@ -7,7 +7,7 @@ from typer.testing import CliRunner
 
 from chess_move_trainer.database import cli as database_cli
 from chess_move_trainer.database.lifecycle import (
-    DEFAULT_DATABASE_PATH,
+    HOST_SEED_DATABASE_PATH,
     LifecycleOperation,
     LifecycleResult,
 )
@@ -15,15 +15,18 @@ from chess_move_trainer.database.lifecycle import (
 runner = CliRunner()
 
 
-def test_supported_lifecycle_help_uses_one_fixed_destination() -> None:
+def test_supported_lifecycle_help_names_host_seed_and_live_destinations() -> None:
     for arguments in (("setup",), ("update", "games"), ("update", "openings")):
         result = runner.invoke(database_cli.app, [*arguments, "--help"])
 
         assert result.exit_code == 0
-        assert DEFAULT_DATABASE_PATH.as_posix() in result.stdout
+        assert HOST_SEED_DATABASE_PATH.as_posix() in result.stdout
+        assert "/workspace/data/database/chess.db" in result.stdout
+        assert "/data/chess.db" in result.stdout
         help_text = result.stdout.lower()
         assert "destination is" in help_text
         assert "configurable" in help_text
+        assert "same path" not in help_text
         assert "--database" not in result.stdout
         assert "--config" not in result.stdout
 
@@ -58,7 +61,7 @@ def test_lifecycle_adapters_forward_fixed_path_service_results(monkeypatch) -> N
             service_name,
             lambda operation=operation: LifecycleResult(
                 operation=operation,
-                database_path=DEFAULT_DATABASE_PATH,
+                database_path=HOST_SEED_DATABASE_PATH,
                 message="completed",
             ),
         )
@@ -66,7 +69,7 @@ def test_lifecycle_adapters_forward_fixed_path_service_results(monkeypatch) -> N
 
         assert result.exit_code == 0
         assert "completed" in result.stdout
-        assert str(DEFAULT_DATABASE_PATH) in result.stdout
+        assert str(HOST_SEED_DATABASE_PATH) in result.stdout
 
 
 @pytest.mark.parametrize("exit_code", [1, 2, 130])
@@ -76,7 +79,7 @@ def test_lifecycle_adapters_preserve_service_exit_mapping(monkeypatch, exit_code
         "setup_database",
         lambda: LifecycleResult(
             operation=LifecycleOperation.SETUP,
-            database_path=DEFAULT_DATABASE_PATH,
+            database_path=HOST_SEED_DATABASE_PATH,
             message="failed",
             exit_code=exit_code,
         ),

@@ -12,9 +12,11 @@ things that can be shown directly.
   returns `{"status":"ok"}` on HTTP port `5666`.
 - `frontend/` contains the Vite React TypeScript client. The status page calls the backend health endpoint
   and runs on HTTP port `8444`.
+- Datasette is a managed dev service for browsing the live SQLite database in the `chess-database`
+  Docker volume. It runs on HTTP port `8666` (see `docs/DEVELOPMENT_SERVICES.md`).
 - `tests/e2e/` contains Playwright browser tests. Backend tests live under `backend/tests/`; component
   tests live beside frontend features.
-- Do not use ports 5666 and 8444 for unrelated services.
+- Do not use ports 5666, 8444, and 8666 for unrelated services.
 
 ## Graphify catalogue
 
@@ -34,9 +36,9 @@ command fails, report the exact command and failure.
 
 ## Application commands
 
-- `powershell -ExecutionPolicy Bypass -File ./dev.ps1 start` starts the backend, frontend, worker, and Storybook in
+- `powershell -ExecutionPolicy Bypass -File ./dev.ps1 start` starts the backend, frontend, worker, Storybook, and Datasette in
   detached Docker containers. Replace `start` with `stop`, `restart`, `rebuild`, `status`, or `logs`; append one
-  of `backend`, `frontend`, `worker`, or `storybook` to target a single service.
+  of `backend`, `frontend`, `worker`, `datasette`, or `storybook` to target a single service.
 - `.venv/Scripts/python.exe -m pytest backend/tests tests` runs the Python suites.
 - Python dependencies are pinned in `requirements.txt` and configured in `pyproject.toml`. The repository-root
   `package-lock.json` is authoritative for the npm workspaces.
@@ -48,7 +50,7 @@ All checks are local; do not add application CI.
 
 ## Persistent development services
 
-The backend, frontend, worker, and Storybook run as shared, long-lived Docker Compose services. Manage them only through
+The backend, frontend, worker, Storybook, and Datasette run as shared, long-lived Docker Compose services. Manage them only through
 `dev.ps1`: before any lifecycle action or browser/E2E check, run `dev.ps1 status` and reuse healthy services
 as-is. Commands, ports, day-to-day behavior, and the full agent rules are in `docs/DEVELOPMENT_SERVICES.md`.
 

@@ -17,6 +17,7 @@ from backend.app.main import app
 from chess_move_trainer.database import create_schema
 from chess_move_trainer.database.games.normalization import normalize_game
 from chess_move_trainer.database.games.persistence import GameRepository
+from chess_move_trainer.database.lifecycle import HOST_SEED_DATABASE_PATH, LIVE_DATABASE_PATH
 
 ROOT = Path(__file__).parents[4]
 TRAINER_UUID = "11111111-1111-4111-8111-111111111111"
@@ -319,12 +320,21 @@ def test_removed_positions_route_stays_gone() -> None:
     assert "/api/games/{game_uuid}/positions" not in routes
 
 
-def test_default_database_path_is_packaged_file(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_default_database_path_is_host_seed_file(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv(REBUILT_DATABASE_PATH_ENV, raising=False)
     monkeypatch.delenv("CHESS_DATABASE_PATH", raising=False)
     monkeypatch.chdir(ROOT)
 
-    assert get_rebuilt_database_path() == Path("data/database/chess.db")
+    assert get_rebuilt_database_path() == HOST_SEED_DATABASE_PATH
+
+
+def test_explicit_live_database_override_wins_and_legacy_name_is_ignored(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv(REBUILT_DATABASE_PATH_ENV, str(LIVE_DATABASE_PATH))
+    monkeypatch.setenv("CHESS_DATABASE_PATH", str(HOST_SEED_DATABASE_PATH))
+
+    assert get_rebuilt_database_path() == LIVE_DATABASE_PATH
 
 
 def test_list_games_respects_page_size_bound(
