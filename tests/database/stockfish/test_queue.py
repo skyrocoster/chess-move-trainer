@@ -3,6 +3,7 @@ from __future__ import annotations
 import sqlite3
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from uuid import UUID
 
 import pytest
 
@@ -122,23 +123,28 @@ def test_enqueue_promotes_quality_without_destroying_a_running_claim(tmp_path: P
         requested_at=first + timedelta(seconds=2),
     )
 
-    row = _queue_row(database_path, position_id)
-    assert row is not None
-    assert row[0:2] == ("tool", "running")
-    assert row[3:] == (claim.claimed_at_utc, claim.claim_token)
+    assert claim.quality is AnalysisQuality.BROWSER
+    assert _queue_row(database_path, position_id) == (
+        "tool",
+        "running",
+        "2026-01-01T00:00:02.000000Z",
+        claim.claimed_at_utc,
+        claim.claim_token,
+    )
 
 
 def test_claim_is_fifo_and_replaces_a_stale_token_with_fresh_uuid(tmp_path: Path) -> None:
-    database_path, first_position = _setup(tmp_path)
-    second_position = PositionRepository(database_path).resolve_fen(
+    database_path, second_position = _setup(tmp_path)
+    first_position = PositionRepository(database_path).resolve_fen(
         "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2"
     )
     queue = QueueService(database_path)
     origin = datetime(2026, 1, 1, tzinfo=UTC)
-    queue.enqueue(first_position, AnalysisQuality.BROWSER, requested_at=origin)
+    # The older request has a higher position ID and is enqueued last.
     queue.enqueue(
         second_position, AnalysisQuality.BROWSER, requested_at=origin + timedelta(seconds=1)
     )
+    queue.enqueue(first_position, AnalysisQuality.BROWSER, requested_at=origin)
 
     first_claim = queue.claim(now=origin + timedelta(seconds=2))
     assert first_claim is not None
@@ -149,10 +155,12 @@ def test_claim_is_fifo_and_replaces_a_stale_token_with_fresh_uuid(tmp_path: Path
     assert second_claim.position_id == second_position
     assert queue.release(second_claim)
 
-    stale_reclaim = queue.claim(now=origin + timedelta(minutes=3))
+    stale_reclaim = queue.claim(now=origin + timedelta(seconds=122))
     assert stale_reclaim is not None
     assert stale_reclaim.position_id == first_position
     assert stale_reclaim.claim_token != first_claim.claim_token
+    assert UUID(stale_reclaim.claim_token).version == 4
+    assert stale_reclaim.claimed_at_utc == "2026-01-01T00:02:02.000000Z"
     assert stale_reclaim.quality is AnalysisQuality.BROWSER
 
 
@@ -164,17 +172,22 @@ def test_stale_token_cas_is_rejected_for_release_delete_and_complete(tmp_path: P
     old_claim = queue.claim(now=now)
     assert old_claim is not None
     assert queue.release(old_claim)
-    queue.enqueue(position_id, AnalysisQuality.BROWSER, requested_at=now + timedelta(seconds=1))
     current_claim = queue.claim(now=now + timedelta(seconds=2))
     assert current_claim is not None
+    assert current_claim.claim_token != old_claim.claim_token
 
     assert not queue.release(old_claim)
     assert not queue.delete(old_claim)
     stale = queue.complete(old_claim, _result())
     assert stale == QueueCompletionOutcome(applied=False)
-    assert _queue_row(database_path, position_id) is not None
+    assert _queue_row(database_path, position_id) == (
+        "browser",
+        "running",
+        "2026-01-01T00:00:00.000000Z",
+        current_claim.claimed_at_utc,
+        current_claim.claim_token,
+    )
     assert _stored_analysis(database_path, position_id) is None
-    assert queue.release(current_claim)
 
 
 def test_matching_failure_deletes_or_releases_promoted_work(tmp_path: Path) -> None:
@@ -192,10 +205,15 @@ def test_matching_failure_deletes_or_releases_promoted_work(tmp_path: Path) -> N
     assert promoted_claim is not None
     queue.enqueue(position_id, AnalysisQuality.TOOL, requested_at=now + timedelta(seconds=3))
     assert queue.fail(promoted_claim)
-    row = _queue_row(database_path, position_id)
-    assert row is not None
-    assert row[0:2] == ("tool", "queued")
-    assert row[3:] == (None, None)
+    # A repeated failure from the old owner must not discard the promoted request.
+    assert not queue.fail(promoted_claim)
+    assert _queue_row(database_path, position_id) == (
+        "tool",
+        "queued",
+        "2026-01-01T00:00:03.000000Z",
+        None,
+        None,
+    )
 
 
 def test_completion_publishes_and_deletes_matching_claim_in_one_lifecycle(tmp_path: Path) -> None:

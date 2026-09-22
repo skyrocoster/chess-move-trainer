@@ -5,6 +5,7 @@ import os
 import subprocess
 import sys
 import time
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any
 
@@ -71,6 +72,8 @@ def _open_keeper(database_path: Path) -> tuple[Any, Any]:
     create = kernel32.CreateMutexW
     create.argtypes = [ctypes.c_void_p, ctypes.c_bool, ctypes.c_wchar_p]
     create.restype = ctypes.c_void_p
+    kernel32.CloseHandle.argtypes = [ctypes.c_void_p]
+    kernel32.CloseHandle.restype = ctypes.c_bool
     handle = create(None, False, mutex_name_for_database(database_path))
     assert handle
     return kernel32, handle
@@ -79,53 +82,89 @@ def _open_keeper(database_path: Path) -> tuple[Any, Any]:
 def test_mutex_name_uses_one_normalized_database_identity(tmp_path: Path) -> None:
     database_path = tmp_path / "db.sqlite"
     equivalent = tmp_path / "folder" / ".." / "db.sqlite"
+    name = mutex_name_for_database(database_path)
 
     assert normalize_database_path(database_path) == normalize_database_path(equivalent)
-    assert mutex_name_for_database(database_path) == mutex_name_for_database(equivalent)
-    assert mutex_name_for_database(database_path).startswith("Local\\ChessMoveTrainer.Stockfish.")
+    assert name == mutex_name_for_database(equivalent)
+    assert name == mutex_name_for_database(tmp_path / "DB.SQLITE")
+    assert name != mutex_name_for_database(tmp_path / "other.sqlite")
+    assert name.startswith("Local\\ChessMoveTrainer.Stockfish.")
 
 
 def test_clean_release_allows_the_next_owner(tmp_path: Path) -> None:
     database_path = tmp_path / "clean-release.db"
     first = DatabaseMutex(database_path)
-    second = DatabaseMutex(database_path)
 
-    assert first.acquire(timeout=0)
-    first.release()
-    assert second.acquire(timeout=1)
-    second.release()
+    def acquire_on_another_thread() -> None:
+        second = DatabaseMutex(database_path)
+        try:
+            assert second.acquire(timeout=0)
+            assert second.owned
+            assert not second.acquired_abandoned
+        finally:
+            second.release()
+        assert not second.owned
+
+    try:
+        assert first.acquire(timeout=0)
+        assert first.owned
+        first.release()
+        assert not first.owned
+        # Same-thread acquisition is recursive on Windows and cannot prove release.
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            executor.submit(acquire_on_another_thread).result(timeout=5)
+    finally:
+        first.release()
 
 
 def test_real_child_owner_is_busy_then_kernel_releases_on_process_death(tmp_path: Path) -> None:
     database_path = tmp_path / "child-owner.db"
     signal_path = tmp_path / "child-owner.signal"
     child = _child_process(database_path, signal_path, "hold")
-    _wait_for_signal(signal_path, child)
+    contender = DatabaseMutex(database_path)
     try:
-        assert not DatabaseMutex(database_path).acquire(timeout=0.05)
+        _wait_for_signal(signal_path, child)
+        assert not contender.acquire(timeout=0)
+        assert not contender.owned
+        assert not contender.acquired_abandoned
     finally:
-        child.kill()
+        if child.poll() is None:
+            child.kill()
         child.wait(timeout=5)
+        contender.release()
 
     released = DatabaseMutex(database_path)
-    assert released.acquire(timeout=1)
-    released.release()
+    try:
+        assert released.acquire(timeout=0)
+        assert released.owned
+    finally:
+        released.release()
+    assert not released.owned
 
 
 def test_abandoned_child_acquisition_is_reported_as_acquired(tmp_path: Path) -> None:
     database_path = tmp_path / "abandoned-owner.db"
     signal_path = tmp_path / "abandoned-owner.signal"
     child = _child_process(database_path, signal_path, "crash")
-    _wait_for_signal(signal_path, child)
-    keeper_api, keeper_handle = _open_keeper(database_path)
     try:
-        child.kill()
-        child.wait(timeout=5)
+        _wait_for_signal(signal_path, child)
+        keeper_api, keeper_handle = _open_keeper(database_path)
+        try:
+            child.kill()
+            child.wait(timeout=5)
 
-        recovered = DatabaseMutex(database_path)
-        assert recovered.acquire(timeout=1)
-        assert recovered.acquired_abandoned
-        assert recovered.owned
-        recovered.release()
+            recovered = DatabaseMutex(database_path)
+            try:
+                assert recovered.acquire(timeout=0)
+                assert recovered.acquired_abandoned
+                assert recovered.owned
+            finally:
+                recovered.release()
+            assert not recovered.owned
+            assert not recovered.acquired_abandoned
+        finally:
+            assert keeper_api.CloseHandle(keeper_handle), "Could not close keeper mutex handle"
     finally:
-        keeper_api.CloseHandle(keeper_handle)
+        if child.poll() is None:
+            child.kill()
+        child.wait(timeout=5)

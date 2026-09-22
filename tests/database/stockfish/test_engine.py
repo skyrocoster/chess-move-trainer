@@ -166,11 +166,21 @@ def test_fixed_profiles_and_identity_contract_are_explicit() -> None:
     assert TOOL_PROFILE.nodes == TOOL_NODES == 6_400_000
     assert TOOL_PROFILE.multipv == MULTI_PV == 5
     assert TOOL_PROFILE.configuration_version == CONFIGURATION_VERSION == 1
-    for profile in (BROWSER_PROFILE, TOOL_PROFILE):
+    for profile, nodes, multipv in (
+        (BROWSER_PROFILE, 200_000, 1),
+        (TOOL_PROFILE, 6_400_000, 5),
+    ):
         assert profile.threads == THREADS == 6
         assert profile.hash_mb == HASH_MB == 1024
+        expected_options = {
+            "Threads": 6,
+            "Hash": 1024,
+            "MultiPV": multipv,
+            "UCI_ShowWDL": True,
+        }
+        assert profile.uci_options == expected_options
+        assert profile.settings == {**expected_options, "Nodes": nodes}
     assert STOCKFISH_VERSION == "19"
-    assert "Nodes" in TOOL_PROFILE.settings
 
 
 def test_score_and_wdl_are_normalized_from_side_to_move_to_white_pov() -> None:
@@ -179,6 +189,8 @@ def test_score_and_wdl_are_normalized_from_side_to_move_to_white_pov() -> None:
         35,
     )
     assert normalize_score("mate", 3, chess.BLACK) == (AnalysisScoreKind.MATE, -3)
+    assert normalize_score("cp", -35, chess.BLACK) == (AnalysisScoreKind.CP, 35)
+    assert normalize_wdl(700, 200, 100, chess.WHITE) == (700, 200, 100)
     assert normalize_wdl(700, 200, 100, chess.BLACK) == (100, 200, 700)
 
     parsed = parse_uci_info(
@@ -186,6 +198,9 @@ def test_score_and_wdl_are_normalized_from_side_to_move_to_white_pov() -> None:
         chess.BLACK,
     )
     assert parsed is not None
+    assert parsed.depth == 20
+    assert parsed.multipv == 2
+    assert parsed.score_kind is AnalysisScoreKind.CP
     assert parsed.score_value == -35
     assert (parsed.wdl_wins, parsed.wdl_draws, parsed.wdl_losses) == (100, 200, 700)
     assert parsed.pv_uci == ("e2e4", "e7e5")
@@ -210,14 +225,29 @@ def test_engine_applies_fixed_options_clears_hash_and_returns_complete_pvs() -> 
     assert len(first.lines) == 5
     assert first.lines[0].pv_uci == ("e2e4", "e7e5")
     assert second.profile is BROWSER_PROFILE
+    assert len(second.lines) == 1
+    assert second.lines[0].pv_uci == ("e2e4", "e7e5")
+    assert len(factory.processes) == 1
     commands = factory.processes[0].commands
-    assert commands.count("setoption name Clear Hash") == 2
+    assert [
+        command
+        for command in commands
+        if command.startswith(("setoption name MultiPV", "setoption name Clear Hash", "go "))
+    ] == [
+        "setoption name MultiPV value 5",
+        "setoption name Clear Hash",
+        "go nodes 6400000",
+        "setoption name MultiPV value 1",
+        "setoption name Clear Hash",
+        "go nodes 200000",
+    ]
     assert "setoption name Threads value 6" in commands
     assert "setoption name Hash value 1024" in commands
-    assert "setoption name MultiPV value 5" in commands
-    assert "go nodes 6400000" in commands
-    assert "go nodes 200000" in commands
+    assert "setoption name UCI_ShowWDL value true" in commands
     assert all("movetime" not in command for command in commands)
+    assert factory.processes[0].poll() is not None
+    assert factory.processes[0].stdin.closed
+    assert factory.processes[0].stdout.closed
 
 
 def test_terminal_position_returns_no_lines_without_a_search() -> None:
@@ -230,6 +260,13 @@ def test_terminal_position_returns_no_lines_without_a_search() -> None:
 
     assert analysis.terminal_kind is AnalysisTerminalKind.CHECKMATE
     assert analysis.lines == ()
+    assert analysis.metrics is None
+    assert analysis.profile is TOOL_PROFILE
+    assert analysis.result.quality is AnalysisQuality.TOOL
+    assert analysis.result.engine_name == "Stockfish"
+    assert analysis.result.engine_version == "19"
+    assert analysis.result.settings == TOOL_PROFILE.settings
+    assert len(factory.processes) == 1
     commands = factory.processes[0].commands
     assert not any(command.startswith("go ") for command in commands)
 
@@ -238,11 +275,19 @@ def test_identity_failure_terminates_the_child() -> None:
     factory = _FakeFactory(wrong_identity=True)
     engine = StockfishEngine("fake-stockfish", startup_timeout=1, popen_factory=factory)
 
-    with pytest.raises(StockfishIdentityError):
-        engine.start()
+    try:
+        with pytest.raises(StockfishIdentityError, match="got 'Not Stockfish 19'"):
+            engine.start()
 
-    assert not engine.is_running
-    assert factory.processes[0].poll() is not None
+        assert not engine.is_running
+        assert engine.identity is None
+        assert len(factory.processes) == 1
+        process = factory.processes[0]
+        assert process.poll() is not None
+        assert process.stdin.closed
+        assert process.stdout.closed
+    finally:
+        engine.close()
 
 
 def test_watchdog_terminates_failed_process_before_replacement() -> None:
@@ -255,15 +300,28 @@ def test_watchdog_terminates_failed_process_before_replacement() -> None:
     )
     position = canonicalize_fen(STARTING_FEN)
 
-    with pytest.raises(StockfishWatchdogError):
-        engine.analyze(position, TOOL_PROFILE)
-    assert not engine.is_running
-    assert factory.processes[0].poll() is not None
+    try:
+        with pytest.raises(StockfishWatchdogError, match="Stockfish analysis exceeded"):
+            engine.analyze(position, TOOL_PROFILE)
+        assert not engine.is_running
+        assert engine.identity is None
+        assert len(factory.processes) == 1
+        failed = factory.processes[0]
+        assert failed.poll() is not None
+        assert failed.stdin.closed
+        assert failed.stdout.closed
 
-    analysis = engine.analyze(position, TOOL_PROFILE)
-    assert len(analysis.lines) == 5
-    assert len(factory.processes) == 2
-    engine.close()
+        # Recovery should not fail just because thread scheduling takes over 50 ms.
+        engine.watchdog_seconds = 1
+        analysis = engine.analyze(position, TOOL_PROFILE)
+        assert len(analysis.lines) == 5
+        assert len(factory.processes) == 2
+        assert engine.is_running
+        assert factory.processes[1].poll() is None
+    finally:
+        engine.close()
+    assert all(process.poll() is not None for process in factory.processes)
+    assert all(process.stdin.closed and process.stdout.closed for process in factory.processes)
 
 
 def test_watchdog_default_is_the_approved_thirty_seconds() -> None:

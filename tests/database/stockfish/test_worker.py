@@ -186,7 +186,7 @@ def _runner(database: Path, mutex: _FakeMutex, engine_factory, **kwargs: Any) ->
 
 
 def test_busy_mutex_fails_before_engine_work(tmp_path: Path) -> None:
-    database, _ids = _database(tmp_path, (START_FEN,))
+    database = tmp_path / "must-not-be-created.db"
     mutex = _FakeMutex(busy=True)
     created: list[_FakeEngine] = []
 
@@ -195,20 +195,21 @@ def test_busy_mutex_fails_before_engine_work(tmp_path: Path) -> None:
         created.append(engine)
         return engine
 
-    with pytest.raises(MutexBusyError):
+    with pytest.raises(MutexBusyError, match="Stockfish analysis is already running"):
         _runner(database, mutex, engine_factory).run()
 
     assert mutex.acquire_calls == [0.0]
     assert not created
     assert not mutex.released
+    assert not database.exists()
 
 
 def test_fifo_claims_immutable_quality_and_serial_engine_reuse(tmp_path: Path) -> None:
-    database, ids = _database(tmp_path)
+    database, ids = _database(tmp_path, (START_FEN, E4_FEN))
     queue = QueueService(database)
     origin = datetime(2026, 1, 1, tzinfo=UTC)
-    queue.enqueue(ids[START_FEN], AnalysisQuality.BROWSER, requested_at=origin)
     queue.enqueue(ids[E4_FEN], AnalysisQuality.TOOL, requested_at=origin + timedelta(seconds=1))
+    queue.enqueue(ids[START_FEN], AnalysisQuality.BROWSER, requested_at=origin)
     mutex = _FakeMutex()
     engines: list[_FakeEngine] = []
 
@@ -222,9 +223,9 @@ def test_fifo_claims_immutable_quality_and_serial_engine_reuse(tmp_path: Path) -
     assert outcome.succeeded
     assert outcome.claimed_count == outcome.completed_count == 2
     assert len(engines) == 1
-    assert [quality for _position, quality in engines[0].calls] == [
-        AnalysisQuality.BROWSER,
-        AnalysisQuality.TOOL,
+    assert engines[0].calls == [
+        (canonicalize_fen(START_FEN), AnalysisQuality.BROWSER),
+        (canonicalize_fen(E4_FEN), AnalysisQuality.TOOL),
     ]
     assert engines[0].closed
     assert mutex.released
@@ -240,10 +241,10 @@ def test_requested_work_precedes_one_at_a_time_background_browser_work(
     origin = datetime(2026, 1, 1, tzinfo=UTC)
     queue.enqueue(ids[START_FEN], AnalysisQuality.TOOL, requested_at=origin)
     selector = _FakeBackgroundSelector([ids[E4_FEN], ids[D4_FEN]])
-    observed_rows: list[tuple[AnalysisQuality, list[tuple[object, ...]]]] = []
+    observed_rows: list[list[tuple[object, ...]]] = []
 
-    def on_analyze(_position: object, quality: AnalysisQuality) -> None:
-        observed_rows.append((quality, _queue_rows(database)))
+    def on_analyze(_position: object, _quality: AnalysisQuality) -> None:
+        observed_rows.append(_queue_rows(database))
 
     engine = _FakeEngine(on_analyze=on_analyze)
     outcome = _runner(
@@ -255,17 +256,16 @@ def test_requested_work_precedes_one_at_a_time_background_browser_work(
 
     assert outcome.succeeded
     assert outcome.claimed_count == outcome.completed_count == 3
-    assert [quality for _position, quality in engine.calls] == [
-        AnalysisQuality.TOOL,
-        AnalysisQuality.BROWSER,
-        AnalysisQuality.BROWSER,
+    assert engine.calls == [
+        (canonicalize_fen(START_FEN), AnalysisQuality.TOOL),
+        (canonicalize_fen(E4_FEN), AnalysisQuality.BROWSER),
+        (canonicalize_fen(D4_FEN), AnalysisQuality.BROWSER),
     ]
-    assert [rows for _quality, rows in observed_rows] == [
+    assert observed_rows == [
         [(ids[START_FEN], "tool", "running")],
         [(ids[E4_FEN], "browser", "running")],
         [(ids[D4_FEN], "browser", "running")],
     ]
-    assert selector.calls == 3
     assert engine.closed
     assert _queue_rows(database) == []
 
@@ -288,19 +288,20 @@ def test_queue_is_rechecked_before_next_background_target(tmp_path: Path) -> Non
     ).run()
 
     assert outcome.succeeded
-    assert [quality for _position, quality in engine.calls] == [
-        AnalysisQuality.BROWSER,
-        AnalysisQuality.TOOL,
-        AnalysisQuality.BROWSER,
+    assert outcome.claimed_count == outcome.completed_count == 3
+    assert engine.calls == [
+        (canonicalize_fen(E4_FEN), AnalysisQuality.BROWSER),
+        (canonicalize_fen(START_FEN), AnalysisQuality.TOOL),
+        (canonicalize_fen(D4_FEN), AnalysisQuality.BROWSER),
     ]
-    assert selector.calls == 3
+    assert _queue_rows(database) == []
     assert _stored_quality(database, ids[START_FEN]) == "tool"
     assert _stored_quality(database, ids[E4_FEN]) == "browser"
     assert _stored_quality(database, ids[D4_FEN]) == "browser"
 
 
 def test_background_interruption_releases_work_for_rerun_recovery(tmp_path: Path) -> None:
-    database, ids = _database(tmp_path, (START_FEN, E4_FEN))
+    database, ids = _database(tmp_path, (E4_FEN,))
     selector = _FakeBackgroundSelector([ids[E4_FEN]])
     interrupted_engine = _FakeEngine([KeyboardInterrupt()])
     first = _runner(
@@ -311,7 +312,11 @@ def test_background_interruption_releases_work_for_rerun_recovery(tmp_path: Path
     ).run()
 
     assert first.interrupted
-    assert _queue_row(database, ids[E4_FEN])[1] == "queued"
+    assert first.exit_code == 130
+    assert first.claimed_count == 1
+    assert first.completed_count == 0
+    assert _queue_row(database, ids[E4_FEN]) == ("browser", "queued", None, None)
+    assert _stored_quality(database, ids[E4_FEN]) is None
     assert interrupted_engine.closed
 
     recovery_engine = _FakeEngine()
@@ -324,14 +329,16 @@ def test_background_interruption_releases_work_for_rerun_recovery(tmp_path: Path
 
     assert second.succeeded
     assert second.claimed_count == second.completed_count == 1
-    assert recovery_engine.calls[0][1] is AnalysisQuality.BROWSER
+    assert recovery_engine.calls == [(canonicalize_fen(E4_FEN), AnalysisQuality.BROWSER)]
+    assert recovery_engine.closed
     assert _queue_row(database, ids[E4_FEN]) is None
     assert _stored_quality(database, ids[E4_FEN]) == "browser"
 
 
 def test_background_failure_is_isolated_without_same_launch_retry(tmp_path: Path) -> None:
-    database, ids = _database(tmp_path)
-    selector = _FakeBackgroundSelector([ids[E4_FEN], ids[D4_FEN]])
+    database, ids = _database(tmp_path, (E4_FEN, D4_FEN))
+    # Offer the failed target again to prove this launch does not retry it.
+    selector = _FakeBackgroundSelector([ids[E4_FEN], ids[D4_FEN], ids[E4_FEN]])
     engines: list[_FakeEngine] = []
 
     def engine_factory() -> _FakeEngine:
@@ -348,9 +355,14 @@ def test_background_failure_is_isolated_without_same_launch_retry(tmp_path: Path
 
     assert outcome.exit_code == 1
     assert outcome.claimed_count == 2
+    assert outcome.completed_count == 1
     assert len(outcome.failures) == 1
     assert outcome.failures[0].position_id == ids[E4_FEN]
-    assert [quality for _position, quality in engines[1].calls] == [AnalysisQuality.BROWSER]
+    assert outcome.failures[0].message == "background search failed"
+    assert len(engines) == 2
+    assert engines[0].calls == [(canonicalize_fen(E4_FEN), AnalysisQuality.BROWSER)]
+    assert engines[1].calls == [(canonicalize_fen(D4_FEN), AnalysisQuality.BROWSER)]
+    assert _queue_rows(database) == []
     assert _stored_quality(database, ids[E4_FEN]) is None
     assert _stored_quality(database, ids[D4_FEN]) == "browser"
     assert all(engine.closed for engine in engines)
@@ -363,9 +375,11 @@ def test_browser_completion_releases_promotion_then_tool_completes(tmp_path: Pat
     position_id = ids[START_FEN]
     queue.enqueue(position_id, AnalysisQuality.BROWSER, requested_at=origin)
     promoted = False
+    stored_before_analysis: list[object | None] = []
 
     def promote(_position: object, quality: AnalysisQuality) -> None:
         nonlocal promoted
+        stored_before_analysis.append(_stored_quality(database, position_id))
         if not promoted:
             assert quality is AnalysisQuality.BROWSER
             queue.enqueue(
@@ -383,8 +397,11 @@ def test_browser_completion_releases_promotion_then_tool_completes(tmp_path: Pat
         AnalysisQuality.BROWSER,
         AnalysisQuality.TOOL,
     ]
+    assert stored_before_analysis == [None, "browser"]
     assert _stored_quality(database, position_id) == "tool"
     assert _queue_row(database, position_id) is None
+    assert engine.closed
+    assert mutex.released
 
 
 def test_isolated_engine_failure_replaces_process_and_is_not_retried(tmp_path: Path) -> None:
@@ -397,8 +414,11 @@ def test_isolated_engine_failure_replaces_process_and_is_not_retried(tmp_path: P
         )
     mutex = _FakeMutex()
     engines: list[_FakeEngine] = []
+    closed_before_replacement: list[bool] = []
 
     def engine_factory() -> _FakeEngine:
+        if engines:
+            closed_before_replacement.append(engines[-1].closed)
         engine = _FakeEngine([RuntimeError("failed search")]) if not engines else _FakeEngine()
         engines.append(engine)
         return engine
@@ -406,13 +426,22 @@ def test_isolated_engine_failure_replaces_process_and_is_not_retried(tmp_path: P
     outcome = _runner(database, mutex, engine_factory).run()
 
     assert outcome.exit_code == 1
+    assert outcome.claimed_count == 3
+    assert outcome.completed_count == 2
     assert len(outcome.failures) == 1
     assert outcome.failures[0].position_id == ids[START_FEN]
+    assert outcome.failures[0].message == "failed search"
     assert len(engines) == 2
-    assert len(engines[0].calls) == 1
-    assert len(engines[1].calls) == 2
+    assert closed_before_replacement == [True]
+    assert engines[0].calls == [(canonicalize_fen(START_FEN), AnalysisQuality.TOOL)]
+    assert engines[1].calls == [
+        (canonicalize_fen(E4_FEN), AnalysisQuality.TOOL),
+        (canonicalize_fen(D4_FEN), AnalysisQuality.TOOL),
+    ]
     assert all(engine.closed for engine in engines)
-    assert _queue_row(database, ids[START_FEN]) is None
+    assert mutex.released
+    assert _queue_rows(database) == []
+    assert _stored_quality(database, ids[START_FEN]) is None
     assert _stored_quality(database, ids[E4_FEN]) == "tool"
     assert _stored_quality(database, ids[D4_FEN]) == "tool"
 
@@ -435,9 +464,14 @@ def test_failure_after_browser_promotion_is_released_without_same_launch_retry(
 
     assert outcome.exit_code == 1
     assert outcome.claimed_count == 1
-    assert len(engine.calls) == 1
-    assert _queue_row(database, position_id) is not None
-    assert _queue_row(database, position_id)[0:2] == ("tool", "queued")
+    assert outcome.completed_count == 0
+    assert len(outcome.failures) == 1
+    assert outcome.failures[0].position_id == position_id
+    assert outcome.failures[0].message == "browser failed"
+    assert engine.calls == [(canonicalize_fen(START_FEN), AnalysisQuality.BROWSER)]
+    assert engine.closed
+    assert _queue_row(database, position_id) == ("tool", "queued", None, None)
+    assert _stored_quality(database, position_id) is None
 
 
 def test_young_running_recovery_polls_only_to_boundary_and_publishes(tmp_path: Path) -> None:
@@ -448,9 +482,12 @@ def test_young_running_recovery_polls_only_to_boundary_and_publishes(tmp_path: P
     queue.enqueue(position_id, AnalysisQuality.TOOL, requested_at=origin)
     abandoned_claim = queue.claim(now=origin)
     assert abandoned_claim is not None
-    clock = _FakeClock(origin + timedelta(seconds=90))
+    clock = _FakeClock(origin + timedelta(seconds=95))
     mutex = _FakeMutex(abandoned=True)
-    engine = _FakeEngine()
+    analysis_started_at: list[datetime] = []
+    engine = _FakeEngine(
+        on_analyze=lambda _position, _quality: analysis_started_at.append(clock.now())
+    )
 
     outcome = _runner(
         database,
@@ -463,8 +500,12 @@ def test_young_running_recovery_polls_only_to_boundary_and_publishes(tmp_path: P
 
     assert outcome.succeeded
     assert outcome.recovery_polls == 3
-    assert clock.sleeps == [10, 10, 10]
+    assert clock.sleeps == [10, 10, 5]
+    assert analysis_started_at == [origin + timedelta(seconds=120)]
     assert outcome.claimed_count == outcome.completed_count == 1
+    assert engine.calls == [(canonicalize_fen(START_FEN), AnalysisQuality.TOOL)]
+    assert engine.closed
+    assert mutex.released
     assert _stored_quality(database, position_id) == "tool"
     assert _queue_row(database, position_id) is None
 
@@ -490,6 +531,10 @@ def test_abandoned_stale_claim_reclaims_immediately_without_waiting(tmp_path: Pa
     assert outcome.succeeded
     assert outcome.recovery_polls == 0
     assert clock.sleeps == []
+    assert outcome.claimed_count == outcome.completed_count == 1
+    assert engine.calls == [(canonicalize_fen(START_FEN), AnalysisQuality.TOOL)]
+    assert engine.closed
+    assert _stored_quality(database, position_id) == "tool"
     assert _queue_row(database, position_id) is None
 
 
@@ -507,27 +552,27 @@ def test_ctrl_c_terminates_engine_releases_claim_and_returns_130(tmp_path: Path)
     assert outcome.interrupted
     assert outcome.exit_code == 130
     assert outcome.claimed_count == 1
+    assert outcome.completed_count == 0
+    assert outcome.failures == ()
+    assert engine.calls == [(canonicalize_fen(START_FEN), AnalysisQuality.TOOL)]
     assert engine.closed
     assert mutex.released
     assert _stored_quality(database, position_id) is None
-    assert _queue_row(database, position_id)[1] == "queued"
+    assert _queue_row(database, position_id) == ("tool", "queued", None, None)
 
 
 def test_empty_queue_drains_and_exits_without_starting_engine(tmp_path: Path) -> None:
-    database, _ids = _database(tmp_path, (START_FEN,))
+    database, _ids = _database(tmp_path, ())
     mutex = _FakeMutex()
-    created: list[_FakeEngine] = []
 
     def engine_factory() -> _FakeEngine:
-        engine = _FakeEngine()
-        created.append(engine)
-        return engine
+        pytest.fail("An empty queue must not start an engine")
 
     outcome = _runner(database, mutex, engine_factory).run()
 
     assert outcome.succeeded
-    assert outcome.claimed_count == 0
-    assert not created
+    assert outcome.claimed_count == outcome.completed_count == 0
+    assert mutex.acquire_calls == [0.0]
     assert mutex.released
 
 
@@ -548,24 +593,26 @@ def test_parallel_workers_claim_six_distinct_background_targets(tmp_path: Path) 
             position_id = next(selector_batches)
         return _FakeBackgroundSelector([position_id])
 
-    def engine_factory() -> _FakeEngine:
-        return _FakeEngine(on_analyze=lambda _position, _quality: barrier.wait(timeout=5))
-
-    def run_one() -> object:
-        return _runner(
+    def run_one() -> tuple[object, _FakeEngine]:
+        engine = _FakeEngine(on_analyze=lambda _position, _quality: barrier.wait(timeout=5))
+        outcome = _runner(
             database,
             _FakeMutex(busy=True),
-            engine_factory,
+            lambda: engine,
             parallel=True,
             _background_selector_factory=selector_factory,
         ).run()
+        return outcome, engine
 
     with ThreadPoolExecutor(max_workers=6) as executor:
-        outcomes = list(executor.map(lambda _index: run_one(), range(6)))
+        results = list(executor.map(lambda _index: run_one(), range(6)))
 
-    assert all(outcome.succeeded for outcome in outcomes)
-    assert sum(outcome.claimed_count for outcome in outcomes) == 6
-    assert sum(outcome.completed_count for outcome in outcomes) == 6
+    for outcome, engine in results:
+        assert outcome.succeeded, outcome.failures
+        assert outcome.claimed_count == outcome.completed_count == 1
+        assert len(engine.calls) == 1
+        assert engine.calls[0][1] is AnalysisQuality.BROWSER
+        assert engine.closed
     assert _queue_rows(database) == []
     assert all(_stored_quality(database, position_id) == "browser" for position_id in position_ids)
 
@@ -578,7 +625,6 @@ def test_parallel_worker_claims_requested_work_before_background_refill(tmp_path
         fens.append(board.fen())
     database, ids = _database(tmp_path, tuple(fens))
     position_ids = list(ids.values())
-    canonical_positions = {ids[fen]: canonicalize_fen(fen) for fen in fens}
     queue = QueueService(database)
     background_claims = [
         queue.seed_and_claim_background(position_id, capacity=6)
@@ -587,18 +633,15 @@ def test_parallel_worker_claims_requested_work_before_background_refill(tmp_path
     assert all(claim is not None for claim in background_claims)
     assert queue.complete(
         background_claims[0],
-        _result(canonical_positions[position_ids[0]], AnalysisQuality.BROWSER),
+        _result(canonicalize_fen(fens[0]), AnalysisQuality.BROWSER),
     ).applied
     queue.enqueue(position_ids[0], AnalysisQuality.TOOL)
-    calls: list[AnalysisQuality] = []
-
-    def record_analysis(_position: object, quality: AnalysisQuality) -> None:
-        calls.append(quality)
+    engine = _FakeEngine()
 
     outcome = _runner(
         database,
         _FakeMutex(busy=True),
-        lambda: _FakeEngine(on_analyze=record_analysis),
+        lambda: engine,
         parallel=True,
         _background_selector_factory=lambda _path, _timeout: _FakeBackgroundSelector(
             [position_ids[6]]
@@ -606,6 +649,14 @@ def test_parallel_worker_claims_requested_work_before_background_refill(tmp_path
     ).run()
 
     assert outcome.succeeded
-    assert calls == [AnalysisQuality.TOOL, AnalysisQuality.BROWSER]
+    assert outcome.claimed_count == outcome.completed_count == 2
+    assert engine.calls == [
+        (canonicalize_fen(fens[0]), AnalysisQuality.TOOL),
+        (canonicalize_fen(fens[6]), AnalysisQuality.BROWSER),
+    ]
+    assert engine.closed
+    assert _queue_rows(database) == [
+        (position_id, "browser", "running") for position_id in sorted(position_ids[1:6])
+    ]
     assert _stored_quality(database, position_ids[0]) == "tool"
     assert _stored_quality(database, position_ids[6]) == "browser"
