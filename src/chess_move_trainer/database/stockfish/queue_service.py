@@ -21,6 +21,7 @@ from ..analysis.repository import (
 )
 from ..connection import DEFAULT_LOCK_TIMEOUT_SECONDS
 from .queue_helpers import (
+    _validate_capacity,
     _begin_immediate,
     _checked_connection,
     _claim_identity,
@@ -36,6 +37,7 @@ from .queue_helpers import (
     _validate_position_id,
 )
 from .queue_models import (
+    BackgroundSeedOutcome,
     STALE_CLAIM_AFTER,
     QueueClaim,
     QueueCompletionOutcome,
@@ -412,10 +414,29 @@ class QueueService:
         *,
         now: datetime | str | None = None,
         requested_at: datetime | str | None = None,
+        capacity: int = 1,
     ) -> QueueClaim | None:
-        """Atomically seed and claim one browser target only when the queue is empty."""
+        """Atomically seed and claim one browser target within a capacity."""
+
+        return self.try_seed_and_claim_background(
+            position_id,
+            now=now,
+            requested_at=requested_at,
+            capacity=capacity,
+        ).claim
+
+    def try_seed_and_claim_background(
+        self,
+        position_id: int,
+        *,
+        now: datetime | str | None = None,
+        requested_at: datetime | str | None = None,
+        capacity: int = 1,
+    ) -> BackgroundSeedOutcome:
+        """Return the detailed outcome of one capacity-aware background seed."""
 
         _validate_position_id(position_id)
+        _validate_capacity(capacity)
         current_time = _parse_timestamp(now)
         requested_at_utc = _format_timestamp(
             current_time if requested_at is None else requested_at
@@ -424,15 +445,16 @@ class QueueService:
         with self._connection() as connection:
             transaction = _begin_immediate(connection)
             try:
-                claim = _seed_and_claim_background_in_transaction(
+                outcome = _seed_and_claim_background_in_transaction(
                     connection,
                     position_id,
                     requested_at=requested_at_utc,
                     claimed_at=claimed_at_utc,
                     claim_token=lambda: self._fresh_token(connection),
+                    capacity=capacity,
                 )
                 transaction.commit()
-                return claim
+                return outcome
             except BaseException as error:
                 _rollback_if_active(connection, transaction)
                 if isinstance(error, (KeyboardInterrupt, SystemExit, AnalysisError, QueueError)):

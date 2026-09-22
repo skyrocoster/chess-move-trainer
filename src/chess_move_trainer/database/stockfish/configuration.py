@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from dataclasses import dataclass
 from types import MappingProxyType
+from typing import Any
 
 from ..analysis import AnalysisQuality
 
@@ -104,6 +105,37 @@ def profile_for(value: StockfishProfile | AnalysisQuality | str) -> StockfishPro
         raise ValueError("profile must be the approved browser or tool profile") from error
 
 
+QUALITY_SETTING_KEYS = ("MultiPV", "Nodes", "UCI_ShowWDL")
+PERFORMANCE_SETTING_KEYS = ("Hash", "Threads")
+
+
+def quality_settings_match(stored: Mapping[str, Any], profile: StockfishProfile) -> bool:
+    """Whether stored settings satisfy a profile's result quality.
+
+    Threads and Hash are runtime performance knobs: parallel workers pin
+    fewer threads than the single-worker default to fit the host CPU count,
+    without changing the requested search. Only MultiPV, Nodes, and
+    UCI_ShowWDL affect result quality. The stored object must still carry
+    exactly the profile keys, with positive-integer performance values.
+    """
+
+    try:
+        normalized = dict(stored)
+    except (TypeError, ValueError):
+        return False
+    if set(normalized) != set(profile.settings):
+        return False
+    expected = dict(profile.settings)
+    for key in QUALITY_SETTING_KEYS:
+        if normalized[key] != expected[key]:
+            return False
+    for key in PERFORMANCE_SETTING_KEYS:
+        value = normalized[key]
+        if type(value) is not int or value <= 0:
+            return False
+    return True
+
+
 __all__ = [
     "BROWSER_NODES",
     "BROWSER_MULTI_PV",
@@ -122,4 +154,5 @@ __all__ = [
     "TOOL_CONFIGURATION_VERSION",
     "StockfishProfile",
     "profile_for",
+    "quality_settings_match",
 ]

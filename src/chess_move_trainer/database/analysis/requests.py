@@ -242,7 +242,7 @@ def _result_satisfies(
     requested_quality: AnalysisQuality,
 ) -> bool:
     # Local import: see _request above for why this stays out of module scope.
-    from ..stockfish.configuration import STOCKFISH_VERSION, profile_for
+    from ..stockfish.configuration import STOCKFISH_VERSION, profile_for, quality_settings_match
 
     if result is None:
         return False
@@ -253,7 +253,7 @@ def _result_satisfies(
     expected_profile = profile_for(requested_quality)
     return (
         result.configuration_version == expected_profile.configuration_version
-        and result.settings == dict(expected_profile.settings)
+        and quality_settings_match(result.settings, expected_profile)
         and result.engine_version == STOCKFISH_VERSION
     )
 

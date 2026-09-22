@@ -146,6 +146,11 @@ def _configure_sqlite_connection(
     if connection.execute("PRAGMA foreign_keys").fetchone()[0] != 1:
         raise RuntimeError("SQLite foreign-key enforcement could not be enabled.")
     connection.execute(f"PRAGMA busy_timeout = {timeout_ms}")
+    # WAL keeps readers (API, background scans) unblocked while a worker
+    # commits; NORMAL avoids an fsync per commit on the bind-mounted file.
+    # journal_mode itself is a persisted file property (migrated one-time on
+    # the live database), while synchronous applies per connection here.
+    connection.execute("PRAGMA synchronous = NORMAL")
     if mode == "read-only":
         # The rebuilt database is bind-mounted into Docker on Windows. Mapping
         # read-only pages avoids prohibitively slow random file reads for the

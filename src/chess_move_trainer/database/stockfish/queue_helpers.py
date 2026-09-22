@@ -20,12 +20,15 @@ from ..analysis import (
 from ..connection import _open_existing_connection
 from ..schema import SchemaIncompatibleError, _assert_compatible_schema
 from .queue_models import (
+    BackgroundSeedOutcome,
+    BackgroundSeedReason,
     QueueClaim,
     QueueError,
     QueueStorageError,
     QueueValidationError,
     _normalize_quality,
 )
+from .targets import _background_result_eligibility_sql, _background_result_parameters
 
 
 def _enqueue_in_transaction(
@@ -83,21 +86,66 @@ def _seed_and_claim_background_in_transaction(
     requested_at: datetime | str,
     claimed_at: datetime | str,
     claim_token: str | Callable[[], str],
-) -> QueueClaim | None:
-    """Seed and claim one browser row while the caller owns an immediate transaction."""
+    capacity: int,
+) -> BackgroundSeedOutcome:
+    """Seed one eligible browser row while the caller owns an immediate transaction."""
 
     _validate_position_id(position_id)
-    existing = connection.execute(
+    _validate_capacity(capacity)
+    queued = connection.execute(
         text(
             """
-            SELECT derived_position_id
+            SELECT 1
             FROM derived_analysis_queue
+            WHERE daq_state = 'queued'
             LIMIT 1
             """
         )
     ).first()
-    if existing is not None:
-        return None
+    if queued is not None:
+        return BackgroundSeedOutcome(None, BackgroundSeedReason.BLOCKED_REQUESTED)
+
+    running_count = connection.execute(
+        text(
+            """
+            SELECT COUNT(*)
+            FROM derived_analysis_queue
+            WHERE daq_state = 'running'
+            """
+        )
+    ).scalar_one()
+    if running_count >= capacity:
+        return BackgroundSeedOutcome(None, BackgroundSeedReason.AT_CAPACITY)
+
+    candidate_queue = connection.execute(
+        text(
+            """
+            SELECT daq_state
+            FROM derived_analysis_queue
+            WHERE derived_position_id = :position_id
+            """
+        ),
+        {"position_id": position_id},
+    ).first()
+    if candidate_queue is not None:
+        return BackgroundSeedOutcome(None, BackgroundSeedReason.SKIP_CANDIDATE)
+
+    eligibility_parameters = _background_result_parameters()
+    eligibility_parameters["position_id"] = position_id
+    ineligible_result = connection.execute(
+        text(
+            f"""
+            SELECT 1
+            FROM derived_analysis_result AS r
+            WHERE r.derived_position_id = :position_id
+              AND NOT {_background_result_eligibility_sql()}
+            """
+        ),
+        eligibility_parameters,
+    ).first()
+    if ineligible_result is not None:
+        return BackgroundSeedOutcome(None, BackgroundSeedReason.SKIP_CANDIDATE)
+
     resolved_claim_token = claim_token() if callable(claim_token) else claim_token
 
     if not isinstance(resolved_claim_token, str) or not resolved_claim_token:
@@ -129,11 +177,14 @@ def _seed_and_claim_background_in_transaction(
     )
     if updated.rowcount != 1:
         raise QueueStorageError("background queue seed was not claimable")
-    return QueueClaim(
-        position_id=position_id,
-        quality=AnalysisQuality.BROWSER,
-        claimed_at_utc=claimed_at_utc,
-        claim_token=resolved_claim_token,
+    return BackgroundSeedOutcome(
+        QueueClaim(
+            position_id=position_id,
+            quality=AnalysisQuality.BROWSER,
+            claimed_at_utc=claimed_at_utc,
+            claim_token=resolved_claim_token,
+        ),
+        BackgroundSeedReason.CLAIMED,
     )
 
 
@@ -214,6 +265,11 @@ def _claim_identity(
 def _validate_position_id(position_id: object) -> None:
     if type(position_id) is not int or position_id < 1:
         raise QueueValidationError("position_id must be a positive integer")
+
+
+def _validate_capacity(capacity: object) -> None:
+    if type(capacity) is not int or capacity < 1:
+        raise QueueValidationError("background capacity must be a positive integer")
 
 
 def _quality_rank(value: AnalysisQuality) -> int:

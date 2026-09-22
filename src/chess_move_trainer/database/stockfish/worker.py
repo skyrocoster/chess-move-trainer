@@ -1,4 +1,4 @@
-"""Serial, mutex-guarded Stockfish queue draining with bounded recovery."""
+"""Mutex-guarded or bounded-parallel Stockfish queue draining."""
 
 from __future__ import annotations
 
@@ -17,11 +17,13 @@ from ..connection import DEFAULT_LOCK_TIMEOUT_SECONDS, _open_existing_connection
 from ..positions import CanonicalPosition
 from ..schema import _assert_compatible_schema
 from .engine import StockfishAnalysis, StockfishEngine
+from .configuration import StockfishProfile, profile_for
 from .mutex import DatabaseMutex, MutexBusyError
-from .queue import QueueClaim, QueueService
+from .queue import BackgroundSeedReason, QueueClaim, QueueService
 from .targets import BackgroundTargetSelector
 
 DEFAULT_RECOVERY_POLL_SECONDS = 1.0
+PARALLEL_BACKGROUND_CAPACITY = 6
 
 
 class WorkerError(RuntimeError):
@@ -68,7 +70,7 @@ class WorkerOutcome:
 
 
 class WorkerRunner:
-    """Drain queued requests with one sequential engine process at a time."""
+    """Drain queued requests with one engine process per worker runner."""
 
     def __init__(
         self,
@@ -78,6 +80,8 @@ class WorkerRunner:
         lock_timeout: float = DEFAULT_LOCK_TIMEOUT_SECONDS,
         mutex_acquire_timeout: float = 0.0,
         recovery_poll_seconds: float = DEFAULT_RECOVERY_POLL_SECONDS,
+        parallel: bool = False,
+        threads: int | None = None,
         _clock: Callable[[], datetime] | None = None,
         _sleep: Callable[[float], None] | None = None,
         _queue_factory: Callable[[str | Path, float], Any] | None = None,
@@ -91,6 +95,16 @@ class WorkerRunner:
         self._database_path = database_path
         self._executable = executable
         self._lock_timeout = lock_timeout
+        if type(parallel) is not bool:
+            raise WorkerInputError("parallel must be a boolean")
+        if threads is not None and (type(threads) is not int or threads <= 0):
+            raise WorkerInputError("threads must be a positive integer when supplied")
+        # Auto-pinning parallel workers is disabled: a 2-thread trial stalled
+        # the drain (under investigation), so every mode keeps the profile
+        # default unless --threads is passed explicitly.
+        self._threads = threads
+        self._parallel = parallel
+        self._background_capacity = PARALLEL_BACKGROUND_CAPACITY if parallel else 1
         self._mutex_acquire_timeout = _finite_non_negative(
             mutex_acquire_timeout, "mutex_acquire_timeout"
         )
@@ -113,8 +127,8 @@ class WorkerRunner:
         """Drain current queued/reclaimable work and then exit."""
 
         queue = self._queue_factory(self._database_path, self._lock_timeout)
-        mutex = self._mutex_factory(self._database_path)
-        if not mutex.acquire(timeout=self._mutex_acquire_timeout):
+        mutex = None if self._parallel else self._mutex_factory(self._database_path)
+        if mutex is not None and not mutex.acquire(timeout=self._mutex_acquire_timeout):
             raise MutexBusyError(f"Stockfish analysis is already running for {self._database_path}")
 
         engine: Any | None = None
@@ -147,7 +161,7 @@ class WorkerRunner:
                     drained = False
                     break
 
-                if claim is None and getattr(mutex, "acquired_abandoned", False):
+                if claim is None and mutex is not None and getattr(mutex, "acquired_abandoned", False):
                     try:
                         claim, polls = self._recover_young_claim(
                             queue,
@@ -181,6 +195,8 @@ class WorkerRunner:
                         break
                     if claim is None:
                         if queue_is_no_longer_empty:
+                            if self._parallel:
+                                self._sleep(self._recovery_poll_seconds)
                             continue
                         break
 
@@ -217,7 +233,7 @@ class WorkerRunner:
                         continue
 
                 try:
-                    analysis = engine.analyze(position, claim.claimed_quality)
+                    analysis = engine.analyze(position, self._profile_for_claim(claim))
                     result = _analysis_result(analysis)
                 except KeyboardInterrupt:
                     self._close_engine(engine)
@@ -262,11 +278,12 @@ class WorkerRunner:
                 self._release_claim(queue, current_claim, failures)
             if engine is not None:
                 self._close_engine(engine)
-            try:
-                mutex.release()
-            except Exception as error:
-                failures.append(WorkerFailure(None, str(error)))
-                drained = False
+            if mutex is not None:
+                try:
+                    mutex.release()
+                except Exception as error:
+                    failures.append(WorkerFailure(None, str(error)))
+                    drained = False
 
         return WorkerOutcome(
             claimed_count=claimed_count,
@@ -276,6 +293,21 @@ class WorkerRunner:
             interrupted=interrupted,
             drained=drained,
             recovery_polls=recovery_polls,
+        )
+
+    def _profile_for_claim(self, claim: QueueClaim) -> StockfishProfile:
+        """Resolve the engine profile, pinning threads in parallel mode."""
+
+        base = profile_for(claim.claimed_quality)
+        if self._threads is None or self._threads == base.threads:
+            return base
+        return StockfishProfile(
+            base.quality,
+            base.nodes,
+            threads=self._threads,
+            hash_mb=base.hash_mb,
+            multipv=base.multipv,
+            configuration_version=base.configuration_version,
         )
 
     def _claim_background(
@@ -289,13 +321,16 @@ class WorkerRunner:
         for target in selector.iter_targets():
             if target.position_id in failed_position_ids:
                 continue
-            claim = queue.seed_and_claim_background(
+            outcome = queue.try_seed_and_claim_background(
                 target.position_id,
                 now=self._clock(),
+                capacity=self._background_capacity,
             )
-            if claim is None:
-                return None, True
-            return claim, False
+            if outcome.claim is not None:
+                return outcome.claim, False
+            if outcome.reason is BackgroundSeedReason.SKIP_CANDIDATE:
+                continue
+            return None, True
         return None, False
 
     def _recover_young_claim(
@@ -444,6 +479,7 @@ def _finite_non_negative(value: float, label: str) -> float:
 
 __all__ = [
     "DEFAULT_RECOVERY_POLL_SECONDS",
+    "PARALLEL_BACKGROUND_CAPACITY",
     "SerialWorkerRunner",
     "WorkerError",
     "WorkerFailure",

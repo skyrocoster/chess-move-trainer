@@ -204,14 +204,14 @@ def validate_analysis_position(
 
     if not isinstance(result, AnalysisResultInput):
         raise AnalysisValidationError("result must be an AnalysisResultInput value")
-    from ..stockfish.configuration import profile_for
+    from ..stockfish.configuration import profile_for, quality_settings_match
 
     profile = profile_for(result.quality)
     if result.configuration_version != profile.configuration_version:
         raise AnalysisValidationError(
             "analysis configuration version does not match the quality profile"
         )
-    if dict(result.settings) != dict(profile.settings):
+    if not quality_settings_match(result.settings, profile):
         raise AnalysisValidationError("analysis settings do not match the quality profile")
     board = _neutral_board(position)
     terminal_kind = _classify_board(board)

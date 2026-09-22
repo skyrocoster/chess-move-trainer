@@ -18,6 +18,7 @@ from chess_move_trainer.database.analysis import (
 )
 from chess_move_trainer.database.positions import PositionRepository
 from chess_move_trainer.database.stockfish import (
+    BackgroundSeedReason,
     QueueCompletionOutcome,
     QueueQualityError,
     QueueService,
@@ -362,3 +363,62 @@ def test_background_seed_leaves_existing_requested_work_untouched(tmp_path: Path
     assert claim is not None
     assert claim.position_id == requested_position
     assert claim.quality is AnalysisQuality.TOOL
+
+
+def test_background_capacity_allows_six_claims_and_rejects_a_seventh(tmp_path: Path) -> None:
+    database_path = tmp_path / "capacity.db"
+    create_schema(database_path)
+    positions = PositionRepository(database_path)
+    fens = (
+        "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1",
+        "rnbqkbnr/pppppppp/8/8/2P5/8/PP1PPPPP/RNBQKBNR b KQkq - 0 1",
+        "rnbqkbnr/pppppppp/8/8/3P4/8/PPP1PPPP/RNBQKBNR b KQkq - 0 1",
+        "rnbqkbnr/pppppppp/8/8/5P2/8/PPPPP1PP/RNBQKBNR b KQkq - 0 1",
+        "rnbqkbnr/pppppppp/8/8/6P1/8/PPPPPP1P/RNBQKBNR b KQkq - 0 1",
+        "rnbqkbnr/pppppppp/8/8/1P6/8/P1PPPPPP/RNBQKBNR b KQkq - 0 1",
+        "rnbqkbnr/pppppppp/8/8/7P/8/PPPPPPP1/RNBQKBNR b KQkq - 0 1",
+    )
+    position_ids = [positions.resolve_fen(fen) for fen in fens]
+    queue = QueueService(database_path)
+
+    claims = [
+        queue.seed_and_claim_background(position_id, capacity=6)
+        for position_id in position_ids[:6]
+    ]
+    outcome = queue.try_seed_and_claim_background(position_ids[6], capacity=6)
+
+    assert all(claim is not None for claim in claims)
+    assert outcome.claim is None
+    assert outcome.reason is BackgroundSeedReason.AT_CAPACITY
+    with sqlite3.connect(database_path) as connection:
+        assert connection.execute(
+            "SELECT COUNT(*) FROM derived_analysis_queue WHERE daq_state = 'running'"
+        ).fetchone()[0] == 6
+
+
+def test_background_seed_skips_duplicate_candidate_and_current_result(tmp_path: Path) -> None:
+    database_path, position_id = _setup(tmp_path)
+    queue = QueueService(database_path)
+
+    first = queue.seed_and_claim_background(position_id, capacity=6)
+    duplicate = queue.try_seed_and_claim_background(position_id, capacity=6)
+    assert first is not None
+    assert duplicate.reason is BackgroundSeedReason.SKIP_CANDIDATE
+
+    assert queue.complete(first, _result(engine_version="19")).applied
+    current = queue.try_seed_and_claim_background(position_id, capacity=6)
+    assert current.reason is BackgroundSeedReason.SKIP_CANDIDATE
+
+
+def test_queued_requested_work_blocks_background_capacity_six(tmp_path: Path) -> None:
+    database_path, position_id = _setup(tmp_path)
+    requested_position = PositionRepository(database_path).resolve_fen(
+        "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2"
+    )
+    queue = QueueService(database_path)
+    queue.enqueue(requested_position, AnalysisQuality.TOOL)
+
+    outcome = queue.try_seed_and_claim_background(position_id, capacity=6)
+
+    assert outcome.claim is None
+    assert outcome.reason is BackgroundSeedReason.BLOCKED_REQUESTED

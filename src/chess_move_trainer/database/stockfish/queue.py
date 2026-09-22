@@ -8,6 +8,8 @@ from __future__ import annotations
 
 from .queue_helpers import _enqueue_in_transaction
 from .queue_models import (
+    BackgroundSeedOutcome,
+    BackgroundSeedReason,
     STALE_CLAIM_AFTER,
     QueueClaim,
     QueueCompletionOutcome,
@@ -23,6 +25,8 @@ from .queue_service import AnalysisQueue, QueueRepository, QueueService
 __all__ = [
     "STALE_CLAIM_AFTER",
     "AnalysisQueue",
+    "BackgroundSeedOutcome",
+    "BackgroundSeedReason",
     "QueueClaim",
     "QueueCompletionOutcome",
     "QueueError",

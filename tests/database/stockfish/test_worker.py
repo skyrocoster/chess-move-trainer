@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import sqlite3
+import threading
+from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -15,7 +17,7 @@ from chess_move_trainer.database.analysis import (
     AnalysisResultInput,
     AnalysisScoreKind,
 )
-from chess_move_trainer.database.positions import PositionRepository
+from chess_move_trainer.database.positions import PositionRepository, canonicalize_fen
 from chess_move_trainer.database.stockfish import (
     MutexBusyError,
     QueueService,
@@ -51,14 +53,15 @@ class _FakeEngine:
         self.closed = False
 
     def analyze(self, position: object, quality: AnalysisQuality) -> AnalysisResultInput:
-        self.calls.append((position, quality))
+        profile = profile_for(quality)
+        self.calls.append((position, profile.quality))
         if self.on_analyze is not None:
-            self.on_analyze(position, quality)
+            self.on_analyze(position, profile.quality)
         if self.responses:
             response = self.responses.pop(0)
             if isinstance(response, BaseException):
                 raise response
-        return _result(position, quality)
+        return _result(position, profile)
 
     def close(self) -> None:
         self.closed = True
@@ -526,3 +529,83 @@ def test_empty_queue_drains_and_exits_without_starting_engine(tmp_path: Path) ->
     assert outcome.claimed_count == 0
     assert not created
     assert mutex.released
+
+
+def test_parallel_workers_claim_six_distinct_background_targets(tmp_path: Path) -> None:
+    fens: list[str] = []
+    for move in ("e2e4", "d2d4", "c2c4", "g1f3", "b1c3", "f2f4"):
+        board = chess.Board()
+        board.push_uci(move)
+        fens.append(board.fen())
+    database, ids = _database(tmp_path, tuple(fens))
+    position_ids = list(ids.values())
+    selector_batches = iter(position_ids)
+    selector_lock = threading.Lock()
+    barrier = threading.Barrier(6)
+
+    def selector_factory(_path: Path, _timeout: float) -> _FakeBackgroundSelector:
+        with selector_lock:
+            position_id = next(selector_batches)
+        return _FakeBackgroundSelector([position_id])
+
+    def engine_factory() -> _FakeEngine:
+        return _FakeEngine(on_analyze=lambda _position, _quality: barrier.wait(timeout=5))
+
+    def run_one() -> object:
+        return _runner(
+            database,
+            _FakeMutex(busy=True),
+            engine_factory,
+            parallel=True,
+            _background_selector_factory=selector_factory,
+        ).run()
+
+    with ThreadPoolExecutor(max_workers=6) as executor:
+        outcomes = list(executor.map(lambda _index: run_one(), range(6)))
+
+    assert all(outcome.succeeded for outcome in outcomes)
+    assert sum(outcome.claimed_count for outcome in outcomes) == 6
+    assert sum(outcome.completed_count for outcome in outcomes) == 6
+    assert _queue_rows(database) == []
+    assert all(_stored_quality(database, position_id) == "browser" for position_id in position_ids)
+
+
+def test_parallel_worker_claims_requested_work_before_background_refill(tmp_path: Path) -> None:
+    fens: list[str] = []
+    for move in ("e2e4", "d2d4", "c2c4", "g1f3", "b1c3", "f2f4", "a2a3"):
+        board = chess.Board()
+        board.push_uci(move)
+        fens.append(board.fen())
+    database, ids = _database(tmp_path, tuple(fens))
+    position_ids = list(ids.values())
+    canonical_positions = {ids[fen]: canonicalize_fen(fen) for fen in fens}
+    queue = QueueService(database)
+    background_claims = [
+        queue.seed_and_claim_background(position_id, capacity=6)
+        for position_id in position_ids[:6]
+    ]
+    assert all(claim is not None for claim in background_claims)
+    assert queue.complete(
+        background_claims[0],
+        _result(canonical_positions[position_ids[0]], AnalysisQuality.BROWSER),
+    ).applied
+    queue.enqueue(position_ids[0], AnalysisQuality.TOOL)
+    calls: list[AnalysisQuality] = []
+
+    def record_analysis(_position: object, quality: AnalysisQuality) -> None:
+        calls.append(quality)
+
+    outcome = _runner(
+        database,
+        _FakeMutex(busy=True),
+        lambda: _FakeEngine(on_analyze=record_analysis),
+        parallel=True,
+        _background_selector_factory=lambda _path, _timeout: _FakeBackgroundSelector(
+            [position_ids[6]]
+        ),
+    ).run()
+
+    assert outcome.succeeded
+    assert calls == [AnalysisQuality.TOOL, AnalysisQuality.BROWSER]
+    assert _stored_quality(database, position_ids[0]) == "tool"
+    assert _stored_quality(database, position_ids[6]) == "browser"

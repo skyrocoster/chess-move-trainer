@@ -14,7 +14,7 @@ from ..connection import DEFAULT_LOCK_TIMEOUT_SECONDS, _open_existing_connection
 from ..positions import CanonicalPosition, canonicalize_board, canonicalize_fen
 from ..positions.repository import position_transaction
 from ..schema import SchemaIncompatibleError, _assert_compatible_schema
-from .configuration import STOCKFISH_VERSION, profile_for
+from .configuration import STOCKFISH_VERSION, profile_for, quality_settings_match
 
 TARGET_MIN_PLY = 0
 TARGET_MAX_PLY = 19
@@ -99,6 +99,51 @@ class _RouteMove:
     route_id: int
     ply: int
     move_uci: str
+
+
+def _background_result_parameters() -> dict[str, int | str]:
+    """Return the authoritative browser-result eligibility parameters."""
+
+    profile = profile_for("browser")
+    return {
+        "browser_quality": "browser",
+        "configuration_version": profile.configuration_version,
+        "engine_version": STOCKFISH_VERSION,
+        "multipv": profile.multipv,
+        "nodes": profile.nodes,
+        "show_wdl": 1,
+        "settings_key_count": len(profile.settings),
+    }
+
+
+def _background_result_eligibility_sql(result_alias: str = "r") -> str:
+    """Return the shared predicate for missing or stale browser results."""
+
+    return f"""
+        (
+            {result_alias}.derived_position_id IS NULL
+            OR (
+                {result_alias}.dar_quality = :browser_quality
+                AND {result_alias}.dar_terminal_kind IS NULL
+                AND (
+                    {result_alias}.dar_configuration_version <> :configuration_version
+                    OR {result_alias}.dar_engine_version <> :engine_version
+                    OR json_type({result_alias}.dar_settings_json, '$.MultiPV') IS NOT 'integer'
+                    OR json_extract({result_alias}.dar_settings_json, '$.MultiPV') <> :multipv
+                    OR json_type({result_alias}.dar_settings_json, '$.Nodes') IS NOT 'integer'
+                    OR json_extract({result_alias}.dar_settings_json, '$.Nodes') <> :nodes
+                    OR json_type({result_alias}.dar_settings_json, '$.Threads') IS NOT 'integer'
+                    OR json_type({result_alias}.dar_settings_json, '$.Hash') IS NOT 'integer'
+                    OR json_type({result_alias}.dar_settings_json, '$.UCI_ShowWDL') IS NOT 'true'
+                    OR json_extract({result_alias}.dar_settings_json, '$.UCI_ShowWDL') <> :show_wdl
+                    OR (
+                        SELECT COUNT(*)
+                        FROM json_each({result_alias}.dar_settings_json)
+                    ) <> :settings_key_count
+                )
+            )
+        )
+    """
 
 
 class BulkTargetSelector:
@@ -266,7 +311,7 @@ class BulkTargetSelector:
         return (
             row[1] != profile.configuration_version
             or row[2] != STOCKFISH_VERSION
-            or settings != dict(profile.settings)
+            or not quality_settings_match(settings, profile)
         )
 
     def _replay_route_positions(self) -> dict[int, CanonicalPosition]:
@@ -345,19 +390,8 @@ class BackgroundTargetSelector:
         self,
         cursor: tuple[int, int] | None,
     ) -> tuple[BulkTarget, ...]:
-        profile = profile_for("browser")
-        parameters: dict[str, int | str] = {
-            "browser_quality": "browser",
-            "configuration_version": profile.configuration_version,
-            "engine_version": STOCKFISH_VERSION,
-            "hash_mb": profile.hash_mb,
-            "multipv": profile.multipv,
-            "nodes": profile.nodes,
-            "threads": profile.threads,
-            "show_wdl": 1,
-            "settings_key_count": len(profile.settings),
-            "page_size": self._page_size,
-        }
+        parameters = _background_result_parameters()
+        parameters["page_size"] = self._page_size
         cursor_clause = ""
         if cursor is not None:
             parameters.update(
@@ -397,32 +431,8 @@ class BackgroundTargetSelector:
                           ON r.derived_position_id = gc.position_id
                         LEFT JOIN derived_analysis_queue AS q
                           ON q.derived_position_id = gc.position_id
-                        WHERE q.derived_position_id IS NULL
-                          AND (
-                                r.derived_position_id IS NULL
-                                OR (
-                                    r.dar_quality = :browser_quality
-                                    AND r.dar_terminal_kind IS NULL
-                                    AND (
-                                        r.dar_configuration_version <> :configuration_version
-                                        OR r.dar_engine_version <> :engine_version
-                                        OR json_type(r.dar_settings_json, '$.Hash') IS NOT 'integer'
-                                        OR json_extract(r.dar_settings_json, '$.Hash') <> :hash_mb
-                                        OR json_type(r.dar_settings_json, '$.MultiPV') IS NOT 'integer'
-                                        OR json_extract(r.dar_settings_json, '$.MultiPV') <> :multipv
-                                        OR json_type(r.dar_settings_json, '$.Nodes') IS NOT 'integer'
-                                        OR json_extract(r.dar_settings_json, '$.Nodes') <> :nodes
-                                        OR json_type(r.dar_settings_json, '$.Threads') IS NOT 'integer'
-                                        OR json_extract(r.dar_settings_json, '$.Threads') <> :threads
-                                        OR json_type(r.dar_settings_json, '$.UCI_ShowWDL') IS NOT 'true'
-                                        OR json_extract(r.dar_settings_json, '$.UCI_ShowWDL') <> :show_wdl
-                                        OR (
-                                            SELECT COUNT(*)
-                                            FROM json_each(r.dar_settings_json)
-                                        ) <> :settings_key_count
-                                    )
-                                )
-                              )
+                         WHERE q.derived_position_id IS NULL
+                           AND {_background_result_eligibility_sql()}
                         {cursor_clause}
                         ORDER BY gc.game_count DESC, gc.position_id ASC
                         LIMIT :page_size

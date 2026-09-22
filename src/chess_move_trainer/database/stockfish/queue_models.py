@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime, timedelta
+from enum import Enum
 
 from sqlalchemy import text
 
@@ -119,6 +120,30 @@ class QueueClaim:
         """The immutable quality captured when this ticket was issued."""
 
         return self.quality
+
+
+class BackgroundSeedReason(str, Enum):
+    """Why one atomic background-seed attempt did not claim work."""
+
+    CLAIMED = "claimed"
+    SKIP_CANDIDATE = "skip_candidate"
+    BLOCKED_REQUESTED = "blocked_requested"
+    AT_CAPACITY = "at_capacity"
+
+
+@dataclass(frozen=True, slots=True)
+class BackgroundSeedOutcome:
+    """Structured result of one capacity-aware background seed attempt."""
+
+    claim: QueueClaim | None
+    reason: BackgroundSeedReason
+
+    def __post_init__(self) -> None:
+        if self.reason is BackgroundSeedReason.CLAIMED:
+            if self.claim is None:
+                raise QueueValidationError("claimed background seed must contain a queue claim")
+        elif self.claim is not None:
+            raise QueueValidationError("blocked background seed cannot contain a queue claim")
 
 
 @dataclass(frozen=True, slots=True)

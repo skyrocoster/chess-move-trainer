@@ -194,20 +194,43 @@ def worker_stockfish(
             "a positive value keeps listening quietly until interrupted."
         ),
     ),
+    parallel: bool = typer.Option(
+        False,
+        "--parallel",
+        help="Opt into capacity-six background workers without the single-worker mutex.",
+    ),
+    threads: int | None = typer.Option(
+        None,
+        "--threads",
+        help=(
+            "Optional positive Stockfish thread count; default keeps the profile value."
+        ),
+    ),
 ) -> None:
     """Drain current queued analysis requests and exit, or keep listening."""
 
     try:
         _validate_stockfish_lock_timeout(lock_timeout)
         _validate_stockfish_poll_interval(poll_interval)
+        if threads is not None and (type(threads) is not int or threads <= 0):
+            raise ValueError("threads must be a positive integer when supplied")
         if poll_interval <= 0:
             outcome = WorkerRunner(
                 database,
                 executable,
                 lock_timeout=lock_timeout,
+                parallel=parallel,
+                threads=threads,
             ).run()
         else:
-            outcome = _run_worker_loop(database, executable, lock_timeout, poll_interval)
+            outcome = _run_worker_loop(
+                database,
+                executable,
+                lock_timeout,
+                poll_interval,
+                parallel,
+                threads,
+            )
     except KeyboardInterrupt:
         _interrupted()
     except (WorkerInputError, ValueError) as error:
@@ -232,6 +255,8 @@ def _run_worker_loop(
     executable: Path,
     lock_timeout: float,
     poll_interval: float,
+    parallel: bool,
+    threads: int | None,
 ) -> WorkerOutcome:
     """Poll quietly and spin the engine up only while work is claimed.
 
@@ -247,6 +272,8 @@ def _run_worker_loop(
             database,
             executable,
             lock_timeout=lock_timeout,
+            parallel=parallel,
+            threads=threads,
         ).run()
         completed_total += outcome.completed_count
         claimed_total += outcome.claimed_count

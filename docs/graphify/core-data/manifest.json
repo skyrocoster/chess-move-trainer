@@ -42,10 +42,10 @@
     "semantic_hash": "d1d496d8f3e32e8ecef8c7d3a247c0e7"
   },
   "chess_move_trainer/database/analysis/reading.py": {
-    "mtime": 1789888082.3057795,
-    "seen": 1789896431.4058163,
-    "ast_hash": "f4974e8fa607acf7b2a768246841998e",
-    "semantic_hash": "f4974e8fa607acf7b2a768246841998e"
+    "mtime": 1790034251.7698798,
+    "seen": 1790072543.48679,
+    "ast_hash": "2a5f27baad0c76c1f7ab9857010c3cd1",
+    "semantic_hash": "2a5f27baad0c76c1f7ab9857010c3cd1"
   },
   "chess_move_trainer/database/analysis/repository.py": {
     "mtime": 1789888082.3127797,
@@ -54,16 +54,16 @@
     "semantic_hash": "84c03213aea4e6e9e90bcd7a5910d304"
   },
   "chess_move_trainer/database/analysis/requests.py": {
-    "mtime": 1789888082.406747,
-    "seen": 1789896431.4058163,
-    "ast_hash": "ec173dac194cbd1a9476d3607417c001",
-    "semantic_hash": "ec173dac194cbd1a9476d3607417c001"
+    "mtime": 1790070428.1374073,
+    "seen": 1790072543.4877849,
+    "ast_hash": "0fef3cc118f46bd95b50a6efc76968c2",
+    "semantic_hash": "0fef3cc118f46bd95b50a6efc76968c2"
   },
   "chess_move_trainer/database/analysis/validation.py": {
-    "mtime": 1789888082.364749,
-    "seen": 1789896431.4058163,
-    "ast_hash": "90124b790917a1d3833d343f01983e1f",
-    "semantic_hash": "90124b790917a1d3833d343f01983e1f"
+    "mtime": 1790070428.1374073,
+    "seen": 1790072543.4877849,
+    "ast_hash": "69e2bbad484542764c048f7f2a42e65a",
+    "semantic_hash": "69e2bbad484542764c048f7f2a42e65a"
   },
   "chess_move_trainer/database/cli.py": {
     "mtime": 1789890524.7626886,
@@ -102,16 +102,16 @@
     "semantic_hash": "7f8faf64df8b7e961659f1b2211faa4f"
   },
   "chess_move_trainer/database/cli_stockfish.py": {
-    "mtime": 1789888082.31178,
-    "seen": 1789896431.4058163,
-    "ast_hash": "797297321db7af8a2c6acd09f83f823c",
-    "semantic_hash": "797297321db7af8a2c6acd09f83f823c"
+    "mtime": 1790070428.1374073,
+    "seen": 1790072543.4907858,
+    "ast_hash": "d57f543a9bf6df17b10fc28d7302ffd3",
+    "semantic_hash": "d57f543a9bf6df17b10fc28d7302ffd3"
   },
   "chess_move_trainer/database/connection.py": {
-    "mtime": 1789991101.3949196,
-    "seen": 1789998613.0112019,
-    "ast_hash": "8302ade74225d5b51fb74096471a7aab",
-    "semantic_hash": "8302ade74225d5b51fb74096471a7aab"
+    "mtime": 1790070428.1374073,
+    "seen": 1790072543.4907858,
+    "ast_hash": "c7805abcbde2a6be4a1acc51ae3ff46d",
+    "semantic_hash": "c7805abcbde2a6be4a1acc51ae3ff46d"
   },
   "chess_move_trainer/database/games/__init__.py": {
     "mtime": 1789131697.636082,
@@ -462,10 +462,10 @@
     "semantic_hash": "1c062cbf3e0433a918cb7c76d518b072"
   },
   "chess_move_trainer/database/stockfish/__init__.py": {
-    "mtime": 1789292041.4706206,
-    "seen": 1789502888.6864994,
-    "ast_hash": "39aac79b489af06bba0821d1a09401c3",
-    "semantic_hash": "39aac79b489af06bba0821d1a09401c3"
+    "mtime": 1790070428.1374073,
+    "seen": 1790072543.511307,
+    "ast_hash": "9ab6d1b113355f52db9b6e0053c963d1",
+    "semantic_hash": "9ab6d1b113355f52db9b6e0053c963d1"
   },
   "chess_move_trainer/database/stockfish/benchmark.py": {
     "mtime": 1789887847.4224317,
@@ -510,10 +510,10 @@
     "semantic_hash": "8bc40e7c04022c3e0cfc9d9980dbd167"
   },
   "chess_move_trainer/database/stockfish/configuration.py": {
-    "mtime": 1789847798.2810328,
-    "seen": 1789849437.6668406,
-    "ast_hash": "a6a9eb133a2743bb8a8d4c98cae367b5",
-    "semantic_hash": "a6a9eb133a2743bb8a8d4c98cae367b5"
+    "mtime": 1790070428.1374073,
+    "seen": 1790072543.5133066,
+    "ast_hash": "06356df66f41c7e359963dc494243d2d",
+    "semantic_hash": "06356df66f41c7e359963dc494243d2d"
   },
   "chess_move_trainer/database/stockfish/engine.py": {
     "mtime": 1789887847.4449916,
@@ -552,40 +552,40 @@
     "semantic_hash": "4648d741cdf96a03933c1f757b5faa08"
   },
   "chess_move_trainer/database/stockfish/queue.py": {
-    "mtime": 1789888931.660498,
-    "seen": 1789896431.4058163,
-    "ast_hash": "2fa42d4ba9efd3311b394e3734a4e4cb",
-    "semantic_hash": "2fa42d4ba9efd3311b394e3734a4e4cb"
+    "mtime": 1790070428.1374073,
+    "seen": 1790072543.5153062,
+    "ast_hash": "8e8db85961b9707dc6955fa41e320c32",
+    "semantic_hash": "8e8db85961b9707dc6955fa41e320c32"
   },
   "chess_move_trainer/database/stockfish/queue_helpers.py": {
-    "mtime": 1789888032.7559,
-    "seen": 1789896431.4058163,
-    "ast_hash": "6a10ba7017ef4b588a1004de52982767",
-    "semantic_hash": "6a10ba7017ef4b588a1004de52982767"
+    "mtime": 1790070428.1374073,
+    "seen": 1790072543.5153062,
+    "ast_hash": "c45e3cd2968110d7418a62f19a0e947b",
+    "semantic_hash": "c45e3cd2968110d7418a62f19a0e947b"
   },
   "chess_move_trainer/database/stockfish/queue_models.py": {
-    "mtime": 1789887847.4184299,
-    "seen": 1789896431.4058163,
-    "ast_hash": "e21744b4f33caa58d256a3fa7f865996",
-    "semantic_hash": "e21744b4f33caa58d256a3fa7f865996"
+    "mtime": 1790070428.1419773,
+    "seen": 1790072543.5153062,
+    "ast_hash": "5eea3c57e66c0abaaef04f0b9cb33224",
+    "semantic_hash": "5eea3c57e66c0abaaef04f0b9cb33224"
   },
   "chess_move_trainer/database/stockfish/queue_service.py": {
-    "mtime": 1789888032.7559,
-    "seen": 1789896431.4058163,
-    "ast_hash": "c06e707a77465dc7f103ec537b09a2fd",
-    "semantic_hash": "c06e707a77465dc7f103ec537b09a2fd"
+    "mtime": 1790070428.1419773,
+    "seen": 1790072543.5153062,
+    "ast_hash": "f18ebb8cdd3dad8a310ce62a186a641c",
+    "semantic_hash": "f18ebb8cdd3dad8a310ce62a186a641c"
   },
   "chess_move_trainer/database/stockfish/targets.py": {
-    "mtime": 1789888082.3817487,
-    "seen": 1789896431.4058163,
-    "ast_hash": "84cddd322f22c61625290dbbd1037cde",
-    "semantic_hash": "84cddd322f22c61625290dbbd1037cde"
+    "mtime": 1790070428.1419773,
+    "seen": 1790072543.5153062,
+    "ast_hash": "a55390a111b7b15e7c1ec42177fae927",
+    "semantic_hash": "a55390a111b7b15e7c1ec42177fae927"
   },
   "chess_move_trainer/database/stockfish/worker.py": {
-    "mtime": 1789888082.302778,
-    "seen": 1789896431.4058163,
-    "ast_hash": "73bf6c23658304d727a107a9c45f311e",
-    "semantic_hash": "73bf6c23658304d727a107a9c45f311e"
+    "mtime": 1790070428.1419773,
+    "seen": 1790072543.5153062,
+    "ast_hash": "e93c70bfde9414302632df2d760866ec",
+    "semantic_hash": "e93c70bfde9414302632df2d760866ec"
   },
   "tools/__init__.py": {
     "mtime": 1789504129.279128,

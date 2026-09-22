@@ -78,6 +78,8 @@ from .mutex import (
 from .queue import (
     STALE_CLAIM_AFTER,
     AnalysisQueue,
+    BackgroundSeedOutcome,
+    BackgroundSeedReason,
     QueueClaim,
     QueueCompletionOutcome,
     QueueError,
@@ -105,6 +107,7 @@ from .targets import (
 )
 from .worker import (
     DEFAULT_RECOVERY_POLL_SECONDS,
+    PARALLEL_BACKGROUND_CAPACITY,
     SerialWorkerRunner,
     WorkerError,
     WorkerFailure,
@@ -117,6 +120,8 @@ __all__ = [
     "ANALYSIS_WATCHDOG_SECONDS",
     "AnalysisQueue",
     "BackgroundTargetSelector",
+    "BackgroundSeedOutcome",
+    "BackgroundSeedReason",
     "BulkError",
     "BulkFailure",
     "BulkInputError",
@@ -135,6 +140,7 @@ __all__ = [
     "DEFAULT_HASH_SIZES_MB",
     "DEFAULT_NODE_BUDGETS",
     "DEFAULT_RECOVERY_POLL_SECONDS",
+    "PARALLEL_BACKGROUND_CAPACITY",
     "DEFAULT_REPETITIONS",
     "DEFAULT_SHUFFLE_SEED",
     "DEFAULT_STARTUP_TIMEOUT_SECONDS",
