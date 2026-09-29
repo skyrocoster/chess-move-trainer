@@ -9,6 +9,7 @@
       "get": {
         "tags": ["health"],
         "summary": "Health",
+        "description": "Report backend liveness plus best-effort analysis and per-worker status.",
         "operationId": "getHealth",
         "responses": {
           "200": {
@@ -1654,6 +1655,35 @@
         ],
         "title": "ActivityStatisticsResponse"
       },
+      "AnalysisHealthResponse": {
+        "properties": {
+          "positions": {
+            "type": "integer",
+            "title": "Positions"
+          },
+          "analyzed": {
+            "type": "integer",
+            "title": "Analyzed"
+          },
+          "queued": {
+            "type": "integer",
+            "title": "Queued"
+          },
+          "running": {
+            "type": "integer",
+            "title": "Running"
+          },
+          "remaining": {
+            "type": "integer",
+            "title": "Remaining"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["positions", "analyzed", "queued", "running", "remaining"],
+        "title": "AnalysisHealthResponse",
+        "description": "Whole-database analysis backlog shown on the status page."
+      },
       "AnalysisObservationErrorResponse": {
         "properties": {
           "code": {
@@ -2615,11 +2645,46 @@
           "status": {
             "type": "string",
             "title": "Status"
+          },
+          "analysis": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AnalysisHealthResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "workers": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/WorkerHealthResponse"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Workers"
+          },
+          "last_game_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Game At"
           }
         },
         "additionalProperties": false,
         "type": "object",
-        "required": ["status"],
+        "required": ["status", "analysis", "workers", "last_game_at"],
         "title": "HealthResponse"
       },
       "HourActivityResponse": {
@@ -4743,6 +4808,28 @@
         "type": "object",
         "required": ["weekday", "record"],
         "title": "WeekdayActivityResponse"
+      },
+      "WorkerHealthResponse": {
+        "properties": {
+          "service": {
+            "type": "string",
+            "enum": ["worker", "worker-six"],
+            "title": "Service"
+          },
+          "index": {
+            "type": "integer",
+            "title": "Index"
+          },
+          "running": {
+            "type": "boolean",
+            "title": "Running"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["service", "index", "running"],
+        "title": "WorkerHealthResponse",
+        "description": "Observed state of one Docker analysis-worker container."
       }
     }
   }

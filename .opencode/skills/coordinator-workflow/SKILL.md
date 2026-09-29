@@ -25,7 +25,9 @@ frontier; delegate repository reads and edits.
 - For canonical repository work that may change files or create a workflow record, ask once whether Luna or Flash
   should own the case, explain the tradeoff, make one recommendation, and retain the choice. Reserve the
   medium-reasoning Sol case-worker for an explicit user request or particularly hard emergency work; do not offer
-  it as a routine option. Launch the selected case-worker with `PHASE: ASSESS`.
+  it as a routine option. Launch the selected case-worker with `PHASE: ASSESS`. Use the bulk-task case-worker
+  (`coordinator-caseworker-bulk`, Luna at low reasoning, unrestricted permissions with `external_directory` and
+  bulk copy) only when the user explicitly requests it or explicitly requests bulk work such as bulk copy.
 - Use `scout` whenever a coordinator decision needs one bounded missing or stale fact. Case-workers may invoke
   `research` for a less-bounded repository investigation when its expanded result is likely to be useful throughout
   the later assessment; do not decompose that work into a chain of narrow Scout questions. Do not repeat clean

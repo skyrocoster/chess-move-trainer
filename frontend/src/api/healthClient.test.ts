@@ -86,7 +86,8 @@ it("real generated getHealth() through the central module returns the typed heal
 
     const result = await getHealth();
     expect(result.error).toBeUndefined();
-    expect(result.data).toEqual({ status: "ok" });
+    expect(result.data?.status).toBe("ok");
+    expect(result.data?.workers === null || Array.isArray(result.data?.workers)).toBe(true);
   } finally {
     if (previousProcessBaseUrl === undefined) {
       delete process.env.VITE_API_BASE_URL;

@@ -66,6 +66,8 @@ export type Options<
 
 /**
  * Health
+ *
+ * Report backend liveness plus best-effort analysis and per-worker status.
  */
 export const getHealth = <ThrowOnError extends boolean = false>(
   options?: Options<GetHealthData, ThrowOnError>,

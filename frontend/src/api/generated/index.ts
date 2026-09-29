@@ -20,6 +20,7 @@ export {
 export type {
   ActivityPeriodResponse,
   ActivityStatisticsResponse,
+  AnalysisHealthResponse,
   AnalysisObservationErrorResponse,
   AnalysisObservationLineResponse,
   AnalysisObservationResponse,
@@ -161,4 +162,5 @@ export type {
   UnconfiguredPreferenceResponse,
   ValidationError,
   WeekdayActivityResponse,
+  WorkerHealthResponse,
 } from "./types.gen";

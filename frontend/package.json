@@ -8,6 +8,7 @@
   },
   "scripts": {
     "dev": "vite --host localhost --port 8444 --strictPort",
+    "generate:api": "openapi-ts",
     "storybook": "storybook dev -p 6006 --exact-port",
     "build-storybook": "storybook build",
     "build": "tsc -b && vite build",

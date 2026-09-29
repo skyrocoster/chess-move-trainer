@@ -2,8 +2,6 @@
 description: Runs and repairs the complete fail-fast repository test, build, and quality process without subagents.
 mode: primary
 color: "#EF4444"
-#model: openai/gpt-5.6-luna
-#variant: xhigh
 permission:
   edit: allow
   bash: allow

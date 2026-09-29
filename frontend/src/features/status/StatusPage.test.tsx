@@ -26,10 +26,21 @@ function mockHealthyFetch() {
   // fresh Response per call keeps repeated requests independent.
   return vi.spyOn(globalThis, "fetch").mockImplementation(
     async () =>
-      new Response(JSON.stringify({ status: "ok" }), {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      }),
+      new Response(
+        JSON.stringify({
+          status: "ok",
+          analysis: { positions: 1200, analyzed: 1000, queued: 20, running: 4, remaining: 176 },
+          workers: [
+            { service: "worker", index: 1, running: true },
+            { service: "worker-six", index: 1, running: false },
+          ],
+          last_game_at: "2026-09-20T12:00:00+00:00",
+        }),
+        {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        },
+      ),
   );
 }
 
@@ -67,6 +78,19 @@ describe("StatusPage", () => {
     const alert = await screen.findByRole("alert");
     expect(alert).toHaveTextContent("Backend unavailable.");
     expect(alert).not.toHaveTextContent("backend exploded");
+  });
+
+  it("shows worker status, analysis counts, and the last game date when healthy", async () => {
+    mockHealthyFetch();
+    renderStatusPage();
+
+    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("healthy"));
+
+    expect(screen.getByText("Analysis worker running.")).toBeInTheDocument();
+    expect(screen.getByRole("rowheader", { name: "Positions" })).toBeInTheDocument();
+    expect(screen.getByText("1,200")).toBeInTheDocument();
+    expect(screen.getByText("176")).toBeInTheDocument();
+    expect(screen.getByText("Last game recorded: 2026-09-20")).toBeInTheDocument();
   });
 
   it("shows the exact stable error on a malformed HTTP 200 and never shows healthy", async () => {

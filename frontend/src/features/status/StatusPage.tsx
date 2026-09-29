@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 
 import { getHealthOptions } from "../../api/client";
-import { StatusView } from "./StatusView";
+import { StatusView, type StatusDetail } from "./StatusView";
 
 export function StatusPage() {
   const healthQuery = useQuery({ ...getHealthOptions(), gcTime: 0 });
@@ -12,5 +12,20 @@ export function StatusPage() {
   if (healthQuery.isError || healthQuery.data?.status !== "ok") {
     return <StatusView state={{ kind: "error" }} />;
   }
-  return <StatusView state={{ kind: "success" }} />;
+
+  const data = healthQuery.data;
+  const detail: StatusDetail = {
+    workers: data.workers,
+    analysis: data.analysis
+      ? {
+          positions: data.analysis.positions,
+          analyzed: data.analysis.analyzed,
+          queued: data.analysis.queued,
+          running: data.analysis.running,
+          remaining: data.analysis.remaining,
+        }
+      : null,
+    lastGameAt: data.last_game_at,
+  };
+  return <StatusView state={{ kind: "success", detail }} />;
 }

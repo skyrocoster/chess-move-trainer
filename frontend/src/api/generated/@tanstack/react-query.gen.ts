@@ -92,6 +92,8 @@ export const getHealthQueryKey = (options?: Options<GetHealthData>) =>
 
 /**
  * Health
+ *
+ * Report backend liveness plus best-effort analysis and per-worker status.
  */
 export const getHealthOptions = (options?: Options<GetHealthData>) =>
   queryOptions<

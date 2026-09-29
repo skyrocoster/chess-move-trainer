@@ -55,6 +55,34 @@ export type ActivityStatisticsResponse = {
 };
 
 /**
+ * AnalysisHealthResponse
+ *
+ * Whole-database analysis backlog shown on the status page.
+ */
+export type AnalysisHealthResponse = {
+  /**
+   * Positions
+   */
+  positions: number;
+  /**
+   * Analyzed
+   */
+  analyzed: number;
+  /**
+   * Queued
+   */
+  queued: number;
+  /**
+   * Running
+   */
+  running: number;
+  /**
+   * Remaining
+   */
+  remaining: number;
+};
+
+/**
  * AnalysisObservationErrorResponse
  */
 export type AnalysisObservationErrorResponse = {
@@ -593,6 +621,15 @@ export type HealthResponse = {
    * Status
    */
   status: string;
+  analysis: AnalysisHealthResponse | null;
+  /**
+   * Workers
+   */
+  workers: Array<WorkerHealthResponse> | null;
+  /**
+   * Last Game At
+   */
+  last_game_at: string | null;
 };
 
 /**
@@ -1916,6 +1953,26 @@ export type WeekdayActivityResponse = {
    */
   weekday: "monday" | "tuesday" | "wednesday" | "thursday" | "friday" | "saturday" | "sunday";
   record: OutcomeRecordResponse;
+};
+
+/**
+ * WorkerHealthResponse
+ *
+ * Observed state of one Docker analysis-worker container.
+ */
+export type WorkerHealthResponse = {
+  /**
+   * Service
+   */
+  service: "worker" | "worker-six";
+  /**
+   * Index
+   */
+  index: number;
+  /**
+   * Running
+   */
+  running: boolean;
 };
 
 export type GetHealthData = {

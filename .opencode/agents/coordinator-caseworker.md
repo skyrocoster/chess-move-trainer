@@ -2,7 +2,7 @@
 description: Resumable Luna case-worker for bounded assessment, Plan work, master plans, and approved execution.
 mode: subagent
 color: "#8B5CF6"
-model: openai/gpt-5.6-luna
+model: openai/gpt-6-luna
 variant: xhigh
 permission:
   edit: allow

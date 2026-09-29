@@ -49,6 +49,10 @@ creation and iteration to the selected case-worker with `frontend-component-iter
 Plan or `DESIGN.md` before or during Storybook iteration, and do not allow application integration before explicit
 user approval.
 
+Use the bulk-task case-worker (`coordinator-caseworker-bulk`, Luna at low reasoning, unrestricted permissions
+including `external_directory` and bulk copy) only when the user explicitly asks for that caseworker or for bulk
+work such as bulk copy; never offer it as a routine option.
+
 Do not implement product or test changes yourself. You may maintain active workflow records and make a necessary
 scope correction when it preserves the approved outcome; ask before changing behavior, direction, contracts,
 dependencies, ownership, destructive effects, or acceptance.

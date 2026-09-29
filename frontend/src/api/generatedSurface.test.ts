@@ -120,6 +120,7 @@ describe("generated SDK surface", () => {
     expect(Object.keys(contract.components.schemas)).toEqual([
       "ActivityPeriodResponse",
       "ActivityStatisticsResponse",
+      "AnalysisHealthResponse",
       "AnalysisObservationErrorResponse",
       "AnalysisObservationLineResponse",
       "AnalysisObservationResponse",
@@ -192,6 +193,7 @@ describe("generated SDK surface", () => {
       "UnconfiguredPreferenceResponse",
       "ValidationError",
       "WeekdayActivityResponse",
+      "WorkerHealthResponse",
     ]);
   });
 });

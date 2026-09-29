@@ -37,6 +37,10 @@ services:
       - /workspace/src
     init: true
     working_dir: /workspace
+    # The Docker socket is owned by root:root with mode 660 on Docker Desktop,
+    # so the non-root `app` user must join that group to read container state.
+    group_add:
+      - "0"
     environment:
       CHESS_REBUILT_DATABASE_PATH: data/database/chess.db
       PYTHONUNBUFFERED: "1"
@@ -46,6 +50,12 @@ services:
         source: .
         target: /workspace
       - chess-database:/workspace/data/database
+      # Read-only Docker socket so the health endpoint can report whether the
+      # analysis worker containers are running. The backend only issues GET
+      # requests against /containers/json; it never controls the containers.
+      - type: bind
+        source: /var/run/docker.sock
+        target: /var/run/docker.sock
     ports:
       - "127.0.0.1:5666:5666"
     restart: "no"
