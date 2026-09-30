@@ -241,7 +241,7 @@ export const fetchAnalysis = async (
   return observation === null
     ? { status: "unexpected_failure" }
     : { status: "success", data: observation };
-}
+};
 
 export function requestAnalysis(
   fen: Fen,
@@ -286,7 +286,7 @@ export async function requestAnalysis(
   return observation === null
     ? { status: "unexpected_failure" }
     : { status: "success", data: observation };
-};
+}
 
 export const defaultAnalysisClient: AnalysisClient = {
   observe: fetchAnalysis,

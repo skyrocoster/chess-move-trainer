@@ -2,7 +2,7 @@
 description: Resumable opencode case-worker for bounded assessment, Plan work, master plans, and approved execution.
 mode: subagent
 color: "#EAB308"
-model: opencode-go/glm-5.3-flash
+model: opencode-go/deepseek-v4.1-flash
 variant: high
 permission:
   edit: allow

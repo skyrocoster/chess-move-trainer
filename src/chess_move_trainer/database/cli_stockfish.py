@@ -202,9 +202,7 @@ def worker_stockfish(
     threads: int | None = typer.Option(
         None,
         "--threads",
-        help=(
-            "Optional positive Stockfish thread count; default keeps the profile value."
-        ),
+        help=("Optional positive Stockfish thread count; default keeps the profile value."),
     ),
 ) -> None:
     """Drain current queued analysis requests and exit, or keep listening."""

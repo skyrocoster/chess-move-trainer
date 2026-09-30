@@ -14,6 +14,7 @@ Usage (inside worker image, repo mounted at /workspace):
 from __future__ import annotations
 
 import concurrent.futures
+import contextlib
 import json
 import os
 import random
@@ -102,13 +103,11 @@ def search_once(proc: subprocess.Popen[str], fen: str, threads: int, hash_mb: in
 
 
 def close(proc: subprocess.Popen[str]) -> None:
-    try:
+    with contextlib.suppress(OSError):
         send(proc, "quit")
-    except Exception:
-        pass
     try:
         proc.wait(timeout=10)
-    except Exception:
+    except subprocess.TimeoutExpired:
         proc.kill()
 
 
@@ -205,10 +204,7 @@ def main() -> int:
         )
     print("six-concurrent-process batches (18 searches each):")
     for key, summary in parallel_summary.items():
-        print(
-            f"  {key}: wall={summary['wall']:.2f}s "
-            f"per_position={summary['per_position']:.3f}s"
-        )
+        print(f"  {key}: wall={summary['wall']:.2f}s per_position={summary['per_position']:.3f}s")
     print(f"total_wall={total_wall:.1f}s")
     return 0
 

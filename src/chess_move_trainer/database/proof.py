@@ -7,8 +7,8 @@ proof_capabilities, proof_measurements, proof_query, proof_verification.
 
 from __future__ import annotations
 
-from .proof_capabilities import collect_direct_capabilities
 from .lifecycle import HOST_SEED_DATABASE_PATH
+from .proof_capabilities import collect_direct_capabilities
 from .proof_measurements import (
     collect_direct_measurements,
     print_direct_measurements,

@@ -15,6 +15,7 @@ from backend.app.features.openings.catalogue_api_schemas import (
 )
 from backend.app.main import app
 from chess_move_trainer.database import create_schema
+from chess_move_trainer.database.lifecycle import HOST_SEED_DATABASE_PATH
 
 from .conftest import create_openings_database
 
@@ -255,7 +256,7 @@ def test_list_openings_rejects_bad_filters_with_clear_error(
 def test_browsing_openings_from_default_location_does_not_modify_database(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    default_database = tmp_path / "data" / "database" / "chess.db"
+    default_database = tmp_path / HOST_SEED_DATABASE_PATH
     default_database.parent.mkdir(parents=True)
     _create_rebuilt_database(default_database)
     monkeypatch.chdir(tmp_path)
@@ -268,10 +269,10 @@ def test_browsing_openings_from_default_location_does_not_modify_database(
     assert response.status_code == 200
     assert detail_response.status_code == 200
     assert default_database.read_bytes() == before
-    assert not list(default_database.parent.glob("chess.db-*"))
-    assert not default_database.with_name("chess.db-wal").exists()
-    assert not default_database.with_name("chess.db-shm").exists()
-    assert not default_database.with_name("chess.db-journal").exists()
+    assert not list(default_database.parent.glob(f"{default_database.name}-*"))
+    assert not default_database.with_name(f"{default_database.name}-wal").exists()
+    assert not default_database.with_name(f"{default_database.name}-shm").exists()
+    assert not default_database.with_name(f"{default_database.name}-journal").exists()
 
 
 @pytest.mark.parametrize(

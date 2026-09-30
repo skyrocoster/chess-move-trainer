@@ -2,20 +2,26 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from chess_move_trainer.statistical_analysis.calibration import simulate_frame, calibrate
+from chess_move_trainer.statistical_analysis.calibration import calibrate, simulate_frame
+from chess_move_trainer.statistical_analysis.inference import (
+    cluster_draw,
+    correct_and_gate,
+    fit_contrast,
+)
 from chess_move_trainer.statistical_analysis.models import FitWorker, fit_once
-from chess_move_trainer.statistical_analysis.inference import cluster_draw, correct_and_gate, fit_contrast
 from chess_move_trainer.statistical_analysis.registry import Question
 
 
 def question(outcome="severe"):
-    return Question("test", "Q01", "learner", "exposure", 1, outcome, adjustment=("before_material",))
+    return Question(
+        "test", "Q01", "learner", "exposure", 1, outcome, adjustment=("before_material",)
+    )
 
 
 def test_gee_reports_marginal_risk_and_real_cluster_support():
-    frame, truth = simulate_frame(np.random.default_rng(5), "effect", games=300, effect=1.)
+    frame, truth = simulate_frame(np.random.default_rng(5), "effect", games=300, effect=1.0)
     fit = fit_once(frame, question())
-    assert fit["effect"] == pytest.approx(truth, abs=.05)
+    assert fit["effect"] == pytest.approx(truth, abs=0.05)
     assert fit["effect"] == pytest.approx(fit["adjusted_exposed"] - fit["adjusted_reference"])
     assert fit["games"] == 300
     assert fit["robust_se"] > 0
@@ -24,7 +30,7 @@ def test_gee_reports_marginal_risk_and_real_cluster_support():
 def test_two_part_loss_and_degenerate_failure():
     frame, _ = simulate_frame(np.random.default_rng(2), "zero_heavy", games=200)
     fit = fit_once(frame, question("loss"))
-    assert abs(fit["effect"]) < .03
+    assert abs(fit["effect"]) < 0.03
     assert 0 < fit["adjusted_exposed"] < 1
     frame["outcome"] = 0
     with pytest.raises(ValueError, match="constant_outcome"):
@@ -42,10 +48,12 @@ def test_whole_game_draw_assigns_new_ids_to_repeated_games():
 
 
 def test_isolated_fit_and_bootstrap_are_finite_and_fail_closed():
-    frame, _ = simulate_frame(np.random.default_rng(5), "effect", games=120, effect=1.)
+    frame, _ = simulate_frame(np.random.default_rng(5), "effect", games=120, effect=1.0)
     with FitWorker(frame, question(), fit_seconds=20, maximum_calls=1) as worker:
         assert worker.fit()["effect"] > 0
-    result = fit_contrast(frame, question(), family_size=100, replicates=8, seconds=60, fit_seconds=20)
+    result = fit_contrast(
+        frame, question(), family_size=100, replicates=8, seconds=60, fit_seconds=20
+    )
     assert result["bootstrap_success"] > 0
     assert "diagnostic_bootstrap_budget" in result["gate_failures"]
     assert "calibration_not_validated" in result["gate_failures"]
@@ -53,11 +61,17 @@ def test_isolated_fit_and_bootstrap_are_finite_and_fail_closed():
 
 
 def test_complete_family_includes_failed_and_unexecuted_slots():
-    results = {"a": {"p_value": .03, "simultaneous_interval": [.04, .2],
-                     "meaningful_effect": .02, "gate_failures": []},
-               "b": {"status": "model_failed", "gate_failures": ["model_failed"]}}
+    results = {
+        "a": {
+            "p_value": 0.03,
+            "simultaneous_interval": [0.04, 0.2],
+            "meaningful_effect": 0.02,
+            "gate_failures": [],
+        },
+        "b": {"status": "model_failed", "gate_failures": ["model_failed"]},
+    }
     corrected = correct_and_gate(results, ["a", "b", "c"], complete=False)
-    assert corrected["a"]["holm_p"] == pytest.approx(.09)
+    assert corrected["a"]["holm_p"] == pytest.approx(0.09)
     assert corrected["b"]["holm_p"] is None
     assert corrected["c"]["status"] == "run_incomplete"
     assert "family_incomplete" in corrected["a"]["gate_failures"]

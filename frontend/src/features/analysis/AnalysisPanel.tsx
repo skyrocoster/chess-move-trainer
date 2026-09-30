@@ -296,7 +296,11 @@ export function AnalysisPanel({
               </Button>
             ) : null}
             {actions.upgrade ? (
-              <Button variant="secondary" onClick={() => void onUpgrade()} disabled={actions.pending}>
+              <Button
+                variant="secondary"
+                onClick={() => void onUpgrade()}
+                disabled={actions.pending}
+              >
                 Upgrade to full analysis
               </Button>
             ) : null}

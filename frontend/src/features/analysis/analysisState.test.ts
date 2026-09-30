@@ -66,7 +66,7 @@ function Probe({
         result: state.observation?.result ?? null,
         error: state.error,
         requestError: state.requestError,
-      requestPending: state.requestPending,
+        requestPending: state.requestPending,
       }),
     ),
     createElement("button", { onClick: () => void state.requestAnalysis() }, "request"),

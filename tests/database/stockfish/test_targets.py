@@ -238,11 +238,13 @@ def test_background_selector_applies_set_based_result_and_queue_eligibility(
         ).saved
     with sqlite3.connect(database) as connection:
         connection.execute(
-            "UPDATE derived_analysis_result SET dar_configuration_version = 1 WHERE derived_position_id = ?",
+            "UPDATE derived_analysis_result SET dar_configuration_version = 1 "
+            "WHERE derived_position_id = ?",
             (stale_browser,),
         )
         connection.execute(
-            "UPDATE derived_analysis_result SET dar_configuration_version = 2 WHERE derived_position_id = ?",
+            "UPDATE derived_analysis_result SET dar_configuration_version = 2 "
+            "WHERE derived_position_id = ?",
             (stale_tool,),
         )
     terminal_result = _terminal_result(profile_for(AnalysisQuality.BROWSER))

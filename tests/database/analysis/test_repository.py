@@ -75,11 +75,7 @@ def _result(
         settings=dict(profile.settings) if settings is None else settings,
         engine_name=engine_name,
         engine_version=engine_version,
-        lines=(
-            _lines(OLD_ROOTS[: profile.multipv])
-            if lines is None
-            else lines
-        ),
+        lines=(_lines(OLD_ROOTS[: profile.multipv]) if lines is None else lines),
     )
 
 
@@ -146,7 +142,7 @@ def test_first_publication_persists_exact_parent_and_complete_lines(
         position_id,
         "tool",
         1,
-         '{"Hash":1024,"MultiPV":5,"Nodes":6400000,"Threads":6,"UCI_ShowWDL":true}',
+        '{"Hash":1024,"MultiPV":5,"Nodes":6400000,"Threads":6,"UCI_ShowWDL":true}',
         "normalized-test-engine",
         "engine-1",
         None,

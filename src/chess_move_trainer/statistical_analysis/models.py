@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
-from contextlib import AbstractContextManager
 import multiprocessing as mp
 import warnings
+from contextlib import AbstractContextManager
 
 import numpy as np
 import pandas as pd
-from scipy.special import expit
 import statsmodels.api as sm
+from scipy.special import expit
 
 from .registry import validate_question
 
@@ -24,8 +24,11 @@ def prepare_frame(records, question):
     for record in records:
         if record["population"] != question.population:
             continue
-        value = (f"{record['piece']}:{record['captured_piece']}" if question.feature == "capture_pair"
-                 else record.get(question.feature))
+        value = (
+            f"{record['piece']}:{record['captured_piece']}"
+            if question.feature == "capture_pair"
+            else record.get(question.feature)
+        )
         # Capture-pair questions compare captures with other captures, not quiet moves.
         if question.feature == "capture_pair" and not record["capture"]:
             continue
@@ -34,26 +37,44 @@ def prepare_frame(records, question):
         exposure = int(value == question.value)
         eligible[exposure] += 1
         games[exposure].add(record["game_id"])
-        if record.get(question.outcome) is None or any(record.get(k) is None for k in question.adjustment):
+        if record.get(question.outcome) is None or any(
+            record.get(k) is None for k in question.adjustment
+        ):
             continue
-        selected.append({**{k: record[k] for k in question.adjustment},
-                         "exposure": exposure, "outcome": float(record[question.outcome]),
-                         "game_id": record["game_id"], "opponent_id": record["opponent_id"],
-                         "position_id": record["position_id"], "opening": record.get("opening"),
-                         "history_sensitive": record["history_sensitive"],
-                         "ply": record["ply"]})
+        selected.append(
+            {
+                **{k: record[k] for k in question.adjustment},
+                "exposure": exposure,
+                "outcome": float(record[question.outcome]),
+                "game_id": record["game_id"],
+                "opponent_id": record["opponent_id"],
+                "position_id": record["position_id"],
+                "opening": record.get("opening"),
+                "history_sensitive": record["history_sensitive"],
+                "ply": record["ply"],
+            }
+        )
     frame = pd.DataFrame(selected)
     counts = [int((frame.exposure == i).sum()) if len(frame) else 0 for i in (0, 1)]
-    return frame, {"eligible": eligible, "model_complete": counts,
-                   "eligible_games": [len(s) for s in games],
-                   "coverage": [counts[i] / eligible[i] if eligible[i] else 0 for i in (0, 1)]}
+    return frame, {
+        "eligible": eligible,
+        "model_complete": counts,
+        "eligible_games": [len(s) for s in games],
+        "coverage": [counts[i] / eligible[i] if eligible[i] else 0 for i in (0, 1)],
+    }
 
 
 def design(frame, adjustment):
-    pieces = [pd.DataFrame({"intercept": 1.0, "exposure": frame.exposure.astype(float)}, index=frame.index)]
+    pieces = [
+        pd.DataFrame(
+            {"intercept": 1.0, "exposure": frame.exposure.astype(float)}, index=frame.index
+        )
+    ]
     for key in adjustment:
         if key in CATEGORICAL:
-            pieces.append(pd.get_dummies(frame[key].astype(str), prefix=key, drop_first=True, dtype=float))
+            pieces.append(
+                pd.get_dummies(frame[key].astype(str), prefix=key, drop_first=True, dtype=float)
+            )
         else:
             values = frame[key].astype(float)
             sd = values.std(ddof=0)
@@ -74,12 +95,27 @@ def _gee(y, x, groups, family, weights, exchangeable):
         raise ValueError("constant_outcome")
     with warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("always")
-        model = sm.GEE(y, x, groups=groups, family=family, weights=weights,
-                       cov_struct=sm.cov_struct.Exchangeable() if exchangeable else sm.cov_struct.Independence())
+        model = sm.GEE(
+            y,
+            x,
+            groups=groups,
+            family=family,
+            weights=weights,
+            cov_struct=sm.cov_struct.Exchangeable()
+            if exchangeable
+            else sm.cov_struct.Independence(),
+        )
         result = model.fit(maxiter=100, ctol=1e-7)
-    if not result.converged or not np.isfinite(result.params).all() or not np.isfinite(result.cov_params()).all():
+    if (
+        not result.converged
+        or not np.isfinite(result.params).all()
+        or not np.isfinite(result.cov_params()).all()
+    ):
         raise ValueError("model_did_not_converge")
-    if any("separation" in str(w.message).lower() for w in caught) or np.max(np.abs(result.params)) > 25:
+    if (
+        any("separation" in str(w.message).lower() for w in caught)
+        or np.max(np.abs(result.params)) > 25
+    ):
         raise ValueError("separation_or_unstable_coefficients")
     return result
 
@@ -93,7 +129,11 @@ def fit_once(frame, question, *, game_weighted=False, exchangeable=False):
     if np.any(y < 0) or np.any(y > 1):
         raise ValueError("outcome_outside_unit_interval")
     groups = frame.game_id.to_numpy()
-    weights = (1 / frame.groupby("game_id").game_id.transform("size")).to_numpy() if game_weighted else np.ones(len(frame))
+    weights = (
+        (1 / frame.groupby("game_id").game_id.transform("size")).to_numpy()
+        if game_weighted
+        else np.ones(len(frame))
+    )
     average_weights = weights / weights.sum()
     x0, x1 = x.copy(), x.copy()
     x0[:, 1], x1[:, 1] = 0, 1
@@ -102,30 +142,45 @@ def fit_once(frame, question, *, game_weighted=False, exchangeable=False):
             raise ValueError("binary_outcome_required")
         fit = _gee(y, x, groups, sm.families.Binomial(), weights, exchangeable)
         p0, p1 = expit(x0 @ fit.params), expit(x1 @ fit.params)
-        gradient = ((p1 * (1-p1) * average_weights) @ x1
-                    - (p0 * (1-p0) * average_weights) @ x0)
+        gradient = (p1 * (1 - p1) * average_weights) @ x1 - (p0 * (1 - p0) * average_weights) @ x0
         variance = float(gradient @ fit.cov_params() @ gradient)
         se = np.sqrt(max(0, variance))
     else:
         positive = y > 0
-        binary = _gee(positive.astype(float), x, groups, sm.families.Binomial(), weights, exchangeable)
+        binary = _gee(
+            positive.astype(float), x, groups, sm.families.Binomial(), weights, exchangeable
+        )
         if positive.sum() <= x.shape[1] + 2:
             raise ValueError("insufficient_positive_losses")
-        magnitude = _gee(y[positive], x[positive], groups[positive],
-                         sm.families.Gamma(sm.families.links.Log()), weights[positive], exchangeable)
+        magnitude = _gee(
+            y[positive],
+            x[positive],
+            groups[positive],
+            sm.families.Gamma(sm.families.links.Log()),
+            weights[positive],
+            exchangeable,
+        )
         b0, b1 = expit(x0 @ binary.params), expit(x1 @ binary.params)
         m0, m1 = np.exp(x0 @ magnitude.params), np.exp(x1 @ magnitude.params)
         if max(m0.max(), m1.max()) > 1:
             raise ValueError("gamma_prediction_outside_loss_bounds")
-        p0, p1 = b0*m0, b1*m1
-        gb = ((m1*b1*(1-b1)*average_weights) @ x1 - (m0*b0*(1-b0)*average_weights) @ x0)
-        gm = ((p1*average_weights) @ x1 - (p0*average_weights) @ x0)
+        p0, p1 = b0 * m0, b1 * m1
+        gb = (m1 * b1 * (1 - b1) * average_weights) @ x1 - (
+            m0 * b0 * (1 - b0) * average_weights
+        ) @ x0
+        gm = (p1 * average_weights) @ x1 - (p0 * average_weights) @ x0
         # Conservative covariance upper bound; bootstrap refits both parts jointly.
-        se = np.sqrt(max(0, float(gb @ binary.cov_params() @ gb))) + np.sqrt(max(0, float(gm @ magnitude.cov_params() @ gm)))
-    return {"effect": float(average_weights @ (p1-p0)),
-            "adjusted_reference": float(average_weights @ p0),
-            "adjusted_exposed": float(average_weights @ p1), "robust_se": float(se),
-            "parameters": x.shape[1], "games": int(frame.game_id.nunique())}
+        se = np.sqrt(max(0, float(gb @ binary.cov_params() @ gb))) + np.sqrt(
+            max(0, float(gm @ magnitude.cov_params() @ gm))
+        )
+    return {
+        "effect": float(average_weights @ (p1 - p0)),
+        "adjusted_reference": float(average_weights @ p0),
+        "adjusted_exposed": float(average_weights @ p1),
+        "robust_se": float(se),
+        "parameters": x.shape[1],
+        "games": int(frame.game_id.nunique()),
+    }
 
 
 def _worker(pipe, frame, question, maximum_calls):
@@ -150,15 +205,19 @@ def _worker(pipe, frame, question, maximum_calls):
 
 class FitWorker(AbstractContextManager):
     """Persistent isolated fitter, with a hard deadline for every requested fit."""
+
     def __init__(self, frame, question, *, fit_seconds=30, maximum_calls=10020):
         from .artifacts import Budget
+
         Budget(fit_seconds)
         if maximum_calls < 1 or maximum_calls > 20000:
             raise ValueError("maximum_calls must be 1..20000")
         self.fit_seconds = fit_seconds
         context = mp.get_context("spawn")
         self.parent, child = context.Pipe()
-        self.process = context.Process(target=_worker, args=(child, frame, question, maximum_calls), daemon=True)
+        self.process = context.Process(
+            target=_worker, args=(child, frame, question, maximum_calls), daemon=True
+        )
         self.process.start()
         child.close()
 

@@ -75,7 +75,8 @@ def test_analysis_reader_rejects_incomplete_current_full_result(tmp_path: Path) 
 
     with sqlite3.connect(database) as connection:
         connection.execute(
-            "DELETE FROM derived_analysis_line WHERE derived_analysis_result_id = ? AND dal_rank = 5",
+            "DELETE FROM derived_analysis_line "
+            "WHERE derived_analysis_result_id = ? AND dal_rank = 5",
             (position_id,),
         )
         connection.commit()
@@ -93,7 +94,8 @@ def test_analysis_reader_rejects_profile_inconsistent_current_result(tmp_path: P
 
     with sqlite3.connect(database) as connection:
         connection.execute(
-            "UPDATE derived_analysis_result SET dar_settings_json = ? WHERE derived_position_id = ?",
+            "UPDATE derived_analysis_result SET dar_settings_json = ? "
+            "WHERE derived_position_id = ?",
             (json.dumps({"Hash": 16}), position_id),
         )
         connection.commit()

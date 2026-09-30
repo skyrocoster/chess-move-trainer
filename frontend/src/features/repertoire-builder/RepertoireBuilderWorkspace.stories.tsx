@@ -71,7 +71,8 @@ function SelectedPositionAnalysisLifecycleStory() {
         {events
           .filter(({ operation }) => operation === "request")
           .map(({ quality }) => quality ?? "none")
-          .join(", ") || "none"}; states: {summary}
+          .join(", ") || "none"}
+        ; states: {summary}
       </output>
     </>
   );
@@ -201,7 +202,9 @@ export const SelectedPositionAnalysisLifecycle: Story = {
       analysisQueries.queryByRole("button", { name: "Retry analysis" }),
     ).not.toBeInTheDocument();
 
-    await userEvent.click(analysisQueries.getByRole("button", { name: "Upgrade to full analysis" }));
+    await userEvent.click(
+      analysisQueries.getByRole("button", { name: "Upgrade to full analysis" }),
+    );
     await expect(status).toHaveTextContent(/Analysis (queued|running)/);
     await expect(analysisQueries.getByRole("button", { name: "1. d4" })).toBeVisible();
     await expect(proof).toHaveTextContent("request quality: browser, tool");

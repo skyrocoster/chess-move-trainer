@@ -28,7 +28,7 @@ async function openStory(
 ) {
   await page.setViewportSize({ width, height });
   await page.goto(`${STORYBOOK_URL}/iframe.html?id=${storyId}&viewMode=story`);
-  await expect(page.locator(STORYBOOK_ROOT)).toBeVisible();
+  await expect(page.locator(STORYBOOK_ROOT)).toBeVisible({ timeout: 30_000 });
   await expect(
     page.getByRole("heading", { level: 2, name: "Analysis" }),
   ).toBeVisible();
@@ -112,7 +112,9 @@ async function expectBestLineGeometry(page: Page) {
 }
 
 test.describe("Analysis Panel Storybook surface", () => {
-  test.describe.configure({ timeout: 60_000 });
+  // The shared Storybook dev server transforms each story graph on demand, so
+  // the first states of this twelve-state axe sweep can be slow while it warms.
+  test.describe.configure({ timeout: 120_000 });
 
   test("shows every controlled state with its semantic region and axe proof", async ({
     page,

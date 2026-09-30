@@ -84,9 +84,7 @@ def _page_containers(socket_path: str) -> object:
             "/containers/json",
             params={
                 "all": "1",
-                "filters": json.dumps(
-                    {"label": [f"com.docker.compose.project={COMPOSE_PROJECT}"]}
-                ),
+                "filters": json.dumps({"label": [f"com.docker.compose.project={COMPOSE_PROJECT}"]}),
             },
         )
         response.raise_for_status()

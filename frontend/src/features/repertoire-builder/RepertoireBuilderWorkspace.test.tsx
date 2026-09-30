@@ -64,7 +64,8 @@ function cleanAnalysisClient(): AnalysisClient {
   const observation = (fen: string): AnalysisObservation => ({
     fen,
     state: requestedQuality === null ? "not_requested" : "ready",
-    result: requestedQuality === null ? null : requestedQuality === "tool" ? fullResult : quickResult,
+    result:
+      requestedQuality === null ? null : requestedQuality === "tool" ? fullResult : quickResult,
   });
   const success = (fen: string): AnalysisOperationResult<AnalysisObservation> => ({
     status: "success",
@@ -73,10 +74,12 @@ function cleanAnalysisClient(): AnalysisClient {
 
   return {
     observe: vi.fn(async (fen: string) => success(fen)),
-    request: vi.fn(async (fen: string, _signal?: AbortSignal, quality: AnalysisQuality = "browser") => {
-      requestedQuality = quality;
-      return success(fen);
-    }),
+    request: vi.fn(
+      async (fen: string, _signal?: AbortSignal, quality: AnalysisQuality = "browser") => {
+        requestedQuality = quality;
+        return success(fen);
+      },
+    ),
   };
 }
 

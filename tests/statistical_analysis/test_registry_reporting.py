@@ -3,14 +3,18 @@ from pathlib import Path
 
 import pytest
 
-from chess_move_trainer.statistical_analysis.registry import (
-    Question, catalogue_inventory, freeze_registry, questions, validate_question,
-)
-from chess_move_trainer.statistical_analysis.snapshot import create_snapshot
-from chess_move_trainer.statistical_analysis.extraction import extract
 from chess_move_trainer.statistical_analysis.audit import build_audit
+from chess_move_trainer.statistical_analysis.extraction import extract
+from chess_move_trainer.statistical_analysis.registry import (
+    Question,
+    catalogue_inventory,
+    freeze_registry,
+    questions,
+    validate_question,
+)
 from chess_move_trainer.statistical_analysis.reporting import report
 from chess_move_trainer.statistical_analysis.runner import run_questions
+from chess_move_trainer.statistical_analysis.snapshot import create_snapshot
 
 from .conftest import add_game
 
@@ -20,7 +24,9 @@ CATALOGUE = Path("docs/grilling-docs/chess-analysis-idea-catalogue-2026-09-21.md
 def test_inventory_preserves_all_bullets_and_stable_ids():
     inventory = catalogue_inventory(CATALOGUE)
     text = CATALOGUE.read_text(encoding="utf-8")
-    section = text.split("## Candidate learner-move analyses", 1)[1].split("## Reliability and interpretation hazards", 1)[0]
+    section = text.split("## Candidate learner-move analyses", 1)[1].split(
+        "## Reliability and interpretation hazards", 1
+    )[0]
     assert len(inventory) == sum(line.startswith("- ") for line in section.splitlines())
     assert len(inventory) > 200
     assert len({row["id"] for row in inventory}) == len(inventory)
@@ -46,7 +52,9 @@ def test_complete_small_review_package(source_database, tmp_path):
     extract(directory)
     audit = build_audit(directory)
     assert audit["total_games"] == 2 and audit["excluded_games"] == 0
-    learner_pieces = [r for r in audit["inventory"] if r["feature"] == "piece" and r["population"] == "learner"]
+    learner_pieces = [
+        r for r in audit["inventory"] if r["feature"] == "piece" and r["population"] == "learner"
+    ]
     assert sum(r["count"] for r in learner_pieces) == 6
     assert sum(r["share_all_moves"] for r in learner_pieces) == pytest.approx(1)
     with pytest.raises(ValueError, match="calibration"):

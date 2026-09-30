@@ -26,7 +26,7 @@ async function openStory(page: Page, storyId: string) {
   await page.goto(`${STORYBOOK_URL}/iframe.html?id=${storyId}&viewMode=story`);
   await expect(
     page.locator('[class*="adapter"], [class*="unavailable"]').first(),
-  ).toBeVisible();
+  ).toBeVisible({ timeout: 30_000 });
 }
 
 async function expectDescriptionAssociation(page: Page, graphic: Locator) {
@@ -166,6 +166,10 @@ async function checkA11y(page: Page) {
 }
 
 test.describe("Board Adapter Storybook surface", () => {
+  // Each test opens several stories and runs their axe and forced-colors
+  // checks; the shared Storybook dev server transforms story graphs on demand.
+  test.describe.configure({ timeout: 120_000 });
+
   test("shows the starting, rich, and black stories with static behavior, axe, and forced colors", async ({
     page,
   }) => {

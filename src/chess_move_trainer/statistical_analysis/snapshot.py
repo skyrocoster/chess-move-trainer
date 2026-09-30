@@ -18,26 +18,40 @@ from .protocol import DEFAULT_PROTOCOL
 
 def code_provenance():
     root = Path(__file__).resolve().parents[3]
+
     def git(*args):
         try:
-            return subprocess.run(["git", *args], cwd=root, capture_output=True,
-                                  check=True, timeout=10).stdout.decode().strip()
+            return (
+                subprocess.run(
+                    ["git", *args], cwd=root, capture_output=True, check=True, timeout=10
+                )
+                .stdout.decode()
+                .strip()
+            )
         except (OSError, subprocess.SubprocessError):
             return "unavailable"
-    sources = {str(p.relative_to(root)): file_digest(p)
-               for p in sorted((root / "src/chess_move_trainer").rglob("*.py"))}
+
+    sources = {
+        str(p.relative_to(root)): file_digest(p)
+        for p in sorted((root / "src/chess_move_trainer").rglob("*.py"))
+    }
     versions = {}
     for name in ("chess", "numpy", "scipy", "statsmodels", "pandas", "SQLAlchemy"):
         try:
             versions[name] = importlib.metadata.version(name)
         except importlib.metadata.PackageNotFoundError:
             versions[name] = None
-    return {"revision": git("rev-parse", "HEAD"), "dirty_diff_sha256": digest(git("diff", "HEAD")),
-            "source_sha256": digest(sources), "dependencies": versions}
+    return {
+        "revision": git("rev-parse", "HEAD"),
+        "dirty_diff_sha256": digest(git("diff", "HEAD")),
+        "source_sha256": digest(sources),
+        "dependencies": versions,
+    }
 
 
-def create_snapshot(source: Path, directory: Path, *, seconds: float = 120,
-                    source_label: str | None = None):
+def create_snapshot(
+    source: Path, directory: Path, *, seconds: float = 120, source_label: str | None = None
+):
     budget = Budget(seconds)
     source = source.resolve(strict=True)
     directory = directory.resolve()
@@ -55,8 +69,7 @@ def create_snapshot(source: Path, directory: Path, *, seconds: float = 120,
             # restarting the incremental backup. Released immediately after copying.
             origin.execute("BEGIN")
             origin.execute("SELECT COUNT(*) FROM sqlite_master").fetchone()
-            origin.backup(destination, pages=256, sleep=0.01,
-                          progress=lambda *args: budget.check())
+            origin.backup(destination, pages=256, sleep=0.01, progress=lambda *args: budget.check())
             origin.rollback()
             # A standalone rollback-journal snapshot does not need mutable WAL sidecars.
             destination.execute("PRAGMA journal_mode=DELETE")
@@ -71,10 +84,13 @@ def create_snapshot(source: Path, directory: Path, *, seconds: float = 120,
         target = directory / "snapshot.db"
         os.replace(partial, target)
         manifest = {
-            "status": "complete", "source": source_label or str(source),
+            "status": "complete",
+            "source": source_label or str(source),
             "created_at": datetime.now(timezone.utc).isoformat(),
-            "snapshot_sha256": file_digest(target, budget), "schema_version": 2,
-            "protocol": DEFAULT_PROTOCOL.to_dict(), "protocol_sha256": DEFAULT_PROTOCOL.identity,
+            "snapshot_sha256": file_digest(target, budget),
+            "schema_version": 2,
+            "protocol": DEFAULT_PROTOCOL.to_dict(),
+            "protocol_sha256": DEFAULT_PROTOCOL.identity,
             "code": code_provenance(),
         }
         write_json(directory / "manifest.json", manifest)

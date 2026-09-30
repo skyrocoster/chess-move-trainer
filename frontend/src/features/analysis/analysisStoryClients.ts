@@ -132,19 +132,19 @@ export function storySelectedPositionAnalysisClient(
       _signal?: AbortSignal,
       quality: AnalysisQuality = "browser",
     ): Promise<AnalysisSuccess> => {
-    primaryFen ??= fen;
-    requestStarted = true;
-    requestedQuality = quality;
-    pollCount = 0;
-    const result = cleanResult(initialMoves, 0, "browser");
-    emitLifecycleEvent(onEvent, {
-      operation: "request",
-      fen,
-      state: "queued",
-      hasResult: true,
-      quality,
-    });
-    return cleanObservation(fen, "queued", result);
+      primaryFen ??= fen;
+      requestStarted = true;
+      requestedQuality = quality;
+      pollCount = 0;
+      const result = cleanResult(initialMoves, 0, "browser");
+      emitLifecycleEvent(onEvent, {
+        operation: "request",
+        fen,
+        state: "queued",
+        hasResult: true,
+        quality,
+      });
+      return cleanObservation(fen, "queued", result);
     },
   );
 

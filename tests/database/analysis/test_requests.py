@@ -22,7 +22,7 @@ from chess_move_trainer.database.analysis import (
     validate_analysis_result,
 )
 from chess_move_trainer.database.positions import PositionRepository
-from chess_move_trainer.database.stockfish import BROWSER_PROFILE, QueueService, TOOL_PROFILE
+from chess_move_trainer.database.stockfish import BROWSER_PROFILE, TOOL_PROFILE, QueueService
 
 STARTING_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 STARTING_WITH_COUNTERS = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 37 19"

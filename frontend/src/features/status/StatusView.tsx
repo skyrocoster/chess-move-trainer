@@ -24,9 +24,7 @@ export interface StatusDetail {
 }
 
 export type StatusViewState =
-  | { kind: "loading" }
-  | { kind: "success"; detail?: StatusDetail }
-  | { kind: "error" };
+  { kind: "loading" } | { kind: "success"; detail?: StatusDetail } | { kind: "error" };
 
 interface StatusViewProps {
   state: StatusViewState;
@@ -46,7 +44,8 @@ function workerFeedback(worker: WorkerStatus): {
   severity: "success" | "information";
   message: string;
 } {
-  const label = worker.service === "worker" ? "Analysis worker" : `Accelerated worker ${worker.index}`;
+  const label =
+    worker.service === "worker" ? "Analysis worker" : `Accelerated worker ${worker.index}`;
   return worker.running
     ? { severity: "success", message: `${label} running.` }
     : { severity: "information", message: `${label} stopped.` };
@@ -139,9 +138,7 @@ export function StatusView({ state }: StatusViewProps) {
         System status
       </h1>
       <InlineFeedback {...feedback} />
-      {state.kind === "success" && state.detail ? (
-        <StatusDetailView detail={state.detail} />
-      ) : null}
+      {state.kind === "success" && state.detail ? <StatusDetailView detail={state.detail} /> : null}
     </section>
   );
 }

@@ -90,13 +90,13 @@ from .queue import (
     QueueValidationError,
 )
 from .targets import (
-    BackgroundTargetSelector,
     DEFAULT_TARGET_PAGE_SIZE,
     INITIAL_COMMON_TARGET_COUNT,
     INITIAL_TECHNICAL_CATEGORIES,
     INITIAL_TECHNICAL_POSITIONS,
     TARGET_MAX_PLY,
     TARGET_MIN_PLY,
+    BackgroundTargetSelector,
     BulkTarget,
     BulkTargetSelector,
     InitialAnalysisTargetSelector,

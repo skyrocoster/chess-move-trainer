@@ -216,7 +216,7 @@ describe("LineLibrary", () => {
     renderLibrary({ data: booleanFilterData, onFiltersChange });
 
     await user.click(screen.getByRole("combobox", { name: "Scope" }));
-    await user.click(screen.getByRole("option", { name: "Recent" }));
+    await user.click(await screen.findByRole("option", { name: "Recent" }));
 
     const required = screen.getByRole("checkbox", { name: "Required" });
     await user.click(screen.getByText("Required"));

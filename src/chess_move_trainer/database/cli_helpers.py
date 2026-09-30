@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import math
 from collections.abc import Callable
+from pathlib import Path
 
 import typer
 
@@ -68,9 +69,7 @@ def _run_lifecycle(
 ) -> None:
     """Run one lifecycle service and render only its ordinary result data."""
 
-    from pathlib import Path as _Path
-
-    requested = _Path(target)
+    requested = Path(target)
     try:
         result = service()
     except KeyboardInterrupt:
@@ -78,7 +77,7 @@ def _run_lifecycle(
     except Exception as error:
         _operational_error(error, 1)
 
-    if _Path(result.database_path) != requested:
+    if Path(result.database_path) != requested:
         _operational_error(
             RuntimeError(f"lifecycle service returned a destination other than {requested}"),
             1,

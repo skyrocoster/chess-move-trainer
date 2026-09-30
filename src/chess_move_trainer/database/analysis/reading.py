@@ -13,8 +13,8 @@ from ..connection import DEFAULT_LOCK_TIMEOUT_SECONDS, _open_connection
 from ..schema import SchemaIncompatibleError, _assert_compatible_schema
 from .models import (
     AnalysisLine,
-    AnalysisResultInput,
     AnalysisQuality,
+    AnalysisResultInput,
     AnalysisScoreKind,
     AnalysisTerminalKind,
 )

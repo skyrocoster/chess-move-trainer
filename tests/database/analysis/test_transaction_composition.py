@@ -13,6 +13,7 @@ from chess_move_trainer.database.analysis import (
 )
 from chess_move_trainer.database.analysis import repository as repository_module
 from chess_move_trainer.database.positions import PositionRepository
+from chess_move_trainer.database.stockfish import TOOL_PROFILE
 
 STARTING_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 ROOTS = (
@@ -28,7 +29,7 @@ def _result() -> object:
     return validate_analysis_result(
         quality=AnalysisQuality.TOOL,
         configuration_version=1,
-        settings={"Hash": 16},
+        settings=dict(TOOL_PROFILE.settings),
         engine_name="composition-test-engine",
         engine_version="engine-1",
         lines=tuple(

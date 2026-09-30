@@ -21,7 +21,6 @@ from ..analysis.repository import (
 )
 from ..connection import DEFAULT_LOCK_TIMEOUT_SECONDS
 from .queue_helpers import (
-    _validate_capacity,
     _begin_immediate,
     _checked_connection,
     _claim_identity,
@@ -34,11 +33,12 @@ from .queue_helpers import (
     _rollback_if_active,
     _seed_and_claim_background_in_transaction,
     _translate_queue_error,
+    _validate_capacity,
     _validate_position_id,
 )
 from .queue_models import (
-    BackgroundSeedOutcome,
     STALE_CLAIM_AFTER,
+    BackgroundSeedOutcome,
     QueueClaim,
     QueueCompletionOutcome,
     QueueError,
@@ -438,9 +438,7 @@ class QueueService:
         _validate_position_id(position_id)
         _validate_capacity(capacity)
         current_time = _parse_timestamp(now)
-        requested_at_utc = _format_timestamp(
-            current_time if requested_at is None else requested_at
-        )
+        requested_at_utc = _format_timestamp(current_time if requested_at is None else requested_at)
         claimed_at_utc = _format_timestamp(current_time)
         with self._connection() as connection:
             transaction = _begin_immediate(connection)

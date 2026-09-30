@@ -22,9 +22,14 @@ vi.mock("react-chessboard", () => ({
       pieces: Record<string, (props?: { square?: string }) => React.JSX.Element>;
       onPieceDrop: (args: { sourceSquare: string; targetSquare: string | null }) => boolean;
       squareStyles?: Record<string, React.CSSProperties>;
+      allowDrawingArrows?: boolean;
     };
   }) => (
-    <div data-testid="mock-chessboard" data-position={options.position}>
+    <div
+      data-testid="mock-chessboard"
+      data-position={options.position}
+      data-allows-drawing-arrows={options.allowDrawingArrows}
+    >
       {[
         ["e2", "e4", "wP"],
         ["e7", "e5", "bP"],
@@ -131,6 +136,15 @@ function renderAdapter(originFen = STARTING_FEN) {
 }
 
 describe("InteractiveBoardAdapter", () => {
+  it("enables react-chessboard's built-in arrow drawing", () => {
+    renderAdapter();
+
+    expect(screen.getByTestId("mock-chessboard")).toHaveAttribute(
+      "data-allows-drawing-arrows",
+      "true",
+    );
+  });
+
   it("names operable pieces without changing representative move behavior", () => {
     renderAdapter();
 

@@ -178,7 +178,7 @@ class StockfishEngine:
                     lines=lines,
                 )
                 try:
-                    validate_analysis_position(position, result)
+                    validate_analysis_position(position, result, profile=selected_profile)
                 except AnalysisValidationError as error:
                     raise StockfishProtocolError(
                         f"Stockfish returned an incomplete or illegal principal variation: {error}"

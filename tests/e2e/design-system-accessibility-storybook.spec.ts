@@ -8,6 +8,10 @@ import { retryAxeWhenBusy } from "./axe-busy-retry";
 // accessibility spec precedent.
 test.use({ baseURL: "http://localhost:6006" });
 
+// Each test runs axe against the full review fixture; the shared Storybook dev
+// server transforms story graphs on demand.
+test.describe.configure({ timeout: 60_000 });
+
 // Story id for the Reference/Reviews/Responsive Accessibility fixture:
 // sanitize(title) + "--" + sanitize(startCase(exportName)).
 const STORY_ID =
@@ -26,7 +30,7 @@ async function assertFixtureStates(
   // constrained review container plus the focus specimens.
   await expect(
     page.getByRole("heading", { name: "Responsive and accessibility review" }),
-  ).toBeVisible();
+  ).toBeVisible({ timeout: 30_000 });
   await expect(page.getByTestId("core-information")).toBeVisible();
   await expect(page.getByTestId("core-warning")).toBeVisible();
   await expect(page.getByTestId("core-error")).toBeVisible();

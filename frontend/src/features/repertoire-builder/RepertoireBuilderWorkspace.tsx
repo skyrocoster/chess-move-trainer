@@ -449,10 +449,10 @@ export default function RepertoireBuilderWorkspace({
             >
               <RepertoireAnalysisTabs
                 analysis={{
-                   display: analysisDisplay,
-                   onAnalyze: analysisState.requestAnalysis,
-                   onUpgrade: analysisState.requestFullAnalysis,
-                   onRetryObservation: analysisState.retryObservation,
+                  display: analysisDisplay,
+                  onAnalyze: analysisState.requestAnalysis,
+                  onUpgrade: analysisState.requestFullAnalysis,
+                  onRetryObservation: analysisState.retryObservation,
                   onCandidateMove: handleCandidateMove,
                 }}
                 moveResponseDistribution={{

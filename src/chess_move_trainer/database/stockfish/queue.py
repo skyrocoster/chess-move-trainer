@@ -8,9 +8,9 @@ from __future__ import annotations
 
 from .queue_helpers import _enqueue_in_transaction
 from .queue_models import (
+    STALE_CLAIM_AFTER,
     BackgroundSeedOutcome,
     BackgroundSeedReason,
-    STALE_CLAIM_AFTER,
     QueueClaim,
     QueueCompletionOutcome,
     QueueError,

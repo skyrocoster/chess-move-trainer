@@ -43,6 +43,7 @@ from backend.app.dependencies import REBUILT_DATABASE_PATH_ENV
 from backend.app.main import app
 from chess_move_trainer.database import create_schema
 from chess_move_trainer.database.positions import PositionRepository
+from chess_move_trainer.database.stockfish.configuration import STOCKFISH_VERSION, profile_for
 
 ROOT = Path(__file__).resolve().parents[3]
 
@@ -221,14 +222,20 @@ def create_benchmark_database(path: Path) -> Path:
                 (route_b_id, 2, "e7e5"),
             ),
         )
+        tool_profile = profile_for("tool")
         result_id = connection.execute(
             """
             INSERT INTO derived_analysis_result (
                 derived_position_id, dar_quality, dar_configuration_version,
                 dar_settings_json, dar_engine_name, dar_engine_version, dar_terminal_kind
-            ) VALUES (?, 'tool', 7, ?, 'Stockfish', '18', NULL)
+            ) VALUES (?, 'tool', ?, ?, 'Stockfish', ?, NULL)
             """,
-            (insight_position_id, json.dumps({"Hash": 16})),
+            (
+                insight_position_id,
+                tool_profile.configuration_version,
+                json.dumps(dict(tool_profile.settings)),
+                STOCKFISH_VERSION,
+            ),
         ).lastrowid
         connection.executemany(
             """

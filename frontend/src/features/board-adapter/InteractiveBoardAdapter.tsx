@@ -163,6 +163,7 @@ export function InteractiveBoardAdapter({
   );
   const options = {
     allowDragging: interactionAllowed || undefined,
+    allowDrawingArrows: true,
     animationDurationInMs: 0,
     boardOrientation: orientation,
     id: "interactive-analysis-board",

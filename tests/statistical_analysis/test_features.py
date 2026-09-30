@@ -3,9 +3,13 @@ from types import SimpleNamespace
 import chess
 import pytest
 
-from chess_move_trainer.statistical_analysis.features import ReplayState, move_features, pawn_structure
-from chess_move_trainer.statistical_analysis.scoring import outcomes, expected_units
+from chess_move_trainer.statistical_analysis.features import (
+    ReplayState,
+    move_features,
+    pawn_structure,
+)
 from chess_move_trainer.statistical_analysis.readers import time_control, timestamp
+from chess_move_trainer.statistical_analysis.scoring import expected_units, outcomes
 
 
 def result(wins, draws=0):
@@ -24,12 +28,15 @@ def test_exact_score_boundary_and_black_sign():
     assert value["signed_loss_units"] == -500 and value["loss_units"] == 0
 
 
-@pytest.mark.parametrize("fen,color,expected", [
-    ("7k/6Q1/6K1/8/8/8/8/8 b - - 0 1", chess.WHITE, 2000),
-    ("7k/6Q1/6K1/8/8/8/8/8 b - - 0 1", chess.BLACK, 0),
-    ("7k/5Q2/6K1/8/8/8/8/8 b - - 0 1", chess.WHITE, 1000),
-    ("7k/8/6K1/8/8/8/8/8 w - - 0 1", chess.WHITE, 1000),
-])
+@pytest.mark.parametrize(
+    "fen,color,expected",
+    [
+        ("7k/6Q1/6K1/8/8/8/8/8 b - - 0 1", chess.WHITE, 2000),
+        ("7k/6Q1/6K1/8/8/8/8/8 b - - 0 1", chess.BLACK, 0),
+        ("7k/5Q2/6K1/8/8/8/8/8 b - - 0 1", chess.WHITE, 1000),
+        ("7k/8/6K1/8/8/8/8/8 w - - 0 1", chess.WHITE, 1000),
+    ],
+)
 def test_terminal_without_engine(fen, color, expected):
     assert expected_units(chess.Board(fen), color, None)[0] == expected
 
@@ -68,8 +75,12 @@ def test_promotions_are_pawn_moves(promote):
 def test_pawn_structures_and_pinned_defender_are_literal():
     board = chess.Board("4k3/4n3/8/2P5/3P4/8/8/4R2K w - - 0 1")
     assert board.is_pinned(chess.BLACK, chess.E7)
-    record = move_features(board, chess.Move.from_uci("c5c6"), 25,
-                           ReplayState(identities={s: str(s) for s in board.piece_map()}))
+    record = move_features(
+        board,
+        chess.Move.from_uci("c5c6"),
+        25,
+        ReplayState(identities={s: str(s) for s in board.piece_map()}),
+    )
     assert record["destination_attacked_before"]
     assert pawn_structure(board, chess.WHITE)["passed_pawns"] == 2
 

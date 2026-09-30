@@ -1,13 +1,16 @@
 """Batch adapters reusing production validation, canonicalization, and date rules."""
 
-from collections import defaultdict, OrderedDict
-from datetime import datetime, timezone
 import re
+from collections import OrderedDict, defaultdict
+from datetime import datetime, timezone
 
 from chess_move_trainer.database.analysis.reading import AnalysisReadError, _materialize_result
-from chess_move_trainer.database.openings.recognition import _materialize_routes, _endpoint_map
+from chess_move_trainer.database.openings.recognition import _endpoint_map, _materialize_routes
 from chess_move_trainer.database.preferred_moves.ranges import (
-    Preference, normalize_periods, period_from_literals, resolve_date,
+    Preference,
+    normalize_periods,
+    period_from_literals,
+    resolve_date,
 )
 
 
@@ -21,22 +24,28 @@ class AnalysisCache:
         missing = sorted(set(position_ids) - self.cache.keys())
         loaded = {}
         for start in range(0, len(missing), 400):
-            ids = missing[start:start + 400]
+            ids = missing[start : start + 400]
             marks = ",".join("?" for _ in ids)
-            parents = self.connection.execute(f"""
+            parents = self.connection.execute(
+                f"""
                 SELECT derived_position_id, dar_quality, dar_configuration_version,
                   dar_settings_json, dar_engine_name, dar_engine_version, dar_terminal_kind,
                   dp_placement, dp_side_to_move, dp_castling_rights, dp_legal_en_passant
                 FROM derived_analysis_result JOIN derived_position
                   ON derived_position_id=dp_position_id WHERE derived_position_id IN ({marks})
-            """, ids).fetchall()
+            """,
+                ids,
+            ).fetchall()
             lines = defaultdict(list)
-            for row in self.connection.execute(f"""
+            for row in self.connection.execute(
+                f"""
                 SELECT derived_analysis_result_id, dal_rank, dal_score_kind, dal_score_value,
                   dal_wdl_wins, dal_wdl_draws, dal_wdl_losses, dal_pv_uci_json, dal_depth
                 FROM derived_analysis_line WHERE derived_analysis_result_id IN ({marks})
                 ORDER BY derived_analysis_result_id, dal_rank
-            """, ids):
+            """,
+                ids,
+            ):
                 lines[row[0]].append(tuple(row)[1:])
             loaded.update({i: (None, None) for i in ids})
             for parent in parents:
@@ -104,6 +113,9 @@ def time_control(value):
         return {"kind": "daily", "base": None, "increment": None}
     if re.fullmatch(r"[1-9]\d*(\+\d+)?", value):
         parts = value.split("+")
-        return {"kind": "increment" if len(parts) == 2 else "no_increment",
-                "base": int(parts[0]), "increment": int(parts[1]) if len(parts) == 2 else 0}
+        return {
+            "kind": "increment" if len(parts) == 2 else "no_increment",
+            "base": int(parts[0]),
+            "increment": int(parts[1]) if len(parts) == 2 else 0,
+        }
     return {"kind": "unsupported", "base": None, "increment": None}

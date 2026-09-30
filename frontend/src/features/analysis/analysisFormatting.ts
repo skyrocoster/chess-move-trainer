@@ -5,11 +5,7 @@ import type {
   AnalysisPanelWdl,
   AnalysisPanelWdlValue,
 } from "./AnalysisPanel";
-import type {
-  AnalysisLine,
-  AnalysisObservation,
-  AnalysisResult,
-} from "./analysisApi";
+import type { AnalysisLine, AnalysisObservation, AnalysisResult } from "./analysisApi";
 import type { AnalysisState } from "./analysisState";
 import type { Fen } from "../chess/chessPrimitives";
 

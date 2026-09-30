@@ -97,9 +97,7 @@ def test_tool_request_queues_but_keeps_old_complete_result(
 ) -> None:
     client, database = api_context
     with sqlite3.connect(database) as connection:
-        connection.execute(
-            "UPDATE derived_analysis_result SET dar_engine_version = '18'"
-        )
+        connection.execute("UPDATE derived_analysis_result SET dar_engine_version = '18'")
 
     response = _post(client, {"fen": TARGET_FEN, "quality": "tool"})
 

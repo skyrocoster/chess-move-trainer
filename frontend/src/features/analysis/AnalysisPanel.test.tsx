@@ -258,7 +258,9 @@ describe("AnalysisPanel", () => {
       }),
     ).toBeVisible();
     expect(screen.getByText("Line unavailable")).toBeVisible();
-    expect(screen.queryByRole("button", { name: "Upgrade to full analysis" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Upgrade to full analysis" }),
+    ).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Update analysis" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Retry analysis" })).not.toBeInTheDocument();
   });

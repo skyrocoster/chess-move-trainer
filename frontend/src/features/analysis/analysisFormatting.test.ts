@@ -22,7 +22,10 @@ function line(overrides: Partial<AnalysisLine> = {}): AnalysisLine {
   return { ...BASE_LINE, ...overrides };
 }
 
-function result(lines: AnalysisLine[], quality: AnalysisResult["quality"] = "tool"): AnalysisResult {
+function result(
+  lines: AnalysisLine[],
+  quality: AnalysisResult["quality"] = "tool",
+): AnalysisResult {
   return { quality, lines, terminal_kind: null };
 }
 

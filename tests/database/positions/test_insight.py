@@ -21,6 +21,7 @@ from chess_move_trainer.database.preferred_moves import (
     PreferredMoveRemovalRequest,
     delete_preferred_move,
 )
+from chess_move_trainer.database.stockfish import STOCKFISH_VERSION, TOOL_PROFILE
 
 STARTING_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 TARGET_FEN = "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2"
@@ -103,18 +104,29 @@ def _install_analysis(connection: sqlite3.Connection, position_id: int) -> None:
         INSERT INTO derived_analysis_result (
             derived_position_id, dar_quality, dar_configuration_version,
             dar_settings_json, dar_engine_name, dar_engine_version, dar_terminal_kind
-        ) VALUES (?, 'tool', 7, ?, 'Stockfish', '18', NULL)
+        ) VALUES (?, 'tool', ?, ?, 'Stockfish', ?, NULL)
         """,
-        (position_id, json.dumps({"Hash": 16})),
+        (
+            position_id,
+            TOOL_PROFILE.configuration_version,
+            json.dumps(dict(TOOL_PROFILE.settings)),
+            STOCKFISH_VERSION,
+        ),
     )
-    connection.execute(
+    connection.executemany(
         """
         INSERT INTO derived_analysis_line (
             derived_analysis_result_id, dal_rank, dal_score_kind, dal_score_value,
             dal_wdl_wins, dal_wdl_draws, dal_wdl_losses, dal_pv_uci_json, dal_depth
-        ) VALUES (?, 1, 'cp', 34, 450, 300, 250, '["a2a3"]', 22)
+        ) VALUES (?, ?, 'cp', ?, 450, 300, 250, ?, 22)
         """,
-        (position_id,),
+        (
+            (position_id, 1, 34, '["a2a3"]'),
+            (position_id, 2, 33, '["b2b3"]'),
+            (position_id, 3, 32, '["c2c3"]'),
+            (position_id, 4, 31, '["d2d3"]'),
+            (position_id, 5, 30, '["g2g3"]'),
+        ),
     )
 
 
@@ -192,8 +204,8 @@ def test_existing_position_composes_canonical_opening_counts_analysis_and_prefer
     assert insight.analysis.state == "ready"
     assert insight.analysis.result is not None
     assert insight.analysis.result.quality.value == "tool"
-    assert insight.analysis.result.configuration_version == 7
-    assert insight.analysis.result.settings == {"Hash": 16}
+    assert insight.analysis.result.configuration_version == TOOL_PROFILE.configuration_version
+    assert insight.analysis.result.settings == dict(TOOL_PROFILE.settings)
     assert insight.analysis.result.lines[0].pv_uci == ("a2a3",)
     assert insight.preference.kind == "move"
     assert insight.preference.uci == "a2a3"

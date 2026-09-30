@@ -4,6 +4,10 @@ import { retryAxeWhenBusy } from "./axe-busy-retry";
 
 const STORYBOOK_ORIGIN = "http://127.0.0.1:6006";
 const STORYBOOK_ROOT_SELECTOR = "#storybook-root";
+
+// Tests open several App Shell stories and run axe scans; the shared Storybook
+// dev server transforms story graphs on demand.
+test.describe.configure({ timeout: 60_000 });
 const STORY_PREFIX = "production-application-shell-app-shell";
 const STORY_IDS = {
   wideHealthy: `${STORY_PREFIX}--wide-healthy`,
@@ -28,7 +32,7 @@ async function openStory(
 ) {
   await page.setViewportSize({ width, height });
   await page.goto(storyUrl(storyId));
-  await expect(page.locator(STORYBOOK_ROOT_SELECTOR)).toBeVisible();
+  await expect(page.locator(STORYBOOK_ROOT_SELECTOR)).toBeVisible({ timeout: 30_000 });
 }
 
 async function openDrawer(page: Page) {

@@ -6,7 +6,7 @@ color: "#06B6D4"
 #variant: medium
 #model: opencode/mimo-v2.5-free
 #variant: max
-model: opencode-go/glm-5.3-flash
+model: opencode-go/deepseek-v4.1-flash
 variant: low
 permission:
   edit: deny

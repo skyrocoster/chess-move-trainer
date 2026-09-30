@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from contextlib import contextmanager
+from contextlib import ExitStack, contextmanager
 from pathlib import Path
 from typing import Iterator, TypeAlias
 
@@ -76,7 +76,17 @@ class PositionRepository:
     def transaction(self) -> Iterator[_PositionUnitOfWork]:
         """Yield an opaque all-or-nothing unit of work for one existing v1 database."""
 
-        with _open_existing_connection(self._database_path, self._lock_timeout) as connection:
+        with ExitStack() as stack:
+            try:
+                connection = stack.enter_context(
+                    _open_existing_connection(self._database_path, self._lock_timeout)
+                )
+            except (FileNotFoundError, SchemaIncompatibleError, ValueError):
+                raise
+            except Exception as error:
+                raise PositionStorageError(
+                    "database is not a readable compatible schema v1 database"
+                ) from error
             try:
                 _assert_compatible_schema(connection, self._lock_timeout)
             except (FileNotFoundError, SchemaIncompatibleError, ValueError):

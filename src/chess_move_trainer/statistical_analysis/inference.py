@@ -32,7 +32,10 @@ def support_failures(frame, counts):
     for value in (0, 1):
         if frame.loc[frame.exposure == value, "game_id"].nunique() < P.minimum_group_games:
             failures.append(f"underpowered_group_{value}")
-    if min(counts["coverage"]) < P.minimum_coverage or abs(counts["coverage"][0] - counts["coverage"][1]) > P.maximum_coverage_gap:
+    if (
+        min(counts["coverage"]) < P.minimum_coverage
+        or abs(counts["coverage"][0] - counts["coverage"][1]) > P.maximum_coverage_gap
+    ):
         failures.append("coverage_blocked")
     for event in (False, True):
         if frame.loc[(frame.outcome > 0) == event, "game_id"].nunique() < P.minimum_event_games:
@@ -40,14 +43,24 @@ def support_failures(frame, counts):
     return sorted(set(failures))
 
 
-def fit_contrast(frame, question, family_size, *, replicates=P.bootstrap_replicates,
-                 seconds=300, fit_seconds=30, seed=P.seed):
+def fit_contrast(
+    frame,
+    question,
+    family_size,
+    *,
+    replicates=P.bootstrap_replicates,
+    seconds=300,
+    fit_seconds=30,
+    seed=P.seed,
+):
     if not 2 <= replicates <= P.bootstrap_cap:
         raise ValueError("replicates must be 2..10000")
     budget = Budget(seconds)
     rng = np.random.default_rng(seed)
     errors, draws, sensitivities = Counter(), [], {}
-    with FitWorker(frame, question, fit_seconds=fit_seconds, maximum_calls=replicates + 20) as worker:
+    with FitWorker(
+        frame, question, fit_seconds=fit_seconds, maximum_calls=replicates + 20
+    ) as worker:
         base = worker.fit()
         for _ in range(replicates):
             budget.check()
@@ -56,8 +69,10 @@ def fit_contrast(frame, question, family_size, *, replicates=P.bootstrap_replica
                 draws.append(worker.fit(indices, clusters)["effect"])
             except ValueError as error:
                 errors[str(error)] += 1
-        for key, options in (("game_weighted", {"game_weighted": True}),
-                             ("exchangeable", {"exchangeable": True})):
+        for key, options in (
+            ("game_weighted", {"game_weighted": True}),
+            ("exchangeable", {"exchangeable": True}),
+        ):
             budget.check()
             try:
                 sensitivities[key] = worker.fit(**options)["effect"]
@@ -84,7 +99,7 @@ def fit_contrast(frame, question, family_size, *, replicates=P.bootstrap_replica
         raise ValueError("invalid_uncertainty")
     z = float(norm.ppf(1 - P.alpha / (2 * family_size)))
     effect = base["effect"]
-    interval = [max(-1., effect-z*se), min(1., effect+z*se)]
+    interval = [max(-1.0, effect - z * se), min(1.0, effect + z * se)]
     failures = []
     if len(draws) / replicates < P.minimum_fit_success:
         failures.append("bootstrap_fit_failures")
@@ -92,29 +107,50 @@ def fit_contrast(frame, question, family_size, *, replicates=P.bootstrap_replica
         failures.append("diagnostic_bootstrap_budget")
     threshold = P.meaningful_risk if question.outcome == "severe" else P.meaningful_loss
     for value in sensitivities.values():
-        if isinstance(value, dict) or value*effect < 0 or abs(value-effect) > threshold:
+        if isinstance(value, dict) or value * effect < 0 or abs(value - effect) > threshold:
             failures.append("sensitivity_unstable")
     concentration = {}
     for group in ("game_id", "opponent_id", "opening", "position_id"):
         if group not in frame.columns:
             concentration[group] = None
         else:
-            concentration[group] = float(frame[group].value_counts(normalize=True).max()) if frame[group].notna().any() else None
-    if any(concentration[k] is None or concentration[k] > P.maximum_cluster_share
-           for k in ("game_id", "opponent_id", "position_id")):
+            concentration[group] = (
+                float(frame[group].value_counts(normalize=True).max())
+                if frame[group].notna().any()
+                else None
+            )
+    if any(
+        concentration[k] is None or concentration[k] > P.maximum_cluster_share
+        for k in ("game_id", "opponent_id", "position_id")
+    ):
         failures.append("cluster_concentration")
     if frame.history_sensitive.any():
         failures.append("history_sensitivity_not_validated")
     # No automatic promotion from incomplete calibration or missing registered stresses.
-    failures.extend(["calibration_not_validated", "registered_sensitivity_suite_incomplete",
-                     "crossed_dependence_not_validated", "overlap_not_validated"])
-    return {**base, "standard_error": se, "simultaneous_interval": interval,
-            "ordinary_interval": [effect-1.96*se, effect+1.96*se],
-            "p_value": float(2*norm.sf(abs(effect/se))), "bootstrap_success": len(draws),
-            "bootstrap_requested": replicates, "bootstrap_errors": dict(errors),
-            "bootstrap_quantiles": [float(v) for v in np.quantile(draws, [0.025, 0.5, 0.975])],
-            "seed": seed, "sensitivities": sensitivities, "concentration": concentration,
-            "gate_failures": sorted(set(failures)), "meaningful_effect": threshold}
+    failures.extend(
+        [
+            "calibration_not_validated",
+            "registered_sensitivity_suite_incomplete",
+            "crossed_dependence_not_validated",
+            "overlap_not_validated",
+        ]
+    )
+    return {
+        **base,
+        "standard_error": se,
+        "simultaneous_interval": interval,
+        "ordinary_interval": [effect - 1.96 * se, effect + 1.96 * se],
+        "p_value": float(2 * norm.sf(abs(effect / se))),
+        "bootstrap_success": len(draws),
+        "bootstrap_requested": replicates,
+        "bootstrap_errors": dict(errors),
+        "bootstrap_quantiles": [float(v) for v in np.quantile(draws, [0.025, 0.5, 0.975])],
+        "seed": seed,
+        "sensitivities": sensitivities,
+        "concentration": concentration,
+        "gate_failures": sorted(set(failures)),
+        "meaningful_effect": threshold,
+    }
 
 
 def correct_and_gate(results, family_ids, *, complete=False):
@@ -131,7 +167,9 @@ def correct_and_gate(results, family_ids, *, complete=False):
     holm = multipletests(pvalues, alpha=P.alpha, method="holm")[1]
     bh = multipletests(pvalues, alpha=P.alpha, method="fdr_bh")[1]
     for i, identifier in enumerate(family_ids):
-        result = results.setdefault(identifier, {"status": "run_incomplete", "gate_failures": ["not_executed"]})
+        result = results.setdefault(
+            identifier, {"status": "run_incomplete", "gate_failures": ["not_executed"]}
+        )
         failures = set(result.get("gate_failures", []))
         if not complete:
             failures.add("family_incomplete")

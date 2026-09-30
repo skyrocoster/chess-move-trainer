@@ -400,8 +400,7 @@ def test_background_capacity_allows_six_claims_and_rejects_a_seventh(tmp_path: P
     queue = QueueService(database_path)
 
     claims = [
-        queue.seed_and_claim_background(position_id, capacity=6)
-        for position_id in position_ids[:6]
+        queue.seed_and_claim_background(position_id, capacity=6) for position_id in position_ids[:6]
     ]
     outcome = queue.try_seed_and_claim_background(position_ids[6], capacity=6)
 
@@ -409,9 +408,12 @@ def test_background_capacity_allows_six_claims_and_rejects_a_seventh(tmp_path: P
     assert outcome.claim is None
     assert outcome.reason is BackgroundSeedReason.AT_CAPACITY
     with sqlite3.connect(database_path) as connection:
-        assert connection.execute(
-            "SELECT COUNT(*) FROM derived_analysis_queue WHERE daq_state = 'running'"
-        ).fetchone()[0] == 6
+        assert (
+            connection.execute(
+                "SELECT COUNT(*) FROM derived_analysis_queue WHERE daq_state = 'running'"
+            ).fetchone()[0]
+            == 6
+        )
 
 
 def test_background_seed_skips_duplicate_candidate_and_current_result(tmp_path: Path) -> None:

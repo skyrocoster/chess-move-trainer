@@ -199,19 +199,27 @@ def _validate_line_moves(board: chess.Board, line: AnalysisLine) -> str:
 def validate_analysis_position(
     position: CanonicalPosition,
     result: AnalysisResultInput,
+    *,
+    profile: Any | None = None,
 ) -> ValidatedAnalysisResult:
-    """Validate terminal policy and complete legal candidate lines from a neutral root."""
+    """Validate terminal policy and complete legal candidate lines from a neutral root.
+
+    Callers that ran an explicit profile, such as a benchmark tuning its node
+    budget, pass that profile so the result is checked against the configuration
+    that actually produced it. Storage readers omit it and enforce the approved
+    profile for the result quality.
+    """
 
     if not isinstance(result, AnalysisResultInput):
         raise AnalysisValidationError("result must be an AnalysisResultInput value")
     from ..stockfish.configuration import profile_for, quality_settings_match
 
-    profile = profile_for(result.quality)
-    if result.configuration_version != profile.configuration_version:
+    selected_profile = profile_for(result.quality) if profile is None else profile
+    if result.configuration_version != selected_profile.configuration_version:
         raise AnalysisValidationError(
             "analysis configuration version does not match the quality profile"
         )
-    if not quality_settings_match(result.settings, profile):
+    if not quality_settings_match(result.settings, selected_profile):
         raise AnalysisValidationError("analysis settings do not match the quality profile")
     board = _neutral_board(position)
     terminal_kind = _classify_board(board)
@@ -221,10 +229,11 @@ def validate_analysis_position(
         return ValidatedAnalysisResult(terminal_kind=terminal_kind, lines=())
 
     legal_root_moves = tuple(board.legal_moves)
-    expected_line_count = min(profile.multipv, len(legal_root_moves))
+    expected_line_count = min(selected_profile.multipv, len(legal_root_moves))
     if len(result.lines) != expected_line_count:
         raise AnalysisValidationError(
-            "non-terminal results must contain exactly the profile MultiPV lines or one line per legal root move"
+            "non-terminal results must contain exactly the profile MultiPV lines "
+            "or one line per legal root move"
         )
     expected_ranks = tuple(range(1, expected_line_count + 1))
     actual_ranks = tuple(line.rank for line in result.lines)

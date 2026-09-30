@@ -99,7 +99,10 @@ def test_proof_boundary_has_only_the_aggregate_proof_module() -> None:
     proof_models_text = (PACKAGE_PATH / "proof_models.py").read_text(encoding="utf-8")
     proof_text = source_path.read_text(encoding="utf-8")
     assert "DEFAULT_DATABASE_PATH" not in package_text
-    assert 'HOST_SEED_DATABASE_PATH: Final[Path] = Path("data/database/chess-seed.db")' in lifecycle_text
+    assert (
+        'HOST_SEED_DATABASE_PATH: Final[Path] = Path("data/database/chess-seed.db")'
+        in lifecycle_text
+    )
     assert 'LIVE_DATABASE_PATH: Final[Path] = Path("data/database/chess.db")' in lifecycle_text
     assert "DEFAULT_DATABASE_PATH" not in proof_models_text
     assert "data/database/chess.db" not in proof_models_text

@@ -199,11 +199,7 @@ def _graph_path_values(value: object) -> list[str]:
     paths: list[str] = []
     if isinstance(value, dict):
         for key, child in value.items():
-            if (
-                isinstance(key, str)
-                    and key.lower() in PATH_KEYS
-                and isinstance(child, str)
-            ):
+            if isinstance(key, str) and key.lower() in PATH_KEYS and isinstance(child, str):
                 paths.append(child)
             paths.extend(_graph_path_values(child))
     elif isinstance(value, list):
@@ -229,9 +225,7 @@ def test_real_catalogue_has_six_exact_five_artifact_bundles() -> None:
             assert {"mtime", "seen", "ast_hash", "semantic_hash"} <= set(record)
             assert record["ast_hash"] and record["semantic_hash"]
 
-        generated_text = (
-            json.dumps(graph).lower() + json.dumps(manifest).lower()
-        )
+        generated_text = json.dumps(graph).lower() + json.dumps(manifest).lower()
         assert "docs/graphify/" not in generated_text
         assert "data/database/" not in generated_text
         assert "data/stockfish/" not in generated_text

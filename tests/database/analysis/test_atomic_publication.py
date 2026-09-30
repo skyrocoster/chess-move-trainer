@@ -20,6 +20,7 @@ from chess_move_trainer.database.analysis import (
     validate_analysis_result,
 )
 from chess_move_trainer.database.positions import PositionRepository
+from chess_move_trainer.database.stockfish import BROWSER_PROFILE, TOOL_PROFILE
 
 STARTING_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 OLD_ROOTS = (
@@ -58,17 +59,22 @@ def _lines(roots: tuple[tuple[str, ...], ...] = OLD_ROOTS) -> tuple[AnalysisLine
 def _result(
     *,
     quality: AnalysisQuality = AnalysisQuality.TOOL,
-    configuration_version: int = 1,
+    configuration_version: int | None = None,
     engine_version: str = "engine-1",
     lines: tuple[AnalysisLine, ...] | None = None,
 ):
+    profile = BROWSER_PROFILE if quality is AnalysisQuality.BROWSER else TOOL_PROFILE
     return validate_analysis_result(
         quality=quality,
-        configuration_version=configuration_version,
-        settings={"Hash": 16},
+        configuration_version=(
+            profile.configuration_version
+            if configuration_version is None
+            else configuration_version
+        ),
+        settings=dict(profile.settings),
         engine_name="atomic-test-engine",
         engine_version=engine_version,
-        lines=_lines() if lines is None else lines,
+        lines=(_lines(OLD_ROOTS[: profile.multipv]) if lines is None else lines),
     )
 
 
@@ -122,7 +128,7 @@ def test_replacement_failure_after_parent_write_restores_exact_old_result_and_li
     with pytest.raises(AnalysisStorageError):
         failing.publish(
             position_id,
-            _result(configuration_version=2, lines=_lines(NEW_ROOTS)),
+            _result(engine_version="engine-2", lines=_lines(NEW_ROOTS)),
         )
 
     assert _snapshot(database_path, position_id) == before
@@ -171,7 +177,7 @@ def test_transaction_recheck_lower_quality_interleaving_is_deterministic(
                     position_id,
                     _result(
                         quality=AnalysisQuality.BROWSER,
-                        lines=_lines(NEW_ROOTS),
+                        lines=_lines(NEW_ROOTS[:1]),
                     ),
                 )
             )
@@ -251,7 +257,7 @@ def test_successful_refresh_replaces_the_complete_old_line_set_exactly(
     assert (
         repository.publish(
             position_id,
-            _result(configuration_version=2, engine_version="engine-2", lines=_lines(NEW_ROOTS)),
+            _result(engine_version="engine-2", lines=_lines(NEW_ROOTS)),
         )
         == PublicationOutcome.saved_result()
     )
@@ -260,8 +266,8 @@ def test_successful_refresh_replaces_the_complete_old_line_set_exactly(
     assert parent == (
         position_id,
         "tool",
-        2,
-        '{"Hash":16}',
+        1,
+        '{"Hash":1024,"MultiPV":5,"Nodes":6400000,"Threads":6,"UCI_ShowWDL":true}',
         "atomic-test-engine",
         "engine-2",
         None,
@@ -291,7 +297,7 @@ def test_invalid_submission_fails_before_publication_and_preserves_complete_data
     with pytest.raises(AnalysisValidationError):
         validating.publish(
             position_id,
-            _result(configuration_version=2, lines=tuple(invalid_lines)),
+            _result(lines=tuple(invalid_lines)),
         )
 
     assert checkpoints == []

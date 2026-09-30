@@ -1,7 +1,7 @@
 """Frozen defaults. Changing any definition changes the protocol identity."""
 
-from dataclasses import asdict, dataclass
 import json
+from dataclasses import asdict, dataclass
 
 from . import PROTOCOL_VERSION
 from .artifacts import digest

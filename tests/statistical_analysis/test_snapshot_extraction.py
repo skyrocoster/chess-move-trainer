@@ -4,8 +4,8 @@ import sqlite3
 import pytest
 
 from chess_move_trainer.statistical_analysis.artifacts import Budget, file_digest
-from chess_move_trainer.statistical_analysis.snapshot import create_snapshot, verify_snapshot
 from chess_move_trainer.statistical_analysis.extraction import extract
+from chess_move_trainer.statistical_analysis.snapshot import create_snapshot, verify_snapshot
 
 from .conftest import add_game
 
@@ -39,7 +39,10 @@ def test_extract_resume_mixed_tiers_and_populations(source_database, tmp_path):
     assert extract(directory)["status"] == "complete"
     assert extract(directory)["processed_games"] == 2
     with sqlite3.connect(directory / "records.db") as connection:
-        records = [json.loads(r[0]) for r in connection.execute("SELECT record FROM moves ORDER BY game, ply")]
+        records = [
+            json.loads(r[0])
+            for r in connection.execute("SELECT record FROM moves ORDER BY game, ply")
+        ]
         assert len(records) == 10
         assert {r["population"] for r in records} == {"learner", "opponent"}
         assert records[0]["loss_units"] == 400

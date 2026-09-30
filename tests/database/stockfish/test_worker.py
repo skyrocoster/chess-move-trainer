@@ -275,7 +275,9 @@ def test_queue_is_rechecked_before_next_background_target(tmp_path: Path) -> Non
     queue = QueueService(database)
     selector = _FakeBackgroundSelector([ids[E4_FEN], ids[D4_FEN]])
 
-    def enqueue_requested_after_first_background(_position: object, quality: AnalysisQuality) -> None:
+    def enqueue_requested_after_first_background(
+        _position: object, quality: AnalysisQuality
+    ) -> None:
         if quality is AnalysisQuality.BROWSER and len(engine.calls) == 1:
             queue.enqueue(ids[START_FEN], AnalysisQuality.TOOL)
 
@@ -342,7 +344,11 @@ def test_background_failure_is_isolated_without_same_launch_retry(tmp_path: Path
     engines: list[_FakeEngine] = []
 
     def engine_factory() -> _FakeEngine:
-        engine = _FakeEngine([RuntimeError("background search failed")]) if not engines else _FakeEngine()
+        engine = (
+            _FakeEngine([RuntimeError("background search failed")])
+            if not engines
+            else _FakeEngine()
+        )
         engines.append(engine)
         return engine
 
@@ -627,8 +633,7 @@ def test_parallel_worker_claims_requested_work_before_background_refill(tmp_path
     position_ids = list(ids.values())
     queue = QueueService(database)
     background_claims = [
-        queue.seed_and_claim_background(position_id, capacity=6)
-        for position_id in position_ids[:6]
+        queue.seed_and_claim_background(position_id, capacity=6) for position_id in position_ids[:6]
     ]
     assert all(claim is not None for claim in background_claims)
     assert queue.complete(

@@ -8,7 +8,6 @@ from chess_move_trainer.database import cli as database_cli
 from chess_move_trainer.database import cli_stockfish
 from chess_move_trainer.database.stockfish import WorkerOutcome
 
-
 runner = CliRunner()
 
 

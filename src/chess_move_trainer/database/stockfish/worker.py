@@ -16,8 +16,8 @@ from ..analysis import AnalysisResultInput
 from ..connection import DEFAULT_LOCK_TIMEOUT_SECONDS, _open_existing_connection
 from ..positions import CanonicalPosition
 from ..schema import _assert_compatible_schema
-from .engine import StockfishAnalysis, StockfishEngine
 from .configuration import StockfishProfile, profile_for
+from .engine import StockfishAnalysis, StockfishEngine
 from .mutex import DatabaseMutex, MutexBusyError
 from .queue import BackgroundSeedReason, QueueClaim, QueueService
 from .targets import BackgroundTargetSelector
@@ -161,7 +161,11 @@ class WorkerRunner:
                     drained = False
                     break
 
-                if claim is None and mutex is not None and getattr(mutex, "acquired_abandoned", False):
+                if (
+                    claim is None
+                    and mutex is not None
+                    and getattr(mutex, "acquired_abandoned", False)
+                ):
                     try:
                         claim, polls = self._recover_young_claim(
                             queue,
