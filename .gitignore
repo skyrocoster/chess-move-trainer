@@ -13,7 +13,6 @@ env/
 node_modules/
 dist/
 build/
-storybook-static/
 
 # IDE and operating system files
 .vscode/
@@ -32,7 +31,6 @@ Thumbs.db
 .stage-check/
 /artifacts/
 /data/stockfish/
-/graphify-out/
 
 # Local databases and backups
 *.db
@@ -46,25 +44,12 @@ Thumbs.db
 docs/benchmarks/API/*Z-*.json
 
 # Tool-local configuration and dependencies
-.claude/
+.claude/*
+!.claude/skills/
+!.claude/hooks/
+!.claude/settings.json
 .cursor/skills/
 .agents/skills/*
-.opencode/*
-!.opencode/README.md
-!.opencode/package.json
-!.opencode/package-lock.json
-!.opencode/commands/
-!.opencode/commands/commit.md
-!.opencode/plugin/
-!.opencode/skills/
-!.opencode/tools/
-!.opencode/agents/
-!.opencode/agents/**
-opencode.json
-
-# Generated Graphify bundles (machine-local, refreshed by src/tools/graphify_catalogue.py)
-docs/graphify/*
-!docs/graphify/README.md
 
 # Chess.com raw profiles (large, regenerable)
 data/chess-com/raw/profiles/

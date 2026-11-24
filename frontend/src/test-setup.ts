@@ -7,8 +7,7 @@ import "@testing-library/jest-dom/vitest";
 // package)" noise on every axe.run() in unit tests. jsdom already returns null
 // from this method, and axe converts the downstream rule error into an
 // incomplete result, so returning null keeps axe outcomes unchanged while
-// removing the console noise. The Storybook project runs in a real browser and
-// is unaffected.
+// removing the console noise.
 if (typeof HTMLCanvasElement !== "undefined") {
   HTMLCanvasElement.prototype.getContext = () => null;
 }
@@ -25,7 +24,6 @@ if (typeof HTMLCanvasElement !== "undefined") {
 // the event loop and hangs. jsdom has no fullscreen or modal top layer at
 // all, so "not matched" is the correct answer for a bare top-layer
 // pseudo-class; all other selectors keep using jsdom's normal matching.
-// The Storybook project runs in a real browser and is unaffected.
 const topLayerPseudoSelectors = new Set([":modal", ":fullscreen"]);
 const elementProto = Element.prototype as unknown as {
   matches?: (selector: string) => boolean;

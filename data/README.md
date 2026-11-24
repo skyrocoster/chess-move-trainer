@@ -42,8 +42,8 @@ into a container: containers cannot see host-side edits.
 
 Compare hashes of the host seed copy and the live volume file:
 
-```powershell
-# Host seed copy (Git Bash):
+```bash
+# Host seed copy:
 sha256sum data/database/chess-seed.db
 
 # Live database (same command shape, different file):
@@ -55,9 +55,9 @@ first, copy out of a container, restart, then re-hash to confirm. The exact
 commands are in [`docs/DEVELOPMENT_SERVICES.md`](../docs/DEVELOPMENT_SERVICES.md).
 
 The live database itself stays current without any export: a cold
-`powershell -ExecutionPolicy Bypass -File ./dev.ps1 start` refreshes games and
+`uv run --no-sync sg dev start` refreshes games and
 openings in the volume before the services start, and
-`powershell -ExecutionPolicy Bypass -File ./dev.ps1 update` refreshes them on a
+`uv run --no-sync sg dev update` refreshes them on a
 live stack with workers paused. The host CLI (`setup`, `update games`, `update
 openings`) targets the host seed path by default and accepts an explicit
 `--database` option; it is not part of the container startup path.

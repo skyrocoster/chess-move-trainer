@@ -22,7 +22,6 @@ SCRIPT_EXTENSIONS = frozenset(
         ".cjs",
         ".mts",
         ".cts",
-        ".ps1",
         ".sh",
     }
 )
@@ -42,7 +41,6 @@ EXCLUDE_DIRS = frozenset(
         ".ruff_cache",
         "dist",
         "build",
-        "storybook-static",
         "coverage",
         "test-results",
         "artifacts",
@@ -51,12 +49,10 @@ EXCLUDE_DIRS = frozenset(
         ".claude",
         ".cursor",
         ".agents",
-        ".opencode",
         ".vscode",
         ".idea",
         "data",
         "scratch",
-        "experiments",
     }
 )
 

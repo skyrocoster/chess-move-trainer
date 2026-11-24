@@ -41,7 +41,7 @@ export type ChessboardSurfaceProps = {
 export type ChessboardPieceDropHandlerArgs = PieceDropHandlerArgs;
 
 /**
- * Shared boundary around react-chessboard for static, trainer, and Storybook boards.
+ * Shared boundary around react-chessboard for static and trainer boards.
  * Product-specific semantics and controls belong in the adapter that composes it.
  */
 export function ChessboardSurface({

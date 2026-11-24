@@ -1,9 +1,0 @@
-{
-  "name": "chess-move-trainer-experiments",
-  "private": true,
-  "version": "0.1.0",
-  "type": "module",
-  "engines": {
-    "node": ">=24.15 <25"
-  }
-}

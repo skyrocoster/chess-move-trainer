@@ -6,7 +6,6 @@ import { describe, expect, it } from "vitest";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const materialDir = join(here, "../../styles/material");
-const previewPath = join(here, "../../../.storybook/preview.tsx");
 
 const EXPORT_DIR = "material-theme-builder-css-export";
 const ARCHIVE_HASH = "3c52785020f13710d531247cf71707aee7a308bdf8a84af98e1dfeab328c6608";
@@ -70,22 +69,6 @@ describe("Material theme artifact contract", () => {
     expect(darkCss).toContain("--md-sys-color-primary:");
     expect(darkCss).toContain("--md-sys-color-on-primary:");
     expect(darkCss).toContain("--md-sys-color-surface-tint:");
-  });
-
-  it("keeps the repository-owned .dark preview wrapper as the dark-only runtime import", () => {
-    const preview = readFileSync(previewPath, "utf8");
-
-    expect(preview).toContain("css/dark.css");
-    expect(preview).toContain('className="dark"');
-    for (const variant of [
-      "css/light.css",
-      "css/light-mc.css",
-      "css/light-hc.css",
-      "css/dark-mc.css",
-      "css/dark-hc.css",
-    ]) {
-      expect(preview).not.toContain(variant);
-    }
   });
 
   it("declares no runtime theme generation", () => {

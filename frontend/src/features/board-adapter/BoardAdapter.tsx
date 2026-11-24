@@ -165,5 +165,5 @@ export function BoardAdapter({
   );
 }
 
-// Exported for Storybook fixtures only.
+// Exported for the position picker session and tests.
 export { STARTING_FEN };

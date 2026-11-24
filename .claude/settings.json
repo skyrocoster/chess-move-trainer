@@ -1,0 +1,1 @@
+{"hooks":{"PreToolUse":[{"matcher":"Agent","hooks":[{"type":"command","command":"node \"$CLAUDE_PROJECT_DIR/.claude/hooks/restrict-subagents.js\"","timeout":10,"onFailure":"block"}]}]}}

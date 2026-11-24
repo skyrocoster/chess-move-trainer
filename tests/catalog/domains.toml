@@ -1,0 +1,257 @@
+# Authoritative test-domain catalogue for Chess Move Trainer.
+#
+# Every test source matches exactly one domain or subdomain below. `sg test list`
+# fails when a file matches none or several. Layer is derived from the file
+# location and runner, never from this file. Case identity for pytest and
+# Playwright is discovered from the frameworks; Vitest files are selectable file
+# groups.
+#
+# Fixture profiles: none, temp-db (throwaway SQLite database), live-services
+# (needs the running development services), browser (Playwright) and real-db
+# (opt-in tests that read the live database).
+#
+# Rules and placement examples: tests/catalog/README.md.
+
+[meta]
+title = "Chess Move Trainer test catalogue"
+version = 1
+
+# ---------------------------------------------------------------------------
+# Application surface
+# ---------------------------------------------------------------------------
+
+[domains.health]
+title = "Health endpoint and status page"
+owner = "backend/app/features/health/"
+purpose = "GET /api/health, its database and Docker probes, the contract export and the status page."
+paths = [
+  "backend/tests/features/health/*",
+  "frontend/src/features/status/*",
+  "tests/e2e/status-page.spec.ts",
+]
+tags = ["health", "status"]
+default_fixture = "temp-db"
+
+[domains.health.subdomains.client]
+paths = ["frontend/src/api/healthClient.test.ts"]
+default_fixture = "live-services"
+
+[domains.api-client]
+title = "Generated API client"
+owner = "frontend/src/api/"
+purpose = "The generated client surface, query keys and invalidation rules."
+paths = [
+  "frontend/src/api/generatedSurface.test.ts",
+  "frontend/src/api/noAdoption.test.ts",
+  "frontend/src/api/queryInvalidation.test.ts",
+  "frontend/src/api/queryKeys.test.ts",
+]
+tags = ["api", "client"]
+default_fixture = "none"
+
+[domains.api-cache]
+title = "API read cache"
+owner = "backend/app/caching.py"
+purpose = "Cache mechanics and per-feature cache invalidation for games, openings and training reads."
+paths = ["backend/tests/features/api_cache/*"]
+tags = ["cache"]
+default_fixture = "temp-db"
+
+[domains.app-shell]
+title = "Application shell and routing"
+owner = "frontend/src/features/app-shell/"
+purpose = "App routes, the page frame, the not-found view and the responsive shell."
+paths = [
+  "frontend/src/App.test.tsx",
+  "frontend/src/features/app-shell/*",
+  "tests/e2e/shell-routing.spec.ts",
+  "tests/e2e/responsive-shell.spec.ts",
+]
+tags = ["shell", "routing"]
+default_fixture = "browser"
+
+[domains.games]
+title = "Games"
+owner = "src/chess_move_trainer/database/games/"
+purpose = "Game acquisition, normalization, storage, search and replay, the games API and the game loader."
+paths = [
+  "backend/tests/features/games/*",
+  "tests/database/games/*",
+  "tests/database/test_update_games.py",
+  "frontend/src/features/game/*",
+]
+tags = ["games"]
+default_fixture = "temp-db"
+
+[domains.openings]
+title = "Openings"
+owner = "src/chess_move_trainer/database/openings/"
+purpose = "Opening catalogue acquisition, recognition and the openings API."
+paths = [
+  "backend/tests/features/openings/*",
+  "tests/database/openings/*",
+  "tests/database/test_update_openings.py",
+  "frontend/src/features/openings/*",
+]
+tags = ["openings"]
+default_fixture = "temp-db"
+
+[domains.positions]
+title = "Positions and position insight"
+owner = "src/chess_move_trainer/database/positions/"
+purpose = "Position identity and storage, position insight, move-response distribution and reach frequency."
+paths = [
+  "backend/tests/features/position_insight/*",
+  "tests/database/positions/test_insight.py",
+  "tests/database/test_position_*.py",
+  "frontend/src/features/position-insight/*",
+  "frontend/src/features/position-context/*",
+  "frontend/src/features/position-reach-frequency/*",
+  "frontend/src/features/move-response-distribution/*",
+]
+tags = ["positions"]
+default_fixture = "temp-db"
+
+[domains.analysis]
+title = "Position analysis"
+owner = "src/chess_move_trainer/database/analysis/"
+purpose = "Stored engine analysis, observation and request APIs, the evaluation queue and the analysis pages."
+paths = [
+  "backend/tests/features/analysis/*",
+  "backend/tests/features/analysis_observation/*",
+  "backend/tests/features/analysis_requests/*",
+  "backend/tests/features/evaluation/*",
+  "tests/database/analysis/*",
+  "tests/database/reporting/*",
+  "frontend/src/features/analysis/*",
+  "frontend/src/features/analysis-overview/*",
+]
+tags = ["analysis"]
+default_fixture = "temp-db"
+
+[domains.preferred-moves]
+title = "Preferred moves"
+owner = "src/chess_move_trainer/database/preferred_moves/"
+purpose = "Preferred-move storage, range semantics, timeline and the preferred-move API."
+paths = [
+  "backend/tests/features/preferred_moves/*",
+  "tests/database/preferred_moves/*",
+]
+tags = ["preferred-moves"]
+default_fixture = "temp-db"
+
+[domains.repertoire-builder]
+title = "Repertoire builder"
+owner = "frontend/src/features/repertoire-builder/"
+purpose = "The repertoire builder workspace, board lanes, preferred-move panel and position picker."
+paths = ["frontend/src/features/repertoire-builder/*"]
+tags = ["repertoire"]
+default_fixture = "none"
+
+[domains.trainer-practice]
+title = "Trainer practice"
+owner = "frontend/src/features/trainer-practice/"
+purpose = "Training requirements discovery and scoring, the practice API and the practice page."
+paths = [
+  "backend/tests/features/position_training_requirements/test_api.py",
+  "tests/database/positions/test_training_*.py",
+  "frontend/src/features/trainer-practice/*",
+  "tests/e2e/trainer-practice.spec.ts",
+]
+tags = ["trainer"]
+default_fixture = "temp-db"
+
+[domains.board-adapter]
+title = "Board, chess primitives and move history"
+owner = "frontend/src/features/board-adapter/"
+purpose = "The board adapter, interactive board, promotion picker, chess primitives and move history."
+paths = [
+  "frontend/src/features/board-adapter/*",
+  "frontend/src/features/chess/*",
+  "frontend/src/features/move-history/*",
+]
+tags = ["board"]
+default_fixture = "none"
+
+[domains.design-system]
+title = "Design system"
+owner = "frontend/src/features/design-system/"
+purpose = "Reusable UI primitives, form controls, overlays, feedback, tokens and theme provenance."
+paths = ["frontend/src/features/design-system/*"]
+tags = ["design-system"]
+default_fixture = "none"
+
+# ---------------------------------------------------------------------------
+# Engine, statistics and data infrastructure
+# ---------------------------------------------------------------------------
+
+[domains.stockfish]
+title = "Stockfish analysis"
+owner = "src/chess_move_trainer/database/stockfish/"
+purpose = "The Stockfish engine wrapper, queue, workers, targets, bulk runs and benchmarks."
+paths = [
+  "tests/database/stockfish/*",
+  "tests/stockfish_analysis/*",
+]
+tags = ["stockfish"]
+default_fixture = "temp-db"
+
+[domains.statistical-analysis]
+title = "Statistical analysis"
+owner = "src/chess_move_trainer/statistical_analysis/"
+purpose = "Feature extraction, models, the pilot and reporting, plus the statistics API."
+paths = [
+  "tests/statistical_analysis/*",
+  "backend/tests/features/statistics/*",
+  "tests/database/test_statistics.py",
+]
+tags = ["statistics"]
+default_fixture = "temp-db"
+
+[domains.database-lifecycle]
+title = "Database lifecycle and schema"
+owner = "src/chess_move_trainer/database/"
+purpose = "Schema creation and upgrade, setup, connections, inspection, the lifecycle CLI, package boundaries and the proof suite."
+paths = [
+  "tests/database/proof/*",
+  "tests/database/test_catalogue_schema.py",
+  "tests/database/test_configuration_examples.py",
+  "tests/database/test_connection.py",
+  "tests/database/test_inspection.py",
+  "tests/database/test_lifecycle_cli.py",
+  "tests/database/test_package_boundary.py",
+  "tests/database/test_schema_*.py",
+  "tests/database/test_setup.py",
+  "tests/database/test_source_boundary.py",
+]
+tags = ["database", "schema"]
+default_fixture = "temp-db"
+
+[domains.api-benchmarks]
+title = "API benchmarks"
+owner = "backend/tests/benchmarks/"
+purpose = "Synthetic API latency benchmark against a throwaway database."
+paths = ["backend/tests/benchmarks/test_api_benchmark.py"]
+tags = ["benchmark"]
+default_fixture = "temp-db"
+
+[domains.real-data]
+title = "Opt-in real-data tests"
+owner = "backend/tests/"
+purpose = "Env-gated tests that read the live database or benchmark the real app; run only through sg test profiles real-data."
+paths = [
+  "backend/tests/benchmarks/test_api_benchmark_real.py",
+  "backend/tests/features/position_training_requirements/test_real_database.py",
+]
+tags = ["real-data"]
+default_fixture = "real-db"
+
+[domains.tooling]
+title = "Developer tooling"
+owner = "src/tools/"
+purpose = "The sg CLI (dev, check, test, screenshot)."
+paths = [
+  "backend/tests/tooling/*",
+]
+tags = ["tooling"]
+default_fixture = "none"

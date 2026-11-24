@@ -8,7 +8,6 @@ WORKDIR /workspace
 
 COPY package.json package-lock.json ./
 COPY frontend/package.json ./frontend/package.json
-COPY experiments/package.json ./experiments/package.json
 RUN npm ci --workspace frontend --include-workspace-root=false \
     && sha256sum package-lock.json > ./frontend/node_modules/.package-lock.sha256 \
     && mkdir -p /opt/frontend-node-modules \

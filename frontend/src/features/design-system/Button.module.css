@@ -5,9 +5,8 @@
  * from the centralized --cmt-* foundation tokens and --md-sys-* color roles.
  * No ad hoc spacing, radius, depth, or focus values. Hover states swap to the
  * existing container/surface color roles rather than introducing new values.
- * The centralized token CSS (frontend/src/styles/cmt-tokens.css) is made
- * available to Storybook by the story import; the component itself must not
- * import it.
+ * The centralized token CSS (frontend/src/styles/cmt-tokens.css) is loaded by
+ * app.css; the component itself must not import it.
  */
 .button {
   display: inline-flex;

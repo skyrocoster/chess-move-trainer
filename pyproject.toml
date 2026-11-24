@@ -24,16 +24,15 @@ dependencies = [
     "uvicorn[standard]==0.53.0",
 ]
 
+[project.scripts]
+sg = "tools.dev.cli.main:main"
+
 [dependency-groups]
 dev = [
-    "graphifyy[sql,svg]==0.9.64",
     "pip-audit==2.10.1",
     "pytest==9.1.1",
     "ruff==0.16.8",
 ]
-
-[tool.uv.workspace]
-members = ["experiments"]
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
@@ -49,7 +48,8 @@ select = ["E", "F", "I"]
 
 [tool.setuptools.packages.find]
 where = [".", "src"]
-include = ["backend*", "chess_move_trainer*"]
+include = ["backend*", "chess_move_trainer*", "tools*"]
 
 [tool.setuptools.package-data]
 "chess_move_trainer.database" = ["*.sql"]
+"tools.dev.screenshots" = ["driver.mjs"]

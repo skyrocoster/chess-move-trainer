@@ -12,11 +12,11 @@ Run from the repository root (Git Bash):
   timeout 500s env CHESS_RUN_API_BENCHMARK_REAL=1 \
     .venv/Scripts/python.exe -m pytest backend/tests/benchmarks/test_api_benchmark_real.py -v
 
-PowerShell:
+Git Bash, exporting the variable for the session:
 
-  $env:CHESS_RUN_API_BENCHMARK_REAL = "1"
-  .venv/Scripts/python.exe -m pytest backend/tests/benchmarks/test_api_benchmark_real.py -v
-  Remove-Item Env:CHESS_RUN_API_BENCHMARK_REAL
+  export CHESS_RUN_API_BENCHMARK_REAL=1
+  timeout 500s .venv/Scripts/python.exe -m pytest backend/tests/benchmarks/test_api_benchmark_real.py -v
+  unset CHESS_RUN_API_BENCHMARK_REAL
 
 Extra knobs (see also backend/tests/benchmarks/test_api_benchmark.py):
 

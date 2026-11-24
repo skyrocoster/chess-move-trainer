@@ -12,10 +12,7 @@
  * tracking values.
  *
  * Static CSS only: no runtime theme generation, theme switch, or theme
- * state. Scoped to :root so the variables cascade inside the existing
- * .dark Storybook preview wrapper. Production entrypoints must never
- * import this file; the story imports it directly as the single
- * Storybook-visible availability point.
+ * state. Scoped to :root and loaded by app.css.
  */
 :root {
   /* Display */
